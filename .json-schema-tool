@@ -1,0 +1,9 @@
+title: json-schema-preview
+description: |
+  VSCode extension that enables you to:
+    - Preview documentation generated using JSON Schema document. It uses json-schema-for-humans Python library under the hood,
+filters:
+    technology:
+        - VSCode
+    categories:
+        - ide-extension
