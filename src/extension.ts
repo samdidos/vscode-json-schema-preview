@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { isJsonSchemaFile, openJsonSchema, openJsonSchemaFiles, previewJsonSchema } from './PreviewWebPanel';
-import { openConfigPanel } from './ConfigWebPanel';
+import { openConfigPanel, openConfigFile } from './ConfigWebPanel';
+import { openSchemaEditor } from './SchemaEditorPanel';
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -31,8 +32,13 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('jsonschema.preview', previewJsonSchema(context)),
+    vscode.commands.registerCommand('jsonschema.preview',   previewJsonSchema(context)),
+    vscode.commands.registerCommand('jsonschema.edit',      (uri: vscode.Uri) => {
+      const target = uri ?? vscode.window.activeTextEditor?.document.uri;
+      if (target) openSchemaEditor(context, target);
+    }),
     vscode.commands.registerCommand('jsonschema.configure', () => openConfigPanel(context)),
+    vscode.commands.registerCommand('jsonschema.openConfig', () => openConfigFile()),
   );
 }
 

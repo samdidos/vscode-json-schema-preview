@@ -37,6 +37,11 @@
   "contributes": {
     "commands": [
       {
+        "command": "jsonschema.edit",
+        "title": "JSON Schema: Edit (visual)",
+        "icon": "$(edit)"
+      },
+      {
         "command": "jsonschema.preview",
         "title": "JSON Schema: Preview",
         "icon": {
@@ -48,28 +53,36 @@
         "command": "jsonschema.configure",
         "title": "JSON Schema: Configure Preview",
         "icon": "$(gear)"
+      },
+      {
+        "command": "jsonschema.openConfig",
+        "title": "JSON Schema: Open Config File",
+        "icon": "$(file-code)"
       }
     ],
     "menus": {
       "editor/title": [
         {
           "when": "(resourceLangId == json || resourceLangId == yaml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.edit",
+          "group": "navigation@1"
+        },
+        {
+          "when": "(resourceLangId == json || resourceLangId == yaml) && jsonschema.isJsonSchema",
           "command": "jsonschema.preview",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "when": "(resourceLangId == json || resourceLangId == yaml) && jsonschema.isJsonSchema",
           "command": "jsonschema.configure",
-          "group": "navigation"
+          "group": "navigation@3"
         }
       ],
       "commandPalette": [
-        {
-          "command": "jsonschema.preview"
-        },
-        {
-          "command": "jsonschema.configure"
-        }
+        { "command": "jsonschema.edit" },
+        { "command": "jsonschema.preview" },
+        { "command": "jsonschema.configure" },
+        { "command": "jsonschema.openConfig" }
       ],
       "editor/context": [],
       "keybindings": []

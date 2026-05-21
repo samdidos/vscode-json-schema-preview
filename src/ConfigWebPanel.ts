@@ -46,6 +46,8 @@ export async function openConfigPanel(context: vscode.ExtensionContext) {
   panel.webview.onDidReceiveMessage(async message => {
     if (message.type === 'save') {
       await saveConfig(message.config);
+    } else if (message.type === 'openFile') {
+      await openConfigFile();
     }
   });
 
@@ -95,6 +97,21 @@ function readCurrentConfig(): object {
   } catch {
     return {};
   }
+}
+
+export async function openConfigFile(): Promise<void> {
+  let filePath: string;
+  try {
+    filePath = getConfigFilePath();
+  } catch (err) {
+    vscode.window.showErrorMessage(String(err));
+    return;
+  }
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, '{}\n', 'utf-8');
+  }
+  const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
+  await vscode.window.showTextDocument(doc, { preview: false });
 }
 
 async function saveConfig(config: object): Promise<void> {
@@ -191,12 +208,20 @@ function buildConfigPage(jsonEditorUri: vscode.Uri, schema: object, currentConfi
       padding: 6px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
     }
     .btn-save:hover { background: var(--accent-hover); }
+    .btn-file {
+      background: none; color: var(--accent); border: 1px solid var(--accent); border-radius: var(--radius);
+      padding: 3px 10px; font-size: 12px; cursor: pointer; transition: background .15s;
+    }
+    .btn-file:hover { background: rgba(0,120,212,.12); }
     .save-hint { font-size: 12px; color: var(--text2); }
     .config-path { font-family: monospace; font-size: 11px; color: var(--text2); margin-top: 2px; }
   </style>
 </head>
 <body>
-  <h1>JSON Schema Preview — Configuration</h1>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px">
+    <h1 style="margin:0">JSON Schema Preview — Configuration</h1>
+    <button class="btn-file" onclick="openFile()" title="Open raw config file in editor">Open file ↗</button>
+  </div>
   <p class="subtitle">
     Settings are saved to <code>${CONFIG_FILENAME}</code> in your workspace root
     and picked up automatically on the next render.
@@ -228,6 +253,10 @@ function buildConfigPage(jsonEditorUri: vscode.Uri, schema: object, currentConfi
     editor.on('ready', () => {
       document.getElementById('editor-container').classList.add('je-ready');
     });
+
+    function openFile() {
+      vscode.postMessage({ type: 'openFile' });
+    }
 
     function saveConfig() {
       const errors = editor.validate();
