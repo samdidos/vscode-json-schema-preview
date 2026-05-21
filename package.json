@@ -58,6 +58,10 @@
         "command": "jsonschema.openConfig",
         "title": "JSON Schema: Open Config File",
         "icon": "$(file-code)"
+      },
+      {
+        "command": "jsonschema.bindToCurrentFile",
+        "title": "JSON Schema: Bind Schema to This File"
       }
     ],
     "menus": {
@@ -82,7 +86,8 @@
         { "command": "jsonschema.edit" },
         { "command": "jsonschema.preview" },
         { "command": "jsonschema.configure" },
-        { "command": "jsonschema.openConfig" }
+        { "command": "jsonschema.openConfig" },
+        { "command": "jsonschema.bindToCurrentFile" }
       ],
       "editor/context": [],
       "keybindings": []

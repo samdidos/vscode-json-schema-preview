@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { isJsonSchemaFile, openJsonSchema, openJsonSchemaFiles, previewJsonSchema } from './PreviewWebPanel';
 import { openConfigPanel, openConfigFile } from './ConfigWebPanel';
 import { openSchemaEditor } from './SchemaEditorPanel';
+import { SchemaBindingManager } from './SchemaBindingManager';
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -31,14 +32,17 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  const bindingManager = new SchemaBindingManager(context);
+
   context.subscriptions.push(
     vscode.commands.registerCommand('jsonschema.preview',   previewJsonSchema(context)),
     vscode.commands.registerCommand('jsonschema.edit',      (uri: vscode.Uri) => {
       const target = uri ?? vscode.window.activeTextEditor?.document.uri;
       if (target) openSchemaEditor(context, target);
     }),
-    vscode.commands.registerCommand('jsonschema.configure', () => openConfigPanel(context)),
-    vscode.commands.registerCommand('jsonschema.openConfig', () => openConfigFile()),
+    vscode.commands.registerCommand('jsonschema.configure',       () => openConfigPanel(context)),
+    vscode.commands.registerCommand('jsonschema.openConfig',      () => openConfigFile()),
+    vscode.commands.registerCommand('jsonschema.bindToCurrentFile', () => bindingManager.bindToCurrentFile()),
   );
 }
 
