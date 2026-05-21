@@ -1,14 +1,12 @@
 import * as vscode from 'vscode';
-import { isJsonSchemaFile, openJsonSchema, previewJsonSchema } from './PreviewWebPanel';
+import { isJsonSchemaFile, openJsonSchema, openJsonSchemaFiles, previewJsonSchema } from './PreviewWebPanel';
 
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Extension "json-schema-preview" is now active');
 
-  // sets context to show "Json Schema Preview" button on Editor Title Bar
   function setJsonSchemaPreviewContext(document: vscode.TextDocument) {
     const isJsonSchema = isJsonSchemaFile(document);
-    console.log('Setting context for jsonschema.isJsonSchema', isJsonSchema, document.uri.fsPath);
     vscode.commands.executeCommand('setContext', 'jsonschema.isJsonSchema', isJsonSchema);
   }
 
@@ -24,7 +22,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   vscode.workspace.onDidSaveTextDocument(document => {
     if (openJsonSchemaFiles[document.uri.fsPath]) {
-      console.log('Reloading jsonschema file', document.uri.fsPath);
       openJsonSchema(context, document.uri);
     }
     if (vscode.window.activeTextEditor?.document) {
@@ -32,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-
   context.subscriptions.push(vscode.commands.registerCommand('jsonschema.preview', previewJsonSchema(context)));
+}
 
 export function deactivate() {}
