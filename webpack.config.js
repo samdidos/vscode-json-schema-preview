@@ -3,6 +3,7 @@
 'use strict';
 
 const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -37,5 +38,15 @@ const extensionConfig = {
   infrastructureLogging: {
     level: 'log',
   },
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        {
+          from: 'node_modules/@json-editor/json-editor/dist/jsoneditor.js',
+          to: 'jsoneditor.js',
+        },
+      ],
+    }),
+  ],
 };
 module.exports = [extensionConfig];

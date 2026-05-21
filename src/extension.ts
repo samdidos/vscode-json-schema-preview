@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { isJsonSchemaFile, openJsonSchema, openJsonSchemaFiles, previewJsonSchema } from './PreviewWebPanel';
+import { openConfigPanel } from './ConfigWebPanel';
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -29,7 +30,10 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  context.subscriptions.push(vscode.commands.registerCommand('jsonschema.preview', previewJsonSchema(context)));
+  context.subscriptions.push(
+    vscode.commands.registerCommand('jsonschema.preview', previewJsonSchema(context)),
+    vscode.commands.registerCommand('jsonschema.configure', () => openConfigPanel(context)),
+  );
 }
 
 export function deactivate() {}
