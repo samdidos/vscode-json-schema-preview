@@ -91,28 +91,94 @@ export async function promptForJsonSchemaFile() {
 // json-schema-for-humans integration
 // ---------------------------------------------------------------------------
 
-function run(cmd: string, args: string[]): Promise<void> {
+// Cached per session: once the package is confirmed present we skip re-checking.
+let packageReady = false;
+
+function run(cmd: string, args: string[], timeoutMs = 30_000): Promise<void> {
   return new Promise((resolve, reject) =>
-    execFile(cmd, args, { timeout: 30_000 }, err => (err ? reject(err) : resolve()))
+    execFile(cmd, args, { timeout: timeoutMs }, err => (err ? reject(err) : resolve()))
+  );
+}
+
+/** Returns true if json_schema_for_humans is importable by the given python binary. */
+function canImport(python: string): Promise<boolean> {
+  return run(python, ['-c', 'import json_schema_for_humans'], 8_000)
+    .then(() => true)
+    .catch(() => false);
+}
+
+/**
+ * Ensures json-schema-for-humans is installed, auto-installing via pip if needed.
+ * Shows a VS Code progress notification during installation.
+ */
+async function ensureInstalled(): Promise<void> {
+  if (packageReady) {
+    return;
+  }
+
+  // Quick availability check first (no UI shown if already installed).
+  for (const py of ['python3', 'python']) {
+    if (await canImport(py)) {
+      packageReady = true;
+      return;
+    }
+  }
+
+  // Not found — attempt automatic installation with a progress notification.
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: 'JSON Schema Preview',
+      cancellable: false,
+    },
+    async progress => {
+      progress.report({ message: 'Installing json-schema-for-humans via pip…' });
+
+      const pipAttempts: Array<() => Promise<void>> = [
+        () => run('pip3',    ['install', 'json-schema-for-humans'], 120_000),
+        () => run('pip',     ['install', 'json-schema-for-humans'], 120_000),
+        () => run('python3', ['-m', 'pip', 'install', 'json-schema-for-humans'], 120_000),
+        () => run('python',  ['-m', 'pip', 'install', 'json-schema-for-humans'], 120_000),
+      ];
+
+      let lastErr: Error | undefined;
+      for (const attempt of pipAttempts) {
+        try {
+          await attempt();
+          packageReady = true;
+          return;
+        } catch (e) {
+          lastErr = e as Error;
+        }
+      }
+
+      throw new Error(
+        `Could not install json-schema-for-humans automatically.\n\n` +
+        `Make sure Python and pip are installed and on your PATH, then run:\n` +
+        `  pip install json-schema-for-humans\n\n` +
+        `Details: ${lastErr?.message ?? 'unknown error'}`
+      );
+    }
   );
 }
 
 async function generateDocHTML(schemaPath: string): Promise<string> {
+  await ensureInstalled();
+
   const outFile = path.join(os.tmpdir(), `json-schema-preview-${Date.now()}.html`);
 
-  // Use the flat template: pure HTML/CSS, no external CDN or JS required,
-  // renders correctly in VS Code's sandboxed webview out of the box.
+  // flat template: self-contained HTML/CSS, no external CDN or JS — works in
+  // VS Code's sandboxed webview without any Content-Security-Policy gymnastics.
   const toolArgs = ['--config', 'template_name=flat', schemaPath, outFile];
 
-  // Try three invocation styles to cover different install locations.
-  const attempts: Array<() => Promise<void>> = [
+  const genAttempts: Array<() => Promise<void>> = [
     () => run('generate-schema-doc', toolArgs),
     () => run('python3', ['-m', 'json_schema_for_humans.generate', ...toolArgs]),
-    () => run('python', ['-m', 'json_schema_for_humans.generate', ...toolArgs]),
+    () => run('python',  ['-m', 'json_schema_for_humans.generate', ...toolArgs]),
   ];
 
   let lastErr: Error | undefined;
-  for (const attempt of attempts) {
+  for (const attempt of genAttempts) {
     try {
       await attempt();
       const html = fs.readFileSync(outFile, 'utf-8');
@@ -123,12 +189,7 @@ async function generateDocHTML(schemaPath: string): Promise<string> {
     }
   }
 
-  throw new Error(
-    `json-schema-for-humans not found.\n\n` +
-    `Install it with:\n  pip install json-schema-for-humans\n\n` +
-    `Then make sure the "generate-schema-doc" command (or python3) is on your PATH.\n\n` +
-    `Details: ${lastErr?.message ?? 'unknown error'}`
-  );
+  throw new Error(`Failed to generate schema documentation.\nDetails: ${lastErr?.message ?? 'unknown error'}`);
 }
 
 // ---------------------------------------------------------------------------
