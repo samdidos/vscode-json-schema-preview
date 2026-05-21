@@ -84,11 +84,21 @@
         }
       ],
       "commandPalette": [
-        { "command": "jsonschema.edit" },
-        { "command": "jsonschema.preview" },
-        { "command": "jsonschema.configure" },
-        { "command": "jsonschema.openConfig" },
-        { "command": "jsonschema.bindToCurrentFile" }
+        {
+          "command": "jsonschema.edit"
+        },
+        {
+          "command": "jsonschema.preview"
+        },
+        {
+          "command": "jsonschema.configure"
+        },
+        {
+          "command": "jsonschema.openConfig"
+        },
+        {
+          "command": "jsonschema.bindToCurrentFile"
+        }
       ],
       "editor/context": [],
       "keybindings": []
@@ -100,7 +110,8 @@
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
+    "test": "tsc -p tsconfig.test.json && vscode-test",
+    "test:coverage": "tsc -p tsconfig.test.json && vscode-test --coverage && node scripts/check-coverage.js",
     "generate:assets": "",
     "bump:version": "npm --no-git-tag-version --allow-same-version version $VERSION"
   },
@@ -112,6 +123,7 @@
     "@types/vscode": "^1.66.0",
     "@typescript-eslint/eslint-plugin": "^5.21.0",
     "@typescript-eslint/parser": "^5.21.0",
+    "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.1.3",
     "ajv": "^8.11.0",
     "copy-webpack-plugin": "^14.0.0",

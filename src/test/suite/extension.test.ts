@@ -11,7 +11,7 @@ suite('Extension', () => {
 
   test('activates successfully', () => {
     const ext = vscode.extensions.getExtension('samdidos.json-schema-preview');
-    assert.ok(ext?.isActive, 'Extension should be active after activation');
+    assert.ok(ext?.isActive, 'Extension should be active');
   });
 
   test('registers all commands', async () => {

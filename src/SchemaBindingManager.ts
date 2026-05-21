@@ -241,16 +241,16 @@ export class SchemaBindingManager {
 // ---------------------------------------------------------------------------
 
 /** Strip leading ./ so that "./foo.json" and "foo.json" compare equal. */
-function normalise(p: string): string {
+export function normalise(p: string): string {
   return p.startsWith('./') ? p.slice(2) : p;
 }
 
-function matchesFile(patterns: string[], relFile: string): boolean {
+export function matchesFile(patterns: string[], relFile: string): boolean {
   return patterns.some(p => normalise(p) === normalise(relFile));
 }
 
 /** Remove a file pattern from a single-value or array value; returns undefined if empty. */
-function dropPattern(
+export function dropPattern(
   patterns: string | string[],
   relFile: string
 ): string | string[] | undefined {
