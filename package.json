@@ -8,7 +8,7 @@
     "theme": "dark"
   },
   "license": "Apache-2.0",
-  "publisher": "asyncapi",
+  "publisher": "samdidos",
   "author": {
     "name": "Samuel Cardinal",
     "url": "https://github.com/samdidos"
@@ -43,12 +43,6 @@
           "light": "resources/icons/open-preview_black.svg",
           "dark": "resources/icons/open-preview_white.svg"
         }
-      }
-    ],
-    "snippets": [
-      {
-        "language": "yaml",
-        "path": "./snippets/snippets.json"
       }
     ],
     "menus": {
