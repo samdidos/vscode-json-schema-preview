@@ -8,6 +8,9 @@ let position: { x: number; y: number } = { x: 0, y: 0 };
 
 export const openJsonSchemaFiles: { [id: string]: vscode.WebviewPanel } = {};
 
+// Keyed by interpreter path so switching interpreters triggers a re-check.
+const packageReadyFor = new Set<string>();
+
 export function previewJsonSchema(context: vscode.ExtensionContext) {
   return async (uri: vscode.Uri) => {
     uri = uri || ((await promptForJsonSchemaFile()) as vscode.Uri);
@@ -52,8 +55,6 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
     });
 
   panel.title = path.basename(uri.fsPath);
-
-  // Show a loading state immediately, then fill with the generated HTML
   panel.webview.html = loadingPage(path.basename(uri.fsPath));
   panel.webview.html = await buildWebviewContent(uri, position);
 
@@ -88,11 +89,72 @@ export async function promptForJsonSchemaFile() {
 }
 
 // ---------------------------------------------------------------------------
-// json-schema-for-humans integration
+// Python interpreter resolution
 // ---------------------------------------------------------------------------
 
-// Cached per session: once the package is confirmed present we skip re-checking.
-let packageReady = false;
+/**
+ * Returns the path to the Python interpreter selected in VS Code's Python
+ * extension. Falls back to the `python.defaultInterpreterPath` setting, then
+ * to `python3` / `python` on PATH.
+ */
+async function getPythonInterpreter(): Promise<string> {
+  try {
+    const pyExt = vscode.extensions.getExtension('ms-python.python');
+    if (pyExt) {
+      if (!pyExt.isActive) {
+        await pyExt.activate();
+      }
+      const api = pyExt.exports;
+
+      // New environments API (Python extension >= 2022.3)
+      if (api?.environments?.getActiveEnvironmentPath) {
+        const resource = vscode.workspace.workspaceFolders?.[0];
+        const envPath = api.environments.getActiveEnvironmentPath(resource);
+        if (envPath) {
+          // resolveEnvironment gives us the actual executable URI
+          if (api.environments.resolveEnvironment) {
+            const resolved = await api.environments.resolveEnvironment(envPath);
+            const exe = resolved?.executable?.uri?.fsPath;
+            if (exe) {
+              return exe;
+            }
+          }
+          // Fallback: envPath.path is the interpreter path on most setups
+          if (envPath.path) {
+            return envPath.path;
+          }
+        }
+      }
+
+      // Legacy API (Python extension < 2022.3)
+      if (api?.settings?.getExecutionDetails) {
+        const details = api.settings.getExecutionDetails(
+          vscode.workspace.workspaceFolders?.[0]?.uri
+        );
+        const exe = details?.execCommand?.[0];
+        if (exe) {
+          return exe;
+        }
+      }
+    }
+  } catch {
+    // Fall through to settings / PATH defaults
+  }
+
+  // Read from VS Code settings (set by "Python: Select Interpreter")
+  const config = vscode.workspace.getConfiguration('python');
+  const fromSettings =
+    config.get<string>('defaultInterpreterPath') ?? config.get<string>('pythonPath');
+  if (fromSettings && fromSettings !== '' && fromSettings !== 'python' && fromSettings !== 'python3') {
+    return fromSettings;
+  }
+
+  return 'python3';
+}
+
+// ---------------------------------------------------------------------------
+// Dependency management
+// ---------------------------------------------------------------------------
 
 function run(cmd: string, args: string[], timeoutMs = 30_000): Promise<void> {
   return new Promise((resolve, reject) =>
@@ -100,96 +162,69 @@ function run(cmd: string, args: string[], timeoutMs = 30_000): Promise<void> {
   );
 }
 
-/** Returns true if json_schema_for_humans is importable by the given python binary. */
-function canImport(python: string): Promise<boolean> {
-  return run(python, ['-c', 'import json_schema_for_humans'], 8_000)
-    .then(() => true)
-    .catch(() => false);
-}
-
 /**
- * Ensures json-schema-for-humans is installed, auto-installing via pip if needed.
- * Shows a VS Code progress notification during installation.
+ * Ensures json-schema-for-humans is installed under the given interpreter.
+ * Uses `pip install --user` so the package lands in the user's site-packages
+ * without requiring elevated permissions. Falls back to a plain install when
+ * running inside a virtual environment (where --user is not applicable).
  */
-async function ensureInstalled(): Promise<void> {
-  if (packageReady) {
+async function ensureInstalled(python: string): Promise<void> {
+  if (packageReadyFor.has(python)) {
     return;
   }
 
-  // Quick availability check first (no UI shown if already installed).
-  for (const py of ['python3', 'python']) {
-    if (await canImport(py)) {
-      packageReady = true;
-      return;
-    }
+  const alreadyInstalled = await run(python, ['-c', 'import json_schema_for_humans'], 8_000)
+    .then(() => true)
+    .catch(() => false);
+
+  if (alreadyInstalled) {
+    packageReadyFor.add(python);
+    return;
   }
 
-  // Not found — attempt automatic installation with a progress notification.
   await vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: 'JSON Schema Preview',
-      cancellable: false,
-    },
+    { location: vscode.ProgressLocation.Notification, title: 'JSON Schema Preview', cancellable: false },
     async progress => {
-      progress.report({ message: 'Installing json-schema-for-humans via pip…' });
+      progress.report({ message: `Installing json-schema-for-humans into ${path.basename(python)}…` });
 
-      const pipAttempts: Array<() => Promise<void>> = [
-        () => run('pip3',    ['install', 'json-schema-for-humans'], 120_000),
-        () => run('pip',     ['install', 'json-schema-for-humans'], 120_000),
-        () => run('python3', ['-m', 'pip', 'install', 'json-schema-for-humans'], 120_000),
-        () => run('python',  ['-m', 'pip', 'install', 'json-schema-for-humans'], 120_000),
-      ];
-
-      let lastErr: Error | undefined;
-      for (const attempt of pipAttempts) {
-        try {
-          await attempt();
-          packageReady = true;
-          return;
-        } catch (e) {
-          lastErr = e as Error;
-        }
+      try {
+        // --user keeps the install in the user site-packages (no sudo needed)
+        await run(python, ['-m', 'pip', 'install', '--user', 'json-schema-for-humans'], 120_000);
+      } catch {
+        // Inside a venv --user is rejected; retry without it
+        await run(python, ['-m', 'pip', 'install', 'json-schema-for-humans'], 120_000);
       }
 
-      throw new Error(
-        `Could not install json-schema-for-humans automatically.\n\n` +
-        `Make sure Python and pip are installed and on your PATH, then run:\n` +
-        `  pip install json-schema-for-humans\n\n` +
-        `Details: ${lastErr?.message ?? 'unknown error'}`
-      );
+      packageReadyFor.add(python);
     }
   );
 }
 
+// ---------------------------------------------------------------------------
+// HTML generation
+// ---------------------------------------------------------------------------
+
 async function generateDocHTML(schemaPath: string): Promise<string> {
-  await ensureInstalled();
+  const python = await getPythonInterpreter();
+  await ensureInstalled(python);
 
   const outFile = path.join(os.tmpdir(), `json-schema-preview-${Date.now()}.html`);
-
-  // flat template: self-contained HTML/CSS, no external CDN or JS — works in
-  // VS Code's sandboxed webview without any Content-Security-Policy gymnastics.
-  const toolArgs = ['--config', 'template_name=flat', schemaPath, outFile];
-
-  const genAttempts: Array<() => Promise<void>> = [
-    () => run('generate-schema-doc', toolArgs),
-    () => run('python3', ['-m', 'json_schema_for_humans.generate', ...toolArgs]),
-    () => run('python',  ['-m', 'json_schema_for_humans.generate', ...toolArgs]),
+  const args = [
+    '-m', 'json_schema_for_humans.generate',
+    '--config', 'template_name=flat',
+    schemaPath,
+    outFile,
   ];
 
-  let lastErr: Error | undefined;
-  for (const attempt of genAttempts) {
-    try {
-      await attempt();
-      const html = fs.readFileSync(outFile, 'utf-8');
-      try { fs.unlinkSync(outFile); } catch { /* ignore */ }
-      return html;
-    } catch (e) {
-      lastErr = e as Error;
-    }
+  try {
+    await run(python, args);
+  } catch (e) {
+    throw new Error(`Generation failed (interpreter: ${python}): ${(e as Error).message}`);
   }
 
-  throw new Error(`Failed to generate schema documentation.\nDetails: ${lastErr?.message ?? 'unknown error'}`);
+  const html = fs.readFileSync(outFile, 'utf-8');
+  try { fs.unlinkSync(outFile); } catch { /* ignore */ }
+  return html;
 }
 
 // ---------------------------------------------------------------------------
@@ -230,7 +265,6 @@ function errorPage(message: string): string {
   body{font-family:sans-serif;padding:32px;background:#1e1e1e;color:#d4d4d4}
   h2{color:#f47067;margin-top:0}
   pre{background:#252526;border:1px solid #3c3c3c;border-radius:6px;padding:16px;white-space:pre-wrap;font-size:13px}
-  code{background:#252526;padding:2px 6px;border-radius:3px;font-family:monospace}
 </style></head>
 <body>
   <h2>JSON Schema Preview — Error</h2>
