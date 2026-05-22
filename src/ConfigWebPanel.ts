@@ -1,3 +1,8 @@
+// Coverage excluded: this file creates a VS Code WebviewPanel and calls Python
+// to extract a JSON Schema from a Pydantic model at runtime. Both the webview
+// lifecycle and the Python subprocess require a live environment that cannot be
+// replicated in unit tests without heavy mocking.
+// Covered by manual and end-to-end testing instead.
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';

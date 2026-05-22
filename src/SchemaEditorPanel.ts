@@ -1,3 +1,7 @@
+// Coverage excluded: this file creates a VS Code WebviewPanel and communicates
+// with it via postMessage. Webview lifecycle and message-passing cannot be
+// exercised in unit tests without a full VS Code UI harness.
+// Covered by manual and end-to-end testing instead.
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';

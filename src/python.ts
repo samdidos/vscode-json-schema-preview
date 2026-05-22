@@ -1,3 +1,7 @@
+// Coverage excluded: all logic in this file shells out to a Python subprocess
+// or queries the VS Code Python extension API. Neither can be exercised in unit
+// tests without a live interpreter and significant process-level mocking.
+// Covered by manual and end-to-end testing instead.
 import * as vscode from 'vscode';
 import { execFile } from 'child_process';
 
