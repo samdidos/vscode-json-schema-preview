@@ -37,6 +37,7 @@ export function isJsonSchemaFile(document?: vscode.TextDocument) {
   return false;
 }
 
+/* c8 ignore start — webview lifecycle and Python subprocess; covered by manual/E2E testing */
 export async function openJsonSchema(context: vscode.ExtensionContext, uri: vscode.Uri) {
   const localResourceRoots = [vscode.Uri.file(path.dirname(uri.fsPath))];
   if (vscode.workspace.workspaceFolders) {
@@ -188,3 +189,4 @@ async function buildWebviewContent(uri: vscode.Uri, pos: { x: number; y: number 
     return errorPage(String(err));
   }
 }
+/* c8 ignore stop */

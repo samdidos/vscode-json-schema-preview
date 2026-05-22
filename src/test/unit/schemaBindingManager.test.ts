@@ -1,0 +1,308 @@
+import * as assert from 'assert';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import * as vscode from '../mocks/vscode';
+import { setConfig, getStoredConfig, statusBarItem } from '../mocks/vscode';
+
+const {
+  SchemaBindingManager,
+  normalise,
+  matchesFile,
+  dropPattern,
+} = require('../../SchemaBindingManager');
+
+// ─── Pure utility functions ────────────────────────────────────────────────────
+
+suite('normalise()', () => {
+  test('strips leading ./', () => assert.strictEqual(normalise('./foo.json'), 'foo.json'));
+  test('leaves plain path unchanged', () => assert.strictEqual(normalise('foo.json'), 'foo.json'));
+  test('leaves nested path unchanged', () => assert.strictEqual(normalise('a/b.json'), 'a/b.json'));
+  test('strips only first ./', () => assert.strictEqual(normalise('./a/b.json'), 'a/b.json'));
+  test('empty string', () => assert.strictEqual(normalise(''), ''));
+});
+
+suite('matchesFile()', () => {
+  test('exact match', () => assert.ok(matchesFile(['data.json'], 'data.json')));
+  test('pattern has ./', () => assert.ok(matchesFile(['./data.json'], 'data.json')));
+  test('file has ./', () => assert.ok(matchesFile(['data.json'], './data.json')));
+  test('both have ./', () => assert.ok(matchesFile(['./data.json'], './data.json')));
+  test('no match', () => assert.ok(!matchesFile(['other.json'], 'data.json')));
+  test('empty array', () => assert.ok(!matchesFile([], 'data.json')));
+  test('matches one of many', () => assert.ok(matchesFile(['a.json', 'data.json'], 'data.json')));
+});
+
+suite('dropPattern()', () => {
+  test('removes single string → undefined', () => assert.strictEqual(dropPattern('x.json', 'x.json'), undefined));
+  test('./x matches x → undefined', () => assert.strictEqual(dropPattern('./x.json', 'x.json'), undefined));
+  test('no match → returns original string', () => assert.strictEqual(dropPattern('a.json', 'x.json'), 'a.json'));
+  test('removes from array, one left → string', () => assert.strictEqual(dropPattern(['x.json', 'b.json'], 'x.json'), 'b.json'));
+  test('removes from array, many left → array', () => assert.deepStrictEqual(dropPattern(['a.json', 'x.json', 'c.json'], 'x.json'), ['a.json', 'c.json']));
+  test('removes all from array → undefined', () => assert.strictEqual(dropPattern(['x.json'], 'x.json'), undefined));
+  test('no match in array → original array', () => assert.deepStrictEqual(dropPattern(['a.json', 'b.json'], 'x.json'), ['a.json', 'b.json']));
+});
+
+// ─── SchemaBindingManager class ────────────────────────────────────────────────
+
+function makeContext() {
+  return { subscriptions: [] as any[] };
+}
+
+function makeDoc(languageId: string, fsPath = '/ws/data.json') {
+  return { languageId, uri: { fsPath }, getText: () => '' };
+}
+
+suite('SchemaBindingManager — constructor & status bar', () => {
+  setup(() => vscode.resetAll());
+
+  test('sets status bar command', () => {
+    new SchemaBindingManager(makeContext());
+    assert.strictEqual(statusBarItem.command, 'jsonschema.bindToCurrentFile');
+  });
+
+  test('pushes subscriptions into context', () => {
+    const ctx = makeContext();
+    new SchemaBindingManager(ctx);
+    assert.ok(ctx.subscriptions.length > 0);
+  });
+
+  test('hides status bar when no active editor on startup', () => {
+    new SchemaBindingManager(makeContext());
+    assert.ok(statusBarItem.hide.calledOnce);
+  });
+});
+
+suite('SchemaBindingManager — refresh via editor change', () => {
+  setup(() => vscode.resetAll());
+
+  function triggerEditorChange(editor: any) {
+    new SchemaBindingManager(makeContext());
+    statusBarItem.show.resetHistory();
+    statusBarItem.hide.resetHistory();
+    const cb = vscode.window.onDidChangeActiveTextEditor.lastCall.args[0];
+    cb(editor);
+  }
+
+  test('hides for undefined editor', () => {
+    triggerEditorChange(undefined);
+    assert.ok(statusBarItem.hide.calledOnce);
+  });
+
+  test('hides for non-JSON/YAML language', () => {
+    triggerEditorChange({ document: makeDoc('typescript') });
+    assert.ok(statusBarItem.hide.calledOnce);
+  });
+
+  test('shows "unbound" when JSON file has no binding', () => {
+    setConfig('json', 'schemas', []);
+    setConfig('yaml', 'schemas', {});
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    triggerEditorChange({ document: makeDoc('json') });
+    assert.ok(statusBarItem.show.calledOnce);
+    assert.ok(statusBarItem.text.includes('unbound'));
+  });
+
+  test('shows "unbound" when YAML file has no binding', () => {
+    setConfig('json', 'schemas', []);
+    setConfig('yaml', 'schemas', {});
+    vscode.workspace.asRelativePath.callsFake(() => 'data.yaml');
+    triggerEditorChange({ document: makeDoc('yaml') });
+    assert.ok(statusBarItem.show.calledOnce);
+    assert.ok(statusBarItem.text.includes('unbound'));
+  });
+
+  test('shows schema name when JSON binding exists', () => {
+    setConfig('json', 'schemas', [{ url: './myschema.json', fileMatch: ['data.json'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    triggerEditorChange({ document: makeDoc('json') });
+    assert.ok(statusBarItem.show.calledOnce);
+    assert.ok(statusBarItem.text.includes('myschema.json'));
+  });
+
+  test('shows schema name when YAML binding exists', () => {
+    setConfig('yaml', 'schemas', { './myschema.json': 'data.yaml' });
+    vscode.workspace.asRelativePath.callsFake(() => 'data.yaml');
+    triggerEditorChange({ document: makeDoc('yaml') });
+    assert.ok(statusBarItem.show.calledOnce);
+    assert.ok(statusBarItem.text.includes('myschema.json'));
+  });
+
+  test('shows schema name for YAML array pattern', () => {
+    setConfig('yaml', 'schemas', { './myschema.json': ['data.yaml', 'other.yaml'] });
+    vscode.workspace.asRelativePath.callsFake(() => 'data.yaml');
+    triggerEditorChange({ document: makeDoc('yaml') });
+    assert.ok(statusBarItem.show.calledOnce);
+    assert.ok(statusBarItem.text.includes('myschema.json'));
+  });
+});
+
+suite('SchemaBindingManager — configuration change refresh', () => {
+  setup(() => vscode.resetAll());
+
+  test('refreshes when json.schemas changes', () => {
+    new SchemaBindingManager(makeContext());
+    statusBarItem.hide.resetHistory();
+    const cb = vscode.workspace.onDidChangeConfiguration.lastCall.args[0];
+    cb({ affectsConfiguration: (s: string) => s === 'json.schemas' });
+    assert.ok(statusBarItem.hide.calledOnce); // no active editor → hide
+  });
+
+  test('does not refresh for unrelated config changes', () => {
+    new SchemaBindingManager(makeContext());
+    statusBarItem.hide.resetHistory();
+    const cb = vscode.workspace.onDidChangeConfiguration.lastCall.args[0];
+    cb({ affectsConfiguration: () => false });
+    assert.ok(statusBarItem.hide.notCalled);
+  });
+});
+
+suite('SchemaBindingManager — bindToCurrentFile()', () => {
+  setup(() => vscode.resetAll());
+
+  test('shows info message when no active editor', async () => {
+    vscode.window.activeTextEditor = undefined;
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(vscode.window.showInformationMessage.calledOnce);
+  });
+
+  test('shows info message when active file is not JSON/YAML', async () => {
+    vscode.window.activeTextEditor = { document: makeDoc('typescript') };
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(vscode.window.showInformationMessage.calledOnce);
+  });
+
+  test('shows error when file is outside a workspace folder', async () => {
+    vscode.window.activeTextEditor = { document: makeDoc('json') };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(vscode.window.showErrorMessage.calledOnce);
+  });
+
+  test('shows warning when no schema files found', async () => {
+    vscode.window.activeTextEditor = { document: makeDoc('json') };
+    vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: '/ws' } });
+    vscode.workspace.findFiles.resolves([]);
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(vscode.window.showWarningMessage.calledOnce);
+  });
+
+  test('does nothing when user cancels picker', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json') };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick.resolves(undefined); // user cancelled
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      assert.strictEqual(getStoredConfig('json', 'schemas'), undefined);
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('adds JSON binding when user picks schema', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      // Return the schema item (has a .uri property, unlike removeItem)
+      vscode.window.showQuickPick.callsFake(async (items: any[]) => items.find((i: any) => i.uri));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('json', 'schemas') as any[];
+      assert.ok(Array.isArray(stored));
+      assert.ok(stored.some((s: any) => s.fileMatch?.includes('data.json')));
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('adds YAML binding when user picks schema', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('yaml', path.join(tmp, 'data.yaml')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick.callsFake(async (items: any[]) => items.find((i: any) => i.uri));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('yaml', 'schemas') as any;
+      assert.ok(stored && typeof stored === 'object');
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('removes JSON binding when user picks "Remove"', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      setConfig('json', 'schemas', [{ url: './schema.json', fileMatch: ['data.json'] }]);
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+      vscode.window.showQuickPick.callsFake(async (items: any[]) => items[0]); // removeItem is first
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('json', 'schemas') as any[];
+      assert.ok(!stored?.some((s: any) => s.fileMatch?.includes('data.json')));
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('removes YAML binding when user picks "Remove"', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      setConfig('yaml', 'schemas', { './schema.json': 'data.yaml' });
+      vscode.window.activeTextEditor = { document: makeDoc('yaml', path.join(tmp, 'data.yaml')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake(() => 'data.yaml');
+      vscode.window.showQuickPick.callsFake(async (items: any[]) => items[0]); // removeItem
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('yaml', 'schemas') as any;
+      assert.ok(!stored || !Object.values(stored).some((v: any) =>
+        (Array.isArray(v) ? v : [v]).includes('data.yaml')
+      ));
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('skips unreadable files in schema discovery', async () => {
+    vscode.window.activeTextEditor = { document: makeDoc('json') };
+    vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: '/ws' } });
+    // A URI that fs.readFileSync will fail on
+    vscode.workspace.findFiles.resolves([{ fsPath: '/nonexistent-xyz/schema.json' }]);
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    // No schemas found after skipping unreadable file → warning
+    assert.ok(vscode.window.showWarningMessage.calledOnce);
+  });
+});
