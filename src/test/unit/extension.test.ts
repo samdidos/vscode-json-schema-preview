@@ -12,7 +12,7 @@ suite('extension — activate()', () => {
     context = { subscriptions: [] };
   });
 
-  test('registers all 5 commands', () => {
+  test('registers all 7 commands', () => {
     ext.activate(context);
     const ids: string[] = vscode.commands.registerCommand.args.map((a: any[]) => a[0]);
     assert.ok(ids.includes('jsonschema.preview'));
@@ -20,6 +20,8 @@ suite('extension — activate()', () => {
     assert.ok(ids.includes('jsonschema.configure'));
     assert.ok(ids.includes('jsonschema.openConfig'));
     assert.ok(ids.includes('jsonschema.bindToCurrentFile'));
+    assert.ok(ids.includes('jsonschema.validateFile'));
+    assert.ok(ids.includes('jsonschema.inferSchema'));
   });
 
   test('pushes disposables into context.subscriptions', () => {
@@ -35,6 +37,16 @@ suite('extension — activate()', () => {
   test('registers onDidSaveTextDocument listener', () => {
     ext.activate(context);
     assert.ok(vscode.workspace.onDidSaveTextDocument.called);
+  });
+
+  test('registers onDidOpenTextDocument listener', () => {
+    ext.activate(context);
+    assert.ok(vscode.workspace.onDidOpenTextDocument.called);
+  });
+
+  test('registers onDidChangeTextDocument listener', () => {
+    ext.activate(context);
+    assert.ok(vscode.workspace.onDidChangeTextDocument.called);
   });
 
   test('setContext called for active editor on startup — JSON schema file', () => {

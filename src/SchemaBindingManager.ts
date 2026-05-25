@@ -240,6 +240,28 @@ export class SchemaBindingManager {
 // Utilities
 // ---------------------------------------------------------------------------
 
+/**
+ * Returns the schema path bound to this document via workspace settings,
+ * or undefined if none. Exported for use by ValidationManager.
+ */
+export function findBoundSchemaPath(doc: vscode.TextDocument): string | undefined {
+  const rel = vscode.workspace.asRelativePath(doc.uri, false);
+
+  const jsonSchemas = vscode.workspace.getConfiguration('json').get<any[]>('schemas') ?? [];
+  for (const entry of jsonSchemas) {
+    if (matchesFile(entry.fileMatch ?? [], rel)) return entry.url as string;
+  }
+
+  const yamlSchemas =
+    vscode.workspace.getConfiguration('yaml').get<Record<string, string | string[]>>('schemas') ?? {};
+  for (const [schemaPath, patterns] of Object.entries(yamlSchemas)) {
+    const arr = Array.isArray(patterns) ? patterns : [patterns];
+    if (arr.some(p => normalise(p) === normalise(rel))) return schemaPath;
+  }
+
+  return undefined;
+}
+
 /** Strip leading ./ so that "./foo.json" and "foo.json" compare equal. */
 export function normalise(p: string): string {
   return p.startsWith('./') ? p.slice(2) : p;

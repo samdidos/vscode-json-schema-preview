@@ -67,6 +67,13 @@ const _registerCommand  = sinon.stub();
 const _executeCommand   = sinon.stub();
 const _getCommands      = sinon.stub();
 
+// workspace (additional listeners)
+const _onDidOpenTextDocument    = sinon.stub();
+const _onDidChangeTextDocument  = sinon.stub();
+
+// languages
+const _createDiagnosticCollection = sinon.stub();
+
 const _allStubs: sinon.SinonStub[] = [
   statusBarItem.show, statusBarItem.hide, statusBarItem.dispose,
   _createStatusBarItem, _onDidChangeActiveTextEditor,
@@ -74,6 +81,8 @@ const _allStubs: sinon.SinonStub[] = [
   _showQuickPick, _showTextDocument, _showOpenDialog, _createWebviewPanel, _withProgress,
   _getWorkspaceFolder, _asRelativePath, _getConfiguration,
   _findFiles, _openTextDocument, _onDidChangeConfiguration, _onDidSaveTextDocument,
+  _onDidOpenTextDocument, _onDidChangeTextDocument,
+  _createDiagnosticCollection,
   _registerCommand, _executeCommand, _getCommands,
 ];
 
@@ -103,6 +112,11 @@ function applyDefaults() {
   _openTextDocument.resolves(undefined);
   _onDidChangeConfiguration.returns(_disposable);
   _onDidSaveTextDocument.returns(_disposable);
+  _onDidOpenTextDocument.returns(_disposable);
+  _onDidChangeTextDocument.returns(_disposable);
+  _createDiagnosticCollection.returns({
+    delete: sinon.stub(), set: sinon.stub(), clear: sinon.stub(), dispose: sinon.stub(),
+  });
   _registerCommand.returns(_disposable);
   _executeCommand.resolves(undefined);
   _getCommands.resolves([]);
@@ -163,6 +177,8 @@ export const workspace = {
   openTextDocument:         _openTextDocument,
   onDidChangeConfiguration: _onDidChangeConfiguration,
   onDidSaveTextDocument:    _onDidSaveTextDocument,
+  onDidOpenTextDocument:    _onDidOpenTextDocument,
+  onDidChangeTextDocument:  _onDidChangeTextDocument,
 };
 
 export const commands = {
@@ -174,3 +190,19 @@ export const commands = {
 export const extensions = {
   getExtension: sinon.stub().returns(undefined),
 };
+
+export const languages = {
+  createDiagnosticCollection: _createDiagnosticCollection,
+};
+
+export const ProgressLocation = { Notification: 15, Window: 10, SourceControl: 1 };
+export const DiagnosticSeverity = { Error: 0, Warning: 1, Information: 2, Hint: 3 };
+export class Range {
+  constructor(
+    public startLine: number, public startChar: number,
+    public endLine: number, public endChar: number
+  ) {}
+}
+export class Diagnostic {
+  constructor(public range: Range, public message: string, public severity?: number) {}
+}

@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as YAML from 'yaml';
 
 // One panel per open schema file
 const panels = new Map<string, vscode.WebviewPanel>();
@@ -19,21 +20,12 @@ export function openSchemaEditor(context: vscode.ExtensionContext, uri: vscode.U
   }
 
   const ext = path.extname(filePath).toLowerCase();
-  if (ext === '.yaml' || ext === '.yml') {
-    vscode.window.showWarningMessage(
-      'The visual schema editor only supports JSON files. Open the file directly to edit YAML.',
-      'Open file'
-    ).then(choice => {
-      if (choice === 'Open file') {
-        vscode.window.showTextDocument(uri, { preview: false });
-      }
-    });
-    return;
-  }
+  const isYaml = ext === '.yaml' || ext === '.yml';
 
   let currentSchema: object = {};
   try {
-    currentSchema = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    currentSchema = isYaml ? (YAML.parse(raw) as object ?? {}) : JSON.parse(raw);
   } catch (err) {
     vscode.window.showErrorMessage(`Could not read schema file: ${(err as Error).message}`);
     return;
@@ -59,7 +51,10 @@ export function openSchemaEditor(context: vscode.ExtensionContext, uri: vscode.U
   panel.webview.onDidReceiveMessage(async message => {
     if (message.type === 'save') {
       try {
-        fs.writeFileSync(filePath, JSON.stringify(message.schema, null, 2) + '\n', 'utf-8');
+        const content = isYaml
+          ? YAML.stringify(message.schema as object)
+          : JSON.stringify(message.schema, null, 2) + '\n';
+        fs.writeFileSync(filePath, content, 'utf-8');
         vscode.window.showInformationMessage(`Saved ${path.basename(filePath)}`);
       } catch (err) {
         vscode.window.showErrorMessage(`Save failed: ${(err as Error).message}`);
