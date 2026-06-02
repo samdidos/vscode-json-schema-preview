@@ -23,7 +23,8 @@
     "url": "https://github.com/samdidos/vscode-json-schema-preview.git"
   },
   "engines": {
-    "vscode": "^1.66.0"
+    "vscode": "^1.96.0",
+    "node": ">=22"
   },
   "categories": [
     "Other"
@@ -31,8 +32,7 @@
   "activationEvents": [
     "onLanguage:yml",
     "onLanguage:yaml",
-    "onLanguage:json",
-    "onCommand:jsonschema.preview"
+    "onLanguage:json"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -189,7 +189,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^25.9.1",
     "@types/sinon": "^21.0.1",
-    "@types/vscode": "^1.120.0",
+    "@types/vscode": "^1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.60.0",
     "@typescript-eslint/parser": "^8.60.0",
     "c8": "^11.0.0",
