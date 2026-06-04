@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { getPythonInterpreter, ensureInstalled, capture } from './python';
 import { CONFIG_FILENAME, findConfigFile } from './PreviewWebPanel';
+import { loadingPage, sanitizeHtml, JE_PANEL_CSS } from './webviewUtils';
 
 let panel: vscode.WebviewPanel | undefined;
 
@@ -28,7 +29,7 @@ export async function openConfigPanel(context: vscode.ExtensionContext) {
     }
   );
 
-  panel.webview.html = loadingPage();
+  panel.webview.html = loadingPage('Loading configuration schema…');
 
   try {
     const python = await getPythonInterpreter();
@@ -38,6 +39,10 @@ export async function openConfigPanel(context: vscode.ExtensionContext) {
       extractConfigSchema(python),
       Promise.resolve(readCurrentConfig()),
     ]);
+
+    // Write schema to .vscode/ so VS Code's JSON language server provides
+    // autocomplete when editing the config file directly.
+    persistConfigSchema(configSchema).catch(() => { /* non-fatal */ });
 
     const jsonEditorUri = panel.webview.asWebviewUri(
       vscode.Uri.joinPath(context.extensionUri, 'dist', 'jsoneditor.js')
@@ -66,13 +71,45 @@ export async function openConfigPanel(context: vscode.ExtensionContext) {
 // ---------------------------------------------------------------------------
 
 async function extractConfigSchema(python: string): Promise<object> {
-  // Handles both pydantic v1 (.schema()) and v2 (.model_json_schema())
+  // GenerationConfiguration uses dataclasses_json (marshmallow), not pydantic.
+  // .schema() returns an unserializable marshmallow Schema object, so we
+  // introspect the dataclass fields directly and build the JSON Schema ourselves.
   const code = [
-    'import json, sys',
+    'import json, sys, os, dataclasses, typing, pathlib',
     'from json_schema_for_humans.generation_configuration import GenerationConfiguration',
-    'try: schema = GenerationConfiguration.model_json_schema()',
-    'except AttributeError: schema = GenerationConfiguration.schema()',
-    'sys.stdout.write(json.dumps(schema))',
+    'MISSING = dataclasses.MISSING',
+    'def jstype(t):',
+    '    o = getattr(t, "__origin__", None)',
+    '    args = getattr(t, "__args__", ())',
+    '    if o is typing.Union:',
+    '        nn = [a for a in args if a is not type(None)]',
+    '        return jstype(nn[0]) if nn else "string"',
+    '    if t is bool: return "boolean"',
+    '    if t is int: return "integer"',
+    '    if t is float: return "number"',
+    '    if t in (str, pathlib.Path): return "string"',
+    '    if o is dict: return "object"',
+    '    if o is list: return "array"',
+    '    return "string"',
+    'cfg0 = GenerationConfiguration()',
+    'tdir = pathlib.Path(cfg0.templates_directory)',
+    'templates = sorted([d for d in os.listdir(tdir) if (tdir / d).is_dir()])',
+    'ns = {**vars(typing), "pathlib": pathlib, "Path": pathlib.Path}',
+    'props = {}',
+    'for f in dataclasses.fields(GenerationConfiguration):',
+    '    if f.name == "templates_directory": continue',
+    '    t = f.type',
+    '    if isinstance(t, str):',
+    '        try: t = eval(t, ns)',
+    '        except: t = str',
+    '    prop = {"type": jstype(t)}',
+    '    d = f.default if f.default is not MISSING else (f.default_factory() if f.default_factory is not MISSING else MISSING)',
+    '    if d is not MISSING:',
+    '        v = str(d) if isinstance(d, pathlib.Path) else d',
+    '        if isinstance(v, (bool, int, float, str)): prop["default"] = v',
+    '    if f.name == "template_name": prop["enum"] = templates',
+    '    props[f.name] = prop',
+    'sys.stdout.write(json.dumps({"type": "object", "properties": props}))',
   ].join('\n');
 
   const raw = await capture(python, ['-c', code]);
@@ -82,6 +119,29 @@ async function extractConfigSchema(python: string): Promise<object> {
 // ---------------------------------------------------------------------------
 // Config file helpers
 // ---------------------------------------------------------------------------
+
+const CONFIG_SCHEMA_REL = '.vscode/json-schema-preview-config.schema.json';
+
+/**
+ * Saves the extracted config schema to .vscode/ and registers it with VS Code's
+ * built-in JSON language server so that editing the config file directly gives
+ * autocomplete, validation, and hover docs without opening the visual panel.
+ */
+async function persistConfigSchema(schema: object): Promise<void> {
+  const folder = vscode.workspace.workspaceFolders?.[0];
+  if (!folder) return;
+
+  const schemaPath = path.join(folder.uri.fsPath, CONFIG_SCHEMA_REL);
+  fs.mkdirSync(path.dirname(schemaPath), { recursive: true });
+  fs.writeFileSync(schemaPath, JSON.stringify(schema, null, 2) + '\n', 'utf-8');
+
+  const cfg = vscode.workspace.getConfiguration('json', folder.uri);
+  const existing = (cfg.get<any[]>('schemas') ?? []).filter(
+    s => !(s.fileMatch ?? []).includes(CONFIG_FILENAME)
+  );
+  existing.push({ url: CONFIG_SCHEMA_REL, fileMatch: [CONFIG_FILENAME] });
+  await cfg.update('schemas', existing, vscode.ConfigurationTarget.Workspace);
+}
 
 function getConfigFilePath(): string {
   const existing = findConfigFile();
@@ -138,14 +198,8 @@ async function saveConfig(config: object): Promise<void> {
 // Webview HTML
 // ---------------------------------------------------------------------------
 
-function loadingPage(): string {
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>body{font-family:sans-serif;padding:32px;background:#1e1e1e;color:#9d9d9d}</style>
-</head><body>Loading configuration schema…</body></html>`;
-}
-
 function errorPage(message: string): string {
-  const safe = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safe = sanitizeHtml(message);
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
   body{font-family:sans-serif;padding:32px;background:#1e1e1e;color:#d4d4d4}
@@ -163,62 +217,7 @@ function buildConfigPage(jsonEditorUri: vscode.Uri, schema: object, currentConfi
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JSON Schema Preview — Configuration</title>
   <style>
-    :root {
-      --bg: #1e1e1e; --bg2: #252526; --bg3: #2d2d30;
-      --border: #3c3c3c; --text: #cccccc; --text2: #9d9d9d;
-      --accent: #0078d4; --accent-hover: #106ebe;
-      --required: #f47067; --radius: 4px;
-    }
-    *, *::before, *::after { box-sizing: border-box; }
-    body { font-family: var(--vscode-font-family, -apple-system, 'Segoe UI', sans-serif);
-           font-size: 13px; line-height: 1.5; color: var(--text);
-           background: var(--bg); margin: 0; padding: 24px 32px 48px; }
-    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
-    .subtitle { color: var(--text2); margin: 0 0 24px; font-size: 12px; }
-
-    /* json-editor overrides */
-    .je-ready { color: var(--text); }
-    .je-ready h3 { font-size: 13px; font-weight: 600; margin: 0 0 2px; color: var(--text); }
-    .je-ready p.je-desc { color: var(--text2); font-size: 12px; margin: 0 0 6px; }
-    .je-ready label { display: block; font-size: 12px; font-weight: 600;
-                      color: var(--text2); margin-bottom: 4px; }
-    .je-ready input[type=text],
-    .je-ready input[type=number],
-    .je-ready select,
-    .je-ready textarea {
-      width: 100%; background: var(--bg2); color: var(--text);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 5px 8px; font-size: 13px; font-family: inherit;
-      outline: none; transition: border-color .15s;
-    }
-    .je-ready input:focus, .je-ready select:focus, .je-ready textarea:focus {
-      border-color: var(--accent);
-    }
-    .je-ready input[type=checkbox] { width: auto; accent-color: var(--accent); }
-    .je-ready select option { background: var(--bg3); }
-    .je-ready .je-object__container { padding: 0; }
-    .je-ready .je-indented-panel {
-      border-left: 2px solid var(--border); margin: 4px 0 4px 8px; padding: 6px 0 6px 12px;
-    }
-    .je-ready .row { margin-bottom: 14px; }
-    .je-ready .btn { display: none; } /* hide json-editor's own buttons */
-
-    /* Save bar */
-    .save-bar {
-      position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--border);
-      padding: 12px 0; margin-top: 24px; display: flex; align-items: center; gap: 12px;
-    }
-    .btn-save {
-      background: var(--accent); color: #fff; border: none; border-radius: var(--radius);
-      padding: 6px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
-    }
-    .btn-save:hover { background: var(--accent-hover); }
-    .btn-file {
-      background: none; color: var(--accent); border: 1px solid var(--accent); border-radius: var(--radius);
-      padding: 3px 10px; font-size: 12px; cursor: pointer; transition: background .15s;
-    }
-    .btn-file:hover { background: rgba(0,120,212,.12); }
-    .save-hint { font-size: 12px; color: var(--text2); }
+    ${JE_PANEL_CSS}
     .config-path { font-family: monospace; font-size: 11px; color: var(--text2); margin-top: 2px; }
   </style>
 </head>

@@ -92,11 +92,17 @@ export function activate(context: vscode.ExtensionContext) {
       const doc = editor.document;
       let data: unknown;
       try {
-        if (['yaml', 'yml'].includes(doc.languageId)) {
+        const { isYaml, stripJsoncComments, parseJsonl } = await import('./languages');
+        const text = doc.getText();
+        if (isYaml(doc.languageId)) {
           const YAML = await import('yaml');
-          data = YAML.parse(doc.getText());
+          data = YAML.parse(text);
+        } else if (doc.languageId === 'jsonl') {
+          data = parseJsonl(text);
+        } else if (doc.languageId === 'jsonc') {
+          data = JSON.parse(stripJsoncComments(text));
         } else {
-          data = JSON.parse(doc.getText());
+          data = JSON.parse(text);
         }
       } catch (e) {
         vscode.window.showErrorMessage(`Cannot parse file: ${(e as Error).message}`);

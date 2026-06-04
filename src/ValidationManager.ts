@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { findBoundSchemaPath, normalise } from './SchemaBindingManager';
 import * as YAML from 'yaml';
+import { isYaml, stripJsoncComments, parseJsonl } from './languages';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Ajv = require('ajv').default as typeof import('ajv').default;
@@ -21,8 +22,8 @@ export function validateCurrentFile() {
     }
 
     const doc = editor.document;
-    if (!['json', 'jsonc', 'yaml', 'yml'].includes(doc.languageId)) {
-      vscode.window.showInformationMessage('Validation supports JSON and YAML files.');
+    if (!['json', 'jsonc', 'jsonl', 'yaml', 'yml'].includes(doc.languageId)) {
+      vscode.window.showInformationMessage('Validation supports JSON, JSONC, JSONL, and YAML files.');
       return;
     }
 
@@ -57,10 +58,18 @@ export function validateCurrentFile() {
       return;
     }
 
-    let data: unknown;
+    let items: unknown[];
     try {
       const text = doc.getText();
-      data = ['yaml', 'yml'].includes(doc.languageId) ? YAML.parse(text) : JSON.parse(text);
+      if (isYaml(doc.languageId)) {
+        items = [YAML.parse(text)];
+      } else if (doc.languageId === 'jsonl') {
+        items = parseJsonl(text);
+      } else if (doc.languageId === 'jsonc') {
+        items = [JSON.parse(stripJsoncComments(text))];
+      } else {
+        items = [JSON.parse(text)];
+      }
     } catch (e) {
       vscode.window.showErrorMessage(
         `Cannot parse ${path.basename(doc.uri.fsPath)}: ${(e as Error).message}`
@@ -77,27 +86,33 @@ export function validateCurrentFile() {
       return;
     }
 
-    const valid = validate(data);
     validationDiagnostics.delete(doc.uri);
+    const diags: vscode.Diagnostic[] = [];
 
-    if (valid) {
+    for (const data of items) {
+      if (!validate(data)) {
+        for (const err of validate.errors ?? []) {
+          const range = locateInDocument(doc, err.instancePath ?? '');
+          const label = err.instancePath || '(root)';
+          diags.push(new vscode.Diagnostic(
+            range,
+            `${label}: ${err.message ?? 'validation error'}`,
+            vscode.DiagnosticSeverity.Error
+          ));
+        }
+      }
+    }
+
+    if (diags.length === 0) {
       vscode.window.showInformationMessage(
         `✓ ${path.basename(doc.uri.fsPath)} is valid against ${path.basename(schemaPath)}.`
       );
       return;
     }
 
-    const errors = validate.errors ?? [];
-    const diags = errors.map(err => {
-      const range = locateInDocument(doc, err.instancePath ?? '');
-      const label = err.instancePath ? err.instancePath : '(root)';
-      const msg = `${label}: ${err.message ?? 'validation error'}`;
-      return new vscode.Diagnostic(range, msg, vscode.DiagnosticSeverity.Error);
-    });
-
     validationDiagnostics.set(doc.uri, diags);
     vscode.window.showErrorMessage(
-      `✗ ${errors.length} validation error${errors.length === 1 ? '' : 's'} in ` +
+      `✗ ${diags.length} validation error${diags.length === 1 ? '' : 's'} in ` +
       `${path.basename(doc.uri.fsPath)}. See Problems panel.`
     );
   };

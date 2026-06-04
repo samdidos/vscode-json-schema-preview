@@ -32,7 +32,9 @@
   "activationEvents": [
     "onLanguage:yml",
     "onLanguage:yaml",
-    "onLanguage:json"
+    "onLanguage:json",
+    "onLanguage:jsonc",
+    "onLanguage:jsonl"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -99,27 +101,27 @@
     "menus": {
       "editor/title": [
         {
-          "when": "(resourceLangId == json || resourceLangId == yaml) && jsonschema.isJsonSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
           "command": "jsonschema.edit",
           "group": "navigation@1"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == yaml) && jsonschema.isJsonSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
           "command": "jsonschema.preview",
           "group": "navigation@2"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == yaml) && jsonschema.isJsonSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
           "command": "jsonschema.configure",
           "group": "navigation@3"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == yaml) && !jsonschema.isJsonSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.validateFile",
           "group": "navigation@4"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == yaml) && !jsonschema.isJsonSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.inferSchema",
           "group": "navigation@5"
         }

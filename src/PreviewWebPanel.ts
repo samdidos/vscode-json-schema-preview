@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
+import { isYaml, stripJsoncComments } from './languages';
+import { loadingPage, sanitizeHtml } from './webviewUtils';
 
 let position: { x: number; y: number } = { x: 0, y: 0 };
 
@@ -23,17 +25,21 @@ export function isJsonSchemaFile(document?: vscode.TextDocument) {
   if (!document) {
     return false;
   }
-  if (document.languageId === 'json') {
+  if (document.languageId === 'json' || document.languageId === 'jsonc') {
     try {
-      const json = JSON.parse(document.getText());
+      const text = document.languageId === 'jsonc'
+        ? stripJsoncComments(document.getText())
+        : document.getText();
+      const json = JSON.parse(text);
       return !!json.$schema;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
-  if (document.languageId === 'yml' || document.languageId === 'yaml') {
+  if (isYaml(document.languageId)) {
     return document.getText().match(/^\$schema:/m) !== null;
   }
+  // jsonl files are always data, never schemas
   return false;
 }
 
@@ -61,7 +67,7 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
     });
 
   panel.title = path.basename(uri.fsPath);
-  panel.webview.html = loadingPage(path.basename(uri.fsPath));
+  panel.webview.html = loadingPage(`Generating preview for <em>${path.basename(uri.fsPath)}</em>…`);
   panel.webview.html = await buildWebviewContent(uri.fsPath, uri, position);
 
   panel.webview.onDidReceiveMessage(
@@ -83,7 +89,7 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
 // Debounce map for live preview; keyed by file path
 const liveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-export function scheduleLiveUpdate(context: vscode.ExtensionContext, doc: vscode.TextDocument): void {
+export function scheduleLiveUpdate(_context: vscode.ExtensionContext, doc: vscode.TextDocument): void {
   const panel = openJsonSchemaFiles[doc.uri.fsPath];
   if (!panel) return; // preview not open — nothing to refresh
 
@@ -97,12 +103,16 @@ export function scheduleLiveUpdate(context: vscode.ExtensionContext, doc: vscode
     liveTimers.delete(doc.uri.fsPath);
     if (!openJsonSchemaFiles[doc.uri.fsPath]) return; // panel closed during delay
 
-    // Write current (unsaved) text to a temp file so Python can read it
-    const ext = path.extname(doc.uri.fsPath) || '.json';
+    // Write current (unsaved) text to a temp file so Python can read it.
+    // JSONC: strip comments first — Python's json parser doesn't handle them.
+    // Always use .json extension so json_schema_for_humans infers the format.
+    const isJsonc = doc.languageId === 'jsonc';
+    const ext = isJsonc ? '.json' : (path.extname(doc.uri.fsPath) || '.json');
     const tmpPath = path.join(os.tmpdir(), `jspreview-live-${Date.now()}${ext}`);
     try {
-      fs.writeFileSync(tmpPath, doc.getText(), 'utf-8');
-      panel.webview.html = loadingPage(path.basename(doc.uri.fsPath));
+      const content = isJsonc ? stripJsoncComments(doc.getText()) : doc.getText();
+      fs.writeFileSync(tmpPath, content, 'utf-8');
+      panel.webview.html = loadingPage(`Generating preview for <em>${path.basename(doc.uri.fsPath)}</em>…`);
       const html = await buildWebviewContent(tmpPath, doc.uri, position);
       if (openJsonSchemaFiles[doc.uri.fsPath] === panel) {
         panel.webview.html = html;
@@ -224,14 +234,8 @@ function allowExternalResources(html: string): string {
   return html;
 }
 
-function loadingPage(filename: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>body{font-family:sans-serif;padding:32px;background:#1e1e1e;color:#9d9d9d}</style>
-</head><body>Generating preview for <em>${filename}</em>…</body></html>`;
-}
-
 function errorPage(message: string): string {
-  const safe = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safe = sanitizeHtml(message);
 
   let hint = '';
   if (/spawn.*ENOENT|python.*not found|No such file/i.test(message)) {

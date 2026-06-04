@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { isSupported } from './languages';
 
 /**
  * Manages the status bar item and workspace-settings bindings that link
@@ -36,11 +37,11 @@ export class SchemaBindingManager {
   // ---------------------------------------------------------------------------
 
   private refresh(doc?: vscode.TextDocument) {
-    if (!doc || !this.isJsonOrYaml(doc)) {
+    if (!doc || !isSupported(doc.languageId)) {
       this.statusBar.hide();
       return;
     }
-    const binding = this.findBinding(doc);
+    const binding = findBoundSchemaPath(doc);
     if (binding) {
       this.statusBar.text = `$(check) Schema: ${path.basename(binding)}`;
       this.statusBar.tooltip = `Local schema bound: ${binding}\nClick to change or remove`;
@@ -51,43 +52,13 @@ export class SchemaBindingManager {
     this.statusBar.show();
   }
 
-  private isJsonOrYaml(doc: vscode.TextDocument): boolean {
-    return ['json', 'jsonc', 'yaml', 'yml'].includes(doc.languageId);
-  }
-
-  /** Returns the schema URL/path bound to this file via workspace settings, or undefined. */
-  private findBinding(doc: vscode.TextDocument): string | undefined {
-    const rel = vscode.workspace.asRelativePath(doc.uri, false);
-
-    // json.schemas: array of { url, fileMatch[] }
-    const jsonSchemas = vscode.workspace.getConfiguration('json').get<any[]>('schemas') ?? [];
-    for (const entry of jsonSchemas) {
-      const patterns: string[] = entry.fileMatch ?? [];
-      if (patterns.some(p => normalise(p) === normalise(rel))) {
-        return entry.url as string;
-      }
-    }
-
-    // yaml.schemas: { schemaPath: filePattern | filePattern[] }
-    const yamlSchemas =
-      vscode.workspace.getConfiguration('yaml').get<Record<string, string | string[]>>('schemas') ?? {};
-    for (const [schemaPath, patterns] of Object.entries(yamlSchemas)) {
-      const arr = Array.isArray(patterns) ? patterns : [patterns];
-      if (arr.some(p => normalise(p) === normalise(rel))) {
-        return schemaPath;
-      }
-    }
-
-    return undefined;
-  }
-
   // ---------------------------------------------------------------------------
   // Bind command
   // ---------------------------------------------------------------------------
 
   async bindToCurrentFile() {
     const doc = vscode.window.activeTextEditor?.document;
-    if (!doc || !this.isJsonOrYaml(doc)) {
+    if (!doc || !isSupported(doc.languageId)) {
       vscode.window.showInformationMessage('Open a JSON or YAML file to bind a schema.');
       return;
     }
@@ -108,7 +79,7 @@ export class SchemaBindingManager {
 
     type Item = vscode.QuickPickItem & { uri?: vscode.Uri };
 
-    const current = this.findBinding(doc);
+    const current = findBoundSchemaPath(doc);
     const removeItem: Item = {
       label: '$(trash) Remove binding',
       description: current ? `currently: ${current}` : undefined,
