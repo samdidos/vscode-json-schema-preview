@@ -1,0 +1,22 @@
+{
+  // --- json-schema-preview settings ---
+  "jsonschema.preview.autoOpen": true,
+  "jsonschema.preview.liveUpdate": true,
+  "jsonschema.preview.liveUpdateDelay": 600,
+
+  // --- Schema bindings (used by the Validate command and status bar) ---
+  // Binds both person data files to person.schema.json
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "showcase/data/person-valid.json",
+        "showcase/data/person-invalid.json"
+      ],
+      "url": "./showcase/schemas/person.schema.json"
+    }
+  ],
+  // Binds bookshelf.yaml to bookshelf.schema.yaml
+  "yaml.schemas": {
+    "./showcase/schemas/bookshelf.schema.yaml": "showcase/data/bookshelf.yaml"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Person",
+  "description": "A person record in the user directory.",
+  "type": "object",
+  "required": ["id", "name", "email"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "description": "Unique numeric identifier.",
+      "minimum": 1,
+      "examples": [42]
+    },
+    "name": {
+      "type": "string",
+      "description": "Full display name.",
+      "minLength": 2,
+      "maxLength": 100,
+      "examples": ["Alice Wonderland"]
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Primary contact email.",
+      "examples": ["alice@example.com"]
+    },
+    "age": {
+      "type": "integer",
+      "description": "Age in years.",
+      "minimum": 0,
+      "maximum": 150
+    },
+    "role": {
+      "type": "string",
+      "description": "Access role within the application.",
+      "enum": ["admin", "editor", "viewer"],
+      "default": "viewer"
+    },
+    "address": {
+      "type": "object",
+      "description": "Postal address.",
+      "required": ["city", "country"],
+      "properties": {
+        "street": {
+          "type": "string",
+          "description": "Street and number."
+        },
+        "city": {
+          "type": "string",
+          "description": "City name."
+        },
+        "country": {
+          "type": "string",
+          "description": "ISO 3166-1 alpha-2 country code.",
+          "minLength": 2,
+          "maxLength": 2,
+          "pattern": "^[A-Z]{2}$",
+          "examples": ["US", "CA", "GB"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "tags": {
+      "type": "array",
+      "description": "Free-form labels attached to this person.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "maxItems": 20
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 creation timestamp.",
+      "examples": ["2024-01-15T09:00:00Z"]
+    }
+  },
+  "additionalProperties": false
+}

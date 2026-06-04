@@ -1,0 +1,58 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Bookshelf
+description: A personal bookshelf – collection of books and reading status.
+type: object
+required:
+  - owner
+  - books
+
+properties:
+  owner:
+    type: string
+    description: Name of the shelf owner.
+    minLength: 1
+
+  books:
+    type: array
+    description: List of books on the shelf.
+    minItems: 1
+    items:
+      type: object
+      required:
+        - title
+        - author
+        - status
+      properties:
+        title:
+          type: string
+          description: Full book title.
+        author:
+          type: string
+          description: Author name (last, first or full).
+        isbn:
+          type: string
+          description: ISBN-13.
+          pattern: "^[0-9]{13}$"
+        status:
+          type: string
+          description: Current reading status.
+          enum:
+            - unread
+            - reading
+            - finished
+            - abandoned
+        rating:
+          type: number
+          description: Personal rating out of 5.
+          minimum: 0
+          maximum: 5
+          multipleOf: 0.5
+        notes:
+          type: string
+          description: Free-form personal notes.
+      additionalProperties: false
+
+  goal:
+    type: integer
+    description: Books-per-year reading goal.
+    minimum: 1

@@ -114,12 +114,12 @@
           "group": "navigation@3"
         },
         {
-          "when": "resourceLangId == json || resourceLangId == yaml",
+          "when": "(resourceLangId == json || resourceLangId == yaml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.validateFile",
           "group": "navigation@4"
         },
         {
-          "when": "resourceLangId == json || resourceLangId == yaml",
+          "when": "(resourceLangId == json || resourceLangId == yaml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.inferSchema",
           "group": "navigation@5"
         }
@@ -141,10 +141,12 @@
           "command": "jsonschema.bindToCurrentFile"
         },
         {
-          "command": "jsonschema.validateFile"
+          "command": "jsonschema.validateFile",
+          "when": "!jsonschema.isJsonSchema"
         },
         {
-          "command": "jsonschema.inferSchema"
+          "command": "jsonschema.inferSchema",
+          "when": "!jsonschema.isJsonSchema"
         }
       ],
       "editor/context": [],

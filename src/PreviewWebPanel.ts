@@ -162,7 +162,7 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
 
   const outFile = path.join(os.tmpdir(), `json-schema-preview-${Date.now()}.html`);
 
-  const args: string[] = ['-m', 'json_schema_for_humans.generate'];
+  const args: string[] = ['-m', 'json_schema_for_humans.cli'];
 
   const configFile = findConfigFile(forUri);
   if (configFile) {
@@ -240,10 +240,17 @@ function errorPage(message: string): string {
       or install the VS Code Python extension and select an interpreter.<br>
       <code>pip install json-schema-for-humans</code>
     </div>`;
+  } else if (/pip is not available|No module named pip/i.test(message)) {
+    hint = `<div class="hint">
+      <strong>pip is not installed.</strong> Install it first, then re-open the preview:<br>
+      <code>sudo apt install python3-pip</code> &nbsp;— Ubuntu / Debian<br>
+      <code>python3 -m ensurepip --upgrade</code> &nbsp;— macOS / other<br>
+      Then: <code>pip3 install json-schema-for-humans</code>
+    </div>`;
   } else if (/pip install|ModuleNotFoundError|No module named/i.test(message)) {
     hint = `<div class="hint">
       <strong>Missing Python package.</strong> Install it manually:<br>
-      <code>pip install json-schema-for-humans</code>
+      <code>pip3 install json-schema-for-humans</code>
     </div>`;
   } else if (/timed? ?out/i.test(message)) {
     hint = `<div class="hint">

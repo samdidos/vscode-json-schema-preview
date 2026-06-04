@@ -107,14 +107,41 @@ export async function ensureInstalled(python: string): Promise<void> {
   await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: 'JSON Schema Preview', cancellable: false },
     async progress => {
-      progress.report({ message: `Installing json-schema-for-humans into ${python}…` });
-      try {
-        await run(python, ['-m', 'pip', 'install', '--user', 'json-schema-for-humans'], 120_000);
-      } catch {
-        // Inside a venv --user is rejected; retry without it
-        await run(python, ['-m', 'pip', 'install', 'json-schema-for-humans'], 120_000);
+      progress.report({ message: 'Installing json-schema-for-humans…' });
+
+      // Candidate pip commands in preference order.
+      // --user is tried first (no root needed).
+      // --break-system-packages is the PEP 668 workaround for Ubuntu 23.04+
+      // and Debian Bookworm+ which mark system Python as externally managed
+      // and reject pip installs — even with --user — without that flag.
+      const pkg = 'json-schema-for-humans';
+      const pipCandidates: [string, string[]][] = [
+        [python, ['-m', 'pip', 'install', '--user',                              pkg]],
+        [python, ['-m', 'pip', 'install', '--user', '--break-system-packages',   pkg]],
+        [python, ['-m', 'pip', 'install',                                        pkg]],
+        [python, ['-m', 'pip', 'install',            '--break-system-packages',  pkg]],
+        ['pip3', ['install', '--user',                                           pkg]],
+        ['pip3', ['install', '--user',  '--break-system-packages',               pkg]],
+        ['pip',  ['install', '--user',                                           pkg]],
+        ['pip',  ['install', '--user',  '--break-system-packages',               pkg]],
+      ];
+
+      for (const [cmd, args] of pipCandidates) {
+        const ok = await run(cmd, args, 120_000).then(() => true).catch(() => false);
+        if (ok) {
+          packageReadyFor.add(python);
+          return;
+        }
       }
-      packageReadyFor.add(python);
+
+      throw new Error(
+        'Could not install json-schema-for-humans automatically.\n' +
+        'Install it manually, then reload the window:\n' +
+        '  pip3 install --user --break-system-packages json-schema-for-humans\n' +
+        'Or inside a virtual environment:\n' +
+        '  python3 -m venv ~/.venvs/jsfh && ~/.venvs/jsfh/bin/pip install json-schema-for-humans\n' +
+        'Then point the VS Code Python extension at that interpreter.'
+      );
     }
   );
 }
