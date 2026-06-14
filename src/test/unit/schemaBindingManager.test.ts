@@ -45,7 +45,14 @@ suite('dropPattern()', () => {
 // ─── SchemaBindingManager class ────────────────────────────────────────────────
 
 function makeContext() {
-  return { subscriptions: [] as any[] };
+  const store: Record<string, any> = {};
+  return {
+    subscriptions: [] as any[],
+    workspaceState: {
+      get:    (key: string, def?: any) => (key in store ? store[key] : def),
+      update: (key: string, val: any) => { store[key] = val; return Promise.resolve(); },
+    },
+  };
 }
 
 function makeDoc(languageId: string, fsPath = '/ws/data.json') {
@@ -173,21 +180,22 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     assert.ok(vscode.window.showInformationMessage.calledOnce);
   });
 
-  test('shows error when file is outside a workspace folder', async () => {
+  test('still shows picker when file has no workspace folder', async () => {
     vscode.window.activeTextEditor = { document: makeDoc('json') };
     vscode.workspace.getWorkspaceFolder.returns(undefined);
     const mgr = new SchemaBindingManager(makeContext());
     await mgr.bindToCurrentFile();
-    assert.ok(vscode.window.showErrorMessage.calledOnce);
+    // User-scoped binding is still available, so picker must be shown
+    assert.ok(vscode.window.showQuickPick.calledOnce);
   });
 
-  test('shows warning when no schema files found', async () => {
+  test('shows picker with URL/Browse options when no schemas are found', async () => {
     vscode.window.activeTextEditor = { document: makeDoc('json') };
     vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: '/ws' } });
     vscode.workspace.findFiles.resolves([]);
     const mgr = new SchemaBindingManager(makeContext());
     await mgr.bindToCurrentFile();
-    assert.ok(vscode.window.showWarningMessage.calledOnce);
+    assert.ok(vscode.window.showQuickPick.calledOnce);
   });
 
   test('does nothing when user cancels picker', async () => {
@@ -218,8 +226,10 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
       vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
       vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
-      // Return the schema item (has a .uri property, unlike removeItem)
-      vscode.window.showQuickPick.callsFake(async (items: any[]) => items.find((i: any) => i.uri));
+      // First call: pick the schema item; second call: pick a scope (Workspace)
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
       const stored = getStoredConfig('json', 'schemas') as any[];
@@ -240,7 +250,9 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
       vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
       vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
-      vscode.window.showQuickPick.callsFake(async (items: any[]) => items.find((i: any) => i.uri));
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
       const stored = getStoredConfig('yaml', 'schemas') as any;
@@ -261,7 +273,10 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
       vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
       vscode.workspace.asRelativePath.callsFake(() => 'data.json');
-      vscode.window.showQuickPick.callsFake(async (items: any[]) => items[0]); // removeItem is first
+      // First call: pick the Remove item; second call: pick scope for the remove
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
       const stored = getStoredConfig('json', 'schemas') as any[];
@@ -282,7 +297,9 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
       vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
       vscode.workspace.asRelativePath.callsFake(() => 'data.yaml');
-      vscode.window.showQuickPick.callsFake(async (items: any[]) => items[0]); // removeItem
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
       const stored = getStoredConfig('yaml', 'schemas') as any;
@@ -298,11 +315,12 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
   test('skips unreadable files in schema discovery', async () => {
     vscode.window.activeTextEditor = { document: makeDoc('json') };
     vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: '/ws' } });
-    // A URI that fs.readFileSync will fail on
+    // A URI that fs.readFileSync will fail on — should be silently skipped
     vscode.workspace.findFiles.resolves([{ fsPath: '/nonexistent-xyz/schema.json' }]);
     const mgr = new SchemaBindingManager(makeContext());
     await mgr.bindToCurrentFile();
-    // No schemas found after skipping unreadable file → warning
-    assert.ok(vscode.window.showWarningMessage.calledOnce);
+    // Picker still shows (with URL / Browse options) — no crash, no error message
+    assert.ok(vscode.window.showQuickPick.calledOnce);
+    assert.ok(!vscode.window.showErrorMessage.called);
   });
 });

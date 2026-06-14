@@ -3,9 +3,10 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { findBoundSchemaPath, normalise } from './SchemaBindingManager';
+import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './SchemaBindingManager';
 import * as YAML from 'yaml';
 import { isYaml, stripJsoncComments, parseJsonl } from './languages';
+import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Ajv = require('ajv').default as typeof import('ajv').default;
@@ -13,7 +14,7 @@ const Ajv = require('ajv').default as typeof import('ajv').default;
 export const validationDiagnostics =
   vscode.languages.createDiagnosticCollection('json-schema-validation');
 
-export function validateCurrentFile() {
+export function validateCurrentFile(auth: SchemaAuthManager) {
   return async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -27,7 +28,8 @@ export function validateCurrentFile() {
       return;
     }
 
-    const schemaPath = findBoundSchemaPath(doc);
+    // External binding takes precedence; fall back to the file's own $schema field.
+    const schemaPath = findBoundSchemaPath(doc) ?? extractInlineSchemaUrl(doc);
     if (!schemaPath) {
       const action = await vscode.window.showWarningMessage(
         `No schema bound to ${path.basename(doc.uri.fsPath)}. Bind one first.`,
@@ -39,19 +41,20 @@ export function validateCurrentFile() {
       return;
     }
 
-    // Resolve relative schema paths against the workspace folder
-    let resolvedSchema = schemaPath;
-    if (!path.isAbsolute(resolvedSchema)) {
-      const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
-      if (folder) {
-        resolvedSchema = path.join(folder.uri.fsPath, normalise(resolvedSchema));
-      }
-    }
-
     let schema: unknown;
     try {
-      schema = JSON.parse(fs.readFileSync(resolvedSchema, 'utf-8'));
+      schema = await loadSchema(schemaPath, auth, doc);
     } catch (e) {
+      if (e instanceof AuthRequiredError) {
+        const action = await vscode.window.showErrorMessage(
+          `Schema at ${SchemaAuthManager.hostOf(e.url)} requires authentication (HTTP ${e.status}).`,
+          'Configure Auth'
+        );
+        if (action === 'Configure Auth') {
+          vscode.commands.executeCommand('jsonschema.configureSchemaAuth', e.url);
+        }
+        return;
+      }
       vscode.window.showErrorMessage(
         `Cannot load schema "${path.basename(schemaPath)}": ${(e as Error).message}`
       );
@@ -118,14 +121,30 @@ export function validateCurrentFile() {
   };
 }
 
+/** Load and parse a schema, fetching with auth headers when it is a remote URL. */
+async function loadSchema(
+  schemaPath: string,
+  auth: SchemaAuthManager,
+  doc: vscode.TextDocument,
+): Promise<unknown> {
+  if (SchemaAuthManager.isRemoteUrl(schemaPath)) {
+    return JSON.parse(await auth.fetchText(schemaPath));
+  }
+  let resolved = schemaPath;
+  if (!path.isAbsolute(resolved)) {
+    const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
+    if (folder) { resolved = path.join(folder.uri.fsPath, normalise(resolved)); }
+  }
+  return JSON.parse(fs.readFileSync(resolved, 'utf-8'));
+}
+
 function locateInDocument(doc: vscode.TextDocument, instancePath: string): vscode.Range {
   const parts = instancePath.split('/').filter(Boolean);
-  if (!parts.length) return new vscode.Range(0, 0, 0, 0);
+  if (!parts.length) { return new vscode.Range(0, 0, 0, 0); }
 
-  // Work from the most specific key outward
   for (let i = parts.length - 1; i >= 0; i--) {
     const key = parts[i];
-    if (/^\d+$/.test(key)) continue; // array index — skip
+    if (/^\d+$/.test(key)) { continue; } // array index — skip
     const pattern = new RegExp(`"${escapeRegex(key)}"\\s*:`);
     const match = pattern.exec(doc.getText());
     if (match) {

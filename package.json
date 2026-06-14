@@ -64,7 +64,8 @@
       },
       {
         "command": "jsonschema.bindToCurrentFile",
-        "title": "JSON Schema: Bind Schema to This File"
+        "title": "JSON Schema: Bind Schema...",
+        "icon": "$(link)"
       },
       {
         "command": "jsonschema.validateFile",
@@ -75,6 +76,21 @@
         "command": "jsonschema.inferSchema",
         "title": "JSON Schema: Generate Schema from This File",
         "icon": "$(wand)"
+      },
+      {
+        "command": "jsonschema.configureSchemaAuth",
+        "title": "JSON Schema: Configure Schema Authentication…",
+        "icon": "$(lock)"
+      },
+      {
+        "command": "jsonschema.cacheSchemaLocally",
+        "title": "JSON Schema: Cache Schema Locally",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "jsonschema.refreshSchemaCache",
+        "title": "JSON Schema: Refresh Schema Cache",
+        "icon": "$(refresh)"
       }
     ],
     "configuration": {
@@ -149,9 +165,32 @@
         {
           "command": "jsonschema.inferSchema",
           "when": "!jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.configureSchemaAuth"
+        },
+        {
+          "command": "jsonschema.refreshSchemaCache"
+        },
+        {
+          "command": "jsonschema.cacheSchemaLocally",
+          "when": "false"
         }
       ],
-      "editor/context": [],
+      "editor/context": [
+        {
+          "command": "jsonschema.bindToCurrentFile",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
+          "group": "1_modification@99"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "jsonschema.bindToCurrentFile",
+          "when": "resourceExtname == .json || resourceExtname == .jsonc || resourceExtname == .jsonl || resourceExtname == .yaml || resourceExtname == .yml",
+          "group": "7_modification@99"
+        }
+      ],
       "keybindings": []
     }
   },
@@ -196,6 +235,7 @@
     "@types/vscode": "^1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.60.0",
     "@typescript-eslint/parser": "^8.60.0",
+    "@vscode/vsce": "^3.9.2",
     "c8": "^11.0.0",
     "copy-webpack-plugin": "^14.0.0",
     "eslint": "^10.4.0",

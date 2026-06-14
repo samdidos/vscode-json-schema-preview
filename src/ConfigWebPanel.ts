@@ -40,9 +40,9 @@ export async function openConfigPanel(context: vscode.ExtensionContext) {
       Promise.resolve(readCurrentConfig()),
     ]);
 
-    // Write schema to .vscode/ so VS Code's JSON language server provides
-    // autocomplete when editing the config file directly.
-    persistConfigSchema(configSchema).catch(() => { /* non-fatal */ });
+    // Register the public config schema so VS Code's JSON language server
+    // provides autocomplete when editing the config file directly.
+    ensureConfigSchemaBinding().catch(() => { /* non-fatal */ });
 
     const jsonEditorUri = panel.webview.asWebviewUri(
       vscode.Uri.joinPath(context.extensionUri, 'dist', 'jsoneditor.js')
@@ -120,27 +120,41 @@ async function extractConfigSchema(python: string): Promise<object> {
 // Config file helpers
 // ---------------------------------------------------------------------------
 
-const CONFIG_SCHEMA_REL = '.vscode/json-schema-preview-config.schema.json';
+const CONFIG_SCHEMA_URL =
+  'https://raw.githubusercontent.com/coveooss/json-schema-for-humans/main/config_schema.json';
 
 /**
- * Saves the extracted config schema to .vscode/ and registers it with VS Code's
- * built-in JSON language server so that editing the config file directly gives
- * autocomplete, validation, and hover docs without opening the visual panel.
+ * Registers a json.schemas workspace binding so VS Code's built-in JSON
+ * language server provides autocomplete and validation when the config file
+ * is opened directly. Idempotent — skips the settings write if the binding
+ * already exists.
  */
-async function persistConfigSchema(schema: object): Promise<void> {
+async function ensureConfigSchemaBinding(): Promise<void> {
   const folder = vscode.workspace.workspaceFolders?.[0];
   if (!folder) return;
 
-  const schemaPath = path.join(folder.uri.fsPath, CONFIG_SCHEMA_REL);
-  fs.mkdirSync(path.dirname(schemaPath), { recursive: true });
-  fs.writeFileSync(schemaPath, JSON.stringify(schema, null, 2) + '\n', 'utf-8');
-
   const cfg = vscode.workspace.getConfiguration('json', folder.uri);
-  const existing = (cfg.get<any[]>('schemas') ?? []).filter(
-    s => !(s.fileMatch ?? []).includes(CONFIG_FILENAME)
-  );
-  existing.push({ url: CONFIG_SCHEMA_REL, fileMatch: [CONFIG_FILENAME] });
-  await cfg.update('schemas', existing, vscode.ConfigurationTarget.Workspace);
+  const schemas = cfg.get<any[]>('schemas') ?? [];
+  if (schemas.some(s => (s.fileMatch ?? []).includes(CONFIG_FILENAME))) return;
+
+  schemas.push({ url: CONFIG_SCHEMA_URL, fileMatch: [CONFIG_FILENAME] });
+  await cfg.update('schemas', schemas, vscode.ConfigurationTarget.Workspace);
+}
+
+/** Adds a `$schema` field to the config file if it doesn't already have one. */
+function injectSchemaField(filePath: string): void {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const obj = JSON.parse(content) as Record<string, unknown>;
+    if (obj.$schema) return;
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify({ $schema: CONFIG_SCHEMA_URL, ...obj }, null, 2) + '\n',
+      'utf-8'
+    );
+  } catch {
+    // unparseable — leave as is
+  }
 }
 
 function getConfigFilePath(): string {
@@ -173,8 +187,15 @@ export async function openConfigFile(): Promise<void> {
     return;
   }
   if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, '{}\n', 'utf-8');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify({ $schema: CONFIG_SCHEMA_URL }, null, 2) + '\n',
+      'utf-8'
+    );
+  } else {
+    injectSchemaField(filePath);
   }
+  ensureConfigSchemaBinding().catch(() => { /* non-fatal */ });
   const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
   await vscode.window.showTextDocument(doc, { preview: false });
 }

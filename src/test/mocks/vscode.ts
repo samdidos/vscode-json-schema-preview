@@ -72,7 +72,12 @@ const _onDidOpenTextDocument    = sinon.stub();
 const _onDidChangeTextDocument  = sinon.stub();
 
 // languages
-const _createDiagnosticCollection = sinon.stub();
+const _createDiagnosticCollection       = sinon.stub();
+const _registerCodeActionsProvider      = sinon.stub();
+
+// authentication
+const _onDidChangeSessions = sinon.stub();
+const _getSession          = sinon.stub();
 
 const _allStubs: sinon.SinonStub[] = [
   statusBarItem.show, statusBarItem.hide, statusBarItem.dispose,
@@ -82,7 +87,8 @@ const _allStubs: sinon.SinonStub[] = [
   _getWorkspaceFolder, _asRelativePath, _getConfiguration,
   _findFiles, _openTextDocument, _onDidChangeConfiguration, _onDidSaveTextDocument,
   _onDidOpenTextDocument, _onDidChangeTextDocument,
-  _createDiagnosticCollection,
+  _createDiagnosticCollection, _registerCodeActionsProvider,
+  _onDidChangeSessions, _getSession,
   _registerCommand, _executeCommand, _getCommands,
 ];
 
@@ -117,6 +123,9 @@ function applyDefaults() {
   _createDiagnosticCollection.returns({
     delete: sinon.stub(), set: sinon.stub(), clear: sinon.stub(), dispose: sinon.stub(),
   });
+  _registerCodeActionsProvider.returns(_disposable);
+  _onDidChangeSessions.returns(_disposable);
+  _getSession.resolves(undefined);
   _registerCommand.returns(_disposable);
   _executeCommand.resolves(undefined);
   _getCommands.resolves([]);
@@ -193,7 +202,29 @@ export const extensions = {
 
 export const languages = {
   createDiagnosticCollection: _createDiagnosticCollection,
+  registerCodeActionsProvider: _registerCodeActionsProvider,
 };
+
+export const authentication = {
+  onDidChangeSessions: _onDidChangeSessions,
+  getSession:          _getSession,
+};
+
+export const CodeActionKind = {
+  QuickFix: { value: 'quickfix', append: (s: string) => ({ value: `quickfix.${s}` }) },
+  Empty:    { value: '', append: (s: string) => ({ value: s }) },
+};
+
+export class CodeAction {
+  diagnostics?: unknown[];
+  command?: unknown;
+  isPreferred?: boolean;
+  constructor(public title: string, public kind?: unknown) {}
+}
+
+export class ThemeColor {
+  constructor(public id: string) {}
+}
 
 export const ProgressLocation = { Notification: 15, Window: 10, SourceControl: 1 };
 export const DiagnosticSeverity = { Error: 0, Warning: 1, Information: 2, Hint: 3 };

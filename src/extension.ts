@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import {
   isJsonSchemaFile,
   openJsonSchema,
@@ -9,12 +10,27 @@ import {
 } from './PreviewWebPanel';
 import { openConfigPanel, openConfigFile } from './ConfigWebPanel';
 import { openSchemaEditor } from './SchemaEditorPanel';
-import { SchemaBindingManager } from './SchemaBindingManager';
+import {
+  SchemaBindingManager,
+  findBoundSchemaPath,
+  extractInlineSchemaUrl,
+  dropPattern,
+  matchesFile,
+} from './SchemaBindingManager';
 import { validateCurrentFile, validationDiagnostics } from './ValidationManager';
+import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
+import { SchemaCache } from './SchemaCache';
+import { SchemaAuthCodeActionProvider } from './SchemaAuthCodeActionProvider';
+import { SchemaAuthStatusBar } from './SchemaAuthStatusBar';
+import { isYaml } from './languages';
 import { createSchema } from 'genson-js';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Extension "json-schema-preview" is now active');
+
+  // ── Auth infrastructure (created first; other components depend on these) ──
+  const authManager = new SchemaAuthManager(context);
+  const schemaCache = new SchemaCache(context, authManager);
 
   function setJsonSchemaPreviewContext(document: vscode.TextDocument) {
     const isJsonSchema = isJsonSchemaFile(document);
@@ -23,9 +39,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   function maybeAutoPreview(doc: vscode.TextDocument) {
     const cfg = vscode.workspace.getConfiguration('jsonschema.preview');
-    if (!cfg.get<boolean>('autoOpen')) return;
-    if (!isJsonSchemaFile(doc)) return;
-    if (doc.uri.scheme === 'untitled') return; // unsaved files have no path for Python
+    if (!cfg.get<boolean>('autoOpen')) { return; }
+    if (!isJsonSchemaFile(doc)) { return; }
+    if (doc.uri.scheme === 'untitled') { return; }
     openJsonSchema(context, doc.uri);
   }
 
@@ -58,29 +74,138 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.workspace.onDidChangeTextDocument(e => {
       const doc = e.document;
-      if (!isJsonSchemaFile(doc)) return;
+      if (!isJsonSchemaFile(doc)) { return; }
       const cfg = vscode.workspace.getConfiguration('jsonschema.preview');
-      if (!cfg.get<boolean>('liveUpdate')) return;
+      if (!cfg.get<boolean>('liveUpdate')) { return; }
       scheduleLiveUpdate(context, doc);
     }),
 
     validationDiagnostics,
   );
 
+  // ── Binding manager & auth status bar ─────────────────────────────────────
   const bindingManager = new SchemaBindingManager(context);
+  new SchemaAuthStatusBar(authManager, context);
 
+  // ── Code action provider (Options 1: lightbulb on $schema lines) ──────────
   context.subscriptions.push(
-    vscode.commands.registerCommand('jsonschema.preview',   previewJsonSchema(context)),
+    vscode.languages.registerCodeActionsProvider(
+      [
+        { language: 'json' },
+        { language: 'jsonc' },
+        { language: 'yaml' },
+        { language: 'yml' },
+      ],
+      new SchemaAuthCodeActionProvider(authManager, schemaCache),
+      { providedCodeActionKinds: SchemaAuthCodeActionProvider.providedCodeActionKinds },
+    ),
+  );
+
+  // ── Commands ───────────────────────────────────────────────────────────────
+  context.subscriptions.push(
+    vscode.commands.registerCommand('jsonschema.preview',  previewJsonSchema(context)),
 
     vscode.commands.registerCommand('jsonschema.edit', (uri: vscode.Uri) => {
       const target = uri ?? vscode.window.activeTextEditor?.document.uri;
-      if (target) openSchemaEditor(context, target);
+      if (target) { openSchemaEditor(context, target); }
     }),
 
-    vscode.commands.registerCommand('jsonschema.configure',           () => openConfigPanel(context)),
-    vscode.commands.registerCommand('jsonschema.openConfig',          () => openConfigFile()),
-    vscode.commands.registerCommand('jsonschema.bindToCurrentFile',   () => bindingManager.bindToCurrentFile()),
-    vscode.commands.registerCommand('jsonschema.validateFile',        validateCurrentFile()),
+    vscode.commands.registerCommand('jsonschema.configure',          () => openConfigPanel(context)),
+    vscode.commands.registerCommand('jsonschema.openConfig',         () => openConfigFile()),
+    vscode.commands.registerCommand('jsonschema.bindToCurrentFile',  (uri?: vscode.Uri) => bindingManager.bindToCurrentFile(uri)),
+    vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager)),
+
+    // ── Option 2: configure auth (entry point from status bar, code action, errors) ──
+    vscode.commands.registerCommand('jsonschema.configureSchemaAuth', async (url?: string) => {
+      if (!url) {
+        const doc = vscode.window.activeTextEditor?.document;
+        url = doc
+          ? (findBoundSchemaPath(doc) ?? extractInlineSchemaUrl(doc) ?? undefined)
+          : undefined;
+      }
+      if (!url || !SchemaAuthManager.isRemoteUrl(url)) {
+        vscode.window.showInformationMessage('No remote schema URL found for the current file.');
+        return;
+      }
+      const configured = await authManager.configureAuth(url);
+      if (configured) {
+        const host = SchemaAuthManager.hostOf(url);
+        const action = await vscode.window.showInformationMessage(
+          `Authentication configured for ${host}. Cache the schema locally to fix IntelliSense warnings?`,
+          'Cache Schema',
+          'Not Now',
+        );
+        if (action === 'Cache Schema') {
+          await vscode.commands.executeCommand('jsonschema.cacheSchemaLocally', url);
+        }
+      }
+    }),
+
+    // ── Option 4: download schema locally and redirect json.schemas / yaml.schemas ──
+    vscode.commands.registerCommand('jsonschema.cacheSchemaLocally', async (url?: string, docUri?: vscode.Uri) => {
+      if (!url) {
+        const doc = vscode.window.activeTextEditor?.document;
+        url = doc ? (findBoundSchemaPath(doc) ?? extractInlineSchemaUrl(doc) ?? undefined) : undefined;
+        docUri ??= doc?.uri;
+      }
+      if (!url || !SchemaAuthManager.isRemoteUrl(url)) { return; }
+
+      const doc = docUri
+        ? await vscode.workspace.openTextDocument(docUri)
+        : vscode.window.activeTextEditor?.document;
+      if (!doc) { return; }
+
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: `Caching schema from ${SchemaAuthManager.hostOf(url)}…`,
+        },
+        async () => {
+          try {
+            const localPath = await schemaCache.download(url!);
+            await redirectBindingToLocalCache(url!, localPath, doc);
+            vscode.window.showInformationMessage(
+              `Schema cached. Language server will now use the local copy for ${path.basename(doc.uri.fsPath)}.`,
+            );
+          } catch (e) {
+            if (e instanceof AuthRequiredError) {
+              const action = await vscode.window.showErrorMessage(
+                `Schema at ${SchemaAuthManager.hostOf(e.url)} requires authentication. Configure it first.`,
+                'Configure Auth',
+              );
+              if (action === 'Configure Auth') {
+                vscode.commands.executeCommand('jsonschema.configureSchemaAuth', e.url);
+              }
+            } else {
+              vscode.window.showErrorMessage(`Failed to cache schema: ${(e as Error).message}`);
+            }
+          }
+        },
+      );
+    }),
+
+    // ── Re-download a previously cached schema ────────────────────────────────
+    vscode.commands.registerCommand('jsonschema.refreshSchemaCache', async (url?: string) => {
+      if (!url) {
+        const doc = vscode.window.activeTextEditor?.document;
+        url = doc ? (schemaCache.getOriginalUrl(findBoundSchemaPath(doc) ?? '') ?? undefined) : undefined;
+      }
+      if (!url) {
+        vscode.window.showInformationMessage('No cached schema found for the current file.');
+        return;
+      }
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Refreshing schema cache…' },
+        async () => {
+          try {
+            await schemaCache.download(url!);
+            vscode.window.showInformationMessage('Schema cache refreshed.');
+          } catch (e) {
+            vscode.window.showErrorMessage(`Failed to refresh cache: ${(e as Error).message}`);
+          }
+        },
+      );
+    }),
 
     vscode.commands.registerCommand('jsonschema.inferSchema', async () => {
       const editor = vscode.window.activeTextEditor;
@@ -92,7 +217,7 @@ export function activate(context: vscode.ExtensionContext) {
       const doc = editor.document;
       let data: unknown;
       try {
-        const { isYaml, stripJsoncComments, parseJsonl } = await import('./languages');
+        const { stripJsoncComments, parseJsonl } = await import('./languages');
         const text = doc.getText();
         if (isYaml(doc.languageId)) {
           const YAML = await import('yaml');
@@ -126,4 +251,44 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
   disposeAllPanels();
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+/**
+ * Replaces the existing `json.schemas` / `yaml.schemas` entry that references
+ * `originalUrl` (or adds a new one) so the language server reads from
+ * `localPath` instead of trying to fetch the protected remote URL.
+ */
+async function redirectBindingToLocalCache(
+  originalUrl: string,
+  localPath: string,
+  doc: vscode.TextDocument,
+): Promise<void> {
+  const relFile = vscode.workspace.asRelativePath(doc.uri, false);
+  const folder  = vscode.workspace.getWorkspaceFolder(doc.uri);
+  const target  = folder ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global;
+  const scopeUri = folder?.uri;
+  const isWs    = target === vscode.ConfigurationTarget.Workspace;
+
+  if (isYaml(doc.languageId)) {
+    const cfg     = vscode.workspace.getConfiguration('yaml', scopeUri);
+    const inspect = cfg.inspect<Record<string, string | string[]>>('schemas');
+    const schemas = { ...(isWs ? inspect?.workspaceValue : inspect?.globalValue) ?? {} };
+
+    // Remove any existing entry for this file (URL or previously cached path).
+    for (const key of Object.keys(schemas)) {
+      const dropped = dropPattern(schemas[key], relFile);
+      if (!dropped) { delete schemas[key]; } else { schemas[key] = dropped; }
+    }
+    schemas[localPath] = relFile;
+    await cfg.update('schemas', schemas, target);
+  } else {
+    const cfg     = vscode.workspace.getConfiguration('json', scopeUri);
+    const inspect = cfg.inspect<{ url: string; fileMatch: string[] }[]>('schemas');
+    const source  = (isWs ? inspect?.workspaceValue : inspect?.globalValue) ?? [];
+    const schemas = source.filter(s => !matchesFile(s.fileMatch ?? [], relFile));
+    schemas.push({ url: localPath, fileMatch: [relFile] });
+    await cfg.update('schemas', schemas, target);
+  }
 }
