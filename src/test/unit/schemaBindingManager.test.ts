@@ -44,8 +44,10 @@ suite('dropPattern()', () => {
 
 // ─── SchemaBindingManager class ────────────────────────────────────────────────
 
-function makeContext() {
-  const store: Record<string, any> = {};
+const TEMP_KEY = 'jsonschema.temporaryBindings';
+
+function makeContext(initialState: Record<string, any> = {}) {
+  const store: Record<string, any> = { ...initialState };
   return {
     subscriptions: [] as any[],
     workspaceState: {
@@ -312,6 +314,55 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     }
   });
 
+  test('opens workspace settings after adding JSON binding', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+      vscode.window.showInformationMessage.resolves('Open Settings');
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      assert.ok(
+        vscode.commands.executeCommand.calledWith('workbench.action.openWorkspaceSettingsFile')
+      );
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('opens workspace settings after removing JSON binding', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      setConfig('json', 'schemas', [{ url: './schema.json', fileMatch: ['data.json'] }]);
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+      vscode.window.showInformationMessage.resolves('Open Settings');
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      assert.ok(
+        vscode.commands.executeCommand.calledWith('workbench.action.openWorkspaceSettingsFile')
+      );
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
   test('skips unreadable files in schema discovery', async () => {
     vscode.window.activeTextEditor = { document: makeDoc('json') };
     vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: '/ws' } });
@@ -322,5 +373,68 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     // Picker still shows (with URL / Browse options) — no crash, no error message
     assert.ok(vscode.window.showQuickPick.calledOnce);
     assert.ok(!vscode.window.showErrorMessage.called);
+  });
+
+  test('adds session (temp) binding when user picks session scope', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp, toString: () => `file://${tmp}` } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === 'session'));
+      const ctx = makeContext();
+      const mgr = new SchemaBindingManager(ctx);
+      await mgr.bindToCurrentFile();
+      const temps = ctx.workspaceState.get(TEMP_KEY, []);
+      assert.ok(Array.isArray(temps) && temps.length > 0);
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('removes temporary binding when one exists for the file', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      const ctx = makeContext({
+        [TEMP_KEY]: [{ relFile: 'data.json', schemaRef: './schema.json', isYaml: false, folderUri: `file://${tmp}` }],
+      });
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp, toString: () => `file://${tmp}` } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove));
+      const mgr = new SchemaBindingManager(ctx);
+      await mgr.bindToCurrentFile();
+      const temps = ctx.workspaceState.get(TEMP_KEY, []);
+      assert.deepStrictEqual(temps, []);
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('removes temporary binding without folder (no write needed)', async () => {
+    const ctx = makeContext({
+      [TEMP_KEY]: [{ relFile: 'data.json', schemaRef: './schema.json', isYaml: false, folderUri: '' }],
+    });
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json') };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove));
+    const mgr = new SchemaBindingManager(ctx);
+    await mgr.bindToCurrentFile();
+    const temps = ctx.workspaceState.get(TEMP_KEY, []);
+    assert.deepStrictEqual(temps, []);
   });
 });

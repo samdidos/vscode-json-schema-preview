@@ -218,7 +218,11 @@
       "out/python.js",
       "out/SchemaEditorPanel.js",
       "out/ConfigWebPanel.js",
-      "out/ValidationManager.js"
+      "out/ValidationManager.js",
+      "out/SchemaAuthManager.js",
+      "out/SchemaCache.js",
+      "out/SchemaAuthStatusBar.js",
+      "out/SchemaAuthCodeActionProvider.js"
     ],
     "all": true
   },
