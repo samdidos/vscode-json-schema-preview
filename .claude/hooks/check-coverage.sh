@@ -33,6 +33,7 @@ echo "→ Coverage check triggered by: $FILE_PATH" >&2
 # Run the full coverage gate
 if npm run test:coverage --silent 2>&1; then
     echo "✓ Coverage thresholds met." >&2
+    python3 .claude/hooks/sync_badges.py || true
     exit 0
 else
     echo "" >&2
