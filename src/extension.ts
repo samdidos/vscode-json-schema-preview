@@ -14,8 +14,6 @@ import {
   SchemaBindingManager,
   findBoundSchemaPath,
   extractInlineSchemaUrl,
-  dropPattern,
-  matchesFile,
 } from './SchemaBindingManager';
 import { validateCurrentFile, validationDiagnostics } from './ValidationManager';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
@@ -163,7 +161,7 @@ export function activate(context: vscode.ExtensionContext) {
         async () => {
           try {
             const localPath = await schemaCache.download(url!);
-            await redirectBindingToLocalCache(url!, localPath, doc);
+            await bindingManager.redirectToLocalCache(localPath, doc);
             vscode.window.showInformationMessage(
               `Schema cached. Language server will now use the local copy for ${path.basename(doc.uri.fsPath)}.`,
             );
@@ -251,44 +249,4 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
   disposeAllPanels();
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-/**
- * Replaces the existing `json.schemas` / `yaml.schemas` entry that references
- * `originalUrl` (or adds a new one) so the language server reads from
- * `localPath` instead of trying to fetch the protected remote URL.
- */
-async function redirectBindingToLocalCache(
-  originalUrl: string,
-  localPath: string,
-  doc: vscode.TextDocument,
-): Promise<void> {
-  const relFile = vscode.workspace.asRelativePath(doc.uri, false);
-  const folder  = vscode.workspace.getWorkspaceFolder(doc.uri);
-  const target  = folder ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global;
-  const scopeUri = folder?.uri;
-  const isWs    = target === vscode.ConfigurationTarget.Workspace;
-
-  if (isYaml(doc.languageId)) {
-    const cfg     = vscode.workspace.getConfiguration('yaml', scopeUri);
-    const inspect = cfg.inspect<Record<string, string | string[]>>('schemas');
-    const schemas = { ...(isWs ? inspect?.workspaceValue : inspect?.globalValue) ?? {} };
-
-    // Remove any existing entry for this file (URL or previously cached path).
-    for (const key of Object.keys(schemas)) {
-      const dropped = dropPattern(schemas[key], relFile);
-      if (!dropped) { delete schemas[key]; } else { schemas[key] = dropped; }
-    }
-    schemas[localPath] = relFile;
-    await cfg.update('schemas', schemas, target);
-  } else {
-    const cfg     = vscode.workspace.getConfiguration('json', scopeUri);
-    const inspect = cfg.inspect<{ url: string; fileMatch: string[] }[]>('schemas');
-    const source  = (isWs ? inspect?.workspaceValue : inspect?.globalValue) ?? [];
-    const schemas = source.filter(s => !matchesFile(s.fileMatch ?? [], relFile));
-    schemas.push({ url: localPath, fileMatch: [relFile] });
-    await cfg.update('schemas', schemas, target);
-  }
 }

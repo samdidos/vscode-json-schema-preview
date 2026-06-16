@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { getPythonInterpreter, ensureInstalled, capture } from './python';
 import { CONFIG_FILENAME, findConfigFile } from './PreviewWebPanel';
-import { loadingPage, sanitizeHtml, JE_PANEL_CSS } from './webviewUtils';
+import { loadingPage, errorPage, JE_PANEL_CSS } from './webviewUtils';
 
 let panel: vscode.WebviewPanel | undefined;
 
@@ -50,7 +50,7 @@ export async function openConfigPanel(context: vscode.ExtensionContext) {
 
     panel.webview.html = buildConfigPage(jsonEditorUri, configSchema, currentConfig);
   } catch (err) {
-    panel.webview.html = errorPage(String(err));
+    panel.webview.html = errorPage('Configuration — Error', String(err));
   }
 
   panel.webview.onDidReceiveMessage(async message => {
@@ -218,17 +218,6 @@ async function saveConfig(config: object): Promise<void> {
 // ---------------------------------------------------------------------------
 // Webview HTML
 // ---------------------------------------------------------------------------
-
-function errorPage(message: string): string {
-  const safe = sanitizeHtml(message);
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-  body{font-family:sans-serif;padding:32px;background:#1e1e1e;color:#d4d4d4}
-  h2{color:#f47067}
-  pre{background:#252526;border:1px solid #3c3c3c;border-radius:6px;padding:16px;white-space:pre-wrap}
-</style></head>
-<body><h2>Configuration — Error</h2><pre>${safe}</pre></body></html>`;
-}
 
 function buildConfigPage(jsonEditorUri: vscode.Uri, schema: object, currentConfig: object): string {
   return `<!DOCTYPE html>

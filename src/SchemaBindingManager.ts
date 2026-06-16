@@ -109,7 +109,7 @@ export class SchemaBindingManager {
     }
 
     const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
-    const isYaml = ['yaml', 'yml'].includes(doc.languageId);
+    const docIsYaml = isYaml(doc.languageId);
     const relFile = vscode.workspace.asRelativePath(doc.uri, false);
     const current = findBoundSchemaPath(doc);
 
@@ -151,11 +151,11 @@ export class SchemaBindingManager {
     // Remove: auto-detect whether it's a temporary binding and skip scope picker
     if (pick.isRemove) {
       if (this.isTemporaryBinding(relFile)) {
-        await this.removeTempBinding(relFile, isYaml, folder);
+        await this.removeTempBinding(relFile, docIsYaml, folder);
       } else {
         const target = await this.pickScope(folder !== undefined, true);
         if (target === undefined) return;
-        await this.removePermBinding(relFile, isYaml, folder, target as vscode.ConfigurationTarget);
+        await this.removePermBinding(relFile, docIsYaml, folder, target as vscode.ConfigurationTarget);
       }
       this.refresh(doc);
       return;
@@ -212,16 +212,35 @@ export class SchemaBindingManager {
         vscode.window.showErrorMessage('Session bindings require an open workspace folder.');
         return;
       }
-      await this.addTempBinding(relFile, schemaRef, isYaml, folder);
+      await this.addTempBinding(relFile, schemaRef, docIsYaml, folder);
     } else {
       if (target === vscode.ConfigurationTarget.Workspace && !folder) {
         vscode.window.showErrorMessage('File must be inside a workspace folder to use workspace settings.');
         return;
       }
-      await this.addPermBinding(relFile, schemaRef, isYaml, folder, target);
+      await this.addPermBinding(relFile, schemaRef, docIsYaml, folder, target);
     }
 
     this.refresh(doc);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Local-cache redirection
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Points the `json.schemas` / `yaml.schemas` binding for `doc` at a locally
+   * cached schema copy (`localPath`) instead of the protected remote URL, so the
+   * language server reads the local file. Replaces any existing entry for the file.
+   */
+  async redirectToLocalCache(localPath: string, doc: vscode.TextDocument): Promise<void> {
+    const relFile = vscode.workspace.asRelativePath(doc.uri, false);
+    const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
+    const target = folder
+      ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global;
+    const scopeUri = target === vscode.ConfigurationTarget.Workspace ? folder?.uri : undefined;
+    await this.writeAddBinding(relFile, localPath, isYaml(doc.languageId), scopeUri, target);
   }
 
   // ---------------------------------------------------------------------------

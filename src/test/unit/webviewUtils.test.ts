@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 
-const { sanitizeHtml, loadingPage } = require('../../webviewUtils');
+const { sanitizeHtml, loadingPage, errorPage } = require('../../webviewUtils');
 
 suite('sanitizeHtml()', () => {
   test('escapes ampersands', () => {
@@ -56,5 +56,25 @@ suite('loadingPage()', () => {
     const msg = 'Rendering schema';
     const html = loadingPage(msg);
     assert.ok(html.includes('<body>' + msg + '</body>'));
+  });
+});
+
+suite('errorPage()', () => {
+  test('renders heading and escaped message', () => {
+    const html = errorPage('Preview — Error', 'boom <x> & y');
+    assert.ok(html.startsWith('<!DOCTYPE html>'));
+    assert.ok(html.includes('<h2>Preview — Error</h2>'));
+    assert.ok(html.includes('boom &lt;x&gt; &amp; y'));
+  });
+
+  test('omits hint block by default', () => {
+    const html = errorPage('Error', 'plain');
+    assert.ok(!html.includes('class="hint"'));
+  });
+
+  test('appends provided hint html verbatim', () => {
+    const hint = '<div class="hint">do this</div>';
+    const html = errorPage('Error', 'msg', hint);
+    assert.ok(html.includes(hint));
   });
 });

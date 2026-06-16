@@ -3,14 +3,8 @@ export const JSON_LANGS   = ['json', 'jsonc', 'jsonl'] as const;
 export const YAML_LANGS   = ['yaml', 'yml']            as const;
 export const ALL_LANGS    = [...JSON_LANGS, ...YAML_LANGS] as const;
 
-export type LangId = typeof ALL_LANGS[number];
-
 export function isYaml(languageId: string): boolean {
   return (YAML_LANGS as readonly string[]).includes(languageId);
-}
-
-export function isJsonLike(languageId: string): boolean {
-  return (JSON_LANGS as readonly string[]).includes(languageId);
 }
 
 export function isSupported(languageId: string): boolean {

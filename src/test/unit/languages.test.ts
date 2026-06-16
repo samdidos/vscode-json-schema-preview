@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import {
   JSON_LANGS, YAML_LANGS, ALL_LANGS,
-  isYaml, isJsonLike, isSupported,
+  isYaml, isSupported,
   stripJsoncComments, parseJsonl,
 } from '../../languages';
 
@@ -25,15 +25,6 @@ suite('isYaml()', () => {
   test('returns false for json', () => assert.ok(!isYaml('json')));
   test('returns false for jsonc', () => assert.ok(!isYaml('jsonc')));
   test('returns false for empty string', () => assert.ok(!isYaml('')));
-});
-
-suite('isJsonLike()', () => {
-  test('returns true for json', () => assert.ok(isJsonLike('json')));
-  test('returns true for jsonc', () => assert.ok(isJsonLike('jsonc')));
-  test('returns true for jsonl', () => assert.ok(isJsonLike('jsonl')));
-  test('returns false for yaml', () => assert.ok(!isJsonLike('yaml')));
-  test('returns false for yml', () => assert.ok(!isJsonLike('yml')));
-  test('returns false for plaintext', () => assert.ok(!isJsonLike('plaintext')));
 });
 
 suite('isSupported()', () => {

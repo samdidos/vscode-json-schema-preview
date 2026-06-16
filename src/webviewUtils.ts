@@ -11,6 +11,27 @@ export function loadingPage(message: string): string {
 }
 
 /**
+ * Renders a dark error page for a webview panel. `message` is escaped; the
+ * optional `hintHtml` (already-trusted HTML) is appended after the message.
+ */
+export function errorPage(heading: string, message: string, hintHtml = ''): string {
+  const safe = sanitizeHtml(message);
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+  body{font-family:sans-serif;padding:32px;background:#1e1e1e;color:#d4d4d4}
+  h2{color:#f47067;margin-top:0}
+  pre{background:#252526;border:1px solid #3c3c3c;border-radius:6px;padding:16px;white-space:pre-wrap;font-size:13px}
+  .hint{margin-top:16px;padding:12px 16px;background:#252526;border-left:3px solid #f47067;border-radius:4px;font-size:13px;line-height:1.6}
+  .hint code{background:#1e1e1e;padding:2px 6px;border-radius:3px;font-family:monospace}
+</style></head>
+<body>
+  <h2>${heading}</h2>
+  <pre>${safe}</pre>${hintHtml}
+</body></html>`;
+}
+
+/**
  * CSS shared by the visual editor and configuration panels.
  * Both panels host a json-editor form inside a dark VS Code webview.
  */

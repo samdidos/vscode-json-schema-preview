@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
 import { isYaml, stripJsoncComments } from './languages';
-import { loadingPage, sanitizeHtml } from './webviewUtils';
+import { loadingPage, errorPage as renderErrorPage } from './webviewUtils';
 
 let position: { x: number; y: number } = { x: 0, y: 0 };
 
@@ -235,8 +235,6 @@ function allowExternalResources(html: string): string {
 }
 
 function errorPage(message: string): string {
-  const safe = sanitizeHtml(message);
-
   let hint = '';
   if (/spawn.*ENOENT|python.*not found|No such file/i.test(message)) {
     hint = `<div class="hint">
@@ -264,19 +262,7 @@ function errorPage(message: string): string {
     </div>`;
   }
 
-  return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-<style>
-  body{font-family:sans-serif;padding:32px;background:#1e1e1e;color:#d4d4d4}
-  h2{color:#f47067;margin-top:0}
-  pre{background:#252526;border:1px solid #3c3c3c;border-radius:6px;padding:16px;white-space:pre-wrap;font-size:13px}
-  .hint{margin-top:16px;padding:12px 16px;background:#252526;border-left:3px solid #f47067;border-radius:4px;font-size:13px;line-height:1.6}
-  .hint code{background:#1e1e1e;padding:2px 6px;border-radius:3px;font-family:monospace}
-</style></head>
-<body>
-  <h2>JSON Schema Preview — Error</h2>
-  <pre>${safe}</pre>${hint}
-</body></html>`;
+  return renderErrorPage('JSON Schema Preview — Error', message, hint);
 }
 
 async function buildWebviewContent(

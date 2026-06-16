@@ -37,7 +37,7 @@ export class SchemaCache {
   }
 
   /** Local file path for a cached URL, or undefined if not on disk. */
-  getCachedPath(url: string): string | undefined {
+  private getCachedPath(url: string): string | undefined {
     const entry = this.entries().find(e => e.originalUrl === url);
     return entry && fs.existsSync(entry.cachedPath) ? entry.cachedPath : undefined;
   }

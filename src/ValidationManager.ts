@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './SchemaBindingManager';
 import * as YAML from 'yaml';
-import { isYaml, stripJsoncComments, parseJsonl } from './languages';
+import { isYaml, isSupported, stripJsoncComments, parseJsonl } from './languages';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -23,7 +23,7 @@ export function validateCurrentFile(auth: SchemaAuthManager) {
     }
 
     const doc = editor.document;
-    if (!['json', 'jsonc', 'jsonl', 'yaml', 'yml'].includes(doc.languageId)) {
+    if (!isSupported(doc.languageId)) {
       vscode.window.showInformationMessage('Validation supports JSON, JSONC, JSONL, and YAML files.');
       return;
     }

@@ -9,7 +9,7 @@
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-0366d6?logo=dependabot)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/.github/dependabot.yml)
 [![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.96.0-blue?logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/LICENSE.md)
 
 **Preview, validate, and work with JSON Schemas — including private ones — right inside VS Code.**
 
