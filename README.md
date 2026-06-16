@@ -1,5 +1,16 @@
 # JSON Schema Preview
 
+[![VS Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/samdidos.json-schema-preview?label=VS%20Marketplace&logo=visual-studio-code&logoColor=white&color=0065A9)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/samdidos.json-schema-preview?logo=visual-studio-code&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
+[![Rating](https://img.shields.io/visual-studio-marketplace/r/samdidos.json-schema-preview?logo=visual-studio-code&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
+[![CI](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml/badge.svg)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
+[![Docs](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/docs.yml/badge.svg?label=docs)](https://samdidos.github.io/vscode-json-schema-preview/)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A5%2080%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
+[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-0366d6?logo=dependabot)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/.github/dependabot.yml)
+[![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.96-blue?logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/LICENSE)
+
 **Preview, validate, and work with JSON Schemas — including private ones — right inside VS Code.**
 
 Renders schemas as clean HTML documentation. Validates JSON and YAML data files inline. Handles schemas behind authentication (GitHub private repos, Artifactory, any HTTP endpoint) with zero friction.
