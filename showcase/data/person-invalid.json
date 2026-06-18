@@ -1,0 +1,13 @@
+{
+  "id": "not-a-number",
+  "name": "X",
+  "email": "definitely-not-an-email",
+  "age": -5,
+  "role": "superuser",
+  "address": {
+    "street": "123 Main St",
+    "country": "united kingdom"
+  },
+  "tags": ["duplicate", "duplicate"],
+  "unknownField": true
+}

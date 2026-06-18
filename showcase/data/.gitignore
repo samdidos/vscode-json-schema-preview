@@ -1,0 +1,6 @@
+*
+!.gitignore
+!person-valid.json
+!person-invalid.json
+!bookshelf.yaml
+!raw-events.jsonc

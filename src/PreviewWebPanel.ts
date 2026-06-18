@@ -1,19 +1,21 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
+import { getPythonInterpreter, ensureInstalled, run } from './python';
+import { isYaml, stripJsoncComments } from './languages';
+import { loadingPage, errorPage as renderErrorPage } from './webviewUtils';
 
-let position : {x:0,y:0} = {
-  x: 0,
-  y: 0
-};
+let position: { x: number; y: number } = { x: 0, y: 0 };
 
-export const openJsonSchemaFiles: { [id: string]: vscode.WebviewPanel } = {}; // vscode.Uri.fsPath => vscode.WebviewPanel
+export const openJsonSchemaFiles: { [id: string]: vscode.WebviewPanel } = {};
+
+export const CONFIG_FILENAME = '.json-schema-preview-config.json';
 
 export function previewJsonSchema(context: vscode.ExtensionContext) {
- return async (uri: vscode.Uri) => {
-    uri = uri || (await promptForJsonSchemaFile()) as vscode.Uri;
+  return async (uri: vscode.Uri) => {
+    uri = uri || ((await promptForJsonSchemaFile()) as vscode.Uri);
     if (uri) {
-      console.log('Opening jsonschema file', uri.fsPath);
       openJsonSchema(context, uri);
     }
   };
@@ -23,29 +25,39 @@ export function isJsonSchemaFile(document?: vscode.TextDocument) {
   if (!document) {
     return false;
   }
-  if (document.languageId === 'json') {
+  if (document.languageId === 'json' || document.languageId === 'jsonc') {
     try {
-      const json = JSON.parse(document.getText());
-      return json.$schema;
-    } catch (e) {
+      const text = document.languageId === 'jsonc'
+        ? stripJsoncComments(document.getText())
+        : document.getText();
+      const json = JSON.parse(text);
+      return !!json.$schema;
+    } catch {
       return false;
     }
   }
-  if (document.languageId === 'yml' || document.languageId === 'yaml') {
-    return document.getText().match('^$schema:') !== null;
+  if (isYaml(document.languageId)) {
+    return document.getText().match(/^\$schema:/m) !== null;
   }
+  // jsonl files are always data, never schemas
   return false;
 }
 
-export function openJsonSchema(context: vscode.ExtensionContext, uri: vscode.Uri) {
-  const localResourceRoots = [
-    vscode.Uri.file(path.dirname(uri.fsPath)),
-  ];
+export function disposeAllPanels(): void {
+  for (const panel of Object.values(openJsonSchemaFiles)) {
+    panel.dispose();
+  }
+}
+
+/* c8 ignore start — webview lifecycle and Python subprocess; covered by manual/E2E testing */
+export async function openJsonSchema(context: vscode.ExtensionContext, uri: vscode.Uri) {
+  const localResourceRoots = [vscode.Uri.file(path.dirname(uri.fsPath))];
   if (vscode.workspace.workspaceFolders) {
     vscode.workspace.workspaceFolders.forEach(folder => {
       localResourceRoots.push(folder.uri);
     });
   }
+
   const panel: vscode.WebviewPanel =
     openJsonSchemaFiles[uri.fsPath] ||
     vscode.window.createWebviewPanel('jsonschema-preview', '', vscode.ViewColumn.Two, {
@@ -55,18 +67,13 @@ export function openJsonSchema(context: vscode.ExtensionContext, uri: vscode.Uri
     });
 
   panel.title = path.basename(uri.fsPath);
-  panel.webview.html = getWebviewContent(context, panel.webview, uri, position);
-          
+  panel.webview.html = loadingPage(`Generating preview for <em>${path.basename(uri.fsPath)}</em>…`);
+  panel.webview.html = await buildWebviewContent(uri.fsPath, uri, position);
+
   panel.webview.onDidReceiveMessage(
     message => {
-      switch (message.type) {
-        case 'position':{
-          position = {
-            x: message.scrollX,
-            y: message.scrollY
-          };
-          
-        }
+      if (message.type === 'position') {
+        position = { x: message.scrollX, y: message.scrollY };
       }
     },
     undefined,
@@ -79,6 +86,43 @@ export function openJsonSchema(context: vscode.ExtensionContext, uri: vscode.Uri
   openJsonSchemaFiles[uri.fsPath] = panel;
 }
 
+// Debounce map for live preview; keyed by file path
+const liveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+export function scheduleLiveUpdate(_context: vscode.ExtensionContext, doc: vscode.TextDocument): void {
+  const panel = openJsonSchemaFiles[doc.uri.fsPath];
+  if (!panel) return; // preview not open — nothing to refresh
+
+  const cfg = vscode.workspace.getConfiguration('jsonschema.preview');
+  const delay = Math.max(500, cfg.get<number>('liveUpdateDelay') ?? 1500);
+
+  const existing = liveTimers.get(doc.uri.fsPath);
+  if (existing) clearTimeout(existing);
+
+  liveTimers.set(doc.uri.fsPath, setTimeout(async () => {
+    liveTimers.delete(doc.uri.fsPath);
+    if (!openJsonSchemaFiles[doc.uri.fsPath]) return; // panel closed during delay
+
+    // Write current (unsaved) text to a temp file so Python can read it.
+    // JSONC: strip comments first — Python's json parser doesn't handle them.
+    // Always use .json extension so json_schema_for_humans infers the format.
+    const isJsonc = doc.languageId === 'jsonc';
+    const ext = isJsonc ? '.json' : (path.extname(doc.uri.fsPath) || '.json');
+    const tmpPath = path.join(os.tmpdir(), `jspreview-live-${Date.now()}${ext}`);
+    try {
+      const content = isJsonc ? stripJsoncComments(doc.getText()) : doc.getText();
+      fs.writeFileSync(tmpPath, content, 'utf-8');
+      panel.webview.html = loadingPage(`Generating preview for <em>${path.basename(doc.uri.fsPath)}</em>…`);
+      const html = await buildWebviewContent(tmpPath, doc.uri, position);
+      if (openJsonSchemaFiles[doc.uri.fsPath] === panel) {
+        panel.webview.html = html;
+      }
+    } finally {
+      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+    }
+  }, delay));
+}
+
 export async function promptForJsonSchemaFile() {
   if (isJsonSchemaFile(vscode.window.activeTextEditor?.document)) {
     return vscode.window.activeTextEditor?.document.uri;
@@ -87,81 +131,150 @@ export async function promptForJsonSchemaFile() {
     canSelectFiles: true,
     canSelectFolders: false,
     canSelectMany: false,
-    openLabel: 'Open Json Schema file',
-    filters: {
-      asyncAPI: ['yml', 'yaml', 'json'],
-    },
+    openLabel: 'Open JSON Schema file',
+    filters: { 'JSON Schema': ['json', 'yaml', 'yml'] },
   });
   return uris?.[0];
 }
 
-function getWebviewContent(context: vscode.ExtensionContext, webview: vscode.Webview, jsonschemaFile: vscode.Uri, position: {x:0,y:0}) {
-  const jsonschemaComponentJs = webview.asWebviewUri(
-    vscode.Uri.joinPath(context.extensionUri, 'dist/node_modules/@asyncapi/react-component/browser/standalone/index.js')
-  );
-  const jsonschemaComponentCss = webview.asWebviewUri(
-    vscode.Uri.joinPath(context.extensionUri, 'dist/node_modules/@asyncapi/react-component/styles/default.min.css')
-  );
-  const jsonschemaWebviewUri = webview.asWebviewUri(jsonschemaFile);
-  const jsonschemaBasePath = jsonschemaWebviewUri.toString().replace('%2B', '+'); // this is loaded by a different library so it requires unescaping the + character
-  const jsonschemaContent = fs.readFileSync(jsonschemaFile.fsPath, 'utf-8');
+// ---------------------------------------------------------------------------
+// Config file helpers (multi-root aware)
+// ---------------------------------------------------------------------------
 
-  const html = `
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <link rel="stylesheet" href="${jsonschemaComponentCss}">
-      <style> 
-      html{
-        scroll-behavior: smooth;
-      }
-      body {
-        color: #121212;
-        background-color: #fff;
-        word-wrap: break-word;
-      }
-      h1 {
-        color: #121212;
-      }
-      </style>
-    </head>
-    <body x-timestamp="${Date.now()}">
-      
-      <div id="jsonschema"></div>
-  
-      <script src="${jsonschemaComponentJs}"></script>
-      <script>
-        const vscode = acquireVsCodeApi();
-        JsonSchemaStandalone.render({
-          schema:  {
-            url: '${jsonschemaWebviewUri}',
-            options: { method: "GET", mode: "cors" },
-          },
-          config: {
-            show: {
-              sidebar: true,
-              errors: true,
-            },
-            parserOptions: { path: '${jsonschemaBasePath}' }
-          },
-        }, document.getElementById('jsonschema'));
-        
-        window.addEventListener('scrollend', event => {
-                vscode.postMessage({
-                  type: 'position',
-                  scrollX: window.scrollX || 0,
-                  scrollY: window.scrollY || 0
-                });
-        });
-        
-        window.addEventListener("load", (event) => {
-          setTimeout(()=>{window.scrollBy('${position.x}','${position.y}')},1000)
-        });
-        
-      </script>
-  
-    </body>
-  </html>
-    `;
+export function findConfigFile(forUri?: vscode.Uri): string | undefined {
+  const roots: string[] = [];
+
+  // Prioritise the workspace folder that owns the schema file being rendered
+  if (forUri) {
+    const folder = vscode.workspace.getWorkspaceFolder(forUri);
+    if (folder) roots.push(folder.uri.fsPath);
+  }
+
+  // Fall back to remaining workspace folders in order
+  (vscode.workspace.workspaceFolders ?? []).forEach(f => {
+    if (!roots.includes(f.uri.fsPath)) roots.push(f.uri.fsPath);
+  });
+
+  for (const root of roots) {
+    const candidate = path.join(root, CONFIG_FILENAME);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// HTML generation
+// ---------------------------------------------------------------------------
+
+async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise<string> {
+  const python = await getPythonInterpreter();
+  await ensureInstalled(python);
+
+  const outFile = path.join(os.tmpdir(), `json-schema-preview-${Date.now()}.html`);
+
+  const args: string[] = ['-m', 'json_schema_for_humans.cli'];
+
+  const configFile = findConfigFile(forUri);
+  if (configFile) {
+    args.push('--config-file', configFile);
+  } else {
+    // Default to the flat template which works in VS Code's sandboxed webview
+    args.push('--config', 'template_name=flat');
+  }
+
+  args.push(schemaPath, outFile);
+
+  try {
+    await run(python, args);
+  } catch (e) {
+    throw new Error(`Generation failed (interpreter: ${python}): ${(e as Error).message}`);
+  }
+
+  const html = fs.readFileSync(outFile, 'utf-8');
+  try { fs.unlinkSync(outFile); } catch { /* ignore */ }
   return html;
 }
+
+// ---------------------------------------------------------------------------
+// HTML helpers
+// ---------------------------------------------------------------------------
+
+const scrollScript = (x: number, y: number) => `
+<script>
+  try {
+    const vscode = acquireVsCodeApi();
+    window.addEventListener('scrollend', function () {
+      vscode.postMessage({ type: 'position', scrollX: window.scrollX || 0, scrollY: window.scrollY || 0 });
+    });
+    window.addEventListener('load', function () {
+      setTimeout(function () { window.scrollTo(${x}, ${y}); }, 150);
+    });
+  } catch (e) { /* running outside VS Code */ }
+</script>`;
+
+function injectScript(html: string, script: string): string {
+  if (/<\/body>/i.test(html)) {
+    return html.replace(/<\/body>/i, script + '</body>');
+  }
+  return html + script;
+}
+
+/** Replace or insert a permissive CSP so that templates referencing CDN
+ *  fonts/styles (e.g. non-flat templates) render correctly in the webview. */
+function allowExternalResources(html: string): string {
+  const csp = `<meta http-equiv="Content-Security-Policy" ` +
+    `content="default-src 'none'; script-src 'unsafe-inline'; ` +
+    `style-src 'unsafe-inline' https:; img-src https: data:; font-src https: data:;">`;
+  if (/<meta[^>]+Content-Security-Policy[^>]*>/i.test(html)) {
+    return html.replace(/<meta[^>]+Content-Security-Policy[^>]*>/i, csp);
+  }
+  if (/<head[^>]*>/i.test(html)) {
+    return html.replace(/<head[^>]*>/i, m => `${m}\n  ${csp}`);
+  }
+  return html;
+}
+
+function errorPage(message: string): string {
+  let hint = '';
+  if (/spawn.*ENOENT|python.*not found|No such file/i.test(message)) {
+    hint = `<div class="hint">
+      <strong>Python not found.</strong> Make sure Python 3 is installed and on your PATH,
+      or install the VS Code Python extension and select an interpreter.<br>
+      <code>pip install json-schema-for-humans</code>
+    </div>`;
+  } else if (/pip is not available|No module named pip/i.test(message)) {
+    hint = `<div class="hint">
+      <strong>pip is not installed.</strong> Install it first, then re-open the preview:<br>
+      <code>sudo apt install python3-pip</code> &nbsp;— Ubuntu / Debian<br>
+      <code>python3 -m ensurepip --upgrade</code> &nbsp;— macOS / other<br>
+      Then: <code>pip3 install json-schema-for-humans</code>
+    </div>`;
+  } else if (/pip install|ModuleNotFoundError|No module named/i.test(message)) {
+    hint = `<div class="hint">
+      <strong>Missing Python package.</strong> Install it manually:<br>
+      <code>pip3 install json-schema-for-humans</code>
+    </div>`;
+  } else if (/timed? ?out/i.test(message)) {
+    hint = `<div class="hint">
+      <strong>Generation timed out.</strong>
+      The schema may be very large or contain slow remote <code>$ref</code> lookups.
+      Try simplifying the schema or check your network connection.
+    </div>`;
+  }
+
+  return renderErrorPage('JSON Schema Preview — Error', message, hint);
+}
+
+async function buildWebviewContent(
+  schemaPath: string,
+  forUri: vscode.Uri,
+  pos: { x: number; y: number }
+): Promise<string> {
+  try {
+    const html = await generateDocHTML(schemaPath, forUri);
+    return injectScript(allowExternalResources(html), scrollScript(pos.x, pos.y));
+  } catch (err) {
+    return errorPage(String(err));
+  }
+}
+/* c8 ignore stop */

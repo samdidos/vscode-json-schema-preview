@@ -1,0 +1,8 @@
+# Ignore everything in showcase/ by default so that generated files
+# (inferred schemas, validation output, etc.) are never accidentally staged.
+# Only the explicit sample files listed below are tracked.
+*
+!.gitignore
+!README.md
+!data/
+!schemas/

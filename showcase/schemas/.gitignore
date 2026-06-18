@@ -1,0 +1,4 @@
+*
+!.gitignore
+!person.schema.json
+!bookshelf.schema.yaml

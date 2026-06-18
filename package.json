@@ -7,8 +7,9 @@
     "color": "#4a4a4a",
     "theme": "dark"
   },
-  "license": "Apache-2.0",
-  "publisher": "asyncapi",
+  "license": "MIT",
+  "icon": "resources/icon.png",
+  "publisher": "samdidos",
   "author": {
     "name": "Samuel Cardinal",
     "url": "https://github.com/samdidos"
@@ -16,13 +17,14 @@
   "bugs": {
     "url": "https://github.com/samdidos/vscode-json-schema-preview/issues"
   },
-  "homepage": "https://github.com/samdidos/vscode-json-schema-preview/blob/master/README.md",
+  "homepage": "https://github.com/samdidos/vscode-json-schema-preview/blob/main/README.md",
   "repository": {
     "type": "git",
     "url": "https://github.com/samdidos/vscode-json-schema-preview.git"
   },
   "engines": {
-    "vscode": "^1.66.0"
+    "vscode": "^1.96.0",
+    "node": ">=22"
   },
   "categories": [
     "Other"
@@ -31,11 +33,17 @@
     "onLanguage:yml",
     "onLanguage:yaml",
     "onLanguage:json",
-    "onCommand:jsonschema.preview"
+    "onLanguage:jsonc",
+    "onLanguage:jsonl"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
+      {
+        "command": "jsonschema.edit",
+        "title": "JSON Schema: Edit (visual)",
+        "icon": "$(edit)"
+      },
       {
         "command": "jsonschema.preview",
         "title": "JSON Schema: Preview",
@@ -43,32 +51,146 @@
           "light": "resources/icons/open-preview_black.svg",
           "dark": "resources/icons/open-preview_white.svg"
         }
-      }
-    ],
-    "snippets": [
+      },
       {
-        "language": "yaml",
-        "path": "./snippets/snippets.json"
+        "command": "jsonschema.configure",
+        "title": "JSON Schema: Configure Preview",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "jsonschema.openConfig",
+        "title": "JSON Schema: Open Config File",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "jsonschema.bindToCurrentFile",
+        "title": "JSON Schema: Bind Schema...",
+        "icon": "$(link)"
+      },
+      {
+        "command": "jsonschema.validateFile",
+        "title": "JSON Schema: Validate This File",
+        "icon": "$(pass)"
+      },
+      {
+        "command": "jsonschema.inferSchema",
+        "title": "JSON Schema: Generate Schema from This File",
+        "icon": "$(wand)"
+      },
+      {
+        "command": "jsonschema.configureSchemaAuth",
+        "title": "JSON Schema: Configure Schema Authentication…",
+        "icon": "$(lock)"
+      },
+      {
+        "command": "jsonschema.cacheSchemaLocally",
+        "title": "JSON Schema: Cache Schema Locally",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "jsonschema.refreshSchemaCache",
+        "title": "JSON Schema: Refresh Schema Cache",
+        "icon": "$(refresh)"
       }
     ],
+    "configuration": {
+      "title": "JSON Schema Preview",
+      "properties": {
+        "jsonschema.preview.autoOpen": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Automatically open the preview panel when a JSON Schema file is opened or becomes the active editor."
+        },
+        "jsonschema.preview.liveUpdate": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Refresh the preview as you type (debounced). The preview panel must already be open."
+        },
+        "jsonschema.preview.liveUpdateDelay": {
+          "type": "number",
+          "default": 1500,
+          "minimum": 500,
+          "markdownDescription": "Milliseconds to wait after the last keystroke before the live preview refreshes."
+        }
+      }
+    },
     "menus": {
       "editor/title": [
         {
-          "when": "(resourceLangId == json || resourceLangId == yaml) && jsonshema.isJsonSchema",
-          "command": "jsonschema.preview",
-          "group": "navigation"
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.edit",
+          "group": "navigation@1"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == yaml) && jsonshema.isJsonSchema",
-          "command": "jsonschema.preview"
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.preview",
+          "group": "navigation@2"
+        },
+        {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.configure",
+          "group": "navigation@3"
+        },
+        {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
+          "command": "jsonschema.validateFile",
+          "group": "navigation@4"
+        },
+        {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
+          "command": "jsonschema.inferSchema",
+          "group": "navigation@5"
         }
       ],
       "commandPalette": [
         {
+          "command": "jsonschema.edit"
+        },
+        {
           "command": "jsonschema.preview"
+        },
+        {
+          "command": "jsonschema.configure"
+        },
+        {
+          "command": "jsonschema.openConfig"
+        },
+        {
+          "command": "jsonschema.bindToCurrentFile"
+        },
+        {
+          "command": "jsonschema.validateFile",
+          "when": "!jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.inferSchema",
+          "when": "!jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.configureSchemaAuth"
+        },
+        {
+          "command": "jsonschema.refreshSchemaCache"
+        },
+        {
+          "command": "jsonschema.cacheSchemaLocally",
+          "when": "false"
         }
       ],
-      "editor/context": [],
+      "editor/context": [
+        {
+          "command": "jsonschema.bindToCurrentFile",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
+          "group": "1_modification@99"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "jsonschema.bindToCurrentFile",
+          "when": "resourceExtname == .json || resourceExtname == .jsonc || resourceExtname == .jsonl || resourceExtname == .yaml || resourceExtname == .yml",
+          "group": "7_modification@99"
+        }
+      ],
       "keybindings": []
     }
   },
@@ -77,29 +199,63 @@
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
-    "lint": "eslint src --ext ts",
-    "test": "",
+    "lint": "eslint",
+    "test": "tsc -p tsconfig.test.json && c8 mocha --ui tdd --require ./out/test/mocks/setup.js 'out/test/unit/**/*.test.js'",
+    "test:coverage": "npm test && node scripts/check-coverage.js",
     "generate:assets": "",
     "bump:version": "npm --no-git-tag-version --allow-same-version version $VERSION"
   },
+  "c8": {
+    "reporter": [
+      "text",
+      "json-summary"
+    ],
+    "include": [
+      "out/**/*.js"
+    ],
+    "exclude": [
+      "out/test/**",
+      "out/python.js",
+      "out/SchemaEditorPanel.js",
+      "out/ConfigWebPanel.js",
+      "out/ValidationManager.js",
+      "out/SchemaAuthManager.js",
+      "out/SchemaCache.js",
+      "out/SchemaAuthStatusBar.js",
+      "out/SchemaAuthCodeActionProvider.js"
+    ],
+    "all": true
+  },
+  "overrides": {
+    "diff": ">=9.0.0",
+    "serialize-javascript": ">=7.0.5",
+    "form-data": ">=4.0.6",
+    "js-yaml": ">=4.2.0"
+  },
   "devDependencies": {
-    "@types/glob": "^7.2.0",
-    "@types/js-yaml": "^4.0.5",
-    "@types/mocha": "^9.1.1",
-    "@types/node": "14.x",
-    "@types/vscode": "^1.66.0",
-    "@typescript-eslint/eslint-plugin": "^5.21.0",
-    "@typescript-eslint/parser": "^5.21.0",
-    "@vscode/test-electron": "^2.1.3",
-    "ajv": "^8.11.0",
-    "copy-webpack-plugin": "^10.2.4",
-    "eslint": "^8.14.0",
-    "genson-js": "0.0.8",
-    "glob": "^8.0.1",
-    "mocha": "^11.1.0",
-    "ts-loader": "^9.2.8",
-    "typescript": "^4.6.4",
-    "webpack": "^5.70.0",
-    "webpack-cli": "^4.9.2"
+    "@json-editor/json-editor": "^1.17.0",
+    "@types/glob": "^9.0.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^25.9.3",
+    "@types/sinon": "^21.0.1",
+    "@types/vscode": "^1.96.0",
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.61.1",
+    "@vscode/vsce": "^3.9.2",
+    "c8": "^11.0.0",
+    "copy-webpack-plugin": "^14.0.0",
+    "eslint": "^10.5.0",
+    "glob": "^13.0.6",
+    "mocha": "^11.7.6",
+    "sinon": "^22.0.0",
+    "ts-loader": "^9.6.0",
+    "typescript": "^6.0.3",
+    "webpack": "^5.107.2",
+    "webpack-cli": "^7.0.3"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "genson-js": "^0.0.8",
+    "yaml": "^2.9.0"
   }
 }

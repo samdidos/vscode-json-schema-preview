@@ -1,0 +1,14 @@
+{
+  "id": 1,
+  "name": "Alice Wonderland",
+  "email": "alice@example.com",
+  "age": 30,
+  "role": "admin",
+  "address": {
+    "street": "10 Rabbit Hole Lane",
+    "city": "Oxford",
+    "country": "GB"
+  },
+  "tags": ["typescript", "json-schema", "vscode"],
+  "createdAt": "2024-01-15T09:00:00Z"
+}

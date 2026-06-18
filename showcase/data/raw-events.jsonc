@@ -1,0 +1,26 @@
+// Try the feature "Generate the JSON schema" with this file!
+[
+  {
+    "event": "page_view",
+    "userId": "u_8821",
+    "page": "/docs/getting-started",
+    "durationMs": 4230,
+    "referrer": "https://google.com",
+    "timestamp": "2024-06-01T10:12:00Z"
+  },
+  {
+    "event": "button_click",
+    "userId": "u_8821",
+    "page": "/docs/getting-started",
+    "element": "install-button",
+    "durationMs": 0,
+    "timestamp": "2024-06-01T10:12:45Z"
+  },
+  {
+    "event": "page_view",
+    "userId": "u_3344",
+    "page": "/pricing",
+    "durationMs": 890,
+    "timestamp": "2024-06-01T10:15:10Z"
+  }
+]

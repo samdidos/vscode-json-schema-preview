@@ -1,0 +1,27 @@
+owner: Alice Wonderland
+goal: 24
+
+books:
+  - title: "Designing Data-Intensive Applications"
+    author: "Kleppmann, Martin"
+    isbn: "9781449373320"
+    status: finished
+    rating: 5
+    notes: "Best book on distributed systems I've read."
+
+  - title: "A Philosophy of Software Design"
+    author: "Ousterhout, John"
+    isbn: "9781732102217"
+    status: finished
+    rating: 4.5
+
+  - title: "Structure and Interpretation of Computer Programs"
+    author: "Abelson, Harold"
+    isbn: "9780262510875"
+    status: reading
+    notes: "Working through chapter 3."
+
+  - title: "The Pragmatic Programmer"
+    author: "Thomas, David"
+    isbn: "9780135957059"
+    status: unread
