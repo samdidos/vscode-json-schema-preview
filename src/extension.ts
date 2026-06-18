@@ -108,6 +108,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (target) { openSchemaEditor(context, target); }
     }),
 
+    vscode.commands.registerCommand('jsonschema.configure',          () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.openConfig',         () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.bindToCurrentFile',  (uri?: vscode.Uri) => bindingManager.bindToCurrentFile(uri)),
     vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager)),
