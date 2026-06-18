@@ -12,12 +12,11 @@ suite('extension — activate()', () => {
     context = { subscriptions: [] };
   });
 
-  test('registers all 10 commands', () => {
+  test('registers all 9 commands', () => {
     ext.activate(context);
     const ids: string[] = vscode.commands.registerCommand.args.map((a: any[]) => a[0]);
     assert.ok(ids.includes('jsonschema.preview'));
     assert.ok(ids.includes('jsonschema.edit'));
-    assert.ok(ids.includes('jsonschema.configure'));
     assert.ok(ids.includes('jsonschema.openConfig'));
     assert.ok(ids.includes('jsonschema.bindToCurrentFile'));
     assert.ok(ids.includes('jsonschema.validateFile'));

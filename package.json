@@ -53,11 +53,6 @@
         }
       },
       {
-        "command": "jsonschema.configure",
-        "title": "JSON Schema: Configure Preview",
-        "icon": "$(gear)"
-      },
-      {
         "command": "jsonschema.openConfig",
         "title": "JSON Schema: Open Config File",
         "icon": "$(file-code)"
@@ -127,11 +122,6 @@
           "group": "navigation@2"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "command": "jsonschema.configure",
-          "group": "navigation@3"
-        },
-        {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.validateFile",
           "group": "navigation@4"
@@ -148,9 +138,6 @@
         },
         {
           "command": "jsonschema.preview"
-        },
-        {
-          "command": "jsonschema.configure"
         },
         {
           "command": "jsonschema.openConfig"

@@ -8,7 +8,7 @@ import {
   scheduleLiveUpdate,
   disposeAllPanels,
 } from './PreviewWebPanel';
-import { openConfigPanel, openConfigFile } from './ConfigWebPanel';
+import { openConfigFile } from './ConfigWebPanel';
 import { openSchemaEditor } from './SchemaEditorPanel';
 import {
   SchemaBindingManager,
@@ -108,7 +108,6 @@ export function activate(context: vscode.ExtensionContext) {
       if (target) { openSchemaEditor(context, target); }
     }),
 
-    vscode.commands.registerCommand('jsonschema.configure',          () => openConfigPanel(context)),
     vscode.commands.registerCommand('jsonschema.openConfig',         () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.bindToCurrentFile',  (uri?: vscode.Uri) => bindingManager.bindToCurrentFile(uri)),
     vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager)),
