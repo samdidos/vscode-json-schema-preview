@@ -12,6 +12,67 @@ const {
   dropPattern,
 } = require('../../SchemaBindingManager');
 
+// ─── URL token stripping — integration via bindToCurrentFile ─────────────────
+
+suite('SchemaBindingManager — embedded GitHub token stripping', () => {
+  setup(() => vscode.resetAll());
+
+  test('strips ?token= from raw GitHub URLs and still binds', async () => {
+    const urlWithToken =
+      'https://raw.githubusercontent.com/org/private-repo/main/schema.json?token=GHSAT0ABCDEF';
+    const expectedUrl =
+      'https://raw.githubusercontent.com/org/private-repo/main/schema.json';
+
+    vscode.window.activeTextEditor = { document: makeDoc('json') };
+    vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: '/ws' } });
+    vscode.workspace.findFiles.resolves([]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+
+    // First showQuickPick: pick "Enter URL…"
+    // Second showQuickPick: pick Workspace scope
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+
+    // showInputBox returns the URL with an embedded token
+    vscode.window.showInputBox.resolves(urlWithToken);
+
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+
+    const stored = getStoredConfig('json', 'schemas') as any[];
+    assert.ok(Array.isArray(stored), 'schema entry was written');
+    const entry = stored.find((s: any) => s.fileMatch?.includes('data.json'));
+    assert.ok(entry, 'entry matches the bound file');
+    assert.strictEqual(entry.url, expectedUrl, 'token was stripped from stored URL');
+    // The warning was shown to the user
+    assert.ok(vscode.window.showWarningMessage.calledOnce, 'user was warned about the token');
+  });
+
+  test('does not modify URLs without an embedded token', async () => {
+    const url = 'https://json.schemastore.org/package.json';
+
+    vscode.window.activeTextEditor = { document: makeDoc('json') };
+    vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: '/ws' } });
+    vscode.workspace.findFiles.resolves([]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+
+    vscode.window.showInputBox.resolves(url);
+
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+
+    const stored = getStoredConfig('json', 'schemas') as any[];
+    const entry = stored?.find((s: any) => s.fileMatch?.includes('data.json'));
+    assert.strictEqual(entry?.url, url, 'clean URL was stored unchanged');
+    assert.ok(!vscode.window.showWarningMessage.called, 'no warning for clean URL');
+  });
+});
+
 // ─── Pure utility functions ────────────────────────────────────────────────────
 
 suite('normalise()', () => {

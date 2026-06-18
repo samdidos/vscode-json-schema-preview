@@ -130,7 +130,10 @@ async function loadSchema(
   if (SchemaAuthManager.isRemoteUrl(schemaPath)) {
     return JSON.parse(await auth.fetchText(schemaPath));
   }
-  let resolved = schemaPath;
+  // file:// URIs are written by redirectBindingToLocalCache; convert to a plain fs path.
+  let resolved = schemaPath.startsWith('file://')
+    ? vscode.Uri.parse(schemaPath).fsPath
+    : schemaPath;
   if (!path.isAbsolute(resolved)) {
     const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
     if (folder) { resolved = path.join(folder.uri.fsPath, normalise(resolved)); }

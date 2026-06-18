@@ -146,7 +146,19 @@ export function activate(context: vscode.ExtensionContext) {
         url = doc ? (findBoundSchemaPath(doc) ?? extractInlineSchemaUrl(doc) ?? undefined) : undefined;
         docUri ??= doc?.uri;
       }
-      if (!url || !SchemaAuthManager.isRemoteUrl(url)) { return; }
+      if (!url) {
+        vscode.window.showInformationMessage('No schema URL found for the current file.');
+        return;
+      }
+      if (!SchemaAuthManager.isRemoteUrl(url)) {
+        const original = schemaCache.getOriginalUrl(url);
+        vscode.window.showInformationMessage(
+          original
+            ? 'Schema is already cached locally. Run "JSON Schema: Refresh Schema Cache" to re-download.'
+            : 'No remote schema URL found for the current file.',
+        );
+        return;
+      }
 
       const doc = docUri
         ? await vscode.workspace.openTextDocument(docUri)

@@ -42,9 +42,12 @@ export class SchemaCache {
     return entry && fs.existsSync(entry.cachedPath) ? entry.cachedPath : undefined;
   }
 
-  /** Original URL for a local cached path (for display purposes). */
+  /** Original URL for a local cached path (accepts absolute path or file:// URI). */
   getOriginalUrl(localPath: string): string | undefined {
-    return this.entries().find(e => e.cachedPath === localPath)?.originalUrl;
+    const fsPath = localPath.startsWith('file://')
+      ? vscode.Uri.parse(localPath).fsPath
+      : localPath;
+    return this.entries().find(e => e.cachedPath === fsPath)?.originalUrl;
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────

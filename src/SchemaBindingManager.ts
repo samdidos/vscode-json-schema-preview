@@ -184,6 +184,24 @@ export class SchemaBindingManager {
       });
       if (!url) return;
       schemaRef = url.trim();
+
+      // GitHub raw URLs from the "Raw" button embed a short-lived ?token= query
+      // parameter. Strip it before storing — it expires quickly, would be exposed
+      // in settings files (and potentially committed to the repo), and is redundant
+      // once proper OAuth credentials are configured via this extension.
+      const stripped = stripEmbeddedUrlToken(schemaRef);
+      if (stripped !== schemaRef) {
+        schemaRef = stripped;
+        vscode.window.showWarningMessage(
+          'Embedded GitHub token stripped from URL — it would expire and be exposed in settings. ' +
+          'Configure secure authentication so the schema can still be fetched.',
+          'Configure Auth',
+        ).then(action => {
+          if (action === 'Configure Auth') {
+            vscode.commands.executeCommand('jsonschema.configureSchemaAuth', schemaRef);
+          }
+        });
+      }
     } else if (pick.isBrowse) {
       const defaultUri = folder?.uri ?? vscode.Uri.file(path.dirname(doc.uri.fsPath));
       const uris = await vscode.window.showOpenDialog({
@@ -240,7 +258,11 @@ export class SchemaBindingManager {
       ? vscode.ConfigurationTarget.Workspace
       : vscode.ConfigurationTarget.Global;
     const scopeUri = target === vscode.ConfigurationTarget.Workspace ? folder?.uri : undefined;
-    await this.writeAddBinding(relFile, localPath, isYaml(doc.languageId), scopeUri, target);
+    // Both the VS Code JSON language server and the Red Hat YAML extension require a
+    // proper file:// URI for local schema paths — bare absolute paths are not recognised
+    // by the YAML extension and are less portable than the URI form.
+    const localUri = vscode.Uri.file(localPath).toString();
+    await this.writeAddBinding(relFile, localUri, isYaml(doc.languageId), scopeUri, target);
   }
 
   // ---------------------------------------------------------------------------
@@ -492,6 +514,27 @@ export function findBoundSchemaPath(doc: vscode.TextDocument): string | undefine
   }
 
   return undefined;
+}
+
+/**
+ * Removes an embedded `?token=` query parameter from GitHub raw content URLs.
+ * GitHub appends these when you copy the URL from the "Raw" button on a private
+ * repo. They are short-lived, expose credentials in plain text, and are redundant
+ * once the extension's OAuth auth flow is used instead.
+ */
+function stripEmbeddedUrlToken(url: string): string {
+  try {
+    const u = new URL(url);
+    const isGitHub = u.hostname === 'github.com'
+      || u.hostname.endsWith('.github.com')
+      || u.hostname.endsWith('.githubusercontent.com');
+    if (isGitHub && u.searchParams.has('token')) {
+      u.searchParams.delete('token');
+      // Remove trailing '?' if no other params remain
+      return u.toString();
+    }
+  } catch { /* not a parseable URL — leave as-is */ }
+  return url;
 }
 
 /** Strip leading ./ so that "./foo.json" and "foo.json" compare equal. */
