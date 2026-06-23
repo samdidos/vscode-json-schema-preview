@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "out",
+    "rootDir": ".",
+    "lib": ["ES2022", "dom"],
+    "types": ["node"],
+    "module": "commonjs",
+    "target": "ES2022"
+  },
+  "include": [
+    "src/test/e2e/**/*",
+    "playwright.e2e.config.ts"
+  ],
+  "exclude": ["node_modules"]
+}
