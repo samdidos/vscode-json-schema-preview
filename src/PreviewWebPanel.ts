@@ -71,9 +71,28 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
   panel.webview.html = await buildWebviewContent(uri.fsPath, uri, position);
 
   panel.webview.onDidReceiveMessage(
-    message => {
+    async message => {
       if (message.type === 'position') {
         position = { x: message.scrollX, y: message.scrollY };
+      } else if (message.type === 'openExternal') {
+        try {
+          await vscode.env.openExternal(vscode.Uri.parse(message.href as string));
+        } catch {
+          vscode.window.showErrorMessage(`Cannot open: ${message.href}`);
+        }
+      } else if (message.type === 'download') {
+        const cached = rawHtmlCache.get(uri.fsPath);
+        if (!cached) return;
+        const stem = path.basename(uri.fsPath, path.extname(uri.fsPath));
+        const defaultUri = vscode.Uri.file(path.join(path.dirname(uri.fsPath), `${stem}.html`));
+        const dest = await vscode.window.showSaveDialog({
+          defaultUri,
+          filters: { 'HTML': ['html'] },
+          saveLabel: 'Save Preview',
+        });
+        if (!dest) return;
+        fs.writeFileSync(dest.fsPath, cached, 'utf-8');
+        vscode.window.showInformationMessage(`Preview saved to ${path.basename(dest.fsPath)}`);
       }
     },
     undefined,
@@ -81,6 +100,7 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
   );
 
   panel.onDidDispose(() => {
+    rawHtmlCache.delete(uri.fsPath);
     delete openJsonSchemaFiles[uri.fsPath];
   });
   openJsonSchemaFiles[uri.fsPath] = panel;
@@ -88,6 +108,10 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
 
 // Debounce map for live preview; keyed by file path
 const liveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+// Cache of the raw (pre-injection) generated HTML, keyed by the original document fsPath.
+// Used to supply the content for the "Download HTML" button.
+const rawHtmlCache = new Map<string, string>();
 
 export function scheduleLiveUpdate(_context: vscode.ExtensionContext, doc: vscode.TextDocument): void {
   const panel = openJsonSchemaFiles[doc.uri.fsPath];
@@ -199,18 +223,36 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
 // HTML helpers
 // ---------------------------------------------------------------------------
 
-const scrollScript = (x: number, y: number) => `
+function buildInjection(x: number, y: number): string {
+  return `
+<div id="_jspreview_dl_wrap" style="position:fixed;bottom:20px;right:20px;z-index:9999;">
+  <button id="_jspreview_dl" style="background:#0078d4;color:#fff;border:none;border-radius:4px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);">&#8595; Download HTML</button>
+</div>
 <script>
-  try {
-    const vscode = acquireVsCodeApi();
-    window.addEventListener('scrollend', function () {
-      vscode.postMessage({ type: 'position', scrollX: window.scrollX || 0, scrollY: window.scrollY || 0 });
-    });
-    window.addEventListener('load', function () {
-      setTimeout(function () { window.scrollTo(${x}, ${y}); }, 150);
-    });
-  } catch (e) { /* running outside VS Code */ }
+  (function () {
+    try {
+      var vsc = acquireVsCodeApi();
+      window.addEventListener('scrollend', function () {
+        vsc.postMessage({ type: 'position', scrollX: window.scrollX || 0, scrollY: window.scrollY || 0 });
+      });
+      window.addEventListener('load', function () {
+        setTimeout(function () { window.scrollTo(${x}, ${y}); }, 150);
+      });
+      document.getElementById('_jspreview_dl').addEventListener('click', function () {
+        vsc.postMessage({ type: 'download' });
+      });
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var href = a.getAttribute('href');
+        if (!href || href.startsWith('#')) return;
+        e.preventDefault();
+        vsc.postMessage({ type: 'openExternal', href: a.href });
+      });
+    } catch (e) { /* running outside VS Code */ }
+  })();
 </script>`;
+}
 
 function injectScript(html: string, script: string): string {
   if (/<\/body>/i.test(html)) {
@@ -272,7 +314,8 @@ async function buildWebviewContent(
 ): Promise<string> {
   try {
     const html = await generateDocHTML(schemaPath, forUri);
-    return injectScript(allowExternalResources(html), scrollScript(pos.x, pos.y));
+    rawHtmlCache.set(forUri.fsPath, html);
+    return injectScript(allowExternalResources(html), buildInjection(pos.x, pos.y));
   } catch (err) {
     return errorPage(String(err));
   }
