@@ -483,6 +483,82 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     }
   });
 
+  test('adds JSON binding with WorkspaceFolder (local project) scope', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp, toString: () => `file://${tmp}` } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('json', 'schemas') as any[];
+      assert.ok(Array.isArray(stored));
+      assert.ok(stored.some((s: any) => s.fileMatch?.includes('data.json')));
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('replaces existing YAML binding when re-binding the same file', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const oldSchema = path.join(tmp, 'old-schema.json');
+    const newSchema = path.join(tmp, 'new-schema.json');
+    fs.writeFileSync(oldSchema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    fs.writeFileSync(newSchema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      // Pre-seed an existing binding for data.yaml → old-schema.json
+      setConfig('yaml', 'schemas', { 'old-schema.json': 'data.yaml' });
+      vscode.window.activeTextEditor = { document: makeDoc('yaml', path.join(tmp, 'data.yaml')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: newSchema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri && (i.uri as any).fsPath === newSchema))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('yaml', 'schemas') as any;
+      // Old binding is gone, new binding is present
+      assert.ok(!stored || !Object.keys(stored).some((k: string) => k === 'old-schema.json'));
+      assert.ok(stored && Object.keys(stored).some((k: string) => k.includes('new-schema.json')));
+    } finally {
+      fs.unlinkSync(oldSchema);
+      fs.unlinkSync(newSchema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('opens settings after session binding when user clicks Open Settings', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp, toString: () => `file://${tmp}` } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === 'session'));
+      vscode.window.showInformationMessage.resolves('Open Settings');
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      assert.ok(
+        vscode.commands.executeCommand.calledWith('workbench.action.openWorkspaceSettingsFile')
+      );
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
   test('removes temporary binding without folder (no write needed)', async () => {
     const ctx = makeContext({
       [TEMP_KEY]: [{ relFile: 'data.json', schemaRef: './schema.json', isYaml: false, folderUri: '' }],

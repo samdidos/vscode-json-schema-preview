@@ -22,7 +22,13 @@ function makeConfig(section: string) {
       return Promise.resolve();
     },
     has: (key: string) => key in configStore[section],
-    inspect: () => undefined,
+    inspect: (key: string) => {
+      const val = configStore[section]?.[key];
+      if (val === undefined) return undefined;
+      // Return the stored value for all scopes so tests that pre-set config
+      // via setConfig() can exercise the read-modify-write path.
+      return { workspaceValue: val, globalValue: val, workspaceFolderValue: val };
+    },
   };
 }
 
