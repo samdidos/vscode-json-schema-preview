@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 
-const { sanitizeHtml, loadingPage, errorPage } = require('../../webviewUtils');
+const { sanitizeHtml, loadingPage, errorPage, getNonce } = require('../../webviewUtils');
 
 suite('sanitizeHtml()', () => {
   test('escapes ampersands', () => {
@@ -34,10 +34,28 @@ suite('sanitizeHtml()', () => {
   });
 });
 
+suite('getNonce()', () => {
+  test('returns a 32-character alphanumeric string', () => {
+    const nonce = getNonce();
+    assert.strictEqual(nonce.length, 32);
+    assert.ok(/^[A-Za-z0-9]+$/.test(nonce));
+  });
+
+  test('returns a different value on each call', () => {
+    assert.notStrictEqual(getNonce(), getNonce());
+  });
+});
+
 suite('loadingPage()', () => {
   test('returns a string containing the message', () => {
     const html = loadingPage('Loading...');
     assert.ok(html.includes('Loading...'));
+  });
+
+  test('includes a Content-Security-Policy that forbids scripts', () => {
+    const html = loadingPage('test');
+    assert.ok(html.includes('Content-Security-Policy'));
+    assert.ok(html.includes("default-src 'none'"));
   });
 
   test('returns a valid DOCTYPE html page', () => {

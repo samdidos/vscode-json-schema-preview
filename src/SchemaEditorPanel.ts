@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
-import { JE_PANEL_CSS } from './webviewUtils';
+import { JE_PANEL_CSS, getNonce } from './webviewUtils';
 
 // One panel per open schema file
 const panels = new Map<string, vscode.WebviewPanel>();
@@ -47,7 +47,13 @@ export function openSchemaEditor(context: vscode.ExtensionContext, uri: vscode.U
     vscode.Uri.joinPath(context.extensionUri, 'dist', 'jsoneditor.js')
   );
 
-  panel.webview.html = buildEditorPage(jsonEditorUri, currentSchema, path.basename(filePath));
+  panel.webview.html = buildEditorPage(
+    jsonEditorUri,
+    currentSchema,
+    path.basename(filePath),
+    panel.webview.cspSource,
+    getNonce(),
+  );
 
   panel.webview.onDidReceiveMessage(async message => {
     if (message.type === 'save') {
@@ -181,12 +187,15 @@ const SCHEMA_META: object = {
 function buildEditorPage(
   jsonEditorUri: vscode.Uri,
   currentSchema: object,
-  filename: string
+  filename: string,
+  cspSource: string,
+  nonce: string
 ): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edit: ${filename}</title>
   <style>
@@ -206,8 +215,8 @@ function buildEditorPage(
     <span class="save-hint">Writes to <code>${filename}</code> · preview reloads on save</span>
   </div>
 
-  <script src="${jsonEditorUri}"></script>
-  <script>
+  <script nonce="${nonce}" src="${jsonEditorUri}"></script>
+  <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
     const schema   = ${JSON.stringify(SCHEMA_META)};
     const initval  = ${JSON.stringify(currentSchema)};
