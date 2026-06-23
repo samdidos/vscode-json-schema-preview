@@ -107,9 +107,9 @@ Drop a `.json-schema-preview-config.json` in your workspace root to customise th
 
 | Scope | Stored in | Lifetime |
 |---|---|---|
-| Session | Memory | Current window only |
-| Workspace | `.vscode/settings.json` | Committed with the repo |
-| User | User settings | All workspaces on this machine |
+| Workspace file | `.code-workspace` file | Committed with repo (multi-root workspaces only) |
+| Workspace folder | `.vscode/settings.json` | Committed with the repo |
+| User | User `settings.json` | All workspaces on this machine |
 
 ---
 
