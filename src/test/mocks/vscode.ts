@@ -183,6 +183,12 @@ export const window = {
   showOpenDialog:              _showOpenDialog,
   createWebviewPanel:          _createWebviewPanel,
   withProgress:                _withProgress,
+  createOutputChannel:         sinon.stub().returns({
+    name: 'mock', trace: sinon.stub(), debug: sinon.stub(), info: sinon.stub(),
+    warn: sinon.stub(), error: sinon.stub(), append: sinon.stub(),
+    appendLine: sinon.stub(), clear: sinon.stub(), show: sinon.stub(),
+    hide: sinon.stub(), dispose: sinon.stub(),
+  }),
 };
 
 let _workspaceFolders: any[] | undefined = undefined;
