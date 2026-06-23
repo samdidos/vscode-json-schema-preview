@@ -50,7 +50,24 @@ export function disposeAllPanels(): void {
 }
 
 /* c8 ignore start — webview lifecycle and Python subprocess; covered by manual/E2E testing */
-export async function openJsonSchema(context: vscode.ExtensionContext, uri: vscode.Uri) {
+export async function openJsonSchema(context: vscode.ExtensionContext, uri: vscode.Uri, silent = false) {
+  // The preview renders by running a local Python tool, so it is gated on
+  // Workspace Trust (declared as `untrustedWorkspaces: limited` in package.json).
+  // Auto-preview passes `silent` so it skips quietly; the explicit command
+  // explains why nothing happened and offers the trust dialog.
+  if (!vscode.workspace.isTrusted) {
+    if (!silent) {
+      const choice = await vscode.window.showWarningMessage(
+        'JSON Schema Preview runs a local Python tool to render the preview, which is disabled in untrusted workspaces.',
+        'Manage Workspace Trust',
+      );
+      if (choice === 'Manage Workspace Trust') {
+        vscode.commands.executeCommand('workbench.trust.manage');
+      }
+    }
+    return;
+  }
+
   const localResourceRoots = [vscode.Uri.file(path.dirname(uri.fsPath))];
   if (vscode.workspace.workspaceFolders) {
     vscode.workspace.workspaceFolders.forEach(folder => {
@@ -117,6 +134,7 @@ const rawOutputCache = new Map<string, CachedOutput>();
 export function scheduleLiveUpdate(_context: vscode.ExtensionContext, doc: vscode.TextDocument): void {
   const panel = openJsonSchemaFiles[doc.uri.fsPath];
   if (!panel) return; // preview not open — nothing to refresh
+  if (!vscode.workspace.isTrusted) return; // never run Python in an untrusted workspace
 
   const cfg = vscode.workspace.getConfiguration('jsonschema.preview');
   const delay = Math.max(500, cfg.get<number>('liveUpdateDelay') ?? 1500);
@@ -192,6 +210,9 @@ export function findConfigFile(forUri?: vscode.Uri): string | undefined {
 // ---------------------------------------------------------------------------
 
 async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise<string> {
+  if (!vscode.workspace.isTrusted) {
+    throw new Error('Preview generation is disabled in untrusted workspaces.');
+  }
   const python = await getPythonInterpreter();
   await ensureInstalled(python);
 
