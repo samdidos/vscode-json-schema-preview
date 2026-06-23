@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
 import { isYaml, stripJsoncComments } from './languages';
-import { loadingPage, errorPage as renderErrorPage } from './webviewUtils';
+import { loadingPage, errorPage as renderErrorPage, sanitizeHtml } from './webviewUtils';
 
 let position: { x: number; y: number } = { x: 0, y: 0 };
 
@@ -81,17 +81,17 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
           vscode.window.showErrorMessage(`Cannot open: ${message.href}`);
         }
       } else if (message.type === 'download') {
-        const cached = rawHtmlCache.get(uri.fsPath);
+        const cached = rawOutputCache.get(uri.fsPath);
         if (!cached) return;
         const stem = path.basename(uri.fsPath, path.extname(uri.fsPath));
-        const defaultUri = vscode.Uri.file(path.join(path.dirname(uri.fsPath), `${stem}.html`));
+        const defaultUri = vscode.Uri.file(path.join(path.dirname(uri.fsPath), `${stem}.${cached.ext}`));
         const dest = await vscode.window.showSaveDialog({
           defaultUri,
-          filters: { 'HTML': ['html'] },
+          filters: { 'Generated output': [cached.ext] },
           saveLabel: 'Save Preview',
         });
         if (!dest) return;
-        fs.writeFileSync(dest.fsPath, cached, 'utf-8');
+        fs.writeFileSync(dest.fsPath, cached.content, 'utf-8');
         vscode.window.showInformationMessage(`Preview saved to ${path.basename(dest.fsPath)}`);
       }
     },
@@ -100,7 +100,7 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
   );
 
   panel.onDidDispose(() => {
-    rawHtmlCache.delete(uri.fsPath);
+    rawOutputCache.delete(uri.fsPath);
     delete openJsonSchemaFiles[uri.fsPath];
   });
   openJsonSchemaFiles[uri.fsPath] = panel;
@@ -109,9 +109,10 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
 // Debounce map for live preview; keyed by file path
 const liveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-// Cache of the raw (pre-injection) generated HTML, keyed by the original document fsPath.
-// Used to supply the content for the "Download HTML" button.
-const rawHtmlCache = new Map<string, string>();
+// Cache of the raw generated output keyed by the original document fsPath.
+// Stores both content and file extension so the download button uses the right format.
+interface CachedOutput { content: string; ext: string; }
+const rawOutputCache = new Map<string, CachedOutput>();
 
 export function scheduleLiveUpdate(_context: vscode.ExtensionContext, doc: vscode.TextDocument): void {
   const panel = openJsonSchemaFiles[doc.uri.fsPath];
@@ -223,10 +224,33 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
 // HTML helpers
 // ---------------------------------------------------------------------------
 
-function buildInjection(x: number, y: number): string {
+/** Returns { ext, isHtml } by reading template_name from the config file. */
+function detectOutputFmt(configFile?: string): { ext: string; isHtml: boolean } {
+  if (configFile) {
+    try {
+      const cfg = JSON.parse(fs.readFileSync(configFile, 'utf-8')) as { template_name?: string };
+      if (/^md/i.test(cfg.template_name ?? '')) return { ext: 'md', isHtml: false };
+    } catch { /* fall through */ }
+  }
+  return { ext: 'html', isHtml: true };
+}
+
+/** Wraps raw non-HTML output (e.g. Markdown) in a minimal HTML page for display. */
+function wrapAsHtml(content: string, ext: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  body{font-family:'Cascadia Code','Consolas',monospace;padding:32px;background:#1e1e1e;
+       color:#d4d4d4;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.6;margin:0}
+  .fmt-label{font-family:sans-serif;font-size:11px;color:#6a9955;margin-bottom:16px;display:block}
+</style>
+</head><body><span class="fmt-label">${sanitizeHtml(ext.toUpperCase())} — raw source (download to view rendered)</span>${sanitizeHtml(content)}</body></html>`;
+}
+
+function buildInjection(x: number, y: number, ext: string): string {
+  const label = `&#8595; Download ${ext.toUpperCase()}`;
   return `
 <div id="_jspreview_dl_wrap" style="position:fixed;bottom:20px;right:20px;z-index:9999;">
-  <button id="_jspreview_dl" style="background:#0078d4;color:#fff;border:none;border-radius:4px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);">&#8595; Download HTML</button>
+  <button id="_jspreview_dl" style="background:#0078d4;color:#fff;border:none;border-radius:4px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);">${label}</button>
 </div>
 <script>
   (function () {
@@ -313,9 +337,11 @@ async function buildWebviewContent(
   pos: { x: number; y: number }
 ): Promise<string> {
   try {
-    const html = await generateDocHTML(schemaPath, forUri);
-    rawHtmlCache.set(forUri.fsPath, html);
-    return injectScript(allowExternalResources(html), buildInjection(pos.x, pos.y));
+    const content = await generateDocHTML(schemaPath, forUri);
+    const fmt = detectOutputFmt(findConfigFile(forUri));
+    rawOutputCache.set(forUri.fsPath, { content, ext: fmt.ext });
+    const displayHtml = fmt.isHtml ? allowExternalResources(content) : allowExternalResources(wrapAsHtml(content, fmt.ext));
+    return injectScript(displayHtml, buildInjection(pos.x, pos.y, fmt.ext));
   } catch (err) {
     return errorPage(String(err));
   }
