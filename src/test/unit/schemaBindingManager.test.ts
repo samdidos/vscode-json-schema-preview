@@ -32,7 +32,7 @@ suite('SchemaBindingManager — embedded GitHub token stripping', () => {
     // Second showQuickPick: pick Workspace scope
     vscode.window.showQuickPick
       .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
-      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
 
     // showInputBox returns the URL with an embedded token
     vscode.window.showInputBox.resolves(urlWithToken);
@@ -59,7 +59,7 @@ suite('SchemaBindingManager — embedded GitHub token stripping', () => {
 
     vscode.window.showQuickPick
       .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
-      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
 
     vscode.window.showInputBox.resolves(url);
 
@@ -104,8 +104,6 @@ suite('dropPattern()', () => {
 });
 
 // ─── SchemaBindingManager class ────────────────────────────────────────────────
-
-const TEMP_KEY = 'jsonschema.temporaryBindings';
 
 function makeContext(initialState: Record<string, any> = {}) {
   const store: Record<string, any> = { ...initialState };
@@ -292,7 +290,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       // First call: pick the schema item; second call: pick a scope (Workspace)
       vscode.window.showQuickPick
         .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
-        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
       const stored = getStoredConfig('json', 'schemas') as any[];
@@ -315,7 +313,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
       vscode.window.showQuickPick
         .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
-        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
       const stored = getStoredConfig('yaml', 'schemas') as any;
@@ -339,7 +337,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       // First call: pick the Remove item; second call: pick scope for the remove
       vscode.window.showQuickPick
         .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove))
-        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
       const stored = getStoredConfig('json', 'schemas') as any[];
@@ -362,7 +360,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       vscode.workspace.asRelativePath.callsFake(() => 'data.yaml');
       vscode.window.showQuickPick
         .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove))
-        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
       const stored = getStoredConfig('yaml', 'schemas') as any;
@@ -386,7 +384,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
       vscode.window.showQuickPick
         .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
-        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
       vscode.window.showInformationMessage.resolves('Open Settings');
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
@@ -411,7 +409,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       vscode.workspace.asRelativePath.callsFake(() => 'data.json');
       vscode.window.showQuickPick
         .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove))
-        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
       vscode.window.showInformationMessage.resolves('Open Settings');
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
@@ -434,53 +432,6 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     // Picker still shows (with URL / Browse options) — no crash, no error message
     assert.ok(vscode.window.showQuickPick.calledOnce);
     assert.ok(!vscode.window.showErrorMessage.called);
-  });
-
-  test('adds session (temp) binding when user picks session scope', async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
-    const schema = path.join(tmp, 'schema.json');
-    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
-    try {
-      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
-      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp, toString: () => `file://${tmp}` } });
-      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
-      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
-      vscode.window.showQuickPick
-        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
-        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === 'session'));
-      const ctx = makeContext();
-      const mgr = new SchemaBindingManager(ctx);
-      await mgr.bindToCurrentFile();
-      const temps = ctx.workspaceState.get(TEMP_KEY, []);
-      assert.ok(Array.isArray(temps) && temps.length > 0);
-    } finally {
-      fs.unlinkSync(schema);
-      fs.rmdirSync(tmp);
-    }
-  });
-
-  test('removes temporary binding when one exists for the file', async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
-    const schema = path.join(tmp, 'schema.json');
-    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
-    try {
-      const ctx = makeContext({
-        [TEMP_KEY]: [{ relFile: 'data.json', schemaRef: './schema.json', isYaml: false, folderUri: `file://${tmp}` }],
-      });
-      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
-      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp, toString: () => `file://${tmp}` } });
-      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
-      vscode.workspace.asRelativePath.callsFake(() => 'data.json');
-      vscode.window.showQuickPick
-        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove));
-      const mgr = new SchemaBindingManager(ctx);
-      await mgr.bindToCurrentFile();
-      const temps = ctx.workspaceState.get(TEMP_KEY, []);
-      assert.deepStrictEqual(temps, []);
-    } finally {
-      fs.unlinkSync(schema);
-      fs.rmdirSync(tmp);
-    }
   });
 
   test('adds JSON binding with WorkspaceFolder (local project) scope', async () => {
@@ -521,7 +472,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
       vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
       vscode.window.showQuickPick
         .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri && (i.uri as any).fsPath === newSchema))
-        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
       const mgr = new SchemaBindingManager(makeContext());
       await mgr.bindToCurrentFile();
       const stored = getStoredConfig('yaml', 'schemas') as any;
@@ -535,43 +486,4 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     }
   });
 
-  test('opens settings after session binding when user clicks Open Settings', async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
-    const schema = path.join(tmp, 'schema.json');
-    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
-    try {
-      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
-      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp, toString: () => `file://${tmp}` } });
-      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
-      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
-      vscode.window.showQuickPick
-        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
-        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === 'session'));
-      vscode.window.showInformationMessage.resolves('Open Settings');
-      const mgr = new SchemaBindingManager(makeContext());
-      await mgr.bindToCurrentFile();
-      assert.ok(
-        vscode.commands.executeCommand.calledWith('workbench.action.openWorkspaceSettingsFile')
-      );
-    } finally {
-      fs.unlinkSync(schema);
-      fs.rmdirSync(tmp);
-    }
-  });
-
-  test('removes temporary binding without folder (no write needed)', async () => {
-    const ctx = makeContext({
-      [TEMP_KEY]: [{ relFile: 'data.json', schemaRef: './schema.json', isYaml: false, folderUri: '' }],
-    });
-    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json') };
-    vscode.workspace.getWorkspaceFolder.returns(undefined);
-    vscode.workspace.findFiles.resolves([]);
-    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
-    vscode.window.showQuickPick
-      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove));
-    const mgr = new SchemaBindingManager(ctx);
-    await mgr.bindToCurrentFile();
-    const temps = ctx.workspaceState.get(TEMP_KEY, []);
-    assert.deepStrictEqual(temps, []);
-  });
 });
