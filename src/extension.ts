@@ -24,7 +24,9 @@ import { isYaml } from './languages';
 import { createSchema } from 'genson-js';
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Extension "json-schema-preview" is now active');
+  const output = vscode.window.createOutputChannel('JSON Schema Preview', { log: true });
+  context.subscriptions.push(output);
+  output.info('Extension "json-schema-preview" is now active');
 
   // ── Auth infrastructure (created first; other components depend on these) ──
   const authManager = new SchemaAuthManager(context);
