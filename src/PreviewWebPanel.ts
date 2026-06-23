@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
 import { isYaml, stripJsoncComments } from './languages';
-import { loadingPage, errorPage as renderErrorPage, sanitizeHtml } from './webviewUtils';
+import { loadingPage, errorPage as renderErrorPage, sanitizeHtml, getNonce } from './webviewUtils';
 
 let position: { x: number; y: number } = { x: 0, y: 0 };
 
@@ -267,13 +267,13 @@ function wrapAsHtml(content: string, ext: string): string {
 </head><body><span class="fmt-label">${sanitizeHtml(ext.toUpperCase())} — raw source (download to view rendered)</span>${sanitizeHtml(content)}</body></html>`;
 }
 
-function buildInjection(x: number, y: number, ext: string): string {
+function buildInjection(x: number, y: number, ext: string, nonce: string): string {
   const label = `&#8595; Download ${ext.toUpperCase()}`;
   return `
 <div id="_jspreview_dl_wrap" style="position:fixed;bottom:20px;right:20px;z-index:9999;">
   <button id="_jspreview_dl" style="background:#0078d4;color:#fff;border:none;border-radius:4px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);">${label}</button>
 </div>
-<script>
+<script nonce="${nonce}">
   (function () {
     try {
       var vsc = acquireVsCodeApi();
@@ -306,19 +306,28 @@ function injectScript(html: string, script: string): string {
   return html + script;
 }
 
-/** Replace or insert a permissive CSP so that templates referencing CDN
- *  fonts/styles (e.g. non-flat templates) render correctly in the webview. */
-function allowExternalResources(html: string): string {
+/**
+ * Inserts a CSP and stamps `nonce` onto every `<script>` element in the
+ * generated document. json-schema-for-humans escapes schema-derived content
+ * into HTML text/attributes, so the only scripts present are the template's
+ * own — stamping them lets them run under a nonce-based policy while a script
+ * injected through any other channel (which would not carry the nonce) is
+ * blocked. `style-src` keeps `'unsafe-inline'` because templates rely on inline
+ * style attributes (styles cannot carry a nonce and pose no code-execution risk);
+ * CDN fonts/styles are still permitted so non-flat templates render.
+ */
+function allowExternalResources(html: string, nonce: string): string {
+  const stamped = html.replace(/<script(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
   const csp = `<meta http-equiv="Content-Security-Policy" ` +
-    `content="default-src 'none'; script-src 'unsafe-inline'; ` +
+    `content="default-src 'none'; script-src 'nonce-${nonce}'; ` +
     `style-src 'unsafe-inline' https:; img-src https: data:; font-src https: data:;">`;
-  if (/<meta[^>]+Content-Security-Policy[^>]*>/i.test(html)) {
-    return html.replace(/<meta[^>]+Content-Security-Policy[^>]*>/i, csp);
+  if (/<meta[^>]+Content-Security-Policy[^>]*>/i.test(stamped)) {
+    return stamped.replace(/<meta[^>]+Content-Security-Policy[^>]*>/i, csp);
   }
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head[^>]*>/i, m => `${m}\n  ${csp}`);
+  if (/<head[^>]*>/i.test(stamped)) {
+    return stamped.replace(/<head[^>]*>/i, m => `${m}\n  ${csp}`);
   }
-  return html;
+  return stamped;
 }
 
 function errorPage(message: string): string {
@@ -361,8 +370,10 @@ async function buildWebviewContent(
     const content = await generateDocHTML(schemaPath, forUri);
     const fmt = detectOutputFmt(findConfigFile(forUri));
     rawOutputCache.set(forUri.fsPath, { content, ext: fmt.ext });
-    const displayHtml = fmt.isHtml ? allowExternalResources(content) : allowExternalResources(wrapAsHtml(content, fmt.ext));
-    return injectScript(displayHtml, buildInjection(pos.x, pos.y, fmt.ext));
+    const nonce = getNonce();
+    const rendered = fmt.isHtml ? content : wrapAsHtml(content, fmt.ext);
+    const displayHtml = allowExternalResources(rendered, nonce);
+    return injectScript(displayHtml, buildInjection(pos.x, pos.y, fmt.ext, nonce));
   } catch (err) {
     return errorPage(String(err));
   }

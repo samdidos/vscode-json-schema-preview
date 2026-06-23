@@ -4,8 +4,25 @@ export function sanitizeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** Cryptographically-random nonce for Content-Security-Policy script allow-listing. */
+export function getNonce(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let nonce = '';
+  for (let i = 0; i < 32; i++) {
+    nonce += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return nonce;
+}
+
+// These pages contain only inline styles and no scripts, so the CSP locks the
+// webview down to that: no scripts, no remote resources of any kind.
+const STATIC_PAGE_CSP =
+  `<meta http-equiv="Content-Security-Policy" ` +
+  `content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;">`;
+
 export function loadingPage(message: string): string {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+${STATIC_PAGE_CSP}
 <style>body{font-family:sans-serif;padding:32px;background:#1e1e1e;color:#9d9d9d}</style>
 </head><body>${message}</body></html>`;
 }
@@ -18,6 +35,7 @@ export function errorPage(heading: string, message: string, hintHtml = ''): stri
   const safe = sanitizeHtml(message);
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
+${STATIC_PAGE_CSP}
 <style>
   body{font-family:sans-serif;padding:32px;background:#1e1e1e;color:#d4d4d4}
   h2{color:#f47067;margin-top:0}
