@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 
-const { sanitizeHtml, loadingPage, errorPage, getNonce } = require('../../webviewUtils');
+const { sanitizeHtml, loadingPage, errorPage, getNonce, embedJson } = require('../../webviewUtils');
 
 suite('sanitizeHtml()', () => {
   test('escapes ampersands', () => {
@@ -31,6 +31,23 @@ suite('sanitizeHtml()', () => {
 
   test('handles empty string', () => {
     assert.strictEqual(sanitizeHtml(''), '');
+  });
+});
+
+suite('embedJson()', () => {
+  test('serialises a plain object as JSON', () => {
+    assert.strictEqual(embedJson({ a: 1 }), '{"a":1}');
+  });
+
+  test('escapes < so a closing script tag cannot break out', () => {
+    const out = embedJson({ x: '</script><img>' });
+    assert.ok(!out.includes('</script>'));
+    assert.ok(out.includes('\\u003c/script>'));
+  });
+
+  test('round-trips back to the original value', () => {
+    const value = { name: 'a < b', nested: [1, 2, 3] };
+    assert.deepStrictEqual(JSON.parse(embedJson(value)), value);
   });
 });
 
