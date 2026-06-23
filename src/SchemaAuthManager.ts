@@ -57,9 +57,21 @@ export class SchemaAuthManager {
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
-  async fetchText(url: string): Promise<string> {
+  async fetchText(url: string, timeoutMs = 30_000): Promise<string> {
     const headers = await this.getAuthHeaders(url);
-    const res = await fetch(url, { headers });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let res: Response;
+    try {
+      res = await fetch(url, { headers, signal: controller.signal });
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') {
+        throw new Error(`Timed out fetching ${url} after ${timeoutMs} ms`);
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
     if (res.status === 401 || res.status === 403) throw new AuthRequiredError(url, res.status);
     if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
     return res.text();

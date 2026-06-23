@@ -68,12 +68,10 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
     return;
   }
 
+  // The generated documentation is injected as an HTML string (inline styles /
+  // CDN assets), so the webview never needs to read arbitrary workspace files.
+  // Scope resource access to the schema's own directory, per VS Code guidance.
   const localResourceRoots = [vscode.Uri.file(path.dirname(uri.fsPath))];
-  if (vscode.workspace.workspaceFolders) {
-    vscode.workspace.workspaceFolders.forEach(folder => {
-      localResourceRoots.push(folder.uri);
-    });
-  }
 
   const panel: vscode.WebviewPanel =
     openJsonSchemaFiles[uri.fsPath] ||
