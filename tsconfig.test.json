@@ -4,5 +4,5 @@
     "outDir": "out",
     "types": ["node", "mocha"]
   },
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "playwright.e2e.config.ts", "src/test/e2e"]
 }
