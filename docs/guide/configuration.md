@@ -10,7 +10,7 @@ All settings are in the `jsonschema` namespace and can be set in **User**, **Wor
 |------|---------|
 | `boolean` | `false` |
 
-When `true`, the preview panel opens automatically whenever a JSON Schema file becomes the active editor (on file open or tab switch).
+When `true`, the preview panel opens automatically whenever a JSON Schema file becomes the active editor (on file open or tab switch). Silently skipped in untrusted workspaces.
 
 ```json
 // .vscode/settings.json
@@ -27,7 +27,7 @@ When `true`, the preview panel opens automatically whenever a JSON Schema file b
 |------|---------|
 | `boolean` | `false` |
 
-When `true`, the preview refreshes as you type (debounced). The preview panel **must already be open** — live update does not auto-open the panel.
+When `true`, the preview refreshes as you type (debounced). The preview panel **must already be open** — live update does not auto-open the panel. Skipped in untrusted workspaces.
 
 ```json
 {
@@ -53,32 +53,46 @@ Milliseconds to wait after the last keystroke before the live preview refreshes.
 
 ---
 
-## `jsonschema.config.json`
+## `.json-schema-preview-config.json`
 
-The extension stores schema bindings (set via [Bind Schema to This File](/guide/commands#json-schema-bind-schema-to-this-file)) and preview template preferences in a `jsonschema.config.json` file at the workspace root.
+The extension discovers a `.json-schema-preview-config.json` file in the workspace folder that contains the schema being rendered (with fallback to other workspace folders in order). The file controls the `json-schema-for-humans` renderer and the output template.
 
 Example:
 
 ```json
 {
-  "template": "js",
-  "bindings": {
-    "data/user.json": "schemas/user.schema.json",
-    "data/product.yaml": ["schemas/product.schema.json"]
-  }
+  "template_name": "js",
+  "show_toc": true
 }
 ```
 
-The file is created automatically the first time you use **Configure Preview** or **Bind Schema to This File**. You can commit it alongside your project.
+All [json-schema-for-humans options](https://github.com/coveooss/json-schema-for-humans) are supported. Create or edit the file via **JSON Schema: Configure Preview** (visual UI) or **JSON Schema: Open Config File** (opens the raw JSON).
 
-### Supported templates
+### Output templates
 
-Templates are provided by [`json-schema-for-humans`](https://github.com/coveooss/json-schema-for-humans). Common values:
+The `template_name` field controls the rendered format:
 
-| Value | Description |
-|-------|-------------|
-| `js` | JavaScript-style (default) |
-| `md` | Markdown table |
-| `md_nested` | Nested Markdown |
-| `rst` | reStructuredText |
-| `html` | Standalone HTML |
+| Value | Output | Notes |
+|-------|--------|-------|
+| `flat` | HTML | Default when no config file is present |
+| `js` | HTML | JavaScript-style collapsible tree |
+| `md` | Markdown | Markdown table; displayed as raw source in VS Code, downloadable as `.md` |
+| `md_nested` | Markdown | Nested Markdown structure |
+| `rst` | reStructuredText | Plain text display |
+| `html` | Standalone HTML | Self-contained file with embedded styles |
+
+The **Download** button in the preview panel uses the correct extension (`.html` or `.md`) based on the active template.
+
+---
+
+## Schema Binding (`json.schemas` / `yaml.schemas`)
+
+Schema bindings created via **Bind Schema…** are written to VS Code's standard `json.schemas` (for JSON/JSONC/JSONL files) and `yaml.schemas` (for YAML files) settings. Choose the scope when prompted:
+
+| Scope | Stored in | Lifetime |
+|---|---|---|
+| Workspace file | `.code-workspace` file | Committed with the repo (multi-root workspaces only) |
+| Workspace folder | `.vscode/settings.json` | Committed with the repo |
+| User | User `settings.json` | All workspaces on this machine |
+
+Bindings can be edited manually in the relevant `settings.json` file.
