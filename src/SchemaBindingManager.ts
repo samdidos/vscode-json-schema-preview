@@ -324,22 +324,23 @@ export class SchemaBindingManager {
     );
 
     type Item = vscode.QuickPickItem & { uri: vscode.Uri };
-    const items: Item[] = [];
-    for (const uri of uris) {
+    // Read candidates concurrently and off the main thread so a large workspace
+    // does not block the extension host (VS Code guidance favours async fs).
+    const results = await Promise.all(uris.map(async (uri): Promise<Item | undefined> => {
       try {
-        const raw = fs.readFileSync(uri.fsPath, 'utf-8');
+        const raw = await fs.promises.readFile(uri.fsPath, 'utf-8');
         const isSchema = /"?\$schema"?\s*:/.test(raw) || /^\$schema\s*:/m.test(raw);
-        if (!isSchema) continue;
-        items.push({
+        if (!isSchema) return undefined;
+        return {
           label: `$(file-code) ${path.basename(uri.fsPath)}`,
           description: vscode.workspace.asRelativePath(uri),
           uri,
-        });
+        };
       } catch {
-        // unreadable — skip
+        return undefined; // unreadable — skip
       }
-    }
-    return items;
+    }));
+    return results.filter((i): i is Item => i !== undefined);
   }
 
   // ---------------------------------------------------------------------------

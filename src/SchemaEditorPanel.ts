@@ -55,7 +55,7 @@ export function openSchemaEditor(context: vscode.ExtensionContext, uri: vscode.U
     getNonce(),
   );
 
-  panel.webview.onDidReceiveMessage(async message => {
+  const messageSub = panel.webview.onDidReceiveMessage(async message => {
     if (message.type === 'save') {
       try {
         const content = isYaml
@@ -72,7 +72,11 @@ export function openSchemaEditor(context: vscode.ExtensionContext, uri: vscode.U
     }
   });
 
-  panel.onDidDispose(() => panels.delete(filePath));
+  panel.onDidDispose(() => {
+    messageSub.dispose();
+    panels.delete(filePath);
+  });
+  context.subscriptions.push(panel);
   panels.set(filePath, panel);
 }
 
