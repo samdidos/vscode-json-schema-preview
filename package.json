@@ -1,6 +1,6 @@
 {
   "name": "json-schema-preview",
-  "displayName": "json-schema-preview",
+  "displayName": "JSON Schema Preview",
   "description": "Preview JSON Schema documents inside VSCode.",
   "version": "0.1.0",
   "galleryBanner": {
@@ -27,8 +27,20 @@
     "node": ">=22"
   },
   "categories": [
-    "Other"
+    "Visualization",
+    "Linters",
+    "Programming Languages"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Rendering a preview runs the json-schema-for-humans Python tool, optionally using a workspace-provided config file. The preview is disabled in untrusted workspaces; validation, schema binding, and inference remain available."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "The extension shells out to a local Python interpreter and reads/writes files on disk, neither of which is available in virtual workspaces."
+    }
+  },
   "activationEvents": [
     "onLanguage:yml",
     "onLanguage:yaml",
@@ -238,7 +250,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^25.9.3",
     "@types/sinon": "^21.0.1",
-    "@types/vscode": "^1.125.0",
+    "@types/vscode": "^1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.61.1",
     "@typescript-eslint/parser": "^8.61.1",
     "@vscode/vsce": "^3.9.2",
