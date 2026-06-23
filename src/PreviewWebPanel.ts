@@ -77,6 +77,8 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
     openJsonSchemaFiles[uri.fsPath] ||
     vscode.window.createWebviewPanel('jsonschema-preview', '', vscode.ViewColumn.Two, {
       enableScripts: true,
+      // Regenerating the preview re-runs the Python tool (seconds of work), so we
+      // retain context rather than reload on every tab switch despite the memory cost.
       retainContextWhenHidden: true,
       localResourceRoots,
     });

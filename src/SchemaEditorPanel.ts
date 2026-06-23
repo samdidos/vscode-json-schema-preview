@@ -39,6 +39,7 @@ export function openSchemaEditor(context: vscode.ExtensionContext, uri: vscode.U
     {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'dist')],
+      // Retained so in-progress, unsaved form edits survive the panel being hidden.
       retainContextWhenHidden: true,
     }
   );
