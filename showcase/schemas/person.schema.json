@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$comment": "VS Code autocompletion: open a JSON file that references this schema via a top-level \"$schema\" field, then press Ctrl+Space (or Ctrl+Enter with some extensions) inside a property value or after a key to trigger IntelliSense suggestions based on this schema.",
+  "$comment": "To see JSON schema autocompletion for human configuration options, just hit Ctrl+Space.",
   "title": "Person",
   "description": "A person record in the user directory.",
   "type": "object",
