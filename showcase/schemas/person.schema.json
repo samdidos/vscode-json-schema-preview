@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$comment": "To see JSON schema autocompletion for human configuration options, just hit Ctrl+Space.",
+  "$comment": "To see JSON schema preview configuration options, just hit Ctrl+Space.",
   "title": "Person",
   "description": "A person record in the user directory.",
   "type": "object",
