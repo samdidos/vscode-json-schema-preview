@@ -84,7 +84,7 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
     });
 
   panel.title = path.basename(uri.fsPath);
-  panel.webview.html = loadingPage(`Generating preview for <em>${path.basename(uri.fsPath)}</em>…`);
+  panel.webview.html = loadingPage(`Generating preview for <em>${sanitizeHtml(path.basename(uri.fsPath))}</em>…`);
   panel.webview.html = await buildWebviewContent(uri.fsPath, uri, position);
 
   panel.webview.onDidReceiveMessage(
@@ -155,7 +155,7 @@ export function scheduleLiveUpdate(_context: vscode.ExtensionContext, doc: vscod
     try {
       const content = isJsonc ? stripJsoncComments(doc.getText()) : doc.getText();
       fs.writeFileSync(tmpPath, content, 'utf-8');
-      panel.webview.html = loadingPage(`Generating preview for <em>${path.basename(doc.uri.fsPath)}</em>…`);
+      panel.webview.html = loadingPage(`Generating preview for <em>${sanitizeHtml(path.basename(doc.uri.fsPath))}</em>…`);
       const html = await buildWebviewContent(tmpPath, doc.uri, position);
       if (openJsonSchemaFiles[doc.uri.fsPath] === panel) {
         panel.webview.html = html;

@@ -4,6 +4,15 @@ export function sanitizeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/**
+ * Serialises a value for safe embedding inside an inline `<script>` block.
+ * Escapes `<` so a string containing `</script>` (or `<!--`) cannot terminate
+ * the script element and break out into HTML.
+ */
+export function embedJson(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
 /** Cryptographically-random nonce for Content-Security-Policy script allow-listing. */
 export function getNonce(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

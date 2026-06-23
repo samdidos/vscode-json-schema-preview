@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
-import { JE_PANEL_CSS, getNonce } from './webviewUtils';
+import { JE_PANEL_CSS, getNonce, sanitizeHtml, embedJson } from './webviewUtils';
 
 // One panel per open schema file
 const panels = new Map<string, vscode.WebviewPanel>();
@@ -191,13 +191,14 @@ function buildEditorPage(
   cspSource: string,
   nonce: string
 ): string {
+  const safeFilename = sanitizeHtml(filename);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit: ${filename}</title>
+  <title>Edit: ${safeFilename}</title>
   <style>
     ${JE_PANEL_CSS}
     .header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
@@ -205,21 +206,21 @@ function buildEditorPage(
 </head>
 <body>
   <div class="header">
-    <h1>Edit Schema: <span style="font-weight:400;color:var(--text2)">${filename}</span></h1>
+    <h1>Edit Schema: <span style="font-weight:400;color:var(--text2)">${safeFilename}</span></h1>
     <button class="btn-file" onclick="openFile()" title="Open raw JSON file in editor">Open file ↗</button>
   </div>
   <p class="subtitle">Common JSON Schema keywords. Save to write back to the file — the preview reloads automatically.</p>
   <div id="editor-container"></div>
   <div class="save-bar">
     <button class="btn-save" onclick="saveSchema()">Save</button>
-    <span class="save-hint">Writes to <code>${filename}</code> · preview reloads on save</span>
+    <span class="save-hint">Writes to <code>${safeFilename}</code> · preview reloads on save</span>
   </div>
 
   <script nonce="${nonce}" src="${jsonEditorUri}"></script>
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
-    const schema   = ${JSON.stringify(SCHEMA_META)};
-    const initval  = ${JSON.stringify(currentSchema)};
+    const schema   = ${embedJson(SCHEMA_META)};
+    const initval  = ${embedJson(currentSchema)};
 
     const editor = new JSONEditor(document.getElementById('editor-container'), {
       schema,
