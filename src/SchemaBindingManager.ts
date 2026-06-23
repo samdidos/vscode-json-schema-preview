@@ -3,11 +3,14 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { isSupported, isYaml, stripJsoncComments } from './languages';
 
-type BindTarget = vscode.ConfigurationTarget | 'session';
+// ---------------------------------------------------------------------------
+// Legacy session-binding cleanup
+// These constants and the interface are kept only to clean up any temp bindings
+// written by older versions of the extension. The session-binding feature has
+// been removed; this code runs once on startup and is a no-op for new installs.
+// ---------------------------------------------------------------------------
 
 const TEMP_KEY = 'jsonschema.temporaryBindings';
-
-// 7 days — if a folder can't be found for cleanup after this long, drop the record.
 const TEMP_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface TempBindingRecord {
@@ -20,8 +23,8 @@ interface TempBindingRecord {
 
 /**
  * Manages the status bar item and settings bindings that link JSON/YAML data
- * files to JSON Schema files for validation. Supports workspace, folder, and
- * user scope, local file paths, remote URLs, and session-only (temporary) bindings.
+ * files to JSON Schema files for validation. Supports workspace-file, folder,
+ * and user scope, local file paths, and remote URLs.
  */
 export class SchemaBindingManager {
   private readonly statusBar: vscode.StatusBarItem;
@@ -33,7 +36,7 @@ export class SchemaBindingManager {
     this.statusBar.command = 'jsonschema.bindToCurrentFile';
     context.subscriptions.push(this.statusBar);
 
-    // Remove any temporary bindings left over from the previous session
+    // Clean up any temp bindings left by previous extension versions
     this.cleanupTemporaryBindings();
 
     const refresh = () => this.refresh(vscode.window.activeTextEditor?.document);
@@ -49,7 +52,7 @@ export class SchemaBindingManager {
   }
 
   // ---------------------------------------------------------------------------
-  // Temporary binding lifecycle
+  // Legacy cleanup (session bindings written by older extension versions)
   // ---------------------------------------------------------------------------
 
   async cleanupTemporaryBindings() {
@@ -60,14 +63,12 @@ export class SchemaBindingManager {
     const deferred: TempBindingRecord[] = [];
 
     for (const record of temps) {
-      // Drop records that are too old to clean up (stale / deleted folder)
       if (record.addedAt !== undefined && now - record.addedAt > TEMP_EXPIRY_MS) continue;
 
       const folder = vscode.workspace.workspaceFolders?.find(
         f => f.uri.toString() === record.folderUri
       );
       if (!folder) {
-        // Folder not loaded yet — keep for next startup
         deferred.push(record);
         continue;
       }
@@ -81,12 +82,6 @@ export class SchemaBindingManager {
     await this.ctx.workspaceState.update(TEMP_KEY, deferred);
   }
 
-  private isTemporaryBinding(relFile: string): boolean {
-    return this.ctx.workspaceState
-      .get<TempBindingRecord[]>(TEMP_KEY, [])
-      .some(t => normalise(t.relFile) === normalise(relFile));
-  }
-
   // ---------------------------------------------------------------------------
   // Status bar
   // ---------------------------------------------------------------------------
@@ -98,13 +93,8 @@ export class SchemaBindingManager {
     }
     const binding = findBoundSchemaPath(doc);
     if (binding) {
-      const isTemp = this.isTemporaryBinding(vscode.workspace.asRelativePath(doc.uri, false));
-      this.statusBar.text = isTemp
-        ? `$(watch) Schema: ${path.basename(binding)}`
-        : `$(check) Schema: ${path.basename(binding)}`;
-      this.statusBar.tooltip = isTemp
-        ? `Temporary schema (session only): ${binding}\nClick to change or remove`
-        : `Schema bound: ${binding}\nClick to change or remove`;
+      this.statusBar.text = `$(check) Schema: ${path.basename(binding)}`;
+      this.statusBar.tooltip = `Schema bound: ${binding}\nClick to change or remove`;
     } else {
       this.statusBar.text = `$(circle-slash) Schema: unbound`;
       this.statusBar.tooltip = 'No JSON Schema bound to this file\nClick to bind one';
@@ -130,8 +120,6 @@ export class SchemaBindingManager {
 
     const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
     const docIsYaml = isYaml(doc.languageId);
-    // defaultRelFile: folder-relative path used for temp-binding lookup and display
-    const defaultRelFile = vscode.workspace.asRelativePath(doc.uri, false);
     const current = findBoundSchemaPath(doc);
 
     type Item = vscode.QuickPickItem & { uri?: vscode.Uri; isUrl?: true; isBrowse?: true; isRemove?: true };
@@ -169,16 +157,11 @@ export class SchemaBindingManager {
     });
     if (!pick) return;
 
-    // Remove: auto-detect whether it's a temporary binding and skip scope picker
     if (pick.isRemove) {
-      if (this.isTemporaryBinding(defaultRelFile)) {
-        await this.removeTempBinding(defaultRelFile, docIsYaml, folder);
-      } else {
-        const target = await this.pickScope(folder !== undefined, true);
-        if (target === undefined) return;
-        const rmRelFile = relFileForTarget(doc.uri, target as vscode.ConfigurationTarget);
-        await this.removePermBinding(rmRelFile, docIsYaml, folder, target as vscode.ConfigurationTarget);
-      }
+      const target = await this.pickScope(folder !== undefined, true);
+      if (target === undefined) return;
+      const rmRelFile = relFileForTarget(doc.uri, target);
+      await this.removePermBinding(rmRelFile, docIsYaml, folder, target);
       this.refresh(doc);
       return;
     }
@@ -247,21 +230,13 @@ export class SchemaBindingManager {
     const target = await this.pickScope(folder !== undefined);
     if (target === undefined) return;
 
-    if (target === 'session') {
-      if (!folder) {
-        vscode.window.showErrorMessage('Session bindings require an open workspace folder.');
-        return;
-      }
-      await this.addTempBinding(defaultRelFile, schemaRef, docIsYaml, folder);
-    } else {
-      if (target === vscode.ConfigurationTarget.Workspace && !folder) {
-        vscode.window.showErrorMessage('File must be inside a workspace folder to use workspace settings.');
-        return;
-      }
-      const relFile = relFileForTarget(doc.uri, target);
-      await this.addPermBinding(relFile, schemaRef, docIsYaml, folder, target);
+    if (target === vscode.ConfigurationTarget.Workspace && !folder) {
+      vscode.window.showErrorMessage('File must be inside a workspace folder to use workspace settings.');
+      return;
     }
 
+    const relFile = relFileForTarget(doc.uri, target);
+    await this.addPermBinding(relFile, schemaRef, docIsYaml, folder, target);
     this.refresh(doc);
   }
 
@@ -292,19 +267,13 @@ export class SchemaBindingManager {
   // Scope picker
   // ---------------------------------------------------------------------------
 
-  private async pickScope(hasFolder: boolean, forRemove = false): Promise<BindTarget | undefined> {
-    type ScopeItem = vscode.QuickPickItem & { target: BindTarget };
+  private async pickScope(
+    hasFolder: boolean,
+    forRemove = false
+  ): Promise<vscode.ConfigurationTarget | undefined> {
+    type ScopeItem = vscode.QuickPickItem & { target: vscode.ConfigurationTarget };
 
     const items: ScopeItem[] = [];
-
-    if (hasFolder && !forRemove) {
-      items.push({
-        label: '$(watch) Session only',
-        description: 'temporary',
-        detail: 'Removed on next VS Code startup — not permanently saved to any settings file',
-        target: 'session',
-      });
-    }
 
     if (hasFolder) {
       items.push({
@@ -314,15 +283,16 @@ export class SchemaBindingManager {
         target: vscode.ConfigurationTarget.WorkspaceFolder,
       });
 
+      // Workspace scope only makes sense when a .code-workspace file is active
       const wsFile = vscode.workspace.workspaceFile;
-      items.push({
-        label: '$(root-folder) Workspace',
-        description: wsFile ? path.basename(wsFile.fsPath) : 'workspace settings',
-        detail: wsFile
-          ? `Saved in ${path.basename(wsFile.fsPath)} — applies to all folders in this workspace`
-          : 'Saved in workspace-level settings — applies to this workspace only',
-        target: vscode.ConfigurationTarget.Workspace,
-      });
+      if (wsFile) {
+        items.push({
+          label: '$(root-folder) Workspace',
+          description: path.basename(wsFile.fsPath),
+          detail: `Saved in ${path.basename(wsFile.fsPath)} — applies to all folders in this workspace`,
+          target: vscode.ConfigurationTarget.Workspace,
+        });
+      }
     }
 
     items.push({
@@ -370,50 +340,6 @@ export class SchemaBindingManager {
       }
     }
     return items;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Temporary binding helpers
-  // ---------------------------------------------------------------------------
-
-  private async addTempBinding(
-    relFile: string,
-    schemaRef: string,
-    isYaml: boolean,
-    folder: vscode.WorkspaceFolder
-  ) {
-    // Use WorkspaceFolder so the binding lives in the folder's own .vscode/settings.json
-    // and cleanup uses the same scope.
-    await this.writeAddBinding(relFile, schemaRef, isYaml, folder.uri, vscode.ConfigurationTarget.WorkspaceFolder);
-
-    const temps = this.ctx.workspaceState.get<TempBindingRecord[]>(TEMP_KEY, []);
-    const updated = temps.filter(t => normalise(t.relFile) !== normalise(relFile));
-    updated.push({ relFile, schemaRef, isYaml, folderUri: folder.uri.toString(), addedAt: Date.now() });
-    await this.ctx.workspaceState.update(TEMP_KEY, updated);
-
-    const action = await vscode.window.showInformationMessage(
-      `Session schema: ${path.basename(schemaRef)} → ${path.basename(relFile)} (not saved)`,
-      'Open Settings'
-    );
-    if (action === 'Open Settings') {
-      await vscode.commands.executeCommand('workbench.action.openWorkspaceSettingsFile');
-    }
-  }
-
-  private async removeTempBinding(
-    relFile: string,
-    isYaml: boolean,
-    folder: vscode.WorkspaceFolder | undefined
-  ) {
-    if (folder) {
-      await this.writeRemoveBinding(relFile, isYaml, folder.uri, vscode.ConfigurationTarget.WorkspaceFolder);
-    }
-    const temps = this.ctx.workspaceState.get<TempBindingRecord[]>(TEMP_KEY, []);
-    await this.ctx.workspaceState.update(
-      TEMP_KEY,
-      temps.filter(t => normalise(t.relFile) !== normalise(relFile))
-    );
-    vscode.window.showInformationMessage(`Temporary binding removed from ${path.basename(relFile)}`);
   }
 
   // ---------------------------------------------------------------------------
@@ -565,7 +491,6 @@ function stripEmbeddedUrlToken(url: string): string {
       || u.hostname.endsWith('.githubusercontent.com');
     if (isGitHub && u.searchParams.has('token')) {
       u.searchParams.delete('token');
-      // Remove trailing '?' if no other params remain
       return u.toString();
     }
   } catch { /* not a parseable URL — leave as-is */ }
@@ -595,7 +520,7 @@ export function dropPattern(
 /**
  * Computes the `fileMatch` path for a document URI given the chosen binding target.
  *
- * - WorkspaceFolder / Global / session → folder-relative path (no folder name prefix)
+ * - WorkspaceFolder / Global → folder-relative path (no folder-name prefix)
  * - Workspace in a multi-root setup → workspace-root-relative path (includes folder prefix)
  *   so the pattern is unambiguous when stored in the .code-workspace file.
  */
