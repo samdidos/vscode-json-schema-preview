@@ -223,7 +223,8 @@
     "test:e2e:visual-editor": "npm run compile && playwright test --config playwright.e2e.config.ts demo-visual-editor",
     "test:e2e:workspace-trust": "npm run compile && playwright test --config playwright.e2e.config.ts demo-workspace-trust",
     "test:e2e:schema-auth": "npm run compile && playwright test --config playwright.e2e.config.ts demo-schema-auth",
-    "generate:assets": "",
+    "make-gifs": "node scripts/make-gifs.mjs",
+    "generate:assets": "npm run test:e2e && npm run make-gifs",
     "bump:version": "npm --no-git-tag-version --allow-same-version version $VERSION"
   },
   "c8": {
