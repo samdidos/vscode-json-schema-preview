@@ -146,6 +146,7 @@ applyDefaults();
 export function resetAll(): void {
   window.activeTextEditor = undefined;
   workspace.workspaceFolders = undefined;
+  workspace.isTrusted = true;
   Object.keys(configStore).forEach(k => delete configStore[k]);
   statusBarItem.text = '';
   statusBarItem.tooltip = undefined;
@@ -188,6 +189,7 @@ let _workspaceFolders: any[] | undefined = undefined;
 export const workspace = {
   get workspaceFolders() { return _workspaceFolders; },
   set workspaceFolders(v: any) { _workspaceFolders = v; },
+  isTrusted:                true,
   getWorkspaceFolder:       _getWorkspaceFolder,
   asRelativePath:           _asRelativePath,
   getConfiguration:         _getConfiguration,

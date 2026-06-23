@@ -40,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!cfg.get<boolean>('autoOpen')) { return; }
     if (!isJsonSchemaFile(doc)) { return; }
     if (doc.uri.scheme === 'untitled') { return; }
-    openJsonSchema(context, doc.uri);
+    openJsonSchema(context, doc.uri, /* silent */ true);
   }
 
   if (vscode.window.activeTextEditor?.document) {
