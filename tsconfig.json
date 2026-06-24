@@ -16,5 +16,5 @@
 		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
 		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
 	},
-	"exclude": ["node_modules", "src/test"]
+	"exclude": ["node_modules", "src/test", "playwright.e2e.config.ts", "src/test/e2e"]
 }
