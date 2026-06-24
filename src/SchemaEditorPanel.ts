@@ -212,12 +212,12 @@ function buildEditorPage(
 <body>
   <div class="header">
     <h1>Edit Schema: <span style="font-weight:400;color:var(--text2)">${safeFilename}</span></h1>
-    <button class="btn-file" onclick="openFile()" title="Open raw JSON file in editor">Open file ↗</button>
+    <button class="btn-file" title="Open raw JSON file in editor">Open file ↗</button>
   </div>
   <p class="subtitle">Common JSON Schema keywords. Save to write back to the file — the preview reloads automatically.</p>
   <div id="editor-container"></div>
   <div class="save-bar">
-    <button class="btn-save" onclick="saveSchema()">Save</button>
+    <button class="btn-save">Save</button>
     <span class="save-hint">Writes to <code>${safeFilename}</code> · preview reloads on save</span>
   </div>
 
@@ -249,6 +249,12 @@ function buildEditorPage(
     function openFile() {
       vscode.postMessage({ type: 'openFile' });
     }
+
+    // Wire handlers via addEventListener — inline onclick attributes are blocked
+    // by the nonce-based CSP (a nonce authorises <script> elements, not inline
+    // event-handler attributes).
+    document.querySelector('.btn-save').addEventListener('click', saveSchema);
+    document.querySelector('.btn-file').addEventListener('click', openFile);
   </script>
 </body>
 </html>`;
