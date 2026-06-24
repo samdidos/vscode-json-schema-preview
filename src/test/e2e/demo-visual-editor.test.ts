@@ -1,13 +1,9 @@
 import { test } from '@playwright/test';
-import { launchVSCode } from './helpers/launch';
-import { openFile, runCommand } from './helpers/ui';
-import { captureSequence } from './helpers/capture';
+import { runDemo } from './helpers/demo';
+import { openFile } from './helpers/ui';
 
-test('demo-visual-editor: open the visual form editor for a schema', async () => {
-  const { app, window } = await launchVSCode();
-  const capture = captureSequence(window, 'visual-editor');
-
-  try {
+test('demo-visual-editor: open the visual form editor for a schema', () =>
+  runDemo('visual-editor', async (window, capture) => {
     await capture('workspace');
 
     await openFile(window, 'person.schema.json');
@@ -27,7 +23,4 @@ test('demo-visual-editor: open the visual form editor for a schema', async () =>
 
     await window.waitForTimeout(800);
     await capture('visual-editor-open-hold');
-  } finally {
-    await app.close();
-  }
-});
+  }));

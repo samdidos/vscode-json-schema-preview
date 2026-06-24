@@ -1,13 +1,9 @@
 import { test } from '@playwright/test';
-import { launchVSCode } from './helpers/launch';
+import { runDemo } from './helpers/demo';
 import { openFile, runCommand } from './helpers/ui';
-import { captureSequence } from './helpers/capture';
 
-test('demo-live-update: preview refreshes as the schema is edited', async () => {
-  const { app, window } = await launchVSCode();
-  const capture = captureSequence(window, 'live-update');
-
-  try {
+test('demo-live-update: preview refreshes as the schema is edited', () =>
+  runDemo('live-update', async (window, capture) => {
     // Enable live update via settings before opening files
     await runCommand(window, 'Preferences: Open User Settings (JSON)');
     await window.waitForTimeout(1_500);
@@ -50,7 +46,4 @@ test('demo-live-update: preview refreshes as the schema is edited', async () => 
 
     await window.waitForTimeout(800);
     await capture('preview-live-updated-hold');
-  } finally {
-    await app.close();
-  }
-});
+  }));

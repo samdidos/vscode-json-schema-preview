@@ -1,13 +1,9 @@
 import { test } from '@playwright/test';
-import { launchVSCode } from './helpers/launch';
+import { runDemo } from './helpers/demo';
 import { openFile } from './helpers/ui';
-import { captureSequence } from './helpers/capture';
 
-test('demo-inference: generate a JSON Schema from a data file', async () => {
-  const { app, window } = await launchVSCode();
-  const capture = captureSequence(window, 'inference');
-
-  try {
+test('demo-inference: generate a JSON Schema from a data file', () =>
+  runDemo('inference', async (window, capture) => {
     await capture('workspace');
 
     await openFile(window, 'person-valid.json');
@@ -27,7 +23,4 @@ test('demo-inference: generate a JSON Schema from a data file', async () => {
 
     await window.waitForTimeout(800);
     await capture('inferred-schema-hold');
-  } finally {
-    await app.close();
-  }
-});
+  }));

@@ -3,6 +3,7 @@
  * animated GIFs and writes them to docs/public/.
  *
  * Usage:  node scripts/make-gifs.mjs [--demo <name>]
+ *         node scripts/make-gifs.mjs [--demo=<name>]
  *
  * Prerequisites:  run `npm run test:e2e` first to populate screenshots/.
  */
@@ -12,6 +13,7 @@ import { createCanvas, loadImage } from 'canvas';
 import { existsSync, readdirSync, createWriteStream, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -27,11 +29,8 @@ const DEMOS = [
   { name: 'schema-auth',      delay: 1_200 },
 ];
 
-// --demo flag narrows which GIF to rebuild
-const demoArg = (() => {
-  const idx = process.argv.indexOf('--demo');
-  return idx !== -1 ? process.argv[idx + 1] : null;
-})();
+const { values: argv } = parseArgs({ options: { demo: { type: 'string' } }, strict: false });
+const demoArg = argv.demo ?? null;
 
 async function createGif(framePaths, outputPath, delayMs) {
   const first = await loadImage(framePaths[0]);
@@ -50,7 +49,11 @@ async function createGif(framePaths, outputPath, delayMs) {
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  for (const framePath of framePaths) {
+  // Add the already-loaded first frame, then load the rest.
+  ctx.drawImage(first, 0, 0);
+  encoder.addFrame(ctx);
+
+  for (const framePath of framePaths.slice(1)) {
     const img = await loadImage(framePath);
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(img, 0, 0);
