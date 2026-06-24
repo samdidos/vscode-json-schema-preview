@@ -90,10 +90,18 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
   panel.webview.onDidReceiveMessage(
     async message => {
       if (message.type === 'position') {
-        position = { x: message.scrollX, y: message.scrollY };
+        // Coerce to numbers — message payload is untyped at runtime even though
+        // window.scrollX/scrollY are always DOM numbers on the sending side.
+        position = { x: Number(message.scrollX) || 0, y: Number(message.scrollY) || 0 };
       } else if (message.type === 'openExternal') {
         try {
-          await vscode.env.openExternal(vscode.Uri.parse(message.href as string));
+          const parsed = vscode.Uri.parse(message.href as string);
+          // Validate scheme on the extension-host side (defence-in-depth — the
+          // webview-side JS also filters, but that's a client-side check only).
+          if (parsed.scheme !== 'http' && parsed.scheme !== 'https' && parsed.scheme !== 'mailto') {
+            return;
+          }
+          await vscode.env.openExternal(parsed);
         } catch {
           vscode.window.showErrorMessage(`Cannot open: ${message.href}`);
         }
