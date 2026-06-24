@@ -52,10 +52,11 @@ suite('embedJson()', () => {
 });
 
 suite('getNonce()', () => {
-  test('returns a 32-character alphanumeric string', () => {
+  test('returns a base64url token with at least 128 bits of entropy', () => {
     const nonce = getNonce();
-    assert.strictEqual(nonce.length, 32);
-    assert.ok(/^[A-Za-z0-9]+$/.test(nonce));
+    // 16 random bytes encoded as base64url → 22 chars, no padding.
+    assert.ok(nonce.length >= 22);
+    assert.ok(/^[A-Za-z0-9_-]+$/.test(nonce));
   });
 
   test('returns a different value on each call', () => {

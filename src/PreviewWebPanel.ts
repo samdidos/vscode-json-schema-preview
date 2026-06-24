@@ -108,7 +108,7 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
           saveLabel: 'Save Preview',
         });
         if (!dest) return;
-        fs.writeFileSync(dest.fsPath, cached.content, 'utf-8');
+        await fs.promises.writeFile(dest.fsPath, cached.content, 'utf-8');
         vscode.window.showInformationMessage(`Preview saved to ${path.basename(dest.fsPath)}`);
       }
     },
@@ -246,10 +246,11 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
 // ---------------------------------------------------------------------------
 
 /** Returns { ext, isHtml } by reading template_name from the config file. */
-function detectOutputFmt(configFile?: string): { ext: string; isHtml: boolean } {
+async function detectOutputFmt(configFile?: string): Promise<{ ext: string; isHtml: boolean }> {
   if (configFile) {
     try {
-      const cfg = JSON.parse(fs.readFileSync(configFile, 'utf-8')) as { template_name?: string };
+      const raw = await fs.promises.readFile(configFile, 'utf-8');
+      const cfg = JSON.parse(raw) as { template_name?: string };
       if (/^md/i.test(cfg.template_name ?? '')) return { ext: 'md', isHtml: false };
     } catch { /* fall through */ }
   }
@@ -291,6 +292,9 @@ function buildInjection(x: number, y: number, ext: string, nonce: string): strin
         if (!a) return;
         var href = a.getAttribute('href');
         if (!href || href.startsWith('#')) return;
+        // Only hand off real web/mail links; relative links resolve to a
+        // vscode-webview:// URL that openExternal cannot handle.
+        if (a.protocol !== 'http:' && a.protocol !== 'https:' && a.protocol !== 'mailto:') return;
         e.preventDefault();
         vsc.postMessage({ type: 'openExternal', href: a.href });
       });
@@ -368,7 +372,7 @@ async function buildWebviewContent(
 ): Promise<string> {
   try {
     const content = await generateDocHTML(schemaPath, forUri);
-    const fmt = detectOutputFmt(findConfigFile(forUri));
+    const fmt = await detectOutputFmt(findConfigFile(forUri));
     rawOutputCache.set(forUri.fsPath, { content, ext: fmt.ext });
     const nonce = getNonce();
     const rendered = fmt.isHtml ? content : wrapAsHtml(content, fmt.ext);

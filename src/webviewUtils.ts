@@ -1,5 +1,7 @@
 /** Shared HTML/CSS helpers used by extension webview panels. */
 
+import * as crypto from 'crypto';
+
 export function sanitizeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -15,12 +17,10 @@ export function embedJson(value: unknown): string {
 
 /** Cryptographically-random nonce for Content-Security-Policy script allow-listing. */
 export function getNonce(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let nonce = '';
-  for (let i = 0; i < 32; i++) {
-    nonce += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return nonce;
+  // Use a CSPRNG (not Math.random) so the nonce is unpredictable, per the
+  // project constitution's security requirements. Base64url keeps the value
+  // safe to drop into both an HTML attribute and the CSP header.
+  return crypto.randomBytes(16).toString('base64url');
 }
 
 // These pages contain only inline styles and no scripts, so the CSP locks the
