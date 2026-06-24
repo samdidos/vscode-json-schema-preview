@@ -1,13 +1,9 @@
 import { test } from '@playwright/test';
-import { launchVSCode } from './helpers/launch';
-import { openFile, runCommand } from './helpers/ui';
-import { captureSequence } from './helpers/capture';
+import { runDemo } from './helpers/demo';
+import { openFile } from './helpers/ui';
 
-test('demo-validation: validate an invalid JSON file against its schema', async () => {
-  const { app, window } = await launchVSCode();
-  const capture = captureSequence(window, 'validation');
-
-  try {
+test('demo-validation: validate an invalid JSON file against its schema', () =>
+  runDemo('validation', async (window, capture) => {
     await capture('workspace');
 
     await openFile(window, 'person-invalid.json');
@@ -27,7 +23,4 @@ test('demo-validation: validate an invalid JSON file against its schema', async 
 
     await window.waitForTimeout(800);
     await capture('validation-result-hold');
-  } finally {
-    await app.close();
-  }
-});
+  }));

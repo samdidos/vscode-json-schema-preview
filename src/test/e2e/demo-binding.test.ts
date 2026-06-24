@@ -1,13 +1,9 @@
 import { test } from '@playwright/test';
-import { launchVSCode } from './helpers/launch';
+import { runDemo } from './helpers/demo';
 import { openFile } from './helpers/ui';
-import { captureSequence } from './helpers/capture';
 
-test('demo-binding: bind a JSON data file to a schema and see status bar update', async () => {
-  const { app, window } = await launchVSCode();
-  const capture = captureSequence(window, 'binding');
-
-  try {
+test('demo-binding: bind a JSON data file to a schema and see status bar update', () =>
+  runDemo('binding', async (window, capture) => {
     await capture('workspace');
 
     // Open a data file that has no inline $schema (so the status bar shows "unbound")
@@ -40,7 +36,4 @@ test('demo-binding: bind a JSON data file to a schema and see status bar update'
 
     await window.waitForTimeout(500);
     await capture('binding-done-hold');
-  } finally {
-    await app.close();
-  }
-});
+  }));

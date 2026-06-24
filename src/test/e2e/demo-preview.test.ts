@@ -1,13 +1,9 @@
 import { test } from '@playwright/test';
-import { launchVSCode } from './helpers/launch';
-import { openFile, runCommand } from './helpers/ui';
-import { captureSequence } from './helpers/capture';
+import { runDemo } from './helpers/demo';
+import { openFile } from './helpers/ui';
 
-test('demo-preview: open schema and show preview panel with download button', async () => {
-  const { app, window } = await launchVSCode();
-  const capture = captureSequence(window, 'preview');
-
-  try {
+test('demo-preview: open schema and show preview panel with download button', () =>
+  runDemo('preview', async (window, capture) => {
     await capture('workspace');
 
     await openFile(window, 'person.schema.json');
@@ -32,7 +28,4 @@ test('demo-preview: open schema and show preview panel with download button', as
     // Hold on the final frame for the GIF loop
     await window.waitForTimeout(800);
     await capture('preview-hold');
-  } finally {
-    await app.close();
-  }
-});
+  }));

@@ -2,7 +2,8 @@ import { defineConfig } from '@playwright/test';
 import path from 'path';
 
 export default defineConfig({
-  testDir: path.join(__dirname, 'src/test/e2e'),
+  // Use process.cwd() — __dirname resolves to out/ after compilation.
+  testDir: path.join(process.cwd(), 'src/test/e2e'),
   timeout: 120_000,
   retries: 0,
   workers: 1,

@@ -1,31 +1,25 @@
 import { test } from '@playwright/test';
-import { launchVSCodeUntrusted } from './helpers/launch';
-import { openFile } from './helpers/ui';
-import { captureSequence } from './helpers/capture';
+import { runDemo } from './helpers/demo';
+import { openFile, clickFirstMatch } from './helpers/ui';
 
 /**
  * Demonstrates the Workspace Trust gate: in restricted mode the preview command
  * shows a warning instead of running the Python tool.
  */
-test('demo-workspace-trust: preview is blocked in untrusted workspaces', async () => {
-  const { app, window } = await launchVSCodeUntrusted();
-  const capture = captureSequence(window, 'workspace-trust');
-
-  try {
+test('demo-workspace-trust: preview is blocked in untrusted workspaces', () =>
+  runDemo('workspace-trust', async (window, capture) => {
     // VS Code shows a Workspace Trust modal — capture it
     await capture('trust-dialog');
 
     // Click "No, I don't trust the authors" to stay in Restricted Mode.
     // Selector text varies across VS Code versions; try the most common variants.
-    const dontTrust =
-      (await window.$('[title*="Restricted Mode"]')) ??
-      (await window.$('text=Don\'t Trust')) ??
-      (await window.$('text=Browse Folder in Restricted Mode')) ??
-      (await window.$('.monaco-button:has-text("No")'));
-
-    if (dontTrust) {
-      await dontTrust.click();
-    } else {
+    const clicked = await clickFirstMatch(window, [
+      '[title*="Restricted Mode"]',
+      'text=Don\'t Trust',
+      'text=Browse Folder in Restricted Mode',
+      '.monaco-button:has-text("No")',
+    ]);
+    if (!clicked) {
       // Fall back: dismiss the dialog and VS Code usually stays restricted
       await window.keyboard.press('Escape');
     }
@@ -49,7 +43,4 @@ test('demo-workspace-trust: preview is blocked in untrusted workspaces', async (
 
     await window.waitForTimeout(800);
     await capture('trust-warning-hold');
-  } finally {
-    await app.close();
-  }
-});
+  }, false /* untrusted */));

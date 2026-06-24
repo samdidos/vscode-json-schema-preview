@@ -1,8 +1,9 @@
 import { Page } from 'playwright';
 import path from 'path';
 import fs from 'fs';
+import { EXT_ROOT } from './launch';
 
-const SCREENSHOTS_ROOT = path.resolve(process.cwd(), 'screenshots');
+const SCREENSHOTS_ROOT = path.join(EXT_ROOT, 'screenshots');
 
 /**
  * Returns a zero-padded frame capture function scoped to a named demo directory.

@@ -1,18 +1,14 @@
 import { test } from '@playwright/test';
-import { launchVSCode } from './helpers/launch';
+import { runDemo } from './helpers/demo';
 import { openFile } from './helpers/ui';
-import { captureSequence } from './helpers/capture';
 
 /**
  * Demonstrates the schema authentication flow: running "Configure Schema
  * Authentication…" surfaces the auth-provider Quick Pick and the cache-locally
  * workflow that eliminates IntelliSense red squiggles for private schemas.
  */
-test('demo-schema-auth: configure auth for a remote schema', async () => {
-  const { app, window } = await launchVSCode();
-  const capture = captureSequence(window, 'schema-auth');
-
-  try {
+test('demo-schema-auth: configure auth for a remote schema', () =>
+  runDemo('schema-auth', async (window, capture) => {
     await capture('workspace');
 
     // Open the person schema (any file activates the extension)
@@ -42,7 +38,4 @@ test('demo-schema-auth: configure auth for a remote schema', async () => {
 
     await window.waitForTimeout(500);
     await capture('schema-auth-hold');
-  } finally {
-    await app.close();
-  }
-});
+  }));

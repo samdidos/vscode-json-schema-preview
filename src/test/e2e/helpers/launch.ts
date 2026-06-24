@@ -21,45 +21,36 @@ export interface VSCodeInstance {
   window: Page;
 }
 
-async function getExecutable(): Promise<string> {
-  const distPath = path.join(EXT_ROOT, 'dist', 'extension.js');
-  if (!fs.existsSync(distPath)) {
-    throw new Error('Extension not built. Run `npm run compile` first.');
+// Cached so multiple launch calls in the same process don't re-download.
+let executablePromise: Promise<string> | undefined;
+
+function getExecutable(): Promise<string> {
+  if (!executablePromise) {
+    const distPath = path.join(EXT_ROOT, 'dist', 'extension.js');
+    if (!fs.existsSync(distPath)) {
+      throw new Error('Extension not built. Run `npm run compile` first.');
+    }
+    executablePromise = downloadAndUnzipVSCode('stable');
   }
-  return downloadAndUnzipVSCode('stable');
+  return executablePromise;
 }
 
-/** Launches VS Code with the workspace pre-trusted (the normal demo path). */
-export async function launchVSCode(): Promise<VSCodeInstance> {
+async function launch(args: string[]): Promise<VSCodeInstance> {
   const executablePath = await getExecutable();
-
-  const app = await electron.launch({
-    executablePath,
-    args: [...BASE_ARGS, '--disable-workspace-trust'],
-  });
-
+  const app = await electron.launch({ executablePath, args });
   const window = await app.firstWindow();
   await window.waitForSelector('.monaco-workbench', { timeout: 60_000 });
   await window.waitForTimeout(3_000);
-
   return { app, window };
 }
+
+/** Launches VS Code with the workspace pre-trusted (the normal demo path). */
+export const launchVSCode = (): Promise<VSCodeInstance> =>
+  launch([...BASE_ARGS, '--disable-workspace-trust']);
 
 /**
  * Launches VS Code WITHOUT pre-trusting the workspace so that workspace-trust
  * prompts and restricted-mode behaviour are observable.
  */
-export async function launchVSCodeUntrusted(): Promise<VSCodeInstance> {
-  const executablePath = await getExecutable();
-
-  const app = await electron.launch({
-    executablePath,
-    args: BASE_ARGS, // intentionally omits --disable-workspace-trust
-  });
-
-  const window = await app.firstWindow();
-  await window.waitForSelector('.monaco-workbench', { timeout: 60_000 });
-  await window.waitForTimeout(3_000);
-
-  return { app, window };
-}
+export const launchVSCodeUntrusted = (): Promise<VSCodeInstance> =>
+  launch(BASE_ARGS); // intentionally omits --disable-workspace-trust
