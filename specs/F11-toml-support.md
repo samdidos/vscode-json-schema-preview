@@ -5,11 +5,14 @@
 Add TOML (`.toml`) as a first-class data format alongside JSON, JSONC, JSONL,
 and YAML. TOML files can be validated against a JSON Schema, have a schema
 inferred from their contents, and display a bound schema in the status bar.
-Because VS Code has no built-in `toml.schemas` setting, settings-based binding
-writes to `evenBetterToml.schema.associations` when the
-`tamasfe.even-better-toml` extension is installed, or falls back to
-extension-managed workspace state. Inline `$schema` binding (F10) is extended
-to cover TOML syntax.
+
+Because VS Code has no built-in `toml.schemas` setting, and to avoid coupling
+to or conflicting with third-party TOML extensions (e.g. `tamasfe.even-better-toml`,
+`tamasfe.taplo`), schema binding for TOML uses **Inline only**: the `"$schema"`
+key is written directly into the TOML file. This approach is also recognised
+natively by every TOML tool that honours `$schema`, making it the most
+portable choice. Inline `$schema` binding (F10) is extended to cover TOML
+syntax.
 
 Note: TOML is not a subset of JSON. It is its own format that maps cleanly to
 JSON-compatible value types (strings, numbers, booleans, arrays, tables/objects)
@@ -45,13 +48,10 @@ value tree, so date/time values are validated as strings.
 
 ### TOML Parser Dependency
 
-- **F11-FR-05** The project MUST add exactly one TOML parsing library as a
-  production dependency. The chosen library MUST be:
-  - Pure JavaScript / TypeScript (no native bindings, no Python subprocess)
-  - CommonJS-compatible or dual ESM/CJS (VS Code extension host is CommonJS)
-  - Actively maintained with a permissive licence (MIT or ISC)
-  - `[NEEDS CLARIFICATION]` — preferred library from the team (candidate:
-    `smol-toml`; alternative: `@iarna/toml`).
+- **F11-FR-05** The project MUST add `smol-toml` as a production dependency.
+  It is pure TypeScript (~15 KB), dual ESM/CJS (compatible with the VS Code
+  extension host's CommonJS runtime), MIT-licensed, and actively maintained
+  with no native bindings.
 
 ### Validation
 
@@ -79,23 +79,17 @@ value tree, so date/time values are validated as strings.
 ### Schema Binding
 
 - **F11-FR-11** The status bar item MUST be visible when a TOML file is the
-  active editor (consistent with F04-FR-05).
-- **F11-FR-12** The **Bind Schema…** command MUST be available for TOML files
-  and MUST present the same scope picker used for other formats, with the
-  following behaviour per scope:
-  - **Inline** — writes `"$schema" = "<ref>"` as the first key in the TOML
-    file (see F10; TOML key names containing `$` MUST be quoted per the TOML
-    spec).
-  - **Settings (folder / workspace / user)** — writes to
-    `evenBetterToml.schema.associations` if `tamasfe.even-better-toml` is
-    installed; otherwise stores the binding in extension workspace state and
-    resolves it internally for validation only.
-- **F11-FR-13** When the binding target is `evenBetterToml.schema.associations`
-  the association MUST be written as a glob-pattern-to-schema-URL map:
-  `{ "<glob>": "<schemaRef>" }`.
-- **F11-FR-14** The command MUST NOT offer TOML files the `json.schemas` or
-  `yaml.schemas` settings paths, as VS Code's built-in language servers do not
-  handle TOML.
+  active editor (consistent with F04-FR-05). It reflects whatever
+  `extractInlineSchemaUrl` returns for the file.
+- **F11-FR-12** The **Bind Schema…** command MUST be available for TOML files.
+  For TOML the scope picker MUST offer **Inline (this file)** only — no
+  folder/workspace/user settings options — because VS Code has no built-in
+  `toml.schemas` mechanism and writing to third-party extension settings is
+  out of scope. The picker MUST show an explanatory subtitle:
+  *"TOML binding is inline only — the $schema key is written into your file."*
+- **F11-FR-13** (removed — no `evenBetterToml.schema.associations` writes)
+- **F11-FR-14** The extension MUST NOT write to `json.schemas`, `yaml.schemas`,
+  or any setting owned by a third-party TOML extension.
 
 ### Inline `$schema` for TOML (extends F10)
 
@@ -151,14 +145,13 @@ value tree, so date/time values are validated as strings.
    in the Problems panel.
 4. Running **Generate Schema from This File** on `config.toml` opens a new JSON
    editor with an inferred schema.
-5. Running **Bind Schema…** on `config.toml` and choosing **Inline** inserts
+5. Running **Bind Schema…** on `config.toml` shows only the **Inline** scope
+   option with the explanatory subtitle; choosing it inserts
    `"$schema" = "./schemas/config.schema.json"` as the first line.
-6. Running **Bind Schema…** and choosing a settings scope with
-   `tamasfe.even-better-toml` installed writes to
-   `evenBetterToml.schema.associations` in the appropriate settings file.
-7. Running **Bind Schema…** and choosing a settings scope without
-   `tamasfe.even-better-toml` stores the binding in extension workspace state
-   and the status bar reflects it.
+6. After inline binding the status bar shows
+   `$(file-symlink-file) Schema: config.schema.json`.
+7. Running **Remove** via **Bind Schema…** on the same file strips the
+   `"$schema" = ...` line and the file parses cleanly as TOML.
 8. A TOML file containing TOML native dates validates without errors (dates
    treated as strings).
 9. The "Validate", "Generate Schema", and "Bind Schema…" commands do NOT appear
@@ -166,25 +159,27 @@ value tree, so date/time values are validated as strings.
 
 ## Open Questions
 
-- [ ] [NEEDS CLARIFICATION] Which TOML npm library should be used? Candidates:
-  - `smol-toml` — small (~15 KB), pure TypeScript, MIT, dual ESM/CJS, no native
-    deps. Actively maintained.
-  - `@iarna/toml` — battle-tested, wider adoption, MIT, but ESM-only in v3+
-    (may require CJS shim for VS Code extension host).
-  - `toml` — simple, tiny, but minimal maintenance activity since 2017.
-- [ ] [NEEDS CLARIFICATION] When `tamasfe.even-better-toml` is NOT installed,
-  should the scope picker hide the settings-based binding options entirely (with
-  a note that only Inline binding is available without the TOML extension), or
-  show them with a warning that they will only be used by this extension's own
-  validator?
+All questions resolved — no open items.
+
+<!-- Resolved questions (for audit trail):
+
+Q1 — TOML parser library [resolved by user]
+  Decision: use `smol-toml`. Pure TypeScript, ~15 KB, dual ESM/CJS, MIT,
+  actively maintained. See F11-FR-05.
+
+Q2 — Settings-based binding when no TOML extension installed [resolved by user]
+  Decision: no settings-based binding for TOML at all. Inline `"$schema"` is
+  the sole binding mechanism. This avoids any coupling to or conflict with
+  third-party TOML extensions. The scope picker shows Inline only for TOML
+  files. See F11-FR-12, F11-FR-14.
+-->
 
 ## Relation to Existing Specs
 
 - Extends **F03** (validation) — new `isToml` branch in the parse step;
   no changes to Ajv compilation.
-- Extends **F04** (binding) — new settings target
-  (`evenBetterToml.schema.associations`); adds workspace-state fallback for
-  TOML; same status bar mechanics.
+- Extends **F04** (binding) — status bar mechanic only; no new settings
+  target. TOML schema is resolved exclusively via `extractInlineSchemaUrl`.
 - Extends **F06** (inference) — new `isToml` parse branch; same `genson-js`
   call.
 - Extends **F10** (inline binding) — TOML write/remove path added; F10-FR-15
@@ -196,5 +191,5 @@ value tree, so date/time values are validated as strings.
   operations.
 - **S03** (performance): TOML parsing is synchronous and in-process; no timeout
   needed. Binding writes remain async (VS Code config API).
-- Requires **constitution amendment** to add `TOML parsing: <library>` to
+- Requires **constitution amendment** to add `TOML parsing: smol-toml` to
   Article II's technology table.
