@@ -87,8 +87,7 @@ value tree, so date/time values are validated as strings.
   `toml.schemas` mechanism and writing to third-party extension settings is
   out of scope. The picker MUST show an explanatory subtitle:
   *"TOML binding is inline only — the $schema key is written into your file."*
-- **F11-FR-13** (removed — no `evenBetterToml.schema.associations` writes)
-- **F11-FR-14** The extension MUST NOT write to `json.schemas`, `yaml.schemas`,
+- **F11-FR-13** The extension MUST NOT write to `json.schemas`, `yaml.schemas`,
   or any setting owned by a third-party TOML extension.
 
 ### Inline `$schema` for TOML (extends F10)
