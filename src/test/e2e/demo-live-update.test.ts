@@ -1,19 +1,14 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
 import { openFile, runCommand } from './helpers/ui';
+import { seedUserSettings } from './helpers/launch';
 
-test('demo-live-update: preview refreshes as the schema is edited', () =>
-  runDemo('live-update', async (window, capture) => {
-    // Enable live update via settings before opening files
-    await runCommand(window, 'Preferences: Open User Settings (JSON)');
-    await window.waitForTimeout(1_500);
-    // Move cursor to end of JSON object and insert the setting
-    await window.keyboard.press('Control+End');
-    await window.keyboard.press('ArrowLeft'); // before closing }
-    await window.keyboard.type(',\n  "jsonschema.preview.liveUpdate": true', { delay: 20 });
-    await window.keyboard.press('Control+s');
-    await window.waitForTimeout(500);
+test('demo-live-update: preview refreshes as the schema is edited', () => {
+  // Pre-seed liveUpdate so the demo can skip the settings-editing step and
+  // go straight to demonstrating the live-refresh behaviour.
+  seedUserSettings({ 'jsonschema.preview.liveUpdate': true });
 
+  return runDemo('live-update', async (window, capture) => {
     await openFile(window, 'bookshelf.schema.yaml');
     await capture('schema-open');
 
@@ -24,12 +19,6 @@ test('demo-live-update: preview refreshes as the schema is edited', () =>
     // Edit the schema title to trigger a live refresh
     await openFile(window, 'bookshelf.schema.yaml');
     await window.waitForTimeout(500);
-
-    // Find "Bookshelf" in the title line and change it
-    await window.keyboard.press('Control+h');
-    await window.waitForSelector('.find-widget', { state: 'visible' }).catch(() => {});
-    await window.waitForTimeout(400);
-    await window.keyboard.press('Escape');
 
     // Use Ctrl+G to go to line 2 (title line) and edit
     await window.keyboard.press('Control+g');
@@ -46,4 +35,5 @@ test('demo-live-update: preview refreshes as the schema is edited', () =>
 
     await window.waitForTimeout(800);
     await capture('preview-live-updated-hold');
-  }));
+  });
+});

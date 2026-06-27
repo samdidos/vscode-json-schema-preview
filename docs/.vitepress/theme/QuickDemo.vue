@@ -1,33 +1,41 @@
 <template>
   <section class="demo-section">
     <div class="demo-label">Feature Demos</div>
-    <p class="demo-subtitle">
-      Click any card to expand. All demos run directly in VS Code — no browser required.
-    </p>
 
-    <div class="demo-grid">
-      <div v-for="f in features" :key="f.id" class="demo-card" @click="active = active === f.id ? null : f.id">
-        <div class="card-header">
-          <span class="card-icon">{{ f.icon }}</span>
-          <span class="card-title">{{ f.title }}</span>
-          <span class="card-chevron" :class="{ open: active === f.id }">›</span>
-        </div>
-        <p class="card-desc">{{ f.desc }}</p>
-        <Transition name="expand">
-          <div v-if="active === f.id" class="card-gif">
-            <img :src="base + f.gif" :alt="f.title + ' demo'" loading="lazy" />
-          </div>
-        </Transition>
-      </div>
+    <div class="demo-tabs" role="tablist">
+      <button
+        v-for="f in features"
+        :key="f.id"
+        class="demo-tab"
+        :class="{ active: active === f.id }"
+        role="tab"
+        :aria-selected="active === f.id"
+        @click="active = f.id"
+      >
+        <span class="tab-icon">{{ f.icon }}</span>
+        <span class="tab-title">{{ f.title }}</span>
+      </button>
     </div>
+
+    <Transition name="fade" mode="out-in">
+      <div :key="active" class="demo-display">
+        <p class="demo-desc">{{ activeFeature.desc }}</p>
+        <div class="demo-gif-wrap">
+          <img
+            :src="base + activeFeature.gif"
+            :alt="activeFeature.title + ' demo'"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    </Transition>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const base = '/vscode-json-schema-preview/'
-const active = ref<string | null>('preview')
 
 const features = [
   {
@@ -73,11 +81,14 @@ const features = [
     desc: 'Click the pencil icon to open a form-based editor. Edit keywords without touching raw JSON — saves back to the file on click.',
   },
 ]
+
+const active = ref(features[0].id)
+const activeFeature = computed(() => features.find(f => f.id === active.value)!)
 </script>
 
 <style scoped>
 .demo-section {
-  max-width: 860px;
+  max-width: 960px;
   margin: 0 auto 64px;
   padding: 0 24px;
 }
@@ -89,86 +100,80 @@ const features = [
   letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--vp-c-brand-1);
-  margin-bottom: 8px;
+  margin-bottom: 20px;
 }
 
-.demo-subtitle {
-  text-align: center;
-  font-size: 15px;
-  color: var(--vp-c-text-2);
-  margin: 0 0 32px;
+/* ── Tab row ──────────────────────────────── */
+.demo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
 }
 
-/* ── Grid ─────────────────────────────────── */
-.demo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 16px;
-}
-
-/* ── Card ─────────────────────────────────── */
-.demo-card {
+.demo-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
   border: 1px solid var(--vp-c-border);
-  border-radius: 10px;
+  border-radius: 99px;
   background: var(--vp-c-bg-soft);
-  overflow: hidden;
   cursor: pointer;
-  transition: border-color .2s, box-shadow .2s;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  transition: border-color .18s, color .18s, background .18s, box-shadow .18s;
+  white-space: nowrap;
 }
 
-.demo-card:hover {
+.demo-tab:hover {
   border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}
+
+.demo-tab.active {
+  border-color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
   box-shadow: 0 0 0 2px var(--vp-c-brand-soft);
 }
 
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 16px 0;
+.tab-icon  { font-size: 15px; }
+.tab-title { font-size: 13px; }
+
+/* ── Display area ─────────────────────────── */
+.demo-display {
+  border: 1px solid var(--vp-c-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--vp-c-bg-soft);
 }
 
-.card-icon   { font-size: 18px; flex-shrink: 0; }
-.card-title  { font-size: 14px; font-weight: 700; color: var(--vp-c-text-1); flex: 1; }
-.card-chevron {
-  font-size: 18px;
-  color: var(--vp-c-text-3);
-  transform: rotate(0deg);
-  transition: transform .25s;
-  line-height: 1;
-}
-.card-chevron.open { transform: rotate(90deg); }
-
-.card-desc {
-  margin: 6px 16px 14px;
-  font-size: 13px;
-  color: var(--vp-c-text-2);
-  line-height: 1.5;
+.demo-gif-wrap {
+  background: #0d1117;
+  line-height: 0;
 }
 
-/* ── GIF panel ────────────────────────────── */
-.card-gif {
-  border-top: 1px solid var(--vp-c-border);
-  padding: 12px;
-  background: #111;
-}
-
-.card-gif img {
+.demo-gif-wrap img {
   display: block;
   width: 100%;
-  border-radius: 6px;
+  height: auto;
+}
+
+.demo-desc {
+  margin: 0;
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+  line-height: 1.6;
+  border-bottom: 1px solid var(--vp-c-border);
 }
 
 /* ── Transition ───────────────────────────── */
-.expand-enter-active,
-.expand-leave-active {
-  transition: opacity .25s, max-height .3s ease;
-  max-height: 400px;
-  overflow: hidden;
-}
-.expand-enter-from,
-.expand-leave-to {
-  opacity: 0;
-  max-height: 0;
-}
+.fade-enter-active,
+.fade-leave-active { transition: opacity .18s ease; }
+.fade-enter-from,
+.fade-leave-to      { opacity: 0; }
 </style>
