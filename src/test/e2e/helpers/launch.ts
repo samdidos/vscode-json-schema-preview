@@ -5,12 +5,17 @@ import fs from 'fs';
 import os from 'os';
 
 export const EXT_ROOT = path.resolve(__dirname, '../../../..');
-export const SHOWCASE_DIR = path.join(EXT_ROOT, 'showcase');
+export const SHOWCASE_DIR = path.join(EXT_ROOT, 'showcase'); // source — never written to by tests
 
-// Each test run (process) gets its own user-data-dir so VS Code doesn't detect
-// the developer's running instance, and stale settings from a previous run
-// (e.g. liveUpdate written by demo-live-update) don't bleed into the next run.
+// Per-process temp dirs so tests never touch tracked source files and each run
+// starts from a clean state.
 export const USER_DATA_DIR = path.join(os.tmpdir(), `vscode-e2e-${process.pid}`);
+export const WORKSPACE_DIR  = path.join(os.tmpdir(), `vscode-e2e-workspace-${process.pid}`);
+
+// Copy the showcase tree once per process before the first launch.
+if (!fs.existsSync(WORKSPACE_DIR)) {
+  fs.cpSync(SHOWCASE_DIR, WORKSPACE_DIR, { recursive: true });
+}
 
 /** Path to the VS Code user settings.json inside USER_DATA_DIR. */
 export const USER_SETTINGS_PATH = path.join(USER_DATA_DIR, 'User', 'settings.json');
@@ -36,7 +41,7 @@ const BASE_ARGS = [
   '--disable-extensions',
   `--user-data-dir=${USER_DATA_DIR}`,
   `--extensionDevelopmentPath=${EXT_ROOT}`,
-  SHOWCASE_DIR,
+  WORKSPACE_DIR,
 ];
 
 export interface VSCodeInstance {
