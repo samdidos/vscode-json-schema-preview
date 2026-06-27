@@ -225,7 +225,11 @@
     "test:e2e:schema-auth": "npm run compile && playwright test --config playwright.e2e.config.ts demo-schema-auth",
     "make-gifs": "node scripts/make-gifs.mjs",
     "generate:assets": "npm run test:e2e && npm run make-gifs",
-    "bump:version": "npm --no-git-tag-version --allow-same-version version $VERSION"
+    "bump:version": "npm --no-git-tag-version --allow-same-version version $VERSION",
+    "docs:install": "npm --prefix docs install",
+    "docs:dev": "npm --prefix docs run dev",
+    "docs:build": "npm --prefix docs run build",
+    "docs:preview": "npm --prefix docs run preview"
   },
   "c8": {
     "reporter": [

@@ -2,9 +2,28 @@ import { _electron as electron, ElectronApplication, Page } from 'playwright';
 import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
 export const EXT_ROOT = path.resolve(__dirname, '../../../..');
 export const SHOWCASE_DIR = path.join(EXT_ROOT, 'showcase');
+
+// Each test run (process) gets its own user-data-dir so VS Code doesn't detect
+// the developer's running instance, and stale settings from a previous run
+// (e.g. liveUpdate written by demo-live-update) don't bleed into the next run.
+export const USER_DATA_DIR = path.join(os.tmpdir(), `vscode-e2e-${process.pid}`);
+
+/** Path to the VS Code user settings.json inside USER_DATA_DIR. */
+export const USER_SETTINGS_PATH = path.join(USER_DATA_DIR, 'User', 'settings.json');
+
+/**
+ * Writes VS Code user settings before launching. Call this before runDemo if
+ * the test relies on specific settings being present from the start (avoids
+ * fighting IntelliSense autocomplete when editing settings.json via the UI).
+ */
+export function seedUserSettings(settings: Record<string, unknown>): void {
+  fs.mkdirSync(path.dirname(USER_SETTINGS_PATH), { recursive: true });
+  fs.writeFileSync(USER_SETTINGS_PATH, JSON.stringify(settings, null, 2));
+}
 
 const BASE_ARGS = [
   '--no-sandbox',
@@ -12,6 +31,10 @@ const BASE_ARGS = [
   '--disable-updates',
   '--skip-welcome',
   '--skip-release-notes',
+  // Disable all other extensions so Copilot/Chat can't steal focus on a fresh
+  // profile. --extensionDevelopmentPath still loads the extension under test.
+  '--disable-extensions',
+  `--user-data-dir=${USER_DATA_DIR}`,
   `--extensionDevelopmentPath=${EXT_ROOT}`,
   SHOWCASE_DIR,
 ];
@@ -37,10 +60,49 @@ function getExecutable(): Promise<string> {
 
 async function launch(args: string[]): Promise<VSCodeInstance> {
   const executablePath = await getExecutable();
-  const app = await electron.launch({ executablePath, args });
+  // Strip ELECTRON_RUN_AS_NODE so the binary launches as the VS Code GUI,
+  // not as a plain Node.js process (which prevents the CDP handshake).
+  const { ELECTRON_RUN_AS_NODE: _, ...env } = process.env;
+  const app = await electron.launch({ executablePath, args, env });
   const window = await app.firstWindow();
   await window.waitForSelector('.monaco-workbench', { timeout: 60_000 });
-  await window.waitForTimeout(3_000);
+
+  // Resize the Electron window before VS Code finalises its layout.
+  await app.evaluate(({ BrowserWindow }) => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) { win.setSize(1400, 900); win.center(); }
+  });
+
+  // VS Code restores panel states (including the secondary sidebar) asynchronously
+  // after the workbench renders — 5 s gives it time to finish before we check.
+  await window.waitForTimeout(5_000);
+
+  // Force the secondary sidebar (Chat/Copilot panel) closed.
+  // Ctrl+Alt+B is a toggle, so we press it unconditionally, then check whether
+  // the sidebar is now visible. If it is, we accidentally opened it (it was
+  // already closed), so we press once more to close it.
+  // window.focus() ensures the key lands on the workbench, not a stray element.
+  await window.bringToFront();
+  await window.keyboard.press('Control+Alt+B');
+  await window.waitForTimeout(800);
+
+  const openedByToggle = await window.evaluate(() => {
+    const el = document.querySelector('.part.auxiliarybar-part') as HTMLElement | null;
+    return el !== null && el.offsetWidth > 0;
+  });
+  if (openedByToggle) {
+    await window.keyboard.press('Control+Alt+B');
+    await window.waitForTimeout(600);
+  }
+
+  // Dismiss any startup notifications (e.g. "extension activated") so they
+  // don't overlap demo content in screenshots.
+  const closeButtons = await window.$$('.notification-list-item .codicon-notifications-clear');
+  for (const btn of closeButtons) {
+    await btn.click().catch(() => {});
+  }
+  await window.waitForTimeout(300);
+
   return { app, window };
 }
 
