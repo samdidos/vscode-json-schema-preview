@@ -43,3 +43,41 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "${{ needs.release-please.outputs.tag_name }}" *.vsix
+
+  demo-assets:
+    # Regenerate the demo GIFs on release so they reflect the shipped UI.
+    # This job only produces/uploads artifacts — it never commits.
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      # canvas (GIF encoder) + xvfb (headless display for the Electron e2e run).
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+
+      - run: npm ci
+
+      # OS libraries the downloaded VS Code/Electron binary needs to launch.
+      - name: Install Electron runtime dependencies
+        run: npx playwright install-deps
+
+      # generate:assets = test:e2e (captures screenshots) + make-gifs (stitches GIFs).
+      # Runs under xvfb so VS Code can render headlessly. No changes are committed.
+      - name: Generate demo GIFs
+        run: xvfb-run -a npm run generate:assets
+
+      - name: Upload demo GIFs
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-gifs
+          path: docs/public/demo-*.gif
+          if-no-files-found: error
