@@ -12,6 +12,7 @@ const {
   stripEmbeddedUrlToken,
   relFileForTarget,
   pickInspectValue,
+  validateSchemaRefInput,
 } = require('../../SchemaBindingManager');
 
 const { ConfigurationTarget } = vscode;
@@ -164,6 +165,27 @@ suite('pickInspectValue()', () => {
     assert.strictEqual(pickInspectValue(inspect, ConfigurationTarget.Global), 'GLOBAL'));
   test('undefined inspect → undefined', () =>
     assert.strictEqual(pickInspectValue(undefined, ConfigurationTarget.Global), undefined));
+});
+
+suite('validateSchemaRefInput()', () => {
+  test('empty string → Required', () =>
+    assert.strictEqual(validateSchemaRefInput(''), 'Required'));
+  test('whitespace only → Required', () =>
+    assert.strictEqual(validateSchemaRefInput('   '), 'Required'));
+  test('undefined → Required', () =>
+    assert.strictEqual(validateSchemaRefInput(undefined), 'Required'));
+  test('http URL → accepted', () =>
+    assert.strictEqual(validateSchemaRefInput('http://x/s.json'), undefined));
+  test('https URL → accepted', () =>
+    assert.strictEqual(validateSchemaRefInput('https://x/s.json'), undefined));
+  test('relative ./ path → accepted', () =>
+    assert.strictEqual(validateSchemaRefInput('./s.json'), undefined));
+  test('absolute path → accepted', () =>
+    assert.strictEqual(validateSchemaRefInput('/abs/s.json'), undefined));
+  test('bare relative path → rejected', () =>
+    assert.ok(validateSchemaRefInput('s.json')?.startsWith('Enter')));
+  test('ftp scheme → rejected', () =>
+    assert.ok(validateSchemaRefInput('ftp://x')?.startsWith('Enter')));
 });
 
 suite('extractInlineSchemaUrl()', () => {

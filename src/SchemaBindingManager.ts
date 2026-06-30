@@ -174,18 +174,7 @@ export class SchemaBindingManager {
         title: 'JSON Schema URL',
         placeHolder: 'https://json.schemastore.org/package.json',
         prompt: 'Enter the URL or file path of the JSON Schema',
-        validateInput: v => {
-          if (!v?.trim()) return 'Required';
-          if (
-            !v.startsWith('http://') &&
-            !v.startsWith('https://') &&
-            !v.startsWith('./') &&
-            !path.isAbsolute(v)
-          ) {
-            return 'Enter an http/https URL or a relative/absolute file path';
-          }
-          return undefined;
-        },
+        validateInput: validateSchemaRefInput,
       });
       if (!url) return;
       schemaRef = url.trim();
@@ -475,6 +464,24 @@ export function findBoundSchemaPath(doc: vscode.TextDocument): string | undefine
     if (arr.some(p => normalise(p) === normalise(rel))) return schemaPath;
   }
 
+  return undefined;
+}
+
+/**
+ * Validates a user-entered schema reference for the bind-by-URL flow: it must be
+ * a non-empty http(s) URL or a relative (`./`) or absolute file path. Returns an
+ * error message for the input box, or undefined when the input is acceptable.
+ */
+export function validateSchemaRefInput(v: string | undefined): string | undefined {
+  if (!v?.trim()) { return 'Required'; }
+  if (
+    !v.startsWith('http://') &&
+    !v.startsWith('https://') &&
+    !v.startsWith('./') &&
+    !path.isAbsolute(v)
+  ) {
+    return 'Enter an http/https URL or a relative/absolute file path';
+  }
   return undefined;
 }
 
