@@ -9,13 +9,14 @@ export const SHOWCASE_DIR = path.join(EXT_ROOT, 'showcase'); // source — never
 
 // Per-process temp dirs so tests never touch tracked source files and each run
 // starts from a clean state.
-export const USER_DATA_DIR = path.join(os.tmpdir(), `vscode-e2e-${process.pid}`);
-export const WORKSPACE_DIR  = path.join(os.tmpdir(), `vscode-e2e-workspace-${process.pid}`);
+// mkdtempSync atomically creates a uniquely-named directory with secure
+// permissions, so there's no predictable-path race (CodeQL
+// js/insecure-temporary-file) and each run still starts from a clean state.
+export const USER_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'vscode-e2e-'));
+export const WORKSPACE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'vscode-e2e-workspace-'));
 
-// Copy the showcase tree once per process before the first launch.
-if (!fs.existsSync(WORKSPACE_DIR)) {
-  fs.cpSync(SHOWCASE_DIR, WORKSPACE_DIR, { recursive: true });
-}
+// Seed the fresh temp workspace with the showcase tree before the first launch.
+fs.cpSync(SHOWCASE_DIR, WORKSPACE_DIR, { recursive: true });
 
 /** Path to the VS Code user settings.json inside USER_DATA_DIR. */
 export const USER_SETTINGS_PATH = path.join(USER_DATA_DIR, 'User', 'settings.json');
