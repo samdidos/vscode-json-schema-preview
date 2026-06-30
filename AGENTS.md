@@ -1,9 +1,10 @@
 # json-schema-preview — agent guide
 
 > **`AGENTS.md` is the single source of truth for AI coding agents on this
-> project.** `CLAUDE.md` is a symlink to this file, and any other tool's
-> instructions file (e.g. a Copilot `.github/copilot-instructions.md`) should
-> point here rather than copy it. See **Agnosticity & standardization** below.
+> project.** Claude Code doesn't read `AGENTS.md` natively, so `CLAUDE.md`
+> imports it (`@AGENTS.md`); any other tool's instructions file (e.g. a Copilot
+> `.github/copilot-instructions.md`) should point here rather than copy it. See
+> **Agnosticity & standardization** below.
 
 ## Commands
 - **Build**: `npm run compile`
@@ -63,9 +64,9 @@ Best practices that follow from this decision:
 
 1. **`AGENTS.md` is the source of truth.** It is the cross-vendor convention, so
    it owns the content. Per-tool files are *thin pointers, never copies*:
-   `CLAUDE.md` is a symlink to this file; a Copilot
-   `.github/copilot-instructions.md` (if ever added) should point here too.
-   One file, no duplication.
+   `CLAUDE.md` imports this file via `@AGENTS.md` (Claude Code doesn't read
+   `AGENTS.md` natively); a Copilot `.github/copilot-instructions.md` (if ever
+   added) should point here too. One file, no duplication.
 2. **Durable knowledge lives in tool-neutral docs.** The project constitution
    (`.specify/memory/constitution.md`) and the RFC-2119 specs (`specs/`) are
    plain markdown any model can read. Spec Kit (`.specify/`) is multi-agent and
