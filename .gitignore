@@ -5,6 +5,11 @@ node_modules
 *.vsix
 .DS_Store
 coverage/
+
+# Mutation testing (Stryker) and Scorecard SARIF output
+reports/
+.stryker-tmp/
+results.sarif
 .env
 .env.*
 
