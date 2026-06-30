@@ -16,6 +16,7 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/' },
       { text: 'Commands', link: '/guide/commands' },
+      { text: 'Authentication', link: '/guide/authentication' },
       { text: 'Configuration', link: '/guide/configuration' },
       {
         text: 'GitHub',
@@ -30,6 +31,12 @@ export default defineConfig({
         items: [
           { text: 'Introduction', link: '/guide/' },
           { text: 'Commands', link: '/guide/commands' },
+        ],
+      },
+      {
+        text: 'Guides',
+        items: [
+          { text: 'Private & Authenticated Schemas', link: '/guide/authentication' },
           { text: 'Configuration', link: '/guide/configuration' },
         ],
       },

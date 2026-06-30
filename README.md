@@ -33,7 +33,9 @@ Renders schemas as clean HTML documentation. Validates JSON and YAML data files 
 | | |
 |---|---|
 | **Preview** | Renders any JSON/YAML schema as navigable HTML documentation in a side panel |
+| **Edit visually** | Edit common JSON Schema keywords through a form UI — no raw JSON |
 | **Validate** | Validates data files against a bound schema with inline error highlighting |
+| **Bind schemas** | Link a data file to a schema (workspace or user scope) for validation & IntelliSense |
 | **Authenticate** | Fetches schemas from private endpoints using GitHub OAuth or stored tokens |
 | **Cache locally** | Downloads authenticated schemas once so VS Code's language server uses them too |
 | **Infer schemas** | Generates a draft schema from any existing data file |
