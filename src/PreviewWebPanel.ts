@@ -50,6 +50,9 @@ export function disposeAllPanels(): void {
 }
 
 /* c8 ignore start — webview lifecycle and Python subprocess; covered by manual/E2E testing */
+// Stryker disable all : same region as the c8-ignore above — this is webview
+// HTML assembly and Python-subprocess glue exercised by manual/E2E tests, not
+// unit tests, so mutation testing here only measures unassertable markup.
 export async function openJsonSchema(context: vscode.ExtensionContext, uri: vscode.Uri, silent = false) {
   // The preview renders by running a local Python tool, so it is gated on
   // Workspace Trust (declared as `untrustedWorkspaces: limited` in package.json).
@@ -390,4 +393,5 @@ async function buildWebviewContent(
     return errorPage(String(err));
   }
 }
+// Stryker restore all
 /* c8 ignore stop */
