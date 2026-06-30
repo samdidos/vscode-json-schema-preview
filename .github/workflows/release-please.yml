@@ -16,7 +16,7 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -25,6 +25,10 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # upload the .vsix asset to the release
+      id-token: write # OIDC token used to sign the provenance
+      attestations: write # record the SLSA build provenance
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -36,10 +40,14 @@ jobs:
       - run: npm ci
 
       - name: Package extension
-        run: npx @vscode/vsce package --no-dependencies
+        run: npx @vscode/vsce package --no-dependencies -o json-schema-preview.vsix
+
+      - name: Generate SLSA build provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: json-schema-preview.vsix
 
       - name: Upload VSIX to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload "${{ needs.release-please.outputs.tag_name }}" *.vsix
+        run: gh release upload "${{ needs.release-please.outputs.tag_name }}" json-schema-preview.vsix

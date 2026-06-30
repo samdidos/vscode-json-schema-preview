@@ -20,9 +20,10 @@
   - CI (`.github/workflows/ci.yml`).
 - **`.husky/commit-msg`** runs commitlint (Conventional Commits) so release-please
   can derive the changelog. Bypass intentionally with `git commit --no-verify`.
-- Mutation testing (`mutation.yml`) and OpenSSF Scorecard / CodeQL / SLSA
-  attestation (`scorecard.yml`, `codeql.yml`, `release-vsix.yml`) run in CI.
-  Knip runs as a **non-blocking** CI job while its backlog is triaged.
+- Mutation testing (`mutation.yml`) and OpenSSF Scorecard / CodeQL run in CI
+  (`scorecard.yml`, `codeql.yml`); SLSA build provenance for the `.vsix` is
+  attested in the `release-please.yml` publish job. Knip runs as a
+  **non-blocking** CI job while its backlog is triaged.
 
 ## Coverage rule
 All four c8 axes (statements, branches, functions, lines) must stay **≥ 80 %**.
