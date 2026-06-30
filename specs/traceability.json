@@ -1,0 +1,962 @@
+{
+  "$comment": "Requirement traceability matrix. Keys are requirement IDs defined in specs/*.md. status is one of: untracked, planned, implemented, manual, deferred. impl lists source files; test coverage is auto-discovered from [ID] tags in src/test. Run `npm run check:traceability` to validate.",
+  "statuses": {
+    "untracked": "predates the traceability system — needs backfill",
+    "planned": "specified, not yet implemented",
+    "implemented": "code exists; expects unit-test coverage",
+    "manual": "VS Code API-bound; verified by manual / E2E testing only",
+    "deferred": "explicitly out of scope / future work"
+  },
+  "requirements": {
+    "F01-FR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-11": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-12": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-13": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-14": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-15": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-16": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-17": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-18": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-19": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-FR-20": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-NFR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F01-NFR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F02-FR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-11": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-12": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F03-FR-13": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-11": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F04-FR-12": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F05-FR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F05-FR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F05-FR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F05-FR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F05-FR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F05-FR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F05-FR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F05-FR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F05-FR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-11": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F06-FR-12": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-11": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-12": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-FR-13": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-NFR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F07-NFR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-11": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-12": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-13": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-NFR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F08-NFR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F09-FR-11": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-10": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-11": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-12": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-13": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-14": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-15": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-FR-16": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F10-NFR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-10": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-11": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-12": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-13": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-15": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-16": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-17": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-18": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-FR-19": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F11-NFR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S01-SR-11": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S02-SR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-01": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-02": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-03": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-04": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-05": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-06": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-07": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-08": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-09": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    },
+    "S03-SR-10": {
+      "status": "untracked",
+      "impl": [],
+      "note": ""
+    }
+  }
+}

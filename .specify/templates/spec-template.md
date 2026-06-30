@@ -11,6 +11,11 @@
 
 ## Functional Requirements
 
+<!-- Each bold requirement ID is a traceability anchor: it is mirrored in
+     specs/traceability.json and referenced by `[ID]` tags in tests. After
+     adding requirements run `npm run trace:init`, then set each status. IDs are
+     permanent — never renumber; leave gaps when a requirement is removed. -->
+
 ### [Subsection]
 
 - **[FEATURE_CODE]-FR-01** [Component] MUST [requirement]. <!-- RFC-2119 -->
