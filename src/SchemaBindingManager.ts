@@ -484,7 +484,7 @@ export function findBoundSchemaPath(doc: vscode.TextDocument): string | undefine
  * repo. They are short-lived, expose credentials in plain text, and are redundant
  * once the extension's OAuth auth flow is used instead.
  */
-function stripEmbeddedUrlToken(url: string): string {
+export function stripEmbeddedUrlToken(url: string): string {
   try {
     const u = new URL(url);
     const isGitHub = u.hostname === 'github.com'
@@ -525,7 +525,7 @@ export function dropPattern(
  * - Workspace in a multi-root setup → workspace-root-relative path (includes folder prefix)
  *   so the pattern is unambiguous when stored in the .code-workspace file.
  */
-function relFileForTarget(uri: vscode.Uri, target: vscode.ConfigurationTarget): string {
+export function relFileForTarget(uri: vscode.Uri, target: vscode.ConfigurationTarget): string {
   if (target === vscode.ConfigurationTarget.Workspace) {
     const isMultiRoot = vscode.workspace.workspaceFile !== undefined
       && (vscode.workspace.workspaceFolders?.length ?? 0) > 1;
@@ -538,7 +538,7 @@ function relFileForTarget(uri: vscode.Uri, target: vscode.ConfigurationTarget): 
  * Reads the right inspect value for a given configuration target so that
  * writeAddBinding / writeRemoveBinding operate on the correct settings layer.
  */
-function pickInspectValue<T>(
+export function pickInspectValue<T>(
   inspect: { workspaceValue?: T; globalValue?: T; workspaceFolderValue?: T } | undefined,
   target: vscode.ConfigurationTarget
 ): T | undefined {
