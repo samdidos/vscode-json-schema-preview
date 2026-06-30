@@ -21,6 +21,17 @@ if (!fs.existsSync(WORKSPACE_DIR)) {
 export const USER_SETTINGS_PATH = path.join(USER_DATA_DIR, 'User', 'settings.json');
 
 /**
+ * Writes a file into the per-process workspace copy before launching. Useful for
+ * demos that need a fixture the showcase doesn't ship (e.g. a data file carrying
+ * a remote `$schema` so the auth status-bar indicator appears).
+ */
+export function seedWorkspaceFile(relPath: string, contents: string): void {
+  const target = path.join(WORKSPACE_DIR, relPath);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, contents);
+}
+
+/**
  * Writes VS Code user settings before launching. Call this before runDemo if
  * the test relies on specific settings being present from the start (avoids
  * fighting IntelliSense autocomplete when editing settings.json via the UI).
