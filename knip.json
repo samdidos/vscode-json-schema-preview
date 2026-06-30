@@ -7,10 +7,13 @@
     "scripts/**/*.{js,mjs}"
   ],
   "project": ["src/**/*.ts", "scripts/**/*.{js,mjs}"],
-  "ignore": ["src/test/mocks/vscode.ts"],
+  "ignore": [
+    "src/test/mocks/vscode.ts",
+    "src/test/e2e/helpers/**",
+    "src/python.ts"
+  ],
   "ignoreDependencies": [
     "@json-editor/json-editor",
-    "playwright",
     "@stryker-mutator/command-runner"
   ]
 }
