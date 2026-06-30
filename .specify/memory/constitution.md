@@ -78,7 +78,10 @@ New features MUST have a corresponding spec file before implementation begins.
 3. Every code path reachable without the extension host MUST have a test.
 4. E2E tests live in `src/test/e2e/` and use Playwright's Electron API.
 5. E2E tests capture PNG screenshots; `scripts/make-gifs.mjs` stitches GIF assets
-   for `docs/public/`.
+   for `docs/public/`. Each demo has a keyboard/command-palette variant and a
+   `*-mouse` variant that drives the same feature through clickable icons or the
+   status bar with an animated cursor and visible typing; the `*-mouse` frames are
+   the source for the published `demo-*.gif` assets.
 6. Coverage is enforced by a PostToolUse hook — do not edit source files without
    fixing coverage regressions first.
 
