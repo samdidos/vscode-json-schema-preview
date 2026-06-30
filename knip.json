@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/test/unit/**/*.test.ts",
+    "src/test/e2e/**/*.test.ts",
+    "src/test/mocks/setup.ts",
+    "scripts/**/*.{js,mjs}"
+  ],
+  "project": ["src/**/*.ts", "scripts/**/*.{js,mjs}"],
+  "ignore": ["src/test/mocks/vscode.ts"],
+  "ignoreDependencies": [
+    "@json-editor/json-editor",
+    "playwright",
+    "@stryker-mutator/command-runner"
+  ]
+}
