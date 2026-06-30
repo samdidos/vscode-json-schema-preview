@@ -16,6 +16,7 @@ tsconfig.json
 tsconfig.test.json
 package-lock.json
 vsc-extension-quickstart.md
+AGENTS.md
 CLAUDE.md
 CONTRIBUTING.md
 CODE_OF_CONDUCT.md
