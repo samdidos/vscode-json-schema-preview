@@ -174,7 +174,7 @@ export function scheduleLiveUpdate(_context: vscode.ExtensionContext, doc: vscod
   }, delay));
 }
 
-export async function promptForJsonSchemaFile() {
+async function promptForJsonSchemaFile() {
   if (isJsonSchemaFile(vscode.window.activeTextEditor?.document)) {
     return vscode.window.activeTextEditor?.document.uri;
   }
