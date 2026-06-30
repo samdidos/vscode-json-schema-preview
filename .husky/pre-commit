@@ -1,0 +1,3 @@
+# Single source of truth for the local quality gate. CI and the agent's
+# PreToolUse hook both reach this same check via `git hook run pre-commit`.
+npm run verify
