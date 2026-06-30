@@ -212,8 +212,11 @@
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint",
+    "knip": "knip",
+    "verify": "npm run lint && tsc --noEmit && npm run test:coverage",
     "test": "tsc -p tsconfig.test.json && c8 mocha --ui tdd --require ./out/test/mocks/setup.js 'out/test/unit/**/*.test.js'",
     "test:coverage": "npm test && node scripts/check-coverage.js",
+    "test:mutation": "stryker run",
     "test:e2e": "npm run compile && playwright test --config playwright.e2e.config.ts",
     "update:deps": "npx npm-check-updates -u && npm install",
     "make-gifs": "node scripts/make-gifs.mjs",
@@ -222,7 +225,8 @@
     "docs:install": "npm --prefix docs install",
     "docs:dev": "npm --prefix docs run dev",
     "docs:build": "npm --prefix docs run build",
-    "docs:preview": "npm --prefix docs run preview"
+    "docs:preview": "npm --prefix docs run preview",
+    "prepare": "husky"
   },
   "c8": {
     "reporter": [
@@ -252,8 +256,12 @@
     "js-yaml": ">=4.2.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.1.0",
+    "@commitlint/config-conventional": "^21.1.0",
     "@json-editor/json-editor": "^2.17.1",
     "@playwright/test": "^1.61.1",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/typescript-checker": "^9.6.1",
     "@types/glob": "^9.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^26.0.1",
@@ -267,8 +275,11 @@
     "canvas": "^3.2.3",
     "copy-webpack-plugin": "^14.0.0",
     "eslint": "^10.6.0",
+    "fast-check": "^4.8.0",
     "gif-encoder-2": "^1.0.5",
     "glob": "^13.0.6",
+    "husky": "^9.1.7",
+    "knip": "^6.23.0",
     "mocha": "^11.7.6",
     "sinon": "^22.0.0",
     "ts-loader": "^9.6.2",
