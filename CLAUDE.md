@@ -4,5 +4,6 @@
   section). Claude Code reads CLAUDE.md, not AGENTS.md, so we import AGENTS.md
   here — the officially documented, cross-platform way to share one file with no
   duplication: https://code.claude.com/docs/en/memory#agents-md
+  
 -->
 @AGENTS.md
