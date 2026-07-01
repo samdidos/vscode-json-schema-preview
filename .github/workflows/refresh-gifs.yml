@@ -90,6 +90,17 @@ jobs:
           DISPLAY: ':99.0'
         run: npx playwright test --config playwright.e2e.config.ts
 
+      # Failure screenshots and error context — without these a demo timeout is
+      # just an opaque TimeoutError in the log.
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-failure-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Generate demo GIFs
         run: node scripts/make-gifs.mjs
 
