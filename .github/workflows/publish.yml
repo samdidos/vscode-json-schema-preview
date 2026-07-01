@@ -2,6 +2,11 @@ name: Publish
 
 # Runs when release-please pushes a vX.Y.Z tag: packages the extension, attests
 # its SLSA build provenance, and attaches the .vsix to the release.
+#
+# release-please creates the GitHub Release as a draft (config: "draft": true).
+# GitHub's immutable-releases feature forbids adding assets to a release once it
+# is published, so the .vsix/attestation must be attached while it's still a
+# draft — the last step here publishes it only after the asset upload succeeds.
 on:
   push:
     tags:
@@ -46,3 +51,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "${{ inputs.tag || github.ref_name }}" json-schema-preview.vsix --clobber
+
+      # Only reached if packaging/attestation/upload all succeeded — a failed run
+      # leaves the release as a draft rather than published-but-incomplete.
+      - name: Publish the release (draft -> published)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${{ inputs.tag || github.ref_name }}" --draft=false
