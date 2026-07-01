@@ -2,6 +2,13 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.2.2](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.2.1...v0.2.2) (2026-07-01)
+
+
+### Bug Fixes
+
+* **publish:** remove SVG from readme ([2d7e665](https://github.com/samdidos/vscode-json-schema-preview/commit/2d7e665bf1403beb60022d4bb873acde80ad242a))
+
 ## [0.2.1](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.2.0...v0.2.1) (2026-07-01)
 
 
