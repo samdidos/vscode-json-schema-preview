@@ -32,13 +32,20 @@ test('demo-schema-auth-mouse: click the status-bar lock indicator to configure a
 
     await openFileVisible(window, capture, 'remote-person.json');
     // Wait for the actual condition rather than a fixed sleep: SchemaAuthStatusBar's
-    // update() is async, so the "$(unlock) schemas.acme.dev" text can take longer
-    // than a short fixed delay to render under CI load — this was an occasional
-    // source of flakiness in clickStatusBarItem below.
-    await window.waitForSelector(`.statusbar-item:has-text("${AUTH_HOST}")`, {
-      state: 'visible',
-      timeout: 20_000,
-    });
+    // update() is async, so the text can take longer than a short fixed delay to
+    // render under CI load.
+    try {
+      await window.waitForSelector(`.statusbar-item:has-text("${AUTH_HOST}")`, {
+        state: 'visible',
+        timeout: 20_000,
+      });
+    } catch (e) {
+      // Diagnostic aid: if this still times out, log what the status bar
+      // actually contains instead of leaving a bare timeout in the CI log.
+      const items = await window.$$eval('.statusbar-item', els => els.map(el => el.textContent));
+      console.error('Status bar items at timeout:', JSON.stringify(items));
+      throw e;
+    }
     await capture('auth-status-bar');
 
     // Click the unlock indicator to launch the auth configuration flow.

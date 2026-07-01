@@ -187,7 +187,16 @@ export class SchemaAuthManager {
   }
 
   private async getStoredCredential(host: string): Promise<StoredCredential | undefined> {
-    const raw = await this.context.secrets.get(`${SchemaAuthManager.SECRET_PREFIX}${host}`);
+    let raw: string | undefined;
+    try {
+      // SecretStorage can reject if the OS has no credential store available
+      // (e.g. no keyring/D-Bus session on some Linux setups) — treat that the
+      // same as "no credential stored" rather than letting it propagate and
+      // silently break every caller (the auth status bar, header resolution).
+      raw = await this.context.secrets.get(`${SchemaAuthManager.SECRET_PREFIX}${host}`);
+    } catch {
+      return undefined;
+    }
     if (!raw) return undefined;
     try { return JSON.parse(raw) as StoredCredential; } catch { return undefined; }
   }
