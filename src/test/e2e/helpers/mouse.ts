@@ -37,10 +37,16 @@ export async function installCursor(window: Page, start = DEFAULT_START): Promis
         'transition:transform 55ms linear',
         'filter:drop-shadow(1px 2px 2px rgba(0,0,0,.45))',
       ].join(';');
-      c.innerHTML =
-        '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
-        '<path d="M3 2 L3 19 L7.5 14.5 L10.7 21.5 L13.4 20.3 L10.3 13.6 L17 13.6 Z" ' +
-        'fill="#ffffff" stroke="#1a1a1a" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('width', '24'); svg.setAttribute('height', '24');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', 'M3 2 L3 19 L7.5 14.5 L10.7 21.5 L13.4 20.3 L10.3 13.6 L17 13.6 Z');
+      path.setAttribute('fill', '#ffffff'); path.setAttribute('stroke', '#1a1a1a');
+      path.setAttribute('stroke-width', '1.3'); path.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(path);
+      c.appendChild(svg);
       c.style.transform = `translate(${x - 3}px, ${y - 2}px)`;
       document.body.appendChild(c);
     },

@@ -23,7 +23,7 @@
     "url": "https://github.com/samdidos/vscode-json-schema-preview.git"
   },
   "engines": {
-    "vscode": "^1.96.0",
+    "vscode": "^1.125.0",
     "node": ">=22"
   },
   "categories": [
