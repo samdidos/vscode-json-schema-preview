@@ -181,9 +181,23 @@ export async function openFileVisible(
   await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
   await capture(`${label}-quickopen`);
   await typeSlowly(window, capture, filename, `${label}-typing`);
-  await window.waitForTimeout(400);
+  // Quick Open's fuzzy filter runs asynchronously (it depends on the workspace
+  // file-search index), so on a freshly created workspace the result list can
+  // still be empty immediately after typing. Wait for an actual row rather than
+  // a fixed delay — pressing Enter on an empty list is a silent no-op that
+  // leaves no editor open, which then fails confusingly much later downstream.
+  await window.waitForSelector('.quick-input-list .monaco-list-row', {
+    state: 'visible',
+    timeout: 10_000,
+  });
   await capture(`${label}-typed`);
   await window.keyboard.press('Enter');
-  await window.waitForTimeout(1_500);
+  // Confirm the file actually became an open tab instead of trusting a fixed
+  // delay — this is the real condition every subsequent step depends on.
+  await window.waitForSelector(`.tab[aria-label*="${filename}"]`, {
+    state: 'visible',
+    timeout: 15_000,
+  });
+  await window.waitForTimeout(300); // brief settle for layout/render
   await capture(`${label}-opened`);
 }
