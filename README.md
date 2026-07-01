@@ -11,7 +11,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/codeql.yml?label=CodeQL&logo=github)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/samdidos/vscode-json-schema-preview/badge)](https://securityscorecards.dev/viewer/?uri=github.com/samdidos/vscode-json-schema-preview)
-[![SLSA Level 2](https://slsa.dev/images/gh-badge-level2.svg)](https://slsa.dev)
+[![SLSA Level 2](https://img.shields.io/badge/SLSA-Level%202-green)](https://slsa.dev)
 [![Mutation tested with Stryker](https://img.shields.io/badge/mutation%20tested-Stryker-%23E74C3C)](https://stryker-mutator.io)
 [![Maintained with Knip](https://img.shields.io/badge/maintained%20with-knip-%23F56E0F)](https://knip.dev)
 [![Tested with fast-check](https://img.shields.io/badge/tested%20with-fast--check-%23282661)](https://fast-check.dev)
