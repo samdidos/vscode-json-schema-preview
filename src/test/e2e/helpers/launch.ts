@@ -7,39 +7,62 @@ import os from 'os';
 export const EXT_ROOT = path.resolve(__dirname, '../../../..');
 export const SHOWCASE_DIR = path.join(EXT_ROOT, 'showcase'); // source — never written to by tests
 
-// Per-process temp dirs so tests never touch tracked source files and each run
-// starts from a clean state.
-// mkdtempSync atomically creates a uniquely-named directory with secure
-// permissions, so there's no predictable-path race (CodeQL
-// js/insecure-temporary-file) and each run still starts from a clean state.
-export const USER_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'vscode-e2e-'));
-export const WORKSPACE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'vscode-e2e-workspace-'));
+// Every launch gets a FRESH user-data dir and workspace copy. The demos all
+// assume a pristine VS Code (clean status bar, no restored tabs, no leftover
+// settings), and sharing dirs across the 16 demos broke that in subtle ways:
+// session restore re-opened tabs from the previous demo, command-palette MRU
+// re-ranked entries, and json.schemas bindings written by one demo leaked into
+// the next. (Concretely: a stray "Configure Preview" palette pick in an early
+// demo created .json-schema-preview-config.json, opened it pinned, and bound it
+// in workspace settings — session restore then made it the active editor in
+// demo-schema-auth-mouse, whose status-bar wait timed out on schemas.acme.dev.)
+//
+// mkdtempSync atomically creates uniquely-named dirs with secure permissions
+// (no predictable-path race — CodeQL js/insecure-temporary-file).
 
-// Seed the fresh temp workspace with the showcase tree before the first launch.
-fs.cpSync(SHOWCASE_DIR, WORKSPACE_DIR, { recursive: true });
-
-/** Path to the VS Code user settings.json inside USER_DATA_DIR. */
-export const USER_SETTINGS_PATH = path.join(USER_DATA_DIR, 'User', 'settings.json');
+// Seeds staged by tests before runDemo() launches VS Code; applied to the
+// fresh workspace/user-data dirs created for that launch.
+const pendingWorkspaceFiles: Array<{ relPath: string; contents: string }> = [];
+let pendingUserSettings: Record<string, unknown> | undefined;
 
 /**
- * Writes a file into the per-process workspace copy before launching. Useful for
- * demos that need a fixture the showcase doesn't ship (e.g. a data file carrying
- * a remote `$schema` so the auth status-bar indicator appears).
+ * Stages a file to be written into the demo's workspace copy before launch.
+ * Useful for demos that need a fixture the showcase doesn't ship (e.g. a data
+ * file carrying a remote `$schema` so the auth status-bar indicator appears).
  */
 export function seedWorkspaceFile(relPath: string, contents: string): void {
-  const target = path.join(WORKSPACE_DIR, relPath);
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, contents);
+  pendingWorkspaceFiles.push({ relPath, contents });
 }
 
 /**
- * Writes VS Code user settings before launching. Call this before runDemo if
- * the test relies on specific settings being present from the start (avoids
- * fighting IntelliSense autocomplete when editing settings.json via the UI).
+ * Stages VS Code user settings to be written before launch. Call this before
+ * runDemo if the test relies on specific settings being present from the start
+ * (avoids fighting IntelliSense autocomplete when editing settings.json via the UI).
  */
 export function seedUserSettings(settings: Record<string, unknown>): void {
-  fs.mkdirSync(path.dirname(USER_SETTINGS_PATH), { recursive: true });
-  fs.writeFileSync(USER_SETTINGS_PATH, JSON.stringify(settings, null, 2));
+  pendingUserSettings = settings;
+}
+
+/** Creates the isolated dirs for one launch and applies any staged seeds. */
+function prepareSessionDirs(): { userDataDir: string; workspaceDir: string } {
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vscode-e2e-'));
+  const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vscode-e2e-workspace-'));
+  fs.cpSync(SHOWCASE_DIR, workspaceDir, { recursive: true });
+
+  for (const { relPath, contents } of pendingWorkspaceFiles.splice(0)) {
+    const target = path.join(workspaceDir, relPath);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, contents);
+  }
+
+  if (pendingUserSettings) {
+    const settingsPath = path.join(userDataDir, 'User', 'settings.json');
+    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify(pendingUserSettings, null, 2));
+    pendingUserSettings = undefined;
+  }
+
+  return { userDataDir, workspaceDir };
 }
 
 const BASE_ARGS = [
@@ -51,9 +74,7 @@ const BASE_ARGS = [
   // Disable all other extensions so Copilot/Chat can't steal focus on a fresh
   // profile. --extensionDevelopmentPath still loads the extension under test.
   '--disable-extensions',
-  `--user-data-dir=${USER_DATA_DIR}`,
   `--extensionDevelopmentPath=${EXT_ROOT}`,
-  WORKSPACE_DIR,
 ];
 
 export interface VSCodeInstance {
@@ -75,11 +96,21 @@ function getExecutable(): Promise<string> {
   return executablePromise;
 }
 
-async function launch(args: string[]): Promise<VSCodeInstance> {
+async function launch(extraArgs: string[]): Promise<VSCodeInstance> {
   const executablePath = await getExecutable();
+  const { userDataDir, workspaceDir } = prepareSessionDirs();
+  const args = [
+    ...BASE_ARGS,
+    ...extraArgs,
+    `--user-data-dir=${userDataDir}`,
+    workspaceDir,
+  ];
   // Strip ELECTRON_RUN_AS_NODE so the binary launches as the VS Code GUI,
   // not as a plain Node.js process (which prevents the CDP handshake).
-  const { ELECTRON_RUN_AS_NODE: _, ...env } = process.env;
+  const { ELECTRON_RUN_AS_NODE: _, ...rest } = process.env;
+  const env = Object.fromEntries(
+    Object.entries(rest).filter((e): e is [string, string] => e[1] !== undefined)
+  );
   const app = await electron.launch({ executablePath, args, env });
   const window = await app.firstWindow();
   await window.waitForSelector('.monaco-workbench', { timeout: 60_000 });
@@ -125,11 +156,11 @@ async function launch(args: string[]): Promise<VSCodeInstance> {
 
 /** Launches VS Code with the workspace pre-trusted (the normal demo path). */
 export const launchVSCode = (): Promise<VSCodeInstance> =>
-  launch([...BASE_ARGS, '--disable-workspace-trust']);
+  launch(['--disable-workspace-trust']);
 
 /**
  * Launches VS Code WITHOUT pre-trusting the workspace so that workspace-trust
  * prompts and restricted-mode behaviour are observable.
  */
 export const launchVSCodeUntrusted = (): Promise<VSCodeInstance> =>
-  launch(BASE_ARGS); // intentionally omits --disable-workspace-trust
+  launch([]); // intentionally omits --disable-workspace-trust
