@@ -2,6 +2,24 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.3.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.2.2...v0.3.0) (2026-07-02)
+
+
+### Features
+
+* **ci:** surface Refresh Demo GIFs as a status on the release PR ([93adcf6](https://github.com/samdidos/vscode-json-schema-preview/commit/93adcf6ad640a3277eb4afc555091024fc5e50f2))
+
+
+### Bug Fixes
+
+* **auth:** make credential lookup resilient to SecretStorage failures ([609f2e1](https://github.com/samdidos/vscode-json-schema-preview/commit/609f2e1a7c5f85a3d05401cd8b7474eebd2ddf88))
+* **ci:** publish releases as drafts to work around Immutable Releases ([9e01b6d](https://github.com/samdidos/vscode-json-schema-preview/commit/9e01b6d589ad3a658169cd9f3b9aa3a878070918))
+* **e2e:** isolate each demo in a fresh VS Code profile and workspace ([0e6942a](https://github.com/samdidos/vscode-json-schema-preview/commit/0e6942a648e7385814980eb8f97fa67a7828b3d3))
+* **e2e:** un-ignore the seeded remote-person.json fixture ([f93bff9](https://github.com/samdidos/vscode-json-schema-preview/commit/f93bff984ae75557ee0f1207230e7f56907c2163))
+* **e2e:** verify openFileVisible actually opens the file ([2ea26b2](https://github.com/samdidos/vscode-json-schema-preview/commit/2ea26b2794081f1a0de9cb7f60a0102960cb76df))
+* **e2e:** wait for the auth status-bar text instead of a fixed sleep ([69514b6](https://github.com/samdidos/vscode-json-schema-preview/commit/69514b646104ff2c75eed6764dbbcb5b3569e17a))
+* **lint:** exclude .vscode-test/ and other generated dirs from ESLint ([bb14143](https://github.com/samdidos/vscode-json-schema-preview/commit/bb14143c6c2db62a26863bf01ad0fc48915ce98f))
+
 ## [0.2.2](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.2.1...v0.2.2) (2026-07-01)
 
 
