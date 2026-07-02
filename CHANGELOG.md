@@ -2,6 +2,14 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.3.1](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.3.0...v0.3.1) (2026-07-02)
+
+
+### Bug Fixes
+
+* **ci:** trigger a docs rebuild once the release is actually published ([32d41f4](https://github.com/samdidos/vscode-json-schema-preview/commit/32d41f40620f1f9e746aaf07aea48ce3576107da))
+* **ci:** trigger publish.yml via workflow_run, not just push ([45cd38b](https://github.com/samdidos/vscode-json-schema-preview/commit/45cd38bf32d59e931e511ec473d60496241c9fca))
+
 ## [0.3.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.2.2...v0.3.0) (2026-07-02)
 
 
