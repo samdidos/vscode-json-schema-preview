@@ -60,7 +60,19 @@ jobs:
           else
             version=$(node -p "require('./.github/release-please/manifest.json')['.']")
             tag="v$version"
-            is_draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo "")
+            # release-please-action's release/tag creation and this job's start
+            # are only seconds apart, and gh release view resolves by tag name —
+            # a release just created via the API can 404 for a few seconds until
+            # its underlying git tag ref finishes propagating (observed directly:
+            # a freshly created release's html_url briefly reads
+            # .../releases/tag/untagged-<hash> instead of the real tag). Retry
+            # instead of trusting a single query.
+            is_draft=""
+            for attempt in 1 2 3 4 5 6; do
+              is_draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo "")
+              if [ "$is_draft" = "true" ]; then break; fi
+              sleep 5
+            done
             if [ "$is_draft" = "true" ]; then
               echo "tag=$tag" >> "$GITHUB_OUTPUT"
             else
