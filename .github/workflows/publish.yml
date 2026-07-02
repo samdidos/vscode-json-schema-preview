@@ -77,6 +77,7 @@ jobs:
       contents: write # upload the .vsix asset to the release
       id-token: write # OIDC token used to sign the provenance
       attestations: write # record the SLSA build provenance
+      actions: write # dispatch the docs rebuild below
     env:
       TAG: ${{ needs.resolve-tag.outputs.tag }}
     steps:
@@ -110,3 +111,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release edit "$TAG" --draft=false
+
+      # docs/.vitepress/latestRelease.data.ts fetches GET /releases/latest at
+      # build time, which excludes drafts — so the docs site couldn't possibly
+      # have shown this version before now, no matter when it last built. And
+      # publishing a release doesn't push a commit, so nothing else would ever
+      # re-trigger docs.yml (push/workflow_dispatch only) on its own. Dispatch
+      # it explicitly, now that the version is actually visible via the API.
+      - name: Trigger a docs rebuild now that the release is public
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run docs.yml --repo ${{ github.repository }} --ref main
