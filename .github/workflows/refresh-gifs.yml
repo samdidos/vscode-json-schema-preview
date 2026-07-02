@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  statuses: write # post a "Demo GIFs" status on the release-please PR's head commit
 
 jobs:
   find-pr:
@@ -57,6 +58,21 @@ jobs:
         with:
           ref: ${{ env.TARGET_BRANCH }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # workflow_run is decoupled from the release-please PR's own check list, so
+      # without this the PR shows no indication a GIF refresh is running at all.
+      # Posting a commit status makes it appear like any other check — pending
+      # now, success/failure once the job finishes below.
+      - name: Mark GIF refresh as pending on the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "START_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          gh api "repos/${{ github.repository }}/statuses/$(git rev-parse HEAD)" \
+            -f state=pending \
+            -f context="Demo GIFs" \
+            -f description="Regenerating demo GIFs…" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
@@ -111,3 +127,30 @@ jobs:
           git add docs/public/demo-*.gif
           git diff --staged --quiet || git commit -m "chore: refresh demo GIFs"
           git push origin HEAD:${{ env.TARGET_BRANCH }}
+
+      # Reached only if every prior step succeeded. HEAD is now whatever the PR's
+      # current tip actually is — the new GIF-refresh commit if one was pushed,
+      # or unchanged if the GIFs came out byte-identical and nothing was committed.
+      - name: Mark GIF refresh as successful
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/$(git rev-parse HEAD)" \
+            -f state=success \
+            -f context="Demo GIFs" \
+            -f description="Demo GIFs refreshed" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # Reached if any prior step failed. No GIF commit happens in that case, so
+      # the PR's head is still the original commit captured before the run.
+      - name: Mark GIF refresh as failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${{ env.START_SHA }}" \
+            -f state=failure \
+            -f context="Demo GIFs" \
+            -f description="Demo GIFs failed to regenerate — see the workflow run for details" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
