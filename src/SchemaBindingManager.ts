@@ -1,7 +1,14 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { modify, parseTree, Edit as JsoncEdit, FormattingOptions } from 'jsonc-parser';
 import { isSupported, isYaml, stripJsoncComments } from './languages';
+
+/** Sentinel scope value for an inline `$schema` binding (F10) — distinct from
+ * `vscode.ConfigurationTarget`'s numeric values so it can flow through the
+ * same scope-picker / bind pipeline without colliding with a real target. */
+export const INLINE_SCOPE = 'inline' as const;
+export type BindingTarget = vscode.ConfigurationTarget | typeof INLINE_SCOPE;
 
 // ---------------------------------------------------------------------------
 // Legacy session-binding cleanup
@@ -91,10 +98,19 @@ export class SchemaBindingManager {
       this.statusBar.hide();
       return;
     }
-    const binding = findBoundSchemaPath(doc);
-    if (binding) {
-      this.statusBar.text = `$(check) Schema: ${path.basename(binding)}`;
-      this.statusBar.tooltip = `Schema bound: ${binding}\nClick to change or remove`;
+    // An inline $schema field takes precedence over any settings-based binding (F10-FR-15).
+    const inline = extractInlineSchemaUrl(doc);
+    const settingsBinding = findBoundSchemaPath(doc);
+    if (inline) {
+      this.statusBar.text = `$(file-symlink-file) Schema: ${path.basename(inline)}`;
+      this.statusBar.tooltip = settingsBinding
+        ? `Inline $schema in this file: ${inline}\n` +
+          `Note: a settings binding also exists (${settingsBinding}) but is overridden by the inline value\n` +
+          `Click to change or remove`
+        : `Inline $schema in this file: ${inline}\nClick to change or remove`;
+    } else if (settingsBinding) {
+      this.statusBar.text = `$(check) Schema: ${path.basename(settingsBinding)}`;
+      this.statusBar.tooltip = `Schema bound: ${settingsBinding}\nClick to change or remove`;
     } else {
       this.statusBar.text = `$(circle-slash) Schema: unbound`;
       this.statusBar.tooltip = 'No JSON Schema bound to this file\nClick to bind one';
@@ -121,6 +137,10 @@ export class SchemaBindingManager {
     const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
     const docIsYaml = isYaml(doc.languageId);
     const current = findBoundSchemaPath(doc);
+    const currentInline = extractInlineSchemaUrl(doc);
+    // JSONL has no standardised $schema mechanism (F10-FR-02) — every other
+    // supported format can carry an inline binding.
+    const inlineSupported = doc.languageId !== 'jsonl';
 
     type Item = vscode.QuickPickItem & { uri?: vscode.Uri; isUrl?: true; isBrowse?: true; isRemove?: true };
 
@@ -136,7 +156,9 @@ export class SchemaBindingManager {
     };
     const removeItem: Item = {
       label: '$(trash) Remove binding',
-      description: current ? `currently: ${current}` : 'no binding set',
+      description: currentInline
+        ? `currently (inline): ${currentInline}`
+        : current ? `currently: ${current}` : 'no binding set',
       isRemove: true,
     };
 
@@ -158,16 +180,29 @@ export class SchemaBindingManager {
     if (!pick) return;
 
     if (pick.isRemove) {
-      const target = await this.pickScope(folder !== undefined, true);
+      // Only offer to remove the inline form when there is actually one to remove
+      // (F10-FR-03) — offering a destructive no-op is confusing.
+      const target = await this.pickScope(folder !== undefined, {
+        forRemove: true,
+        allowInline: inlineSupported && currentInline !== undefined,
+      });
       if (target === undefined) return;
+      if (target === INLINE_SCOPE) {
+        await this.removeInlineBinding(doc);
+        this.refresh(doc);
+        return;
+      }
       const rmRelFile = relFileForTarget(doc.uri, target);
       await this.removePermBinding(rmRelFile, docIsYaml, folder, target);
       this.refresh(doc);
       return;
     }
 
-    // Resolve schema reference before asking for scope
+    // Resolve the schema reference. URLs are already final; local files are
+    // resolved to a path once the target scope is known (F10-FR-05, and see
+    // resolveLocalSchemaRef for why Workspace/Global scope need special care).
     let schemaRef: string | undefined;
+    let localSchemaUri: vscode.Uri | undefined;
 
     if (pick.isUrl) {
       const url = await vscode.window.showInputBox({
@@ -207,16 +242,12 @@ export class SchemaBindingManager {
         defaultUri,
       });
       if (!uris?.length) return;
-      const picked = uris[0];
-      const inWorkspace = vscode.workspace.getWorkspaceFolder(picked);
-      schemaRef = inWorkspace
-        ? `./${vscode.workspace.asRelativePath(picked, false)}`
-        : picked.fsPath;
+      localSchemaUri = uris[0];
     } else {
-      schemaRef = `./${vscode.workspace.asRelativePath(pick.uri!, false)}`;
+      localSchemaUri = pick.uri!;
     }
 
-    const target = await this.pickScope(folder !== undefined);
+    const target = await this.pickScope(folder !== undefined, { allowInline: inlineSupported });
     if (target === undefined) return;
 
     if (target === vscode.ConfigurationTarget.Workspace && !folder) {
@@ -224,8 +255,18 @@ export class SchemaBindingManager {
       return;
     }
 
+    if (localSchemaUri) {
+      schemaRef = this.resolveLocalSchemaRef(localSchemaUri, target);
+    }
+
+    if (target === INLINE_SCOPE) {
+      await this.writeInlineBinding(doc, schemaRef!);
+      this.refresh(doc);
+      return;
+    }
+
     const relFile = relFileForTarget(doc.uri, target);
-    await this.addPermBinding(relFile, schemaRef, docIsYaml, folder, target);
+    await this.addPermBinding(relFile, schemaRef!, docIsYaml, folder, target);
     this.refresh(doc);
   }
 
@@ -253,16 +294,140 @@ export class SchemaBindingManager {
   }
 
   // ---------------------------------------------------------------------------
+  // Local schema-reference resolution
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Resolves a locally-picked schema file to the string stored as the binding's
+   * `url` / `$schema` value.
+   *
+   * A relative `./...` path (relative to the schema's own workspace folder) is
+   * used for WorkspaceFolder and Inline scope — this matches how this
+   * extension's own validator resolves relative refs (`loadSchema` in
+   * ValidationManager always joins against the *document's* workspace folder).
+   *
+   * Workspace (.code-workspace) and Global (User) scope always get the
+   * absolute path instead: relative `json.schemas` / `yaml.schemas` URLs are
+   * documented as unreliable once the setting lives outside a single folder's
+   * own .vscode/settings.json (see e.g. microsoft/vscode#156006, #181187), and
+   * User settings have no workspace folder to resolve "./" against at all.
+   */
+  private resolveLocalSchemaRef(uri: vscode.Uri, target: BindingTarget): string {
+    const schemaFolder = vscode.workspace.getWorkspaceFolder(uri);
+    if (!schemaFolder) return uri.fsPath;
+    if (target === vscode.ConfigurationTarget.WorkspaceFolder || target === INLINE_SCOPE) {
+      return `./${vscode.workspace.asRelativePath(uri, false)}`;
+    }
+    return uri.fsPath;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Inline binding (F10)
+  // ---------------------------------------------------------------------------
+
+  /** Writes or replaces the file's own `$schema` field (F10-FR-04..F10-FR-09). */
+  private async writeInlineBinding(doc: vscode.TextDocument, schemaRef: string): Promise<void> {
+    if (!vscode.workspace.isTrusted) {
+      vscode.window.showWarningMessage(
+        'Inline $schema bindings write to the file itself, which is disabled in untrusted workspaces.'
+      );
+      return;
+    }
+
+    const text = doc.getText();
+    let edits: JsoncEdit[];
+
+    if (isYaml(doc.languageId)) {
+      const yamlExtensionInstalled = vscode.extensions.getExtension('redhat.vscode-yaml') !== undefined;
+      edits = [computeYamlSchemaUpsertEdit(text, schemaRef, yamlExtensionInstalled)];
+    } else {
+      const result = computeJsonSchemaInsertEdits(text, schemaRef, this.formattingOptionsFor(doc));
+      if ('error' in result) {
+        vscode.window.showErrorMessage(result.error);
+        return;
+      }
+      edits = result.edits;
+    }
+
+    if (!(await this.applyJsoncEdits(doc, edits))) return;
+
+    // F10-FR-05: warn when the embedded reference had to fall back to an
+    // absolute, machine-specific path (schema lives outside the workspace).
+    if (!/^https?:\/\//i.test(schemaRef) && path.isAbsolute(schemaRef)) {
+      vscode.window.showInformationMessage(
+        `Schema is outside the workspace, so the absolute path was embedded: ${schemaRef}\n` +
+        'This makes the binding machine-specific and reduces portability.'
+      );
+    }
+  }
+
+  /** Removes the file's own `$schema` field, if present (F10-FR-10/11). */
+  private async removeInlineBinding(doc: vscode.TextDocument): Promise<void> {
+    if (!vscode.workspace.isTrusted) {
+      vscode.window.showWarningMessage(
+        'Inline $schema bindings write to the file itself, which is disabled in untrusted workspaces.'
+      );
+      return;
+    }
+
+    const text = doc.getText();
+    const edits = isYaml(doc.languageId)
+      ? [computeYamlSchemaRemoveEdit(text)].filter((e): e is JsoncEdit => e !== undefined)
+      : computeJsonSchemaRemoveEdits(text, this.formattingOptionsFor(doc));
+
+    if (!edits.length) return; // nothing to remove
+    await this.applyJsoncEdits(doc, edits);
+  }
+
+  private formattingOptionsFor(doc: vscode.TextDocument): FormattingOptions {
+    const cfg = vscode.workspace.getConfiguration('editor', doc.uri);
+    return {
+      tabSize: cfg.get<number>('tabSize') ?? 2,
+      insertSpaces: cfg.get<boolean>('insertSpaces') ?? true,
+      eol: doc.getText().includes('\r\n') ? '\r\n' : '\n',
+    };
+  }
+
+  /** Applies jsonc-parser-style offset/length edits to `doc` via a vscode.WorkspaceEdit
+   *  so the change is undoable and shows as an unsaved edit (F10-NFR-01). */
+  private async applyJsoncEdits(doc: vscode.TextDocument, edits: JsoncEdit[]): Promise<boolean> {
+    if (!edits.length) return true;
+    const workspaceEdit = new vscode.WorkspaceEdit();
+    for (const e of edits) {
+      const start = doc.positionAt(e.offset);
+      const end = doc.positionAt(e.offset + e.length);
+      workspaceEdit.replace(
+        doc.uri,
+        new vscode.Range(start.line, start.character, end.line, end.character),
+        e.content
+      );
+    }
+    return vscode.workspace.applyEdit(workspaceEdit);
+  }
+
+  // ---------------------------------------------------------------------------
   // Scope picker
   // ---------------------------------------------------------------------------
 
   private async pickScope(
     hasFolder: boolean,
-    forRemove = false
-  ): Promise<vscode.ConfigurationTarget | undefined> {
-    type ScopeItem = vscode.QuickPickItem & { target: vscode.ConfigurationTarget };
+    opts: { forRemove?: boolean; allowInline?: boolean } = {}
+  ): Promise<BindingTarget | undefined> {
+    const { forRemove = false, allowInline = false } = opts;
+    type ScopeItem = vscode.QuickPickItem & { target: BindingTarget };
 
     const items: ScopeItem[] = [];
+
+    if (allowInline) {
+      items.push({
+        label: '$(file-symlink-file) Inline (this file)',
+        description: '$schema field',
+        detail: forRemove
+          ? 'Remove the $schema field written directly into this file'
+          : 'Written directly into this file as a $schema field — portable to other editors and tools',
+        target: INLINE_SCOPE,
+      });
+    }
 
     if (hasFolder) {
       items.push({
@@ -445,6 +610,11 @@ export class SchemaBindingManager {
 // Utilities
 // ---------------------------------------------------------------------------
 
+// Shared between extractInlineSchemaUrl (read) and the inline-write helpers
+// below (write) so detection and writing always agree on notation.
+const YAML_DIRECTIVE_RE = /^#\s*yaml-language-server:\s*\$schema=(\S+)/im;
+const YAML_KEY_RE = /^\$schema:\s*(\S+)/m;
+
 /**
  * Returns the schema URL/path bound to this document via any settings scope,
  * or undefined if none. Exported for use by ValidationManager.
@@ -564,11 +734,12 @@ export function extractInlineSchemaUrl(doc: vscode.TextDocument): string | undef
   try {
     if (isYaml(doc.languageId)) {
       const text = doc.getText();
-      // yaml-language-server directive comment
-      const directive = /yaml-language-server[^$]*\$schema=(https?:\/\/\S+)/i.exec(text);
+      // yaml-language-server directive comment — value may be a URL or a local
+      // relative/absolute path (F10 inline bindings can embed either).
+      const directive = YAML_DIRECTIVE_RE.exec(text);
       if (directive) { return directive[1]; }
       // top-level $schema key
-      const inline = /^\$schema:\s*(\S+)/m.exec(text);
+      const inline = YAML_KEY_RE.exec(text);
       return inline?.[1];
     }
     const text = doc.languageId === 'jsonc' ? stripJsoncComments(doc.getText()) : doc.getText();
@@ -578,4 +749,93 @@ export function extractInlineSchemaUrl(doc: vscode.TextDocument): string | undef
   } catch {
     return undefined;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Inline binding — pure text-edit computation (F10)
+//
+// These return jsonc-parser-style {offset, length, content} edits rather than
+// mutating anything themselves, so they're plain string→data functions that
+// don't need a vscode.TextDocument or any VS Code API to test.
+// ---------------------------------------------------------------------------
+
+/** Result of computing the edits to insert/replace an inline JSON `$schema`. */
+export type JsonInlineWriteResult = { edits: JsoncEdit[] } | { error: string };
+
+/**
+ * Computes the edits needed to insert (as the first key) or replace the
+ * JSON/JSONC `"$schema"` property. Returns an `error` instead when the root
+ * of the document is not a JSON object (F10-FR-06).
+ */
+export function computeJsonSchemaInsertEdits(
+  text: string,
+  schemaRef: string,
+  formattingOptions: FormattingOptions
+): JsonInlineWriteResult {
+  const tree = parseTree(text);
+  if (!tree || tree.type !== 'object') {
+    return { error: 'The active file must contain a JSON object at the root to add an inline $schema.' };
+  }
+  const edits = modify(text, ['$schema'], schemaRef, {
+    formattingOptions,
+    getInsertionIndex: () => 0,
+  });
+  return { edits };
+}
+
+/**
+ * Computes the edits needed to remove the JSON/JSONC `"$schema"` property.
+ * jsonc-parser's `modify()` also removes the now-dangling comma either side
+ * of the property (F10-FR-11). Returns an empty array when there is nothing
+ * to remove.
+ */
+export function computeJsonSchemaRemoveEdits(
+  text: string,
+  formattingOptions: FormattingOptions
+): JsoncEdit[] {
+  const tree = parseTree(text);
+  if (!tree || tree.type !== 'object') return [];
+  return modify(text, ['$schema'], undefined, { formattingOptions });
+}
+
+/**
+ * Computes the single edit needed to write an inline YAML schema reference,
+ * following the priority order in F10-FR-09: update an existing directive or
+ * plain key in place; otherwise insert a fresh first line, choosing the
+ * directive form when the redhat.vscode-yaml extension is installed and a
+ * plain `$schema:` key otherwise.
+ */
+export function computeYamlSchemaUpsertEdit(
+  text: string,
+  schemaRef: string,
+  yamlExtensionInstalled: boolean
+): JsoncEdit {
+  const directive = YAML_DIRECTIVE_RE.exec(text);
+  if (directive) {
+    const valueOffset = directive.index + directive[0].lastIndexOf(directive[1]);
+    return { offset: valueOffset, length: directive[1].length, content: schemaRef };
+  }
+  const key = YAML_KEY_RE.exec(text);
+  if (key) {
+    const valueOffset = key.index + key[0].lastIndexOf(key[1]);
+    return { offset: valueOffset, length: key[1].length, content: schemaRef };
+  }
+  const line = yamlExtensionInstalled
+    ? `# yaml-language-server: $schema=${schemaRef}\n`
+    : `$schema: ${schemaRef}\n`;
+  return { offset: 0, length: 0, content: line };
+}
+
+/**
+ * Computes the edit needed to remove an inline YAML schema reference —
+ * either the whole directive-comment line or the whole `$schema:` key line,
+ * including its trailing newline. Returns undefined when neither form is
+ * present (F10-FR-10).
+ */
+export function computeYamlSchemaRemoveEdit(text: string): JsoncEdit | undefined {
+  const directiveLine = /^#\s*yaml-language-server:\s*\$schema=\S+\r?\n?/im.exec(text);
+  if (directiveLine) return { offset: directiveLine.index, length: directiveLine[0].length, content: '' };
+  const keyLine = /^\$schema:\s*\S+\r?\n?/m.exec(text);
+  if (keyLine) return { offset: keyLine.index, length: keyLine[0].length, content: '' };
+  return undefined;
 }

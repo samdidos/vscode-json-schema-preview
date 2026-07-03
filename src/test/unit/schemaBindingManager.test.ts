@@ -7,6 +7,7 @@ import { setConfig, getStoredConfig, statusBarItem } from '../mocks/vscode';
 
 const {
   SchemaBindingManager,
+  INLINE_SCOPE,
   normalise,
   matchesFile,
   dropPattern,
@@ -116,8 +117,41 @@ function makeContext(initialState: Record<string, any> = {}) {
   };
 }
 
-function makeDoc(languageId: string, fsPath = '/ws/data.json') {
-  return { languageId, uri: { fsPath }, getText: () => '' };
+function makeDoc(languageId: string, fsPath = '/ws/data.json', text = '') {
+  return {
+    languageId,
+    uri: { fsPath },
+    getText: () => text,
+    // Mirrors vscode.TextDocument.positionAt closely enough for the mock
+    // WorkspaceEdit ranges built in SchemaBindingManager's inline-write path.
+    positionAt: (offset: number) => {
+      const before = text.slice(0, offset);
+      const lines = before.split('\n');
+      return { line: lines.length - 1, character: lines[lines.length - 1].length };
+    },
+  };
+}
+
+/** Reconstructs the text produced by applying a mock vscode.WorkspaceEdit's
+ *  recorded replace() ops back onto the original string, so inline-binding
+ *  tests can assert on the actual resulting file content. */
+function applyMockEdit(text: string, edit: { edits: { range: any; newText: string }[] }): string {
+  function offsetOf(line: number, character: number): number {
+    const lines = text.split('\n');
+    let offset = 0;
+    for (let i = 0; i < line; i++) offset += lines[i].length + 1;
+    return offset + character;
+  }
+  const ops = edit.edits
+    .map(e => ({
+      start: offsetOf(e.range.startLine, e.range.startChar),
+      end: offsetOf(e.range.endLine, e.range.endChar),
+      newText: e.newText,
+    }))
+    .sort((a, b) => b.start - a.start);
+  let result = text;
+  for (const op of ops) result = result.slice(0, op.start) + op.newText + result.slice(op.end);
+  return result;
 }
 
 suite('SchemaBindingManager — constructor & status bar', () => {
@@ -486,4 +520,285 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     }
   });
 
+});
+
+// ─── Local schema-path resolution by scope [Bug: workspace-file path] ─────────
+
+suite('SchemaBindingManager — local schema path resolution by scope', () => {
+  setup(() => vscode.resetAll());
+
+  function setUpWorkspaceSchemaPick(tmp: string, schema: string) {
+    vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+    vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+    vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+    vscode.window.showQuickPick.onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri));
+  }
+
+  test('[F04-FR-13] WorkspaceFolder scope stores a relative ./ path', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      setUpWorkspaceSchemaPick(tmp, schema);
+      vscode.window.showQuickPick
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('json', 'schemas') as any[];
+      const entry = stored.find((s: any) => s.fileMatch?.includes('data.json'));
+      assert.strictEqual(entry.url, './schema.json');
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('[F04-FR-13] Workspace (.code-workspace) scope stores the absolute path, not a relative one', async () => {
+    // Relative json.schemas/yaml.schemas urls are unreliable once the setting
+    // lives outside a single folder's own .vscode/settings.json — see
+    // microsoft/vscode#156006 and #181187. Using the absolute path sidesteps
+    // that VS Code core bug entirely.
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      (vscode.workspace as any).workspaceFile = { fsPath: path.join(tmp, 'proj.code-workspace') };
+      setUpWorkspaceSchemaPick(tmp, schema);
+      vscode.window.showQuickPick
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('json', 'schemas') as any[];
+      const entry = stored.find((s: any) => s.fileMatch?.includes('data.json'));
+      assert.strictEqual(entry.url, schema);
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('[F04-FR-13] Global (User) scope stores the absolute path — there is no folder to resolve a relative path against', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      setUpWorkspaceSchemaPick(tmp, schema);
+      vscode.window.showQuickPick
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Global));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('json', 'schemas') as any[];
+      const entry = stored.find((s: any) => s.fileMatch?.includes('data.json'));
+      assert.strictEqual(entry.url, schema);
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+});
+
+// ─── Inline binding — integration via bindToCurrentFile [F10] ─────────────────
+
+suite('SchemaBindingManager — inline binding (F10)', () => {
+  setup(() => vscode.resetAll());
+
+  test('[F10-FR-01][F10-FR-04][F10-NFR-01] Inline scope inserts $schema as the first key for JSON', async () => {
+    const text = '{\n  "a": 1\n}';
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', text) };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === INLINE_SCOPE));
+    vscode.window.showInputBox.resolves('https://example.com/schema.json');
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(vscode.workspace.applyEdit.calledOnce);
+    const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+    assert.deepStrictEqual(JSON.parse(result), { $schema: 'https://example.com/schema.json', a: 1 });
+    assert.ok(result.trimStart().startsWith('{\n  "$schema"'));
+  });
+
+  test('[F10-FR-02] Inline option is not offered for JSONL files', async () => {
+    vscode.window.activeTextEditor = { document: makeDoc('jsonl', '/ws/data.jsonl', '{"a":1}\n') };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    let scopeItems: any[] = [];
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[]) => { scopeItems = items; return undefined; });
+    vscode.window.showInputBox.resolves('https://example.com/schema.json');
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(!scopeItems.some((i: any) => i.target === INLINE_SCOPE));
+  });
+
+  test('[F10-FR-03] Remove picker omits Inline when the file has no inline $schema', async () => {
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', '{"a":1}') };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    let scopeItems: any[] = [];
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove))
+      .onSecondCall().callsFake(async (items: any[]) => { scopeItems = items; return undefined; });
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(!scopeItems.some((i: any) => i.target === INLINE_SCOPE));
+  });
+
+  test('[F10-FR-03][F10-FR-10][F10-FR-11] Remove picker offers Inline and removes $schema when present', async () => {
+    const text = '{\n  "$schema": "./s.json",\n  "a": 1\n}';
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', text) };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove))
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === INLINE_SCOPE));
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(vscode.workspace.applyEdit.calledOnce);
+    const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+    assert.deepStrictEqual(JSON.parse(result), { a: 1 });
+  });
+
+  test('[F10-FR-06] Inline binding on a JSON array root shows an error and does not modify anything', async () => {
+    const text = '[1,2,3]';
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', text) };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === INLINE_SCOPE));
+    vscode.window.showInputBox.resolves('https://example.com/schema.json');
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(!vscode.workspace.applyEdit.called);
+    assert.ok(vscode.window.showErrorMessage.calledOnce);
+  });
+
+  test('[F10-FR-09] Inline YAML binding writes a directive when redhat.vscode-yaml is installed', async () => {
+    const text = 'foo: 1\n';
+    vscode.window.activeTextEditor = { document: makeDoc('yaml', '/ws/data.yaml', text) };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.extensions.getExtension.returns({ id: 'redhat.vscode-yaml' });
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === INLINE_SCOPE));
+    vscode.window.showInputBox.resolves('https://example.com/schema.json');
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+    assert.strictEqual(result, '# yaml-language-server: $schema=https://example.com/schema.json\nfoo: 1\n');
+  });
+
+  test('[F10-FR-09] Inline YAML binding writes a plain key when redhat.vscode-yaml is absent', async () => {
+    const text = 'foo: 1\n';
+    vscode.window.activeTextEditor = { document: makeDoc('yaml', '/ws/data.yaml', text) };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === INLINE_SCOPE));
+    vscode.window.showInputBox.resolves('https://example.com/schema.json');
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+    assert.strictEqual(result, '$schema: https://example.com/schema.json\nfoo: 1\n');
+  });
+
+  test('[Workspace trust] Inline binding is blocked in untrusted workspaces', async () => {
+    (vscode.workspace as any).isTrusted = false;
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', '{"a":1}') };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === INLINE_SCOPE));
+    vscode.window.showInputBox.resolves('https://example.com/schema.json');
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(!vscode.workspace.applyEdit.called);
+    assert.ok(vscode.window.showWarningMessage.called);
+  });
+
+  test('[F10-FR-05] Inline binding uses a relative path for a schema inside the same workspace folder', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      const text = '{"a":1}';
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json'), text) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === INLINE_SCOPE));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+      assert.deepStrictEqual(JSON.parse(result), { $schema: './schema.json', a: 1 });
+      assert.ok(!vscode.window.showInformationMessage.called);
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('[F10-FR-05] Inline binding uses an absolute path and warns when the schema is outside the workspace', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      const text = '{"a":1}';
+      vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', text) };
+      // Neither the doc nor the picked schema resolve to a workspace folder.
+      vscode.workspace.getWorkspaceFolder.returns(undefined);
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === INLINE_SCOPE));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+      assert.deepStrictEqual(JSON.parse(result), { $schema: schema, a: 1 });
+      assert.ok(vscode.window.showInformationMessage.calledOnce);
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+});
+
+// ─── refresh() inline precedence [F10-FR-12][F10-FR-13][F10-FR-15] ────────────
+
+suite('SchemaBindingManager — refresh() inline precedence', () => {
+  setup(() => vscode.resetAll());
+
+  function trigger(doc: any) {
+    new SchemaBindingManager(makeContext());
+    const cb = vscode.window.onDidChangeActiveTextEditor.lastCall.args[0];
+    cb({ document: doc });
+  }
+
+  test('inline $schema takes precedence over a settings binding and shows the inline icon', () => {
+    setConfig('json', 'schemas', [{ url: './other.json', fileMatch: ['data.json'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    trigger(makeDoc('json', '/ws/data.json', '{"$schema":"./inline.json","a":1}'));
+    assert.ok(statusBarItem.text.includes('file-symlink-file'));
+    assert.ok(statusBarItem.text.includes('inline.json'));
+    assert.ok(statusBarItem.tooltip?.includes('other.json'));
+  });
+
+  test('shows the inline icon when there is no settings binding at all', () => {
+    setConfig('json', 'schemas', []);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    trigger(makeDoc('json', '/ws/data.json', '{"$schema":"./inline.json"}'));
+    assert.ok(statusBarItem.text.includes('inline.json'));
+    assert.ok(!statusBarItem.tooltip?.includes('Note:'));
+  });
 });

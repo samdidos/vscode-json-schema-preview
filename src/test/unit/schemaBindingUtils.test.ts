@@ -3,6 +3,7 @@
 // found to be executed-but-unverified — they assert exact return values across
 // every branch so a flipped condition or operator fails a test (i.e. is killed).
 import * as assert from 'assert';
+import { applyEdits } from 'jsonc-parser';
 import * as vscode from '../mocks/vscode';
 import { setConfig } from '../mocks/vscode';
 
@@ -13,6 +14,10 @@ const {
   relFileForTarget,
   pickInspectValue,
   validateSchemaRefInput,
+  computeJsonSchemaInsertEdits,
+  computeJsonSchemaRemoveEdits,
+  computeYamlSchemaUpsertEdit,
+  computeYamlSchemaRemoveEdit,
 } = require('../../SchemaBindingManager');
 
 const { ConfigurationTarget } = vscode;
@@ -224,4 +229,132 @@ suite('extractInlineSchemaUrl()', () => {
       extractInlineSchemaUrl(doc('yaml', '# YAML-LANGUAGE-SERVER: $schema=https://x/s.json')),
       'https://x/s.json'
     ));
+  // [F10-FR-14] the directive form must also detect local paths, not just
+  // http(s) URLs, so inline bindings written by writeInlineBinding (which can
+  // embed a relative path) round-trip through this same detector.
+  test('yaml directive with a local relative path', () =>
+    assert.strictEqual(
+      extractInlineSchemaUrl(doc('yaml', '# yaml-language-server: $schema=./schema.json\nfoo: 1')),
+      './schema.json'
+    ));
+  test('yaml directive with an absolute local path', () =>
+    assert.strictEqual(
+      extractInlineSchemaUrl(doc('yaml', '# yaml-language-server: $schema=/abs/schema.json')),
+      '/abs/schema.json'
+    ));
+});
+
+// ─── Inline binding — pure edit computation [F10] ─────────────────────────────
+
+suite('computeJsonSchemaInsertEdits() [F10-FR-04][F10-FR-06][F10-FR-07]', () => {
+  const fmt = { tabSize: 2, insertSpaces: true, eol: '\n' };
+
+  test('inserts $schema as the first key ahead of existing keys', () => {
+    const text = '{\n  "a": 1,\n  "b": 2\n}';
+    const result = computeJsonSchemaInsertEdits(text, './schema.json', fmt);
+    assert.ok('edits' in result);
+    assert.strictEqual(
+      applyEdits(text, result.edits),
+      '{\n  "$schema": "./schema.json",\n  "a": 1,\n  "b": 2\n}'
+    );
+  });
+
+  test('replaces an existing $schema value in place', () => {
+    const text = '{\n  "$schema": "./old.json",\n  "a": 1\n}';
+    const result = computeJsonSchemaInsertEdits(text, './new.json', fmt);
+    assert.strictEqual(
+      applyEdits(text, result.edits),
+      '{\n  "$schema": "./new.json",\n  "a": 1\n}'
+    );
+  });
+
+  test('preserves // and /* */ comments in JSONC', () => {
+    const text = '// header\n{\n  "a": 1 /* trailing */\n}';
+    const result = computeJsonSchemaInsertEdits(text, './s.json', fmt);
+    const out = applyEdits(text, result.edits);
+    assert.strictEqual(out, '// header\n{\n  "$schema": "./s.json",\n  "a": 1 /* trailing */\n}');
+  });
+
+  test('errors and returns no edits when the root is an array', () => {
+    const result = computeJsonSchemaInsertEdits('[1,2,3]', './s.json', fmt);
+    assert.ok('error' in result);
+    assert.ok(result.error.length > 0);
+  });
+
+  test('errors when the root is a scalar', () => {
+    const result = computeJsonSchemaInsertEdits('42', './s.json', fmt);
+    assert.ok('error' in result);
+  });
+});
+
+suite('computeJsonSchemaRemoveEdits() [F10-FR-10][F10-FR-11]', () => {
+  const fmt = { tabSize: 2, insertSpaces: true, eol: '\n' };
+
+  test('removes the only property, leaving a valid empty object', () => {
+    const text = '{\n  "$schema": "./s.json"\n}';
+    const edits = computeJsonSchemaRemoveEdits(text, fmt);
+    assert.deepStrictEqual(JSON.parse(applyEdits(text, edits)), {});
+  });
+
+  test('removes $schema and the dangling comma when other properties follow', () => {
+    const text = '{\n  "$schema": "./s.json",\n  "a": 1\n}';
+    const edits = computeJsonSchemaRemoveEdits(text, fmt);
+    assert.strictEqual(applyEdits(text, edits), '{\n  "a": 1\n}');
+  });
+
+  test('returns no edits when there is no $schema property', () => {
+    assert.deepStrictEqual(computeJsonSchemaRemoveEdits('{\n  "a": 1\n}', fmt), []);
+  });
+
+  test('returns no edits when the root is not an object', () => {
+    assert.deepStrictEqual(computeJsonSchemaRemoveEdits('[1,2]', fmt), []);
+  });
+});
+
+function applyYamlEdit(text: string, edit: { offset: number; length: number; content: string }): string {
+  return text.slice(0, edit.offset) + edit.content + text.slice(edit.offset + edit.length);
+}
+
+suite('computeYamlSchemaUpsertEdit() [F10-FR-08][F10-FR-09][F10-FR-16]', () => {
+  test('inserts a plain $schema: key as the first line when the yaml extension is absent', () => {
+    const text = 'foo: 1\nbar: 2\n';
+    const edit = computeYamlSchemaUpsertEdit(text, './s.json', false);
+    assert.strictEqual(applyYamlEdit(text, edit), '$schema: ./s.json\nfoo: 1\nbar: 2\n');
+  });
+
+  test('inserts a yaml-language-server directive as the first line when the extension is installed', () => {
+    const text = 'foo: 1\n';
+    const edit = computeYamlSchemaUpsertEdit(text, './s.json', true);
+    assert.strictEqual(applyYamlEdit(text, edit), '# yaml-language-server: $schema=./s.json\nfoo: 1\n');
+  });
+
+  test('updates an existing directive in place, ignoring the extension-installed flag', () => {
+    const text = '# yaml-language-server: $schema=./old.json\nfoo: 1\n';
+    const edit = computeYamlSchemaUpsertEdit(text, './new.json', false);
+    assert.strictEqual(applyYamlEdit(text, edit), '# yaml-language-server: $schema=./new.json\nfoo: 1\n');
+  });
+
+  test('updates an existing plain key in place, ignoring the extension-installed flag', () => {
+    const text = '$schema: ./old.json\nfoo: 1\n';
+    const edit = computeYamlSchemaUpsertEdit(text, './new.json', true);
+    assert.strictEqual(applyYamlEdit(text, edit), '$schema: ./new.json\nfoo: 1\n');
+  });
+});
+
+suite('computeYamlSchemaRemoveEdit() [F10-FR-10]', () => {
+  test('removes a directive comment line entirely', () => {
+    const text = '# yaml-language-server: $schema=./s.json\nfoo: 1\n';
+    const edit = computeYamlSchemaRemoveEdit(text);
+    assert.strictEqual(applyYamlEdit(text, edit), 'foo: 1\n');
+  });
+
+  test('removes a plain $schema: key line entirely', () => {
+    const text = '$schema: ./s.json\nfoo: 1\n';
+    const edit = computeYamlSchemaRemoveEdit(text);
+    assert.strictEqual(applyYamlEdit(text, edit), 'foo: 1\n');
+  });
+
+  test('returns undefined when there is nothing to remove', () => {
+    assert.strictEqual(computeYamlSchemaRemoveEdit('foo: 1\n'), undefined);
+  });
 });

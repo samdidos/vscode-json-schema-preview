@@ -57,9 +57,29 @@ recognise them.
 - **F04-FR-12** On startup the extension MUST silently clean up any session-scoped
   temporary bindings written by older versions of the extension.
 
+### Local Schema Path Resolution
+
+- **F04-FR-13** When the picked schema is a local file, the stored `url` /
+  `$schema` value MUST be a path relative to the schema's own workspace
+  folder (prefixed `./`) **only** for WorkspaceFolder scope. For Workspace
+  (`.code-workspace` file) and User (Global) scope the value MUST be the
+  absolute file system path instead, because:
+  - relative `json.schemas` / `yaml.schemas` `url` resolution is documented
+    as unreliable once the setting is defined outside a single folder's own
+    `.vscode/settings.json` (see microsoft/vscode#156006, #181187, #92348),
+    which previously caused schema loading to silently fail for
+    Workspace-scoped bindings; and
+  - User (Global) settings apply machine-wide and have no single workspace
+    folder to resolve a relative path against.
+  - When the picked schema file is outside the workspace entirely, the
+    absolute path MUST be used regardless of scope (pre-existing behaviour).
+
 ## Acceptance Criteria
 
 1. Binding `person-valid.json` to `person.schema.json` at Workspace scope adds an
    entry to `.vscode/settings.json` under `json.schemas`.
 2. The status bar shows `$(check) Schema: person.schema.json` after binding.
 3. After removal the status bar reverts to `$(circle-slash) Schema: unbound`.
+4. Binding a local schema at Workspace or User scope stores the absolute file
+   system path; binding the same schema at WorkspaceFolder scope stores a
+   `./`-relative path instead (F04-FR-13).

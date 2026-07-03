@@ -69,6 +69,7 @@ const _findFiles                = sinon.stub();
 const _openTextDocument         = sinon.stub();
 const _onDidChangeConfiguration = sinon.stub();
 const _onDidSaveTextDocument    = sinon.stub();
+const _applyEdit                = sinon.stub();
 
 // commands
 const _registerCommand  = sinon.stub();
@@ -87,16 +88,20 @@ const _registerCodeActionsProvider      = sinon.stub();
 const _onDidChangeSessions = sinon.stub();
 const _getSession          = sinon.stub();
 
+// extensions
+const _getExtension = sinon.stub();
+
 const _allStubs: sinon.SinonStub[] = [
   statusBarItem.show, statusBarItem.hide, statusBarItem.dispose,
   _createStatusBarItem, _onDidChangeActiveTextEditor,
   _showInformationMessage, _showErrorMessage, _showWarningMessage,
   _showQuickPick, _showInputBox, _showTextDocument, _showOpenDialog, _createWebviewPanel, _withProgress,
   _getWorkspaceFolder, _asRelativePath, _getConfiguration,
-  _findFiles, _openTextDocument, _onDidChangeConfiguration, _onDidSaveTextDocument,
+  _findFiles, _openTextDocument, _onDidChangeConfiguration, _onDidSaveTextDocument, _applyEdit,
   _onDidOpenTextDocument, _onDidChangeTextDocument,
   _createDiagnosticCollection, _registerCodeActionsProvider,
   _onDidChangeSessions, _getSession,
+  _getExtension,
   _registerCommand, _executeCommand, _getCommands,
 ];
 
@@ -127,6 +132,7 @@ function applyDefaults() {
   _openTextDocument.resolves(undefined);
   _onDidChangeConfiguration.returns(_disposable);
   _onDidSaveTextDocument.returns(_disposable);
+  _applyEdit.resolves(true);
   _onDidOpenTextDocument.returns(_disposable);
   _onDidChangeTextDocument.returns(_disposable);
   _createDiagnosticCollection.returns({
@@ -135,6 +141,7 @@ function applyDefaults() {
   _registerCodeActionsProvider.returns(_disposable);
   _onDidChangeSessions.returns(_disposable);
   _getSession.resolves(undefined);
+  _getExtension.returns(undefined);
   _registerCommand.returns(_disposable);
   _executeCommand.resolves(undefined);
   _getCommands.resolves([]);
@@ -211,6 +218,7 @@ export const workspace = {
   onDidSaveTextDocument:    _onDidSaveTextDocument,
   onDidOpenTextDocument:    _onDidOpenTextDocument,
   onDidChangeTextDocument:  _onDidChangeTextDocument,
+  applyEdit:                _applyEdit,
 };
 
 export const commands = {
@@ -220,7 +228,7 @@ export const commands = {
 };
 
 export const extensions = {
-  getExtension: sinon.stub().returns(undefined),
+  getExtension: _getExtension,
 };
 
 export const languages = {
@@ -277,4 +285,19 @@ export class Range {
 }
 export class Diagnostic {
   constructor(public range: Range, public message: string, public severity?: number) {}
+}
+
+export interface MockWorkspaceEditOp {
+  uri: any;
+  range: Range;
+  newText: string;
+}
+
+/** Minimal stand-in for vscode.WorkspaceEdit — records replace() calls for
+ *  test inspection instead of touching any real document. */
+export class WorkspaceEdit {
+  readonly edits: MockWorkspaceEditOp[] = [];
+  replace(uri: any, range: Range, newText: string): void {
+    this.edits.push({ uri, range, newText });
+  }
 }
