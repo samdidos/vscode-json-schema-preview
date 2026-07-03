@@ -431,6 +431,11 @@
       ],
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
+    "F04-FR-13": {
+      "status": "implemented",
+      "impl": ["src/SchemaBindingManager.ts"],
+      "note": "resolveLocalSchemaRef(): relative for WorkspaceFolder/Inline scope, absolute for Workspace/Global scope or schemas outside the workspace."
+    },
     "F05-FR-01": {
       "status": "manual",
       "impl": [
@@ -866,99 +871,137 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F10-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-09": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-10": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-11": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-12": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-13": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-14": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-15": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-FR-16": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
     "F10-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "All inline mutations go through vscode.WorkspaceEdit + workspace.applyEdit (applyJsoncEdits), never fs.writeFileSync."
     },
     "F10-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "writeInlineBinding/removeInlineBinding do no fs I/O at all (edits computed from doc.getText() and applied via WorkspaceEdit) — verified by code inspection, not a dedicated test."
     },
     "F10-NFR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Edits are computed from doc.getText() and applied via WorkspaceEdit against the live document, so unsaved-but-open documents are handled the same as saved ones — verified by code inspection."
     },
     "F11-FR-01": {
       "status": "planned",
