@@ -1022,6 +1022,41 @@
         "src/SchemaAuthManager.ts"
       ],
       "note": "credentials scoped to their stored host (F07)"
+    },
+    "S06-SR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": "accessibility floor specced 2026-07-04"
+    },
+    "S06-SR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": "accessibility floor specced 2026-07-04"
+    },
+    "S06-SR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": "accessibility floor specced 2026-07-04"
+    },
+    "S06-SR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": "accessibility floor specced 2026-07-04"
+    },
+    "S06-SR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": "accessibility floor specced 2026-07-04"
+    },
+    "S06-SR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": "accessibility floor specced 2026-07-04"
+    },
+    "S06-SR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": "accessibility floor specced 2026-07-04"
     }
   }
 }

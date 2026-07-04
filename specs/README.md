@@ -24,6 +24,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S03-performance.md](S03-performance.md) | Performance and resource management |
 | [S04-reliability.md](S04-reliability.md) | Reliability and offline behaviour (stale-cache fallback) |
 | [S05-privacy.md](S05-privacy.md) | Privacy and data collection (zero telemetry) |
+| [S06-accessibility.md](S06-accessibility.md) | Accessibility (keyboard, screen-reader, contrast) |
 
 ## Scope
 
