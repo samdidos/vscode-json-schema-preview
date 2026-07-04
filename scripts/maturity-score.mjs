@@ -274,7 +274,13 @@ function scoreDimension(dim) {
     possible += c.points;
     checks.push({ id: c.id, points: c.points, earned: Math.round(frac * c.points * 100) / 100, note: c.note });
   }
-  return { label: dim.label, score: Math.round((MAX * earned / possible) * 10) / 10, earned, possible, checks };
+  return {
+    label: dim.label,
+    score: Math.round((MAX * earned / possible) * 10) / 10,
+    earned: Math.round(earned * 100) / 100,
+    possible,
+    checks,
+  };
 }
 
 function compute() {
@@ -313,16 +319,37 @@ function printTable(result) {
 const result = compute();
 const serialized = JSON.stringify(result, null, 2) + '\n';
 
+// Drift is judged on the ROUNDED scores only — never on raw facts. V8's branch-
+// coverage counting differs across Node versions (e.g. 90.8% on Node 22 vs
+// 90.95% on Node 24), so comparing raw `facts.coverage` would make `--check`
+// fail spuriously in CI even when every 1-decimal score is identical. The
+// scores are what the chart and the History actually track.
+function comparable(r) {
+  return JSON.stringify({
+    scale: r.scale,
+    overall: r.overall,
+    dimensions: r.dimensions.map((d) => ({
+      label: d.label,
+      score: d.score,
+      checks: d.checks.map((c) => ({ id: c.id, earned: c.earned })),
+    })),
+  });
+}
+
 if (process.argv.includes('--check')) {
-  const committed = existsSync(OUT_PATH) ? readFileSync(OUT_PATH, 'utf-8') : '';
-  // Compare everything except the generatedAt date, which legitimately changes.
-  const strip = (s) => s.replace(/"generatedAt":\s*"[^"]*",?/, '');
   printTable(result);
-  if (strip(committed) !== strip(serialized)) {
-    console.log('\n✗ maturity-score.json is stale. Run `npm run maturity` and commit the result.');
+  let committed;
+  try {
+    committed = JSON.parse(readFileSync(OUT_PATH, 'utf-8'));
+  } catch {
+    console.log('\n✗ maturity-score.json missing or unreadable. Run `npm run maturity` and commit it.');
     process.exit(1);
   }
-  console.log('\n✓ maturity-score.json is up to date.');
+  if (comparable(committed) !== comparable(result)) {
+    console.log('\n✗ maturity-score.json scores are stale. Run `npm run maturity` and commit the result.');
+    process.exit(1);
+  }
+  console.log('\n✓ maturity-score.json scores are up to date.');
 } else {
   writeFileSync(OUT_PATH, serialized);
   printTable(result);
