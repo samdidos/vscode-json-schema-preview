@@ -234,6 +234,7 @@
     "test:e2e": "npm run compile && playwright test --config playwright.e2e.config.ts",
     "update:deps": "npx npm-check-updates -u && npm install",
     "make-gifs": "node scripts/make-gifs.mjs",
+    "maturity:chart": "node scripts/generate-maturity-chart.mjs",
     "generate:assets": "npm run test:e2e && npm run make-gifs",
     "bump:version": "npm --no-git-tag-version --allow-same-version version $VERSION",
     "docs:install": "npm --prefix docs install",
