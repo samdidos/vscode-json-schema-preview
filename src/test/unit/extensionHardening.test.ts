@@ -38,7 +38,7 @@ suite('extension — inferSchema produces the right schema', () => {
     });
   }
 
-  test('JSON: injects the draft-07 $schema and opens as a json document', async () => {
+  test('[F06-FR-03][F06-FR-08][F06-FR-09][F06-FR-10][F06-FR-11] JSON: injects the draft-07 $schema and opens as a json document', async () => {
     const { arg, schema } = await inferredSchemaFrom('json', '{"name":"Alice","age":30}');
     assert.strictEqual(arg.language, 'json');
     assert.strictEqual(schema.$schema, 'http://json-schema.org/draft-07/schema#');
@@ -46,17 +46,17 @@ suite('extension — inferSchema produces the right schema', () => {
     assert.ok(['integer', 'number'].includes(schema.properties.age.type));
   });
 
-  test('YAML is parsed as YAML into the schema', async () => {
+  test('[F06-FR-06] YAML is parsed as YAML into the schema', async () => {
     const { schema } = await inferredSchemaFrom('yaml', 'name: Alice\nage: 30');
     assert.strictEqual(schema.properties.name.type, 'string');
   });
 
-  test('JSONL is parsed line-by-line into an array schema', async () => {
+  test('[F06-FR-05] JSONL is parsed line-by-line into an array schema', async () => {
     const { schema } = await inferredSchemaFrom('jsonl', '{"a":1}\n{"a":2}');
     assert.strictEqual(schema.type, 'array');
   });
 
-  test('JSONC comments are stripped before inference', async () => {
+  test('[F06-FR-04] JSONC comments are stripped before inference', async () => {
     const { schema } = await inferredSchemaFrom('jsonc', '// header\n{"name":"Bob"}');
     assert.strictEqual(schema.properties.name.type, 'string');
   });

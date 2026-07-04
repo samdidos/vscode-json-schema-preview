@@ -31,7 +31,7 @@ suite('SchemaAuthManager.hostOf()', () => {
 
 // ─── AuthRequiredError ────────────────────────────────────────────────────────
 
-suite('AuthRequiredError', () => {
+suite('[F07-FR-09] AuthRequiredError', () => {
   test('name is AuthRequiredError', () => {
     const e = new AuthRequiredError('https://example.com/schema.json', 401);
     assert.strictEqual(e.name, 'AuthRequiredError');

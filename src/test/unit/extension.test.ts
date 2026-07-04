@@ -146,7 +146,7 @@ suite('extension — command handlers', () => {
     );
   });
 
-  test('inferSchema — infers schema from JSON', async () => {
+  test('[F06-FR-12] inferSchema — infers schema from JSON', async () => {
     const doc = {
       languageId: 'json',
       getText: () => '{"name":"Alice","age":30}',
@@ -195,7 +195,7 @@ suite('extension — command handlers', () => {
     assert.ok(vscode.workspace.openTextDocument.called);
   });
 
-  test('inferSchema — shows error for invalid JSON', async () => {
+  test('[F06-FR-07] inferSchema — shows error for invalid JSON', async () => {
     const doc = {
       languageId: 'json',
       getText: () => 'not valid {',
@@ -317,7 +317,7 @@ suite('extension — event listener branches', () => {
     assert.ok(!vscode.commands.executeCommand.called);
   });
 
-  test('onDidChangeTextDocument with liveUpdate=true and schema file schedules update', () => {
+  test('[F02-FR-01] onDidChangeTextDocument with liveUpdate=true and schema file schedules update', () => {
     vscode.setConfig('jsonschema.preview', 'liveUpdate', true);
     const cb = vscode.workspace.onDidChangeTextDocument.firstCall.args[0];
     const doc = {

@@ -161,7 +161,7 @@ suite('SchemaBindingManager — refresh via editor change', () => {
     assert.ok(statusBarItem.hide.calledOnce);
   });
 
-  test('shows "unbound" when JSON file has no binding', () => {
+  test('[F04-FR-05][F04-FR-07] shows "unbound" when JSON file has no binding', () => {
     setConfig('json', 'schemas', []);
     setConfig('yaml', 'schemas', {});
     vscode.workspace.asRelativePath.callsFake(() => 'data.json');
@@ -179,7 +179,7 @@ suite('SchemaBindingManager — refresh via editor change', () => {
     assert.ok(statusBarItem.text.includes('unbound'));
   });
 
-  test('shows schema name when JSON binding exists', () => {
+  test('[F04-FR-06] shows schema name when JSON binding exists', () => {
     setConfig('json', 'schemas', [{ url: './myschema.json', fileMatch: ['data.json'] }]);
     vscode.workspace.asRelativePath.callsFake(() => 'data.json');
     triggerEditorChange({ document: makeDoc('json') });
@@ -278,7 +278,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     }
   });
 
-  test('adds JSON binding when user picks schema', async () => {
+  test('[F04-FR-01][F04-FR-03] adds JSON binding when user picks schema', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
     const schema = path.join(tmp, 'schema.json');
     fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
@@ -302,7 +302,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     }
   });
 
-  test('adds YAML binding when user picks schema', async () => {
+  test('[F04-FR-04] adds YAML binding when user picks schema', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
     const schema = path.join(tmp, 'schema.json');
     fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
@@ -434,7 +434,7 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     assert.ok(!vscode.window.showErrorMessage.called);
   });
 
-  test('adds JSON binding with WorkspaceFolder (local project) scope', async () => {
+  test('[F04-FR-02] adds JSON binding with WorkspaceFolder (local project) scope', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
     const schema = path.join(tmp, 'schema.json');
     fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));

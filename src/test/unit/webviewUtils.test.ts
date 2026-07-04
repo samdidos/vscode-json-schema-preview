@@ -2,7 +2,7 @@ import * as assert from 'assert';
 
 const { sanitizeHtml, loadingPage, errorPage, getNonce, embedJson } = require('../../webviewUtils');
 
-suite('sanitizeHtml()', () => {
+suite('[S01-SR-08] sanitizeHtml()', () => {
   test('escapes ampersands', () => {
     assert.strictEqual(sanitizeHtml('a & b'), 'a &amp; b');
   });
@@ -34,7 +34,7 @@ suite('sanitizeHtml()', () => {
   });
 });
 
-suite('embedJson()', () => {
+suite('[S01-SR-09] embedJson()', () => {
   test('serialises a plain object as JSON', () => {
     assert.strictEqual(embedJson({ a: 1 }), '{"a":1}');
   });
@@ -52,7 +52,7 @@ suite('embedJson()', () => {
 });
 
 suite('getNonce()', () => {
-  test('returns a base64url token with at least 128 bits of entropy', () => {
+  test('[S01-SR-03] returns a base64url token with at least 128 bits of entropy', () => {
     const nonce = getNonce();
     // 16 random bytes encoded as base64url → 22 chars, no padding.
     assert.ok(nonce.length >= 22);
@@ -70,7 +70,7 @@ suite('loadingPage()', () => {
     assert.ok(html.includes('Loading...'));
   });
 
-  test('includes a Content-Security-Policy that forbids scripts', () => {
+  test('[S01-SR-10] includes a Content-Security-Policy that forbids scripts', () => {
     const html = loadingPage('test');
     assert.ok(html.includes('Content-Security-Policy'));
     assert.ok(html.includes("default-src 'none'"));
