@@ -67,13 +67,15 @@ async function main() {
   if (!res.ok) throw new Error(`api.securityscorecards.dev returned HTTP ${res.status}`);
 
   const data = await res.json();
-  // Validate/coerce every field to a primitive before persisting — the response
-  // is external data, and only these vetted values are written to the cache the
-  // (offline) scorer later reads.
+  // Sanitise every field to a bounded value before persisting — the response is
+  // external data, and only these vetted values are written to the cache the
+  // (offline) scorer later reads. Strings are reduced to an explicit character
+  // allowlist (not merely truncated), and grades are coerced to numbers.
   const score = toGrade(data.score);
-  const scorecardDate = typeof data.date === 'string' ? data.date.slice(0, 32) : null;
+  const dateChars = String(data.date ?? '').replace(/[^0-9-]/g, '').slice(0, 10);
+  const scorecardDate = /^\d{4}-\d{2}-\d{2}$/.test(dateChars) ? dateChars : null;
   const checks = (Array.isArray(data.checks) ? data.checks : [])
-    .map((c) => ({ name: String(c?.name ?? '').slice(0, 64), score: toGrade(c?.score) }))
+    .map((c) => ({ name: String(c?.name ?? '').replace(/[^A-Za-z-]/g, '').slice(0, 64), score: toGrade(c?.score) }))
     .filter((c) => c.name)
     .sort((a, b) => a.name.localeCompare(b.name));
 
