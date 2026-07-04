@@ -45,7 +45,7 @@
     {
       "label": "Testing",
       "score": 4.7,
-      "earned": 9.482894736842105,
+      "earned": 9.48,
       "possible": 10,
       "checks": [
         {
@@ -83,7 +83,7 @@
     {
       "label": "Security / supply chain",
       "score": 5,
-      "earned": 9.903225806451612,
+      "earned": 9.9,
       "possible": 10,
       "checks": [
         {
@@ -165,7 +165,7 @@
     {
       "label": "Docs",
       "score": 4,
-      "earned": 8.09090909090909,
+      "earned": 8.09,
       "possible": 10,
       "checks": [
         {
