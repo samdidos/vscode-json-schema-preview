@@ -53,6 +53,37 @@ the full extension host):
 `SchemaAuthCodeActionProvider`, `ValidationManager`, `SchemaEditorPanel`,
 `ConfigWebPanel`, `python.js`
 
+## Working in this repo (agents & humans)
+
+Gotchas worth knowing before you touch anything — each one has cost someone a
+debugging cycle:
+
+- **Setup / fresh container.** Run **`bash scripts/bootstrap.sh`**, not
+  `npm ci`. The `canvas` dependency (demo-GIF pipeline only) compiles native
+  code with node-gyp and fails in minimal containers; bootstrap installs with
+  `--ignore-scripts` and then wires up husky. A **Claude Code SessionStart
+  hook** (`.claude/hooks/session-bootstrap.sh`) runs this automatically the
+  first time a session starts in a cold environment — a convenience; the script
+  is the real entry point. Regenerating GIFs (`npm run make-gifs`) does need a
+  full `npm install` so canvas builds.
+- **Run one test file:** `npx mocha --ui tdd --require ./out/test/mocks/setup.js
+  out/test/unit/<name>.test.js` (after `tsc -p tsconfig.test.json`). `npm test`
+  runs the whole suite with coverage.
+- **Mocha uses the `tdd` interface.** Hooks are **`setup()` / `teardown()`**,
+  not `beforeEach` / `afterEach`; tests are `suite()` / `test()`. Using the
+  BDD names silently no-ops.
+- **`vscode` is a mock**, injected via `src/test/mocks/setup.ts` (`Module._load`
+  interception). Config reads work through `setConfig(section, key, value)` /
+  `resetAll()` from `src/test/mocks/vscode.ts` — call `resetAll()` in `setup()`.
+- **Traceability tags gate CI.** A `[Fxx-FR-yy]` tag in a `suite()`/`test()`
+  title must reference a real requirement, and any `implemented` requirement
+  should carry one. After adding requirements run `npm run trace:init`, then set
+  each entry's status in `specs/traceability.json`.
+- **Eight classes are excluded from coverage AND mutation** (see the Coverage
+  rule below and `stryker.config.json`) because they are VS Code
+  API-bound — mark requirements they implement `manual` in the matrix, not
+  `implemented`.
+
 ## Architecture notes
 - Extension entry point: `src/extension.ts`
 - Tests: plain Node.js + mocha + sinon, no VS Code download needed

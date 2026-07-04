@@ -1,5 +1,37 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run verify)",
+      "Bash(npm run lint)",
+      "Bash(npm test)",
+      "Bash(npm run test:coverage)",
+      "Bash(npm run check:traceability)",
+      "Bash(npm run trace:init)",
+      "Bash(npm run compile)",
+      "Bash(npm run knip)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx eslint:*)",
+      "Bash(node scripts/check-traceability.mjs:*)",
+      "Bash(node scripts/check-coverage.js)",
+      "Bash(bash scripts/bootstrap.sh)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)"
+    ]
+  },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/session-bootstrap.sh"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [
