@@ -1,91 +1,107 @@
 # Project Maturity Scorecard
 
-A tracked, dated record of how mature this project's engineering practice and
-AI-agent integration are — so improvements (and regressions) are visible over
-time instead of living only in chat history. Scores are out of 5, assessed
-against general industry practice for a project of this size (a single-package
-VS Code extension), not against enterprise-scale codebases.
+A **computed**, dated record of this project's engineering and AI-agent-integration
+maturity — so improvements (and regressions) are visible over time instead of
+living in chat history or someone's judgement.
 
-**Current snapshot: 2026-07-04**
+Every score is produced by [`scripts/maturity-score.mjs`](scripts/maturity-score.mjs)
+from **observable facts** in the repository (coverage numbers, workflow config,
+the traceability matrix, file presence, lint output) — never a hand-set number.
+Each dimension is a weighted list of checks; its score is
+`5 × (points earned / points possible)`, and the overall score is the mean of
+the dimensions. The machine-readable result, including the per-check breakdown,
+is committed as [`maturity-score.json`](maturity-score.json).
+
+> This is a **self-relative** rubric: it tracks *this repo's* trend, and is not a
+> certification you can compare against another project's number. Where an
+> external standard exists and fits (SHA-pinned actions, presence of
+> CodeQL/OpenSSF Scorecard/SLSA, coverage percentages) the check reads that
+> signal directly; where none does (AI-agent integration) it is an explicit
+> presence checklist, documented below, not a vibe.
+
+**Snapshot: 2026-07-04**
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/public/maturity-scorecard-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/public/maturity-scorecard-light.svg">
-  <img alt="Project Maturity Scorecard: Overall 4.5, Spec & process 5.0, AI-agent integration 4.7, Testing 4.5, Security / supply chain 4.5, CI/CD & release 4.5, Docs 4.0, Code quality 4.0 — each scored out of 5" src="docs/public/maturity-scorecard-light.svg">
+  <img alt="Project Maturity Scorecard bar chart, each dimension scored out of 5: Overall 4.7, Spec & process 5.0, CI/CD & release 5.0, AI-agent integration 5.0, Security / supply chain 4.9, Testing 4.7, Docs 4.0, Code quality 4.0" src="docs/public/maturity-scorecard-light.svg">
 </picture>
 
-*Regenerate after editing the table below:* `npm run maturity:chart`
-*(update the score data at the top of `scripts/generate-maturity-chart.mjs`
-first — it is the source the chart renders from).*
+Regenerate both the JSON and the chart with **`npm run maturity`** (run
+`npm test` first so the Testing dimension can read fresh coverage). CI runs
+`npm run maturity:check`, which fails if the committed `maturity-score.json` is
+stale — so the chart can never drift from reality.
 
-| Dimension | Score | Notes |
-|---|---|---|
-| Spec & process | 5 / 5 | 212 RFC-2119 requirements, machine-checked traceability (spec ↔ matrix ↔ `[ID]` test tags) enforced in the git pre-commit hook and CI, a project constitution with a defined amendment process (Article IX), Spec Kit (`.specify/`) for spec/plan/task generation. |
-| Testing | 4.5 / 5 | 362 unit tests (mocha + sinon + fast-check property tests), 16 E2E files that double as demo-GIF generation, mutation testing (Stryker) now gates its own workflow via a real `break` threshold, coverage 94.5%/90.8% (stmts/branches) — well above the 80% floor. Only 3 files remain excluded from coverage, all for a defensible reason (webview HTML/postMessage plumbing or subprocess), not just "touches `vscode`". |
-| Security / supply chain | 4.5 / 5 | CodeQL, OpenSSF Scorecard, SLSA build provenance on the `.vsix`, SHA-pinned GitHub Actions, Dependabot, credentials only ever in `SecretStorage`, nonce-based CSP on every webview (specced in `S01-security.md`). |
-| CI/CD & release | 4.5 / 5 | release-please + Conventional Commits, docs auto-deploy, automated GIF regeneration on release, knip now blocks merges (backlog cleared), mutation testing ratchets its own workflow instead of silently always passing. |
-| Docs | 4 / 5 | VitePress guide site, strong README/CONTRIBUTING/CODEOWNERS, a PR template that prompts for the requirement ID(s) a change implements. Gap: guide coverage (4 pages) still trails the 11 specced features. |
-| Code quality | 4 / 5 | Strict TypeScript, webpack bundle, knip (now blocking). Gap: ESLint warnings (mostly naming-convention/curly-brace style) are tolerated rather than fixed or explicitly disabled. |
-| **AI-agent integration** | 4.7 / 5 | See the dedicated table below. |
+## The rubric — what each dimension measures
 
-**Overall: 4.5 / 5** (up from the 2026-07-04 morning baseline of 4.2 / 5 — see History).
+Weights are points; a dimension's checks sum to its "possible" column. Numeric
+checks (coverage, lint warnings, pin ratio) earn a fraction of their points
+against the target shown.
 
-## AI-agent integration detail
-
-| Practice | State |
+| Dimension | Checks (points) |
 |---|---|
-| Single source of truth for agent instructions | ✅ `AGENTS.md`, thin per-tool pointers only (`CLAUDE.md` imports it via `@AGENTS.md`) |
-| Guarantees live below the agent, not inside one tool | ✅ every agent hook (`.claude/hooks/*.sh`) delegates to a vendor-neutral command (`git hook run pre-commit`, `npm run verify`) that also runs in CI |
-| Spec-awareness injected into every prompt | ✅ `UserPromptSubmit` hook (`spec-context.sh`) reminds the agent to trace code changes to `specs/` before implementing |
-| Cold-session bootstrap | ✅ `scripts/bootstrap.sh` (vendor-neutral) + a `SessionStart` hook that runs it once per environment and no-ops on warm sessions |
-| Permission friction | ✅ `permissions.allow` pre-approves read-only git and the gate commands |
-| Documented footguns | ✅ "Working in this repo" section in `AGENTS.md` (container/canvas gotcha, `tdd` interface, coverage-exclusion list, traceability workflow) |
-| Machine-readable build state | ✅ `specs/traceability.json` — any agent can discover what's built/planned/manual without reading every spec file |
-| Portable tool access (not vendor-locked) | ✅ `.mcp.json` (GitHub MCP server) — works for any MCP-capable agent, not just one harness |
-| PR review surfaces the spec trace | ✅ PR template prompts for requirement ID(s) |
-| Ratchets vs. accelerators | ✅ knip blocks merges; Stryker's `break` threshold gates its own workflow instead of `null` (always-pass) |
-| Tracked maturity signal | ✅ this file |
+| **Spec & process** | `check:traceability` passes (4) · zero untracked requirements (2) · the verify gate runs traceability (2) · constitution present (1) · ≥ 10 spec files (1) |
+| **Testing** | branch coverage vs 95% (3) · line coverage vs 95% (2) · function coverage vs 95% (1) · mutation `break` threshold set (2) · low coverage-exclusion ratio (2) |
+| **Security / supply chain** | CodeQL workflow (2) · OpenSSF Scorecard workflow (2) · Dependabot (1) · SLSA/provenance/attestation in a workflow (2) · GitHub Actions pinned to a full SHA, as a ratio (3) |
+| **CI/CD & release** | CI workflow present (1) · no `continue-on-error` job (2) · release-please (2) · commitlint + commit-msg hook (2) · pre-commit hook runs verify (2) · knip runs in CI (1) |
+| **Docs** | README (1) · CONTRIBUTING (1) · CODE_OF_CONDUCT (1) · SECURITY (1) · LICENSE (1) · docs site (1) · guide-page-to-feature ratio (3) · MATURITY.md (1) |
+| **Code quality** | TS strict (2) · zero lint errors (2) · lint warnings vs a 200 ceiling (3) · knip clean (2) · bundler configured (1) |
+| **AI-agent integration** | AGENTS.md (1) · CLAUDE.md imports it (1) · spec-prompt hook (1) · pre-commit agent hook (1) · coverage agent hook (1) · session bootstrap script + hook (1) · permissions allowlist (1) · `.mcp.json` (1) · PR template asks for requirement IDs (1) · machine-readable build state (1) |
 
-Remaining gap: mutation testing's `break: 60` threshold was set from the
-*existing* "low" bound in `stryker.config.json`, not from an actual measured
-score (a full run is expensive — see History, 2026-07-04). The first
-scheduled/dispatched run of `.github/workflows/mutation.yml` after this change
-should be checked to confirm 60 is realistic; adjust if it's a false alarm.
+The two dimensions currently below 4.5 are **Docs** (guide pages cover 4 of 11
+feature specs — the ratio check is the drag) and **Code quality** (≈130 tolerated
+ESLint warnings against the 200 ceiling). Both are honest, mechanical signals: to
+move them, write more guide pages or clear lint warnings, and the score follows on
+the next `npm run maturity`.
+
+## Known limitations of the current metrics
+
+- **Security reads *presence*, not the live OpenSSF Scorecard number.** Presence
+  of CodeQL/Scorecard/SLSA is deterministic and offline; the actual Scorecard
+  grade (0–10) requires the securityscorecards.dev API and isn't reproducible in
+  a sandbox. A future revision could plug the real grade in behind an env var.
+- **Mutation quality isn't scored, only its `break` threshold.** The threshold
+  `60` in `stryker.config.json` was set from the tool's pre-existing "low" bound,
+  not a measured run (a full Stryker pass is expensive). The score credits that a
+  gate *exists*, not that the suite hits a specific mutation score.
+- **"Coverage vs 95%" and "warnings vs 200" targets are chosen, not derived.**
+  They're transparent knobs in `maturity-score.mjs`; adjust them there if the
+  team picks different targets, and the History note should say so.
 
 ## History
 
-- **2026-07-04 (morning)** — Baseline assessment: 4.2/5 engineering, 4/5
-  AI-integration. Identified as gaps: no spec-checking prompt hook, no NFR
-  coverage for reliability/privacy/performance budgets, no session bootstrap,
-  no permission allowlist, undocumented footguns, `break: null` mutation
-  testing, non-blocking knip, no PR template, no portable MCP config, 8 files
-  excluded from coverage for being "VS Code-adjacent" without checking whether
-  that was still true.
+- **2026-07-04 (morning)** — Baseline assessment (by hand at this point): 4.2/5
+  engineering, 4/5 AI-integration. Identified gaps: no spec-checking prompt hook,
+  no NFR coverage for reliability/privacy/performance budgets, no session
+  bootstrap, no permission allowlist, undocumented footguns, `break: null`
+  mutation testing, non-blocking knip, no PR template, no portable MCP config,
+  8 files excluded from coverage for being "VS Code-adjacent" without checking.
 - **2026-07-04 (midday)** — Added the `UserPromptSubmit` spec-gate hook;
   `S03-performance.md` got concrete timeout/latency budgets; new
-  `S04-reliability.md` (stale-cache fallback) and `S05-privacy.md`
-  (zero telemetry) specs; `npm run verify` now runs `check:traceability`.
-- **2026-07-04 (afternoon)** — Implemented the 3 features those specs
-  described (configurable timeouts, offline stale-cache fallback, a pure-JS
-  fallback renderer for when Python is unavailable); added `S06-accessibility.md`;
-  re-synced the constitution's Article IV spec table (it had drifted — missing
-  F10, F11). Backfilled all 150 previously-`untracked` requirements in
-  `traceability.json` to `implemented` or `manual`.
+  `S04-reliability.md` and `S05-privacy.md` specs; `npm run verify` now runs
+  `check:traceability`.
+- **2026-07-04 (afternoon)** — Implemented configurable timeouts, offline
+  stale-cache fallback, and a pure-JS fallback renderer; added
+  `S06-accessibility.md`; re-synced the constitution's Article IV table.
+  Backfilled all 150 previously-`untracked` requirements to `implemented`/`manual`.
 - **2026-07-04 (evening)** — Session bootstrap script + `SessionStart` hook;
-  permissions allowlist; footgun documentation in `AGENTS.md`.
-- **2026-07-04 (night)** — knip CI job made blocking (backlog was already
-  clear); Stryker `break` threshold wired to a real (if conservative) value;
-  PR template requiring requirement IDs; `.mcp.json` for the GitHub MCP server;
-  brought `SchemaCache`, `SchemaAuthManager`, `SchemaAuthCodeActionProvider`,
-  `SchemaAuthStatusBar`, and `ValidationManager` into full unit-test coverage,
-  cutting the coverage-exclusion list from 8 files to 3; this scorecard added.
+  permissions allowlist; footgun docs in `AGENTS.md`.
+- **2026-07-04 (night)** — knip CI job made blocking; Stryker `break` threshold
+  set; PR template requiring requirement IDs; `.mcp.json`; brought 5 formerly
+  "VS Code-adjacent" classes into full coverage, cutting the exclusion list from
+  8 files to 3; hand-scored scorecard + chart added.
+- **2026-07-04 (late)** — Replaced the hand-scored table with an **automated
+  scorer** (`scripts/maturity-score.mjs`): every dimension is now computed from
+  observable facts and committed to `maturity-score.json`, the chart renders from
+  that JSON, and `npm run maturity:check` gates drift in CI. First computed
+  snapshot: overall **4.7** (Spec & process 5.0, CI/CD 5.0, AI-agent 5.0,
+  Security 4.9, Testing 4.7, Docs 4.0, Code quality 4.0).
 
 ## Maintaining this file
 
-Update it when a change meaningfully moves a dimension — a new CI gate, a
-material coverage change, a new spec area, a change to agent tooling. A
-one-line dependency bump does not need an entry. Append to History rather than
-rewriting it; only the snapshot table and overall score at the top should be
-edited in place to reflect current state. When scores change, update the data
-in `scripts/generate-maturity-chart.mjs` and run `npm run maturity:chart` so
-the chart at the top of this file never drifts from the table.
+The scores maintain themselves — `npm run maturity` recomputes `maturity-score.json`
+and both chart SVGs from the current repo state. Don't hand-edit scores; change
+the *checks or targets* in `scripts/maturity-score.mjs` if the rubric should
+change, and add a History entry explaining why. Append to History rather than
+rewriting it; the snapshot date and the prose in "The rubric" / "Known
+limitations" are the only parts edited in place.

@@ -1,35 +1,38 @@
 #!/usr/bin/env node
-// Regenerates the maturity-scorecard bar chart embedded in MATURITY.md from
-// the score data below. Run after editing the snapshot table in MATURITY.md
-// so the chart and the table never drift apart:
-//   node scripts/generate-maturity-chart.mjs
+// Renders the maturity-scorecard bar chart from the COMPUTED scores in
+// maturity-score.json (produced by scripts/maturity-score.mjs — the single
+// source of truth). This script only draws; it invents no numbers.
+//   node scripts/maturity-score.mjs && node scripts/generate-maturity-chart.mjs
+// (or `npm run maturity`, which chains both).
 //
 // Emits a light and a dark SVG (docs/public/maturity-scorecard-{light,dark}.svg),
 // referenced from MATURITY.md via a <picture> element so GitHub renders the
 // theme-matched version. Static (no JS) by design — GitHub-rendered markdown
-// cannot execute scripts, so there is no hover layer; the full detail lives in
-// MATURITY.md's own table, which this chart summarises visually.
+// cannot execute scripts, so there is no hover layer; the per-check breakdown
+// lives in maturity-score.json and the rubric in MATURITY.md.
 
-import { writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'docs', 'public');
-const SNAPSHOT_DATE = '2026-07-04';
-const MAX_SCORE = 5;
 
-// Mirrors the snapshot table in MATURITY.md — update both together.
-const OVERALL = { label: 'Overall', score: 4.5 };
-const DIMENSIONS = [
-  { label: 'Spec & process', score: 5.0 },
-  { label: 'AI-agent integration', score: 4.7 },
-  { label: 'Testing', score: 4.5 },
-  { label: 'Security / supply chain', score: 4.5 },
-  { label: 'CI/CD & release', score: 4.5 },
-  { label: 'Docs', score: 4.0 },
-  { label: 'Code quality', score: 4.0 },
-].sort((a, b) => b.score - a.score);
+const SCORE_PATH = join(ROOT, 'maturity-score.json');
+let scoreData;
+try {
+  scoreData = JSON.parse(readFileSync(SCORE_PATH, 'utf-8'));
+} catch {
+  console.error('maturity-score.json not found — run `node scripts/maturity-score.mjs` first.');
+  process.exit(1);
+}
+
+const MAX_SCORE = scoreData.scale ?? 5;
+const SNAPSHOT_DATE = scoreData.generatedAt;
+const OVERALL = { label: 'Overall', score: scoreData.overall };
+const DIMENSIONS = scoreData.dimensions
+  .map((d) => ({ label: d.label, score: d.score }))
+  .sort((a, b) => b.score - a.score);
 
 const THEME = {
   light: {
