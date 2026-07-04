@@ -22,6 +22,8 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S01-security.md](S01-security.md) | Webview security (CSP, nonces, sanitisation) |
 | [S02-workspace-trust.md](S02-workspace-trust.md) | Workspace Trust integration |
 | [S03-performance.md](S03-performance.md) | Performance and resource management |
+| [S04-reliability.md](S04-reliability.md) | Reliability and offline behaviour (stale-cache fallback) |
+| [S05-privacy.md](S05-privacy.md) | Privacy and data collection (zero telemetry) |
 
 ## Scope
 
