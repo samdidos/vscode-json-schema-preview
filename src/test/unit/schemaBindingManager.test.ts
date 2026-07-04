@@ -598,6 +598,53 @@ suite('SchemaBindingManager — local schema path resolution by scope', () => {
       fs.rmdirSync(tmp);
     }
   });
+
+  test('[F04-FR-13] multi-root workspace: Workspace scope stores an absolute path for a schema in a different project folder, and fileMatch is folder-prefixed', async () => {
+    // Two real, distinct project folders — the scenario the bug report actually
+    // described ("workspace file with multiple projects coming from different
+    // folders") — rather than the placeholder `[{}, {}]` arrays used elsewhere
+    // just to flip the isMultiRoot boolean.
+    const tmpA = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-projA-'));
+    const tmpB = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-projB-'));
+    const schema = path.join(tmpB, 'schema.json'); // lives in the *other* project
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      const docPath = path.join(tmpA, 'data.json');
+      vscode.window.activeTextEditor = { document: makeDoc('json', docPath) };
+      (vscode.workspace as any).workspaceFile = { fsPath: path.join(os.tmpdir(), 'multi-root.code-workspace') };
+      vscode.workspace.workspaceFolders = [
+        { uri: { fsPath: tmpA }, name: 'projA' },
+        { uri: { fsPath: tmpB }, name: 'projB' },
+      ] as any;
+      // Mirrors real VS Code: resolve whichever folder actually contains the path.
+      vscode.workspace.getWorkspaceFolder.callsFake((u: any) => {
+        const p = typeof u === 'string' ? u : u.fsPath;
+        if (p.startsWith(tmpA)) return { uri: { fsPath: tmpA }, name: 'projA' };
+        if (p.startsWith(tmpB)) return { uri: { fsPath: tmpB }, name: 'projB' };
+        return undefined;
+      });
+      vscode.workspace.asRelativePath.callsFake((u: any, includeFolder?: boolean) => {
+        const p = typeof u === 'string' ? u : u.fsPath;
+        if (p.startsWith(tmpA)) return includeFolder ? `projA/${path.relative(tmpA, p)}` : path.relative(tmpA, p);
+        if (p.startsWith(tmpB)) return includeFolder ? `projB/${path.relative(tmpB, p)}` : path.relative(tmpB, p);
+        return p;
+      });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.Workspace));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('json', 'schemas') as any[];
+      const entry = stored.find((s: any) => s.fileMatch?.includes('projA/data.json'));
+      assert.ok(entry, "fileMatch is folder-prefixed ('projA/data.json') for the doc's own folder in a multi-root workspace");
+      assert.strictEqual(entry.url, schema, 'schema url is the absolute path even though the schema lives in a different project folder than the doc');
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmpA);
+      fs.rmdirSync(tmpB);
+    }
+  });
 });
 
 // ─── Inline binding — integration via bindToCurrentFile [F10] ─────────────────
