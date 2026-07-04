@@ -236,6 +236,7 @@
     "make-gifs": "node scripts/make-gifs.mjs",
     "maturity": "node scripts/maturity-score.mjs && node scripts/generate-maturity-chart.mjs",
     "maturity:check": "node scripts/maturity-score.mjs --check",
+    "maturity:ossf": "node scripts/fetch-ossf-scorecard.mjs",
     "generate:assets": "npm run test:e2e && npm run make-gifs",
     "bump:version": "npm --no-git-tag-version --allow-same-version version $VERSION",
     "docs:install": "npm --prefix docs install",
