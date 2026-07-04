@@ -118,6 +118,9 @@ Best practices that follow from this decision:
    (`.specify/memory/constitution.md`) and the RFC-2119 specs (`specs/`) are
    plain markdown any model can read. Spec Kit (`.specify/`) is multi-agent and
    regenerates per-tool command files, so don't hand-maintain those by hand.
+   `MATURITY.md` tracks engineering and AI-integration maturity over time —
+   update it (snapshot + a dated History entry) when a change meaningfully
+   moves a dimension, e.g. a new CI gate or a material coverage change.
 3. **Guarantees live *below* the agent.** Anything that must hold is enforced by
    CI (`.github/workflows/`) and git hooks (`.husky/`), which fire for any agent
    *or* human because they trigger on the commit/VCS, not on a specific tool.

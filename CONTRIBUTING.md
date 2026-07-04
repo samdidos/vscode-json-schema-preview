@@ -64,8 +64,11 @@ runs in CI.
 | `npm run compile` | Production webpack bundle |
 
 Coverage must not regress below 80 % on statements, branches, functions, and
-lines. VS Code API-bound classes that can't be unit-tested are excluded — see
-`c8.exclude` in `package.json`.
+lines. A few files that are genuinely webview-HTML or subprocess-bound are
+excluded — see `c8.exclude` in `package.json`.
+
+See [`MATURITY.md`](./MATURITY.md) for a dated scorecard of the project's
+engineering and AI-agent-integration maturity.
 
 ### Commit gate
 
