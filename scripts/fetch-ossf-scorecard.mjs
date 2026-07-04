@@ -19,17 +19,34 @@ import { fileURLToPath } from 'url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_PATH = join(ROOT, 'ossf-scorecard.json');
 
+// GitHub owner/repo grammar — used to hard-validate the slug parsed from
+// package.json before it is ever interpolated into a URL, so a malformed
+// repository.url can neither change the request host/path nor traverse.
+const SLUG_PART = /^[A-Za-z0-9._-]+$/;
+
 function repoSlug() {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
   const url = pkg.repository?.url ?? '';
   const m = url.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
   if (!m) throw new Error(`could not parse owner/repo from package.json repository.url: "${url}"`);
-  return { owner: m[1], repo: m[2] };
+  const [, owner, repo] = m;
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo)) {
+    throw new Error(`refusing to use a non-slug owner/repo from repository.url: "${owner}/${repo}"`);
+  }
+  return { owner, repo };
+}
+
+/** Coerce an arbitrary Scorecard-API value to a grade in [0, 10], or null. */
+function toGrade(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 && n <= 10 ? n : null;
 }
 
 async function main() {
   const { owner, repo } = repoSlug();
-  const api = `https://api.securityscorecards.dev/projects/github.com/${owner}/${repo}`;
+  // Host is a fixed literal; the validated slug parts are URL-encoded so they
+  // can only ever be a single path segment each.
+  const api = `https://api.securityscorecards.dev/projects/github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
   process.stderr.write(`→ Fetching OpenSSF Scorecard for ${owner}/${repo}…\n`);
 
   const controller = new AbortController();
@@ -50,18 +67,26 @@ async function main() {
   if (!res.ok) throw new Error(`api.securityscorecards.dev returned HTTP ${res.status}`);
 
   const data = await res.json();
+  // Validate/coerce every field to a primitive before persisting — the response
+  // is external data, and only these vetted values are written to the cache the
+  // (offline) scorer later reads.
+  const score = toGrade(data.score);
+  const scorecardDate = typeof data.date === 'string' ? data.date.slice(0, 32) : null;
+  const checks = (Array.isArray(data.checks) ? data.checks : [])
+    .map((c) => ({ name: String(c?.name ?? '').slice(0, 64), score: toGrade(c?.score) }))
+    .filter((c) => c.name)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   const cache = {
     $comment: 'Cached OpenSSF Scorecard grade read by scripts/maturity-score.mjs. Refresh with `npm run maturity:ossf`.',
     source: api,
     fetchedAt: new Date().toISOString().slice(0, 10),
-    scorecardDate: data.date ?? null,
-    score: data.score ?? null,
-    checks: Array.isArray(data.checks)
-      ? data.checks.map((c) => ({ name: c.name, score: c.score })).sort((a, b) => a.name.localeCompare(b.name))
-      : [],
+    scorecardDate,
+    score,
+    checks,
   };
   writeFileSync(OUT_PATH, JSON.stringify(cache, null, 2) + '\n');
-  process.stderr.write(`✓ Wrote ossf-scorecard.json (grade ${cache.score}/10). Run \`npm run maturity\` to fold it into the score.\n`);
+  process.stderr.write(`✓ Wrote ossf-scorecard.json (grade ${score ?? 'unknown'}/10). Run \`npm run maturity\` to fold it into the score.\n`);
 }
 
 main().catch((e) => {
