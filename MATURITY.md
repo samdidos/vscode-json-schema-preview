@@ -24,7 +24,7 @@ is committed as [`maturity-score.json`](maturity-score.json).
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/public/maturity-scorecard-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/public/maturity-scorecard-light.svg">
-  <img alt="Project Maturity Scorecard bar chart, each dimension scored out of 5: Overall 4.7, Spec & process 5.0, CI/CD & release 5.0, AI-agent integration 5.0, Security / supply chain 4.9, Testing 4.7, Docs 4.0, Code quality 4.0" src="docs/public/maturity-scorecard-light.svg">
+  <img alt="Project Maturity Scorecard: a horizontal bar chart of the overall score and each dimension (Spec & process, Testing, Security / supply chain, CI/CD & release, Docs, Code quality, AI-agent integration), each out of 5. Current values are in maturity-score.json." src="docs/public/maturity-scorecard-light.svg">
 </picture>
 
 Regenerate both the JSON and the chart with **`npm run maturity`** (run

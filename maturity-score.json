@@ -82,8 +82,8 @@
     },
     {
       "label": "Security / supply chain",
-      "score": 4.9,
-      "earned": 9.89655172413793,
+      "score": 5,
+      "earned": 9.903225806451612,
       "possible": 10,
       "checks": [
         {
@@ -340,6 +340,6 @@
         "planned": 45
       }
     },
-    "pinnedActionRatio": 0.966
+    "pinnedActionRatio": 0.968
   }
 }
