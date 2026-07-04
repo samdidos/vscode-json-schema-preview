@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { SchemaAuthManager } from './SchemaAuthManager';
+import { getRemoteFetchTimeoutMs } from './settings';
 
 interface CacheEntry {
   originalUrl: string;
@@ -24,7 +25,7 @@ export class SchemaCache {
     const localPath = this.localPathFor(url);
     fs.mkdirSync(path.dirname(localPath), { recursive: true });
 
-    const content = await this.auth.fetchText(url);
+    const content = await this.auth.fetchText(url, getRemoteFetchTimeoutMs());
     fs.writeFileSync(localPath, content, 'utf-8');
 
     await this.upsertEntry({ originalUrl: url, cachedPath: localPath });

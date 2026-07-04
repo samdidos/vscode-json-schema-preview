@@ -7,6 +7,7 @@ import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './Schema
 import * as YAML from 'yaml';
 import { isYaml, isSupported, stripJsoncComments, parseJsonl } from './languages';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
+import { getRemoteFetchTimeoutMs } from './settings';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Ajv = require('ajv').default as typeof import('ajv').default;
@@ -128,7 +129,7 @@ async function loadSchema(
   doc: vscode.TextDocument,
 ): Promise<unknown> {
   if (SchemaAuthManager.isRemoteUrl(schemaPath)) {
-    return JSON.parse(await auth.fetchText(schemaPath));
+    return JSON.parse(await auth.fetchText(schemaPath, getRemoteFetchTimeoutMs()));
   }
   // file:// URIs are written by redirectBindingToLocalCache; convert to a plain fs path.
   let resolved = schemaPath.startsWith('file://')

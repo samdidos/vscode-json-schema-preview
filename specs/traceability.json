@@ -961,16 +961,17 @@
     "S03-SR-11": {
       "status": "manual",
       "impl": [
-        "src/python.ts"
+        "src/python.ts",
+        "src/settings.ts"
       ],
-      "note": "defaults in run()/capture(); python.js is coverage-excluded (extension-host bound)"
+      "note": "render 30s default in settings.ts + capture 10s in python.ts; render clamp/read unit-tested"
     },
     "S03-SR-12": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
-        "src/SchemaAuthManager.ts"
+        "src/settings.ts"
       ],
-      "note": "fetchText default 30000 ms; class is coverage-excluded (extension-host bound)"
+      "note": "remote fetch 30s default, resolved + read unit-tested"
     },
     "S03-SR-13": {
       "status": "planned",
@@ -1057,6 +1058,13 @@
       "status": "planned",
       "impl": [],
       "note": "accessibility floor specced 2026-07-04"
+    },
+    "S03-SR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts"
+      ],
+      "note": "resolveTimeoutMs clamp/fallback + config readers unit-tested; wired into PreviewWebPanel/ValidationManager/SchemaCache"
     }
   }
 }

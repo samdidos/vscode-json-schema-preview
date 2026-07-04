@@ -123,6 +123,18 @@
           "default": 1500,
           "minimum": 500,
           "markdownDescription": "Milliseconds to wait after the last keystroke before the live preview refreshes."
+        },
+        "jsonschema.preview.renderTimeout": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "markdownDescription": "Milliseconds to wait for the `json-schema-for-humans` render subprocess before it is killed and an error page is shown. Values below 1000 ms are clamped."
+        },
+        "jsonschema.remoteFetchTimeout": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "markdownDescription": "Milliseconds to wait for an outbound remote-schema HTTP request before it is aborted. Values below 1000 ms are clamped."
         }
       }
     },

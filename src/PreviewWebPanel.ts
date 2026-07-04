@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
+import { getRenderTimeoutMs } from './settings';
 import { isYaml, stripJsoncComments } from './languages';
 import { loadingPage, errorPage as renderErrorPage, sanitizeHtml, getNonce } from './webviewUtils';
 
@@ -242,7 +243,7 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
   args.push(schemaPath, outFile);
 
   try {
-    await run(python, args);
+    await run(python, args, getRenderTimeoutMs());
   } catch (e) {
     throw new Error(`Generation failed (interpreter: ${python}): ${(e as Error).message}`);
   }
