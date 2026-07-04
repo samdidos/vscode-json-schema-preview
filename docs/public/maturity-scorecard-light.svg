@@ -31,9 +31,9 @@
     <text x="174" y="113" font-size="13"
           font-weight="600" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Overall</text>
-    <rect x="190" y="98" width="354.6" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="554.6" y="113" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.5</text>
+    <rect x="190" y="98" width="370.36" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="570.36" y="113" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.7</text>
     <text x="174" y="161" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Spec &amp; process</text>
@@ -42,28 +42,28 @@
           fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">5.0</text>
     <text x="174" y="197" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
-          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">AI-agent integration</text>
-    <rect x="190" y="182" width="370.36" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="570.36" y="197" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.7</text>
+          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">CI/CD &amp; release</text>
+    <rect x="190" y="182" width="394" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="594" y="197" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">5.0</text>
     <text x="174" y="233" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
-          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Testing</text>
-    <rect x="190" y="218" width="354.6" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="554.6" y="233" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.5</text>
+          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">AI-agent integration</text>
+    <rect x="190" y="218" width="394" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="594" y="233" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">5.0</text>
     <text x="174" y="269" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Security / supply chain</text>
-    <rect x="190" y="254" width="354.6" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="554.6" y="269" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.5</text>
+    <rect x="190" y="254" width="386.12000000000006" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="586.1200000000001" y="269" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.9</text>
     <text x="174" y="305" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
-          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">CI/CD &amp; release</text>
-    <rect x="190" y="290" width="354.6" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="554.6" y="305" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.5</text>
+          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Testing</text>
+    <rect x="190" y="290" width="370.36" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="570.36" y="305" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.7</text>
     <text x="174" y="341" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Docs</text>

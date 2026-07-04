@@ -30,6 +30,11 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:coverage
 
+      - name: Maturity score is current
+        # Recomputes the scorecard from repo facts (coverage now exists from the
+        # step above) and fails if the committed maturity-score.json is stale.
+        run: npm run maturity:check
+
       - name: Audit dependencies
         run: npm audit --audit-level=high
 
