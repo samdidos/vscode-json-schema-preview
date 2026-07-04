@@ -11,7 +11,8 @@
 - **Test + coverage**: `npm run test:coverage`
 - **Lint**: `npm run lint`
 - **Type-check**: `npx tsc --noEmit`
-- **Full gate** (lint + type-check + coverage): `npm run verify`
+- **Full gate** (lint + type-check + traceability + coverage): `npm run verify`
+- **Traceability check** (spec ↔ matrix ↔ test-tag drift): `npm run check:traceability`
 - **Mutation testing**: `npm run test:mutation` (StrykerJS — report in `reports/mutation/`)
 - **Dead code / unused deps**: `npm run knip`
 - **Package**: `npx @vscode/vsce package --no-dependencies`
@@ -27,6 +28,13 @@
   - CI (`.github/workflows/ci.yml`).
 - **`.husky/commit-msg`** runs commitlint (Conventional Commits) so release-please
   can derive the changelog. Bypass intentionally with `git commit --no-verify`.
+- **Spec-driven workflow**: every code change must trace to an RFC-2119
+  requirement in `specs/` (workflow in `specs/README.md`). A **Claude Code**
+  UserPromptSubmit hook (`.claude/hooks/spec-context.sh`) injects this
+  workflow into each prompt — a *convenience* reminder; the enforced
+  guarantee is `npm run check:traceability`, which runs inside
+  `npm run verify` (git pre-commit hook + CI) and fails on spec/matrix/test
+  drift regardless of which agent or human makes the change.
 - Mutation testing (`mutation.yml`) and OpenSSF Scorecard / CodeQL run in CI
   (`scorecard.yml`, `codeql.yml`); SLSA build provenance for the `.vsix` is
   attested in the `release-please.yml` publish job. Knip runs as a
