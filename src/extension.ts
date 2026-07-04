@@ -113,7 +113,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('jsonschema.configure',          () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.openConfig',         () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.bindToCurrentFile',  (uri?: vscode.Uri) => bindingManager.bindToCurrentFile(uri)),
-    vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager)),
+    vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager, schemaCache)),
 
     // ── Option 2: configure auth (entry point from status bar, code action, errors) ──
     vscode.commands.registerCommand('jsonschema.configureSchemaAuth', async (url?: string) => {

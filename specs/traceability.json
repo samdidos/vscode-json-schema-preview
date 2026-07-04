@@ -979,29 +979,41 @@
       "note": "soft p95 budget - measure via E2E timing before promoting"
     },
     "S04-SR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+      "status": "implemented",
+      "impl": [
+        "src/reliability.ts",
+        "src/ValidationManager.ts",
+        "src/SchemaCache.ts"
+      ],
+      "note": "classifyFetchFailure+shouldFallbackToCache unit-tested; wired into loadSchema fallback"
     },
     "S04-SR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "non-blocking warning on stale fallback (VS Code UI)"
     },
     "S04-SR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "re-throw surfaces existing actionable error when no cache"
     },
     "S04-SR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+      "status": "implemented",
+      "impl": [
+        "src/reliability.ts"
+      ],
+      "note": "non-auth 4xx classified client -> no fallback; unit-tested"
     },
     "S04-SR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "no auto-retry loop; retry only on next user action"
     },
     "S05-SR-01": {
       "status": "manual",

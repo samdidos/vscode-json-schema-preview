@@ -7,7 +7,9 @@ import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './Schema
 import * as YAML from 'yaml';
 import { isYaml, isSupported, stripJsoncComments, parseJsonl } from './languages';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
+import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
+import { classifyFetchFailure, shouldFallbackToCache } from './reliability';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Ajv = require('ajv').default as typeof import('ajv').default;
@@ -15,7 +17,7 @@ const Ajv = require('ajv').default as typeof import('ajv').default;
 export const validationDiagnostics =
   vscode.languages.createDiagnosticCollection('json-schema-validation');
 
-export function validateCurrentFile(auth: SchemaAuthManager) {
+export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache) {
   return async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -44,7 +46,14 @@ export function validateCurrentFile(auth: SchemaAuthManager) {
 
     let schema: unknown;
     try {
-      schema = await loadSchema(schemaPath, auth, doc);
+      const loaded = await loadSchema(schemaPath, auth, doc, cache);
+      schema = loaded.schema;
+      if (loaded.stale) {
+        // S04-SR-02: announce the fallback without blocking validation.
+        vscode.window.showWarningMessage(
+          `${SchemaAuthManager.hostOf(schemaPath)} is unreachable — validating against the last cached copy of the schema.`,
+        );
+      }
     } catch (e) {
       if (e instanceof AuthRequiredError) {
         const action = await vscode.window.showErrorMessage(
@@ -122,14 +131,30 @@ export function validateCurrentFile(auth: SchemaAuthManager) {
   };
 }
 
+interface LoadedSchema { schema: unknown; stale: boolean; }
+
 /** Load and parse a schema, fetching with auth headers when it is a remote URL. */
 async function loadSchema(
   schemaPath: string,
   auth: SchemaAuthManager,
   doc: vscode.TextDocument,
-): Promise<unknown> {
+  cache?: SchemaCache,
+): Promise<LoadedSchema> {
   if (SchemaAuthManager.isRemoteUrl(schemaPath)) {
-    return JSON.parse(await auth.fetchText(schemaPath, getRemoteFetchTimeoutMs()));
+    try {
+      return { schema: JSON.parse(await auth.fetchText(schemaPath, getRemoteFetchTimeoutMs())), stale: false };
+    } catch (e) {
+      // S04-SR-01/04: on a transient failure (5xx or network-level), fall back
+      // to the last cached copy if one exists. Auth (401/403) and other 4xx
+      // re-throw so the caller can prompt for auth / surface the error.
+      if (shouldFallbackToCache(classifyFetchFailure(e)) && cache) {
+        const cached = cache.readCached(schemaPath);
+        if (cached !== undefined) {
+          return { schema: JSON.parse(cached), stale: true };
+        }
+      }
+      throw e;
+    }
   }
   // file:// URIs are written by redirectBindingToLocalCache; convert to a plain fs path.
   let resolved = schemaPath.startsWith('file://')
@@ -139,7 +164,7 @@ async function loadSchema(
     const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
     if (folder) { resolved = path.join(folder.uri.fsPath, normalise(resolved)); }
   }
-  return JSON.parse(fs.readFileSync(resolved, 'utf-8'));
+  return { schema: JSON.parse(fs.readFileSync(resolved, 'utf-8')), stale: false };
 }
 
 function locateInDocument(doc: vscode.TextDocument, instancePath: string): vscode.Range {
