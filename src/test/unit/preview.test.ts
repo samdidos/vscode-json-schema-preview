@@ -3,7 +3,7 @@ import * as vscode from '../mocks/vscode';
 
 const { isJsonSchemaFile, findConfigFile, CONFIG_FILENAME } = require('../../PreviewWebPanel');
 
-suite('isJsonSchemaFile()', () => {
+suite('[F01-FR-02] isJsonSchemaFile()', () => {
   setup(() => vscode.resetAll());
 
   test('returns false for undefined', () => {
@@ -62,7 +62,7 @@ suite('CONFIG_FILENAME', () => {
   });
 });
 
-suite('findConfigFile()', () => {
+suite('[F01-FR-10] findConfigFile()', () => {
   setup(() => vscode.resetAll());
 
   test('returns undefined when no workspace folders', () => {

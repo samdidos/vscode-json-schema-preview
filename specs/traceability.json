@@ -9,104 +9,145 @@
   },
   "requirements": {
     "F01-FR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts",
+        "package.json"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "isJsonSchemaFile() unit-tested"
     },
     "F01-FR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "findConfigFile() unit-tested"
     },
     "F01-FR-11": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-12": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-13": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-14": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-15": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-16": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-17": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-18": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-19": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-20": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-21": {
       "status": "implemented",
@@ -124,14 +165,18 @@
       "note": "static CSP, no scripts, sanitizeHtml on all schema text; unit-tested"
     },
     "F01-NFR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-NFR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-NFR-03": {
       "status": "implemented",
@@ -141,489 +186,684 @@
       "note": "h1 title + h3 nested groups + textual required marker; unit-tested"
     },
     "F02-FR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts",
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "liveUpdate gate unit-tested"
     },
     "F02-FR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F02-FR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F02-FR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F02-FR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F02-FR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F02-FR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F02-FR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F02-FR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F02-FR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-11": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-12": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-13": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F04-FR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Quick Pick of discovered schemas (unit-tested)"
     },
     "F04-FR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "scope selection (unit-tested)"
     },
     "F04-FR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "writes json.schemas/yaml.schemas (unit-tested)"
     },
     "F04-FR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "YAML via yaml.schemas (unit-tested)"
     },
     "F04-FR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "status-bar visibility (unit-tested)"
     },
     "F04-FR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "bound display (unit-tested)"
     },
     "F04-FR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "unbound display (unit-tested)"
     },
     "F04-FR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F04-FR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F04-FR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F04-FR-11": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F04-FR-12": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F05-FR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F05-FR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F05-FR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F05-FR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F05-FR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F05-FR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F05-FR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F05-FR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F05-FR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F06-FR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F06-FR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F06-FR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: JSON.parse path (unit-tested)"
     },
     "F06-FR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: JSONC strip (unit-tested)"
     },
     "F06-FR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: JSONL array (unit-tested)"
     },
     "F06-FR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: YAML parse (unit-tested)"
     },
     "F06-FR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: parse-error notification (unit-tested)"
     },
     "F06-FR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: createSchema (unit-tested)"
     },
     "F06-FR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: draft-07 $schema (unit-tested)"
     },
     "F06-FR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: pretty-printed (unit-tested)"
     },
     "F06-FR-11": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: opens json Beside (unit-tested)"
     },
     "F06-FR-12": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema: bind hint notification (unit-tested)"
     },
     "F07-FR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "AuthRequiredError unit-tested"
     },
     "F07-FR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthStatusBar.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-11": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthCodeActionProvider.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-12": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-13": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-NFR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-NFR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-11": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-12": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-13": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-NFR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-NFR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F09-FR-11": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F10-FR-01": {
       "status": "planned",
@@ -826,159 +1066,222 @@
       "note": ""
     },
     "S01-SR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S01-SR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S01-SR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/webviewUtils.ts"
+      ],
+      "note": "getNonce CSPRNG >=128-bit unit-tested"
     },
     "S01-SR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S01-SR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S01-SR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S01-SR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S01-SR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/webviewUtils.ts"
+      ],
+      "note": "sanitizeHtml unit-tested"
     },
     "S01-SR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/webviewUtils.ts"
+      ],
+      "note": "embedJson unit-tested"
     },
     "S01-SR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/webviewUtils.ts"
+      ],
+      "note": "static-page CSP unit-tested"
     },
     "S01-SR-11": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-01": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/python.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-02": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/python.ts",
+        "src/settings.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-03": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-04": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-05": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-06": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-07": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-08": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-09": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-10": {
-      "status": "untracked",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-11": {
       "status": "manual",
