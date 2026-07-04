@@ -84,3 +84,6 @@ Every requirement has a stable ID (e.g. `F10-FR-04`, `S01-SR-02`) defined in
    and fill in the `impl` file path(s).
 2. Tag the covering test(s) with `[ID]`.
 3. Run `npm run check:traceability` — it should stay green.
+4. Cite the requirement ID(s) in the pull request (the PR template prompts for
+   this). A change with no requirement ID should be docs-only, a dependency
+   bump, or CI/tooling — say so instead.

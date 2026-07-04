@@ -3,7 +3,9 @@ name: Mutation testing
 # Stryker re-runs the test suite against thousands of code mutations to measure
 # whether the tests would actually catch a regression (a stronger signal than
 # line coverage). It is slow, so it runs on demand and on a weekly schedule
-# rather than on every push.
+# rather than on every push — so stryker.config.json's break threshold gates
+# this workflow (a real regression signal, not just a report), without adding
+# mutation testing's runtime to every PR's required checks.
 on:
   workflow_dispatch:
   schedule:

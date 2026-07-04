@@ -124,6 +124,13 @@ Best practices that follow from this decision:
    release-please), SemVer, SLSA build provenance, OpenSSF Scorecard, and
    SHA-pinned GitHub Actions are all open, portable, and independently
    verifiable — favour them over proprietary equivalents.
+6. **Project-scoped tool access uses the open protocol, not a vendor API.**
+   `.mcp.json` declares the GitHub MCP server (official `ghcr.io/github/github-mcp-server`
+   image) so any MCP-capable agent — Claude Code, Cursor, VS Code Copilot,
+   etc. — gets the same GitHub tool surface from one committed file, instead
+   of each tool needing its own bespoke integration. Requires Docker and a
+   `GITHUB_PERSONAL_ACCESS_TOKEN` in the environment; harnesses that already
+   provide GitHub tools natively can ignore it.
 
 When adding tooling or automation, ask: **would this still work if the user
 switched agents or models tomorrow?** If a capability only works inside one
