@@ -50,9 +50,26 @@ timeouts, cleanup, and async behaviour.
 - **S03-SR-10** The extension MUST NOT call `console.log` / `console.error` in
   production code; all logging MUST go through the `LogOutputChannel`.
 
+### Performance Budgets
+
+Concrete budgets decided 2026-07-04. The debounce delay budget lives in
+F02-FR-04 (default 1500 ms, minimum 500 ms) and is not restated here.
+
+- **S03-SR-11** The `json-schema-for-humans` render subprocess MUST default to
+  a 30 000 ms timeout; auxiliary CLI captures (e.g. interpreter/version
+  probes) MUST default to 10 000 ms.
+- **S03-SR-12** Remote schema HTTP fetches MUST default to a 30 000 ms
+  timeout.
+- **S03-SR-13** Preview generation SHOULD complete within 2 s (p95) for
+  schema files up to 500 KB on typical developer hardware. Slower renders are
+  not an error, but SHOULD be treated as performance regressions and
+  investigated.
+
 ## Acceptance Criteria
 
 1. Closing the preview panel while a live-update is pending produces no error
    and no orphaned Python process.
 2. Opening the **Output** panel and selecting "JSON Schema Preview" shows
    structured log output from the extension.
+3. With no configuration override, a hung Python render or remote fetch is
+   killed/aborted after 30 s and an error page is shown.

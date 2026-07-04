@@ -957,6 +957,71 @@
       "status": "untracked",
       "impl": [],
       "note": ""
+    },
+    "S03-SR-11": {
+      "status": "manual",
+      "impl": [
+        "src/python.ts"
+      ],
+      "note": "defaults in run()/capture(); python.js is coverage-excluded (extension-host bound)"
+    },
+    "S03-SR-12": {
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "fetchText default 30000 ms; class is coverage-excluded (extension-host bound)"
+    },
+    "S03-SR-13": {
+      "status": "planned",
+      "impl": [],
+      "note": "soft p95 budget - measure via E2E timing before promoting"
+    },
+    "S04-SR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+    },
+    "S04-SR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+    },
+    "S04-SR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+    },
+    "S04-SR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+    },
+    "S04-SR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": "stale-cache fallback decided 2026-07-04, not yet implemented"
+    },
+    "S05-SR-01": {
+      "status": "manual",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "negative requirement (no telemetry code exists) - verified by review + CodeQL"
+    },
+    "S05-SR-02": {
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "negative requirement - all egress goes through user-configured schema URLs"
+    },
+    "S05-SR-03": {
+      "status": "manual",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "credentials scoped to their stored host (F07)"
     }
   }
 }
