@@ -64,6 +64,12 @@ F02-FR-04 (default 1500 ms, minimum 500 ms) and is not restated here.
   schema files up to 500 KB on typical developer hardware. Slower renders are
   not an error, but SHOULD be treated as performance regressions and
   investigated.
+- **S03-SR-14** The render-subprocess and remote-fetch timeouts MUST be
+  user-configurable via `jsonschema.preview.renderTimeout` and
+  `jsonschema.remoteFetchTimeout` respectively. A configured value that is
+  missing, non-numeric, or non-positive MUST fall back to the SR-11/SR-12
+  default; any valid value MUST be clamped to a minimum of 1000 ms so a
+  mistyped tiny value cannot make every render fail instantly.
 
 ## Acceptance Criteria
 

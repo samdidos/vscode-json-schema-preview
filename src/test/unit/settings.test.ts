@@ -1,0 +1,64 @@
+import * as assert from 'assert';
+import { setConfig, resetAll } from '../mocks/vscode';
+import {
+  resolveTimeoutMs,
+  getRenderTimeoutMs,
+  getRemoteFetchTimeoutMs,
+  DEFAULT_RENDER_TIMEOUT_MS,
+  DEFAULT_REMOTE_FETCH_TIMEOUT_MS,
+  MIN_TIMEOUT_MS,
+} from '../../settings';
+
+suite('resolveTimeoutMs()', () => {
+  test('[S03-SR-14] falls back when value is undefined', () => {
+    assert.strictEqual(resolveTimeoutMs(undefined, 30_000), 30_000);
+  });
+  test('[S03-SR-14] falls back when value is not a number', () => {
+    assert.strictEqual(resolveTimeoutMs('nope', 30_000), 30_000);
+  });
+  test('[S03-SR-14] falls back on NaN / Infinity', () => {
+    assert.strictEqual(resolveTimeoutMs(NaN, 30_000), 30_000);
+    assert.strictEqual(resolveTimeoutMs(Infinity, 30_000), 30_000);
+  });
+  test('[S03-SR-14] falls back on zero or negative', () => {
+    assert.strictEqual(resolveTimeoutMs(0, 30_000), 30_000);
+    assert.strictEqual(resolveTimeoutMs(-5, 30_000), 30_000);
+  });
+  test('[S03-SR-14] clamps a too-small positive value up to the minimum', () => {
+    assert.strictEqual(resolveTimeoutMs(50, 30_000), MIN_TIMEOUT_MS);
+  });
+  test('[S03-SR-14] passes a sane value through, floored to an integer', () => {
+    assert.strictEqual(resolveTimeoutMs(12_345.9, 30_000), 12_345);
+  });
+  test('[S03-SR-14] honours a custom minimum', () => {
+    assert.strictEqual(resolveTimeoutMs(100, 30_000, 500), 500);
+  });
+});
+
+suite('getRenderTimeoutMs()', () => {
+  setup(() => resetAll());
+
+  test('[S03-SR-11] defaults to 30 s when unset', () => {
+    assert.strictEqual(getRenderTimeoutMs(), DEFAULT_RENDER_TIMEOUT_MS);
+  });
+  test('[S03-SR-14] reads jsonschema.preview.renderTimeout', () => {
+    setConfig('jsonschema.preview', 'renderTimeout', 5_000);
+    assert.strictEqual(getRenderTimeoutMs(), 5_000);
+  });
+  test('[S03-SR-14] clamps a mistyped tiny render timeout', () => {
+    setConfig('jsonschema.preview', 'renderTimeout', 10);
+    assert.strictEqual(getRenderTimeoutMs(), MIN_TIMEOUT_MS);
+  });
+});
+
+suite('getRemoteFetchTimeoutMs()', () => {
+  setup(() => resetAll());
+
+  test('[S03-SR-12] defaults to 30 s when unset', () => {
+    assert.strictEqual(getRemoteFetchTimeoutMs(), DEFAULT_REMOTE_FETCH_TIMEOUT_MS);
+  });
+  test('[S03-SR-14] reads jsonschema.remoteFetchTimeout', () => {
+    setConfig('jsonschema', 'remoteFetchTimeout', 8_000);
+    assert.strictEqual(getRemoteFetchTimeoutMs(), 8_000);
+  });
+});
