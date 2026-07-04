@@ -1,5 +1,5 @@
 # Project Constitution — json-schema-preview
-<!-- CONSTITUTION_VERSION: 1.0.0 | RATIFICATION_DATE: 2026-06-24 | LAST_AMENDED_DATE: 2026-06-24 -->
+<!-- CONSTITUTION_VERSION: 1.1.0 | RATIFICATION_DATE: 2026-06-24 | LAST_AMENDED_DATE: 2026-07-04 -->
 
 ## Article I — Identity
 
@@ -65,9 +65,14 @@ All features are specified as RFC-2119 requirement documents in `specs/`:
 | `F07-auth.md` | Remote schema authentication |
 | `F08-schema-cache.md` | Local schema caching |
 | `F09-configuration.md` | Extension configuration surface |
+| `F10-inline-binding.md` | Inline `$schema` binding |
+| `F11-toml-support.md` | TOML data-file support |
 | `S01-security.md` | Nonce CSP, sanitisation, embedJson |
 | `S02-workspace-trust.md` | Workspace trust gating |
-| `S03-performance.md` | Subprocess timeout, cleanup, logging |
+| `S03-performance.md` | Subprocess timeout, cleanup, logging, perf budgets |
+| `S04-reliability.md` | Offline stale-cache fallback |
+| `S05-privacy.md` | Privacy and data collection (zero telemetry) |
+| `S06-accessibility.md` | Accessibility (keyboard, screen-reader, contrast) |
 
 New features MUST have a corresponding spec file before implementation begins.
 
