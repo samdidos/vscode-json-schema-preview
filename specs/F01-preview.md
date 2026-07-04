@@ -82,12 +82,26 @@ in a VS Code webview panel beside the editor. Rendering is delegated to the
   via the VS Code Python extension.
 - **F01-FR-20** If generation times out the error page MUST show a timeout hint.
 
+### Fallback Renderer
+
+- **F01-FR-21** When the Python interpreter or the `json-schema-for-humans`
+  package is unavailable, the extension MUST render a built-in, dependency-free
+  HTML documentation page for the schema instead of only showing an error, so
+  the schema remains previewable without Python. A schema-level error (as
+  opposed to missing tooling) MUST still surface the error page.
+- **F01-FR-22** The fallback page MUST be self-contained (inline styles, **no**
+  scripts, a static `default-src 'none'` CSP) and MUST HTML-escape every
+  schema-derived string so schema content cannot inject markup.
+
 ## Non-Functional Requirements
 
 - **F01-NFR-01** The panel MUST use `retainContextWhenHidden: true` to avoid
   re-running the Python tool on every tab switch (accepted memory tradeoff).
 - **F01-NFR-02** The webview's `localResourceRoots` MUST be scoped to the
   directory of the schema file being rendered.
+- **F01-NFR-03** The fallback page MUST expose the schema title as a top-level
+  `<h1>` and nested property groups as sub-headings, and MUST NOT convey the
+  required/optional distinction by colour alone (see S06-SR-04 / S06-SR-07).
 
 ## Acceptance Criteria
 

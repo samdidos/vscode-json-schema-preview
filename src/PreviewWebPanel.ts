@@ -2,8 +2,10 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import * as YAML from 'yaml';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
 import { getRenderTimeoutMs } from './settings';
+import { renderSchemaHtml, isToolingUnavailable } from './fallbackRenderer';
 import { isYaml, stripJsoncComments } from './languages';
 import { loadingPage, errorPage as renderErrorPage, sanitizeHtml, getNonce } from './webviewUtils';
 
@@ -226,7 +228,17 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
     throw new Error('Preview generation is disabled in untrusted workspaces.');
   }
   const python = await getPythonInterpreter();
-  await ensureInstalled(python);
+
+  // If the interpreter or the Python package is unavailable, render the built-in
+  // pure-JS fallback rather than only showing an error page (F01-FR-21).
+  try {
+    await ensureInstalled(python);
+  } catch (e) {
+    if (isToolingUnavailable((e as Error).message)) {
+      return renderFallbackHTML(schemaPath, forUri);
+    }
+    throw e;
+  }
 
   const outFile = path.join(os.tmpdir(), `json-schema-preview-${Date.now()}.html`);
 
@@ -245,12 +257,35 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
   try {
     await run(python, args, getRenderTimeoutMs());
   } catch (e) {
-    throw new Error(`Generation failed (interpreter: ${python}): ${(e as Error).message}`);
+    const msg = (e as Error).message;
+    if (isToolingUnavailable(msg)) {
+      return renderFallbackHTML(schemaPath, forUri);
+    }
+    throw new Error(`Generation failed (interpreter: ${python}): ${msg}`);
   }
 
   const html = fs.readFileSync(outFile, 'utf-8');
   try { fs.unlinkSync(outFile); } catch { /* ignore */ }
   return html;
+}
+
+/**
+ * Parse the schema file and render it with the built-in fallback renderer.
+ * Never throws — an unparseable schema still yields a titled page (F01-FR-21).
+ */
+function renderFallbackHTML(schemaPath: string, forUri?: vscode.Uri): string {
+  let parsed: unknown;
+  try {
+    const raw = fs.readFileSync(schemaPath, 'utf-8');
+    const ext = path.extname(schemaPath).toLowerCase();
+    parsed = ext === '.yaml' || ext === '.yml'
+      ? YAML.parse(raw)
+      : JSON.parse(stripJsoncComments(raw));
+  } catch {
+    parsed = undefined;
+  }
+  const filename = path.basename((forUri?.fsPath) ?? schemaPath);
+  return renderSchemaHtml(parsed, { filename });
 }
 
 // ---------------------------------------------------------------------------
