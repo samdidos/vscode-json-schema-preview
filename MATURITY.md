@@ -42,7 +42,7 @@ against the target shown.
 |---|---|
 | **Spec & process** | `check:traceability` passes (4) · zero untracked requirements (2) · the verify gate runs traceability (2) · constitution present (1) · ≥ 10 spec files (1) |
 | **Testing** | branch coverage vs 95% (3) · line coverage vs 95% (2) · function coverage vs 95% (1) · mutation `break` threshold set (2) · low coverage-exclusion ratio (2) |
-| **Security / supply chain** | CodeQL workflow (2) · OpenSSF Scorecard workflow (2) · Dependabot (1) · SLSA/provenance/attestation in a workflow (2) · GitHub Actions pinned to a full SHA, as a ratio (3) |
+| **Security / supply chain** | CodeQL workflow (2) · OpenSSF Scorecard workflow (2) · Dependabot (1) · SLSA/provenance/attestation in a workflow (2) · GitHub Actions pinned to a full SHA, as a ratio (3) · **live OpenSSF Scorecard grade /10 (4, when cached — see below)** |
 | **CI/CD & release** | CI workflow present (1) · no `continue-on-error` job (2) · release-please (2) · commitlint + commit-msg hook (2) · pre-commit hook runs verify (2) · knip runs in CI (1) |
 | **Docs** | README (1) · CONTRIBUTING (1) · CODE_OF_CONDUCT (1) · SECURITY (1) · LICENSE (1) · docs site (1) · guide-page-to-feature ratio (3) · MATURITY.md (1) |
 | **Code quality** | TS strict (2) · zero lint errors (2) · lint warnings vs a 200 ceiling (3) · knip clean (2) · bundler configured (1) |
@@ -56,10 +56,17 @@ the next `npm run maturity`.
 
 ## Known limitations of the current metrics
 
-- **Security reads *presence*, not the live OpenSSF Scorecard number.** Presence
-  of CodeQL/Scorecard/SLSA is deterministic and offline; the actual Scorecard
-  grade (0–10) requires the securityscorecards.dev API and isn't reproducible in
-  a sandbox. A future revision could plug the real grade in behind an env var.
+- **The live OpenSSF Scorecard grade is *optional and cached*, not fetched
+  inline.** `npm run maturity:ossf` (`scripts/fetch-ossf-scorecard.mjs`) hits
+  api.securityscorecards.dev and writes `ossf-scorecard.json`; the scorer then
+  folds that grade in as a 4-point Security check worth `4 × grade/10`. This is
+  the one networked step, kept separate so the scorer stays offline and
+  `maturity:check` stays reproducible — where there is no cache (e.g. a sandbox
+  with no egress to that host), the check is **skipped entirely** (dropped from
+  both earned and possible), so its absence never distorts the score. The
+  snapshot above has no cache, so Security is scored on the five presence/pin
+  checks alone; run `maturity:ossf` where the API is reachable, then
+  `npm run maturity`, to activate it.
 - **Mutation quality isn't scored, only its `break` threshold.** The threshold
   `60` in `stryker.config.json` was set from the tool's pre-existing "low" bound,
   not a measured run (a full Stryker pass is expensive). The score credits that a
@@ -96,6 +103,12 @@ the next `npm run maturity`.
   that JSON, and `npm run maturity:check` gates drift in CI. First computed
   snapshot: overall **4.7** (Spec & process 5.0, CI/CD 5.0, AI-agent 5.0,
   Security 4.9, Testing 4.7, Docs 4.0, Code quality 4.0).
+- **2026-07-04 (late+1)** — Added an optional live **OpenSSF Scorecard grade**
+  as a cached Security check (`scripts/fetch-ossf-scorecard.mjs` →
+  `ossf-scorecard.json`, folded in as `4 × grade/10`). It is skipped when
+  uncached, so the offline scorer stays deterministic and this snapshot is
+  unchanged; it activates once `npm run maturity:ossf` runs where
+  api.securityscorecards.dev is reachable.
 
 ## Maintaining this file
 

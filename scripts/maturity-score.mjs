@@ -132,7 +132,9 @@ function srcExclusionRatio() {
 
 // ── the rubric ──────────────────────────────────────────────────────────────
 // Each check: { id, points, earn } where earn() returns a fraction 0..1 of its
-// points (a boolean is coerced). `note` documents the fact it reads.
+// points (a boolean is coerced). `note` documents the fact it reads. An optional
+// `skip()` returning true drops the check from BOTH earned and possible (used
+// for the OpenSSF grade, which only counts when its offline cache is present).
 
 const warnings = [];
 
@@ -180,6 +182,10 @@ const DIMENSIONS = [
         earn: () => workflowFiles().some((f) => /provenance|slsa|attest/i.test(read(f))) },
       { id: 'pinned-actions', points: 3, note: 'GitHub Actions pinned to a full commit SHA',
         earn: () => actionPinRatio() },
+      { id: 'ossf-scorecard-grade', points: 4,
+        note: 'live OpenSSF Scorecard grade /10 (offline cache; refresh with npm run maturity:ossf)',
+        skip: () => { const c = readJson('ossf-scorecard.json'); return c == null || typeof c.score !== 'number'; },
+        earn: () => clamp01((readJson('ossf-scorecard.json')?.score ?? 0) / 10) },
     ],
   },
   {
@@ -259,13 +265,15 @@ const DIMENSIONS = [
 function scoreDimension(dim) {
   let earned = 0;
   let possible = 0;
-  const checks = dim.checks.map((c) => {
+  const checks = [];
+  for (const c of dim.checks) {
+    if (c.skip?.()) continue; // dropped from earned AND possible (e.g. uncached OSSF grade)
     const raw = c.earn();
     const frac = clamp01(typeof raw === 'boolean' ? (raw ? 1 : 0) : raw);
     earned += frac * c.points;
     possible += c.points;
-    return { id: c.id, points: c.points, earned: Math.round(frac * c.points * 100) / 100, note: c.note };
-  });
+    checks.push({ id: c.id, points: c.points, earned: Math.round(frac * c.points * 100) / 100, note: c.note });
+  }
   return { label: dim.label, score: Math.round((MAX * earned / possible) * 10) / 10, earned, possible, checks };
 }
 
