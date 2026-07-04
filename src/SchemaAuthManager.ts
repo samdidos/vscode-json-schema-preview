@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { HttpError } from './reliability';
 
 type CredentialType = 'bearer' | 'basic';
 
@@ -73,7 +74,7 @@ export class SchemaAuthManager {
       clearTimeout(timer);
     }
     if (res.status === 401 || res.status === 403) throw new AuthRequiredError(url, res.status);
-    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
+    if (!res.ok) throw new HttpError(res.status, `HTTP ${res.status} fetching ${url}`);
     return res.text();
   }
 

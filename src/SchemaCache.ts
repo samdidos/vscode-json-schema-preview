@@ -37,6 +37,20 @@ export class SchemaCache {
     return !!this.getCachedPath(url);
   }
 
+  /**
+   * Read the cached content for `url`, or undefined if there is no cached copy
+   * or it cannot be read. Used for the offline stale-cache fallback (S04-SR-01).
+   */
+  readCached(url: string): string | undefined {
+    const cachedPath = this.getCachedPath(url);
+    if (!cachedPath) return undefined;
+    try {
+      return fs.readFileSync(cachedPath, 'utf-8');
+    } catch {
+      return undefined;
+    }
+  }
+
   /** Local file path for a cached URL, or undefined if not on disk. */
   private getCachedPath(url: string): string | undefined {
     const entry = this.entries().find(e => e.originalUrl === url);
