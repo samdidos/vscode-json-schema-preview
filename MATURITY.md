@@ -8,6 +8,16 @@ VS Code extension), not against enterprise-scale codebases.
 
 **Current snapshot: 2026-07-04**
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/public/maturity-scorecard-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/public/maturity-scorecard-light.svg">
+  <img alt="Project Maturity Scorecard: Overall 4.5, Spec & process 5.0, AI-agent integration 4.7, Testing 4.5, Security / supply chain 4.5, CI/CD & release 4.5, Docs 4.0, Code quality 4.0 — each scored out of 5" src="docs/public/maturity-scorecard-light.svg">
+</picture>
+
+*Regenerate after editing the table below:* `npm run maturity:chart`
+*(update the score data at the top of `scripts/generate-maturity-chart.mjs`
+first — it is the source the chart renders from).*
+
 | Dimension | Score | Notes |
 |---|---|---|
 | Spec & process | 5 / 5 | 212 RFC-2119 requirements, machine-checked traceability (spec ↔ matrix ↔ `[ID]` test tags) enforced in the git pre-commit hook and CI, a project constitution with a defined amendment process (Article IX), Spec Kit (`.specify/`) for spec/plan/task generation. |
@@ -76,4 +86,6 @@ Update it when a change meaningfully moves a dimension — a new CI gate, a
 material coverage change, a new spec area, a change to agent tooling. A
 one-line dependency bump does not need an entry. Append to History rather than
 rewriting it; only the snapshot table and overall score at the top should be
-edited in place to reflect current state.
+edited in place to reflect current state. When scores change, update the data
+in `scripts/generate-maturity-chart.mjs` and run `npm run maturity:chart` so
+the chart at the top of this file never drifts from the table.
