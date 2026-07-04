@@ -108,6 +108,21 @@
       "impl": [],
       "note": ""
     },
+    "F01-FR-21": {
+      "status": "implemented",
+      "impl": [
+        "src/fallbackRenderer.ts",
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "renderSchemaHtml + isToolingUnavailable unit-tested; wired into generateDocHTML"
+    },
+    "F01-FR-22": {
+      "status": "implemented",
+      "impl": [
+        "src/fallbackRenderer.ts"
+      ],
+      "note": "static CSP, no scripts, sanitizeHtml on all schema text; unit-tested"
+    },
     "F01-NFR-01": {
       "status": "untracked",
       "impl": [],
@@ -117,6 +132,13 @@
       "status": "untracked",
       "impl": [],
       "note": ""
+    },
+    "F01-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/fallbackRenderer.ts"
+      ],
+      "note": "h1 title + h3 nested groups + textual required marker; unit-tested"
     },
     "F02-FR-01": {
       "status": "untracked",
@@ -978,6 +1000,13 @@
       "impl": [],
       "note": "soft p95 budget - measure via E2E timing before promoting"
     },
+    "S03-SR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts"
+      ],
+      "note": "resolveTimeoutMs clamp/fallback + config readers unit-tested; wired into PreviewWebPanel/ValidationManager/SchemaCache"
+    },
     "S04-SR-01": {
       "status": "implemented",
       "impl": [
@@ -1052,14 +1081,18 @@
       "note": "accessibility floor specced 2026-07-04"
     },
     "S06-SR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": "accessibility floor specced 2026-07-04"
+      "status": "implemented",
+      "impl": [
+        "src/fallbackRenderer.ts"
+      ],
+      "note": "fallback renderer emits semantic headings; unit-tested"
     },
     "S06-SR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": "accessibility floor specced 2026-07-04"
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "Download button carries a text label alongside the down-arrow glyph"
     },
     "S06-SR-06": {
       "status": "planned",
@@ -1067,16 +1100,11 @@
       "note": "accessibility floor specced 2026-07-04"
     },
     "S06-SR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": "accessibility floor specced 2026-07-04"
-    },
-    "S03-SR-14": {
       "status": "implemented",
       "impl": [
-        "src/settings.ts"
+        "src/fallbackRenderer.ts"
       ],
-      "note": "resolveTimeoutMs clamp/fallback + config readers unit-tested; wired into PreviewWebPanel/ValidationManager/SchemaCache"
+      "note": "required column uses textual Yes/—, not colour alone; unit-tested"
     }
   }
 }
