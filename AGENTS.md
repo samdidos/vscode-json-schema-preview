@@ -47,11 +47,13 @@ after every source file edit (a convenience accelerator — coverage is also
 enforced in CI). If coverage drops, fix it before finishing — unless the user
 explicitly says to skip the check for this session.
 
-Files excluded from coverage (VS Code API-bound, can't be unit-tested without
-the full extension host):
+Files excluded from coverage (webview HTML generation or subprocess-bound —
 `SchemaAuthManager`, `SchemaCache`, `SchemaAuthStatusBar`,
-`SchemaAuthCodeActionProvider`, `ValidationManager`, `SchemaEditorPanel`,
-`ConfigWebPanel`, `python.js`
+`SchemaAuthCodeActionProvider`, and `ValidationManager` were removed from this
+list once tests proved the shared `vscode` mock covers their VS Code surface
+too — see the 2026-07 traceability backfill):
+`SchemaEditorPanel`, `ConfigWebPanel` (custom webview panels: HTML/postMessage
+plumbing, not logic), `python.js` (shells out to a Python subprocess)
 
 ## Working in this repo (agents & humans)
 
@@ -79,10 +81,16 @@ debugging cycle:
   title must reference a real requirement, and any `implemented` requirement
   should carry one. After adding requirements run `npm run trace:init`, then set
   each entry's status in `specs/traceability.json`.
-- **Eight classes are excluded from coverage AND mutation** (see the Coverage
-  rule below and `stryker.config.json`) because they are VS Code
-  API-bound — mark requirements they implement `manual` in the matrix, not
-  `implemented`.
+- **Three files are excluded from coverage AND mutation** (see the Coverage
+  rule below and `stryker.config.json`): `SchemaEditorPanel.ts`/`ConfigWebPanel.ts`
+  (webview HTML/postMessage plumbing) and `python.ts` (subprocess). Being
+  VS Code-*adjacent* is not itself a reason to exclude a file — five other
+  classes that touch the `vscode` API (`SchemaAuthManager`, `SchemaCache`,
+  `SchemaAuthStatusBar`, `SchemaAuthCodeActionProvider`, `ValidationManager`)
+  are fully unit-tested via the `vscode` mock. Only exclude a new file if it's
+  genuinely webview-HTML or subprocess-bound like these three; mark
+  requirements the three remaining exclusions implement `manual` in the
+  matrix, not `implemented`.
 
 ## Architecture notes
 - Extension entry point: `src/extension.ts`

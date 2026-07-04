@@ -39,7 +39,8 @@ const _disposable = { dispose: sinon.stub() };
 export const statusBarItem = {
   text: '',
   tooltip: undefined as string | undefined,
-  command: undefined as string | undefined,
+  command: undefined as string | { command: string; title: string; arguments?: unknown[] } | undefined,
+  backgroundColor: undefined as unknown,
   show: sinon.stub(),
   hide: sinon.stub(),
   dispose: sinon.stub(),
@@ -151,6 +152,7 @@ export function resetAll(): void {
   statusBarItem.text = '';
   statusBarItem.tooltip = undefined;
   statusBarItem.command = undefined;
+  statusBarItem.backgroundColor = undefined;
   _allStubs.forEach(s => s.reset());
   applyDefaults();
 }
@@ -166,6 +168,10 @@ export const Uri = {
   file: (p: string) => ({ fsPath: p, scheme: 'file' }),
   joinPath: (base: any, ...parts: string[]) =>
     ({ fsPath: `${base.fsPath}/${parts.join('/')}`, scheme: 'file' }),
+  parse: (uriString: string) =>
+    uriString.startsWith('file://')
+      ? { fsPath: uriString.slice('file://'.length), scheme: 'file' }
+      : { fsPath: uriString, scheme: 'unknown' },
 };
 
 let _activeEditor: any = undefined;
@@ -245,11 +251,29 @@ export class ThemeColor {
 
 export const ProgressLocation = { Notification: 15, Window: 10, SourceControl: 1 };
 export const DiagnosticSeverity = { Error: 0, Warning: 1, Information: 2, Hint: 3 };
+export class Position {
+  constructor(public line: number, public character: number) {}
+}
 export class Range {
-  constructor(
-    public startLine: number, public startChar: number,
-    public endLine: number, public endChar: number
-  ) {}
+  public startLine: number;
+  public startChar: number;
+  public endLine: number;
+  public endChar: number;
+  // Mirrors both real vscode.Range overloads: (startLine, startChar, endLine, endChar)
+  // and (start: Position, end: Position).
+  constructor(a: number | Position, b: number | Position, c?: number, d?: number) {
+    if (typeof a === 'number') {
+      this.startLine = a;
+      this.startChar = b as number;
+      this.endLine = c as number;
+      this.endChar = d as number;
+    } else {
+      this.startLine = a.line;
+      this.startChar = a.character;
+      this.endLine = (b as Position).line;
+      this.endChar = (b as Position).character;
+    }
+  }
 }
 export class Diagnostic {
   constructor(public range: Range, public message: string, public severity?: number) {}

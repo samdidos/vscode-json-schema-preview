@@ -14,11 +14,6 @@
     "src/**/*.ts",
     "!src/test/**",
     "!src/**/*.test.ts",
-    "!src/SchemaAuthManager.ts",
-    "!src/SchemaCache.ts",
-    "!src/SchemaAuthStatusBar.ts",
-    "!src/SchemaAuthCodeActionProvider.ts",
-    "!src/ValidationManager.ts",
     "!src/SchemaEditorPanel.ts",
     "!src/ConfigWebPanel.ts",
     "!src/python.ts"

@@ -1,5 +1,5 @@
 # Project Constitution — json-schema-preview
-<!-- CONSTITUTION_VERSION: 1.1.0 | RATIFICATION_DATE: 2026-06-24 | LAST_AMENDED_DATE: 2026-07-04 -->
+<!-- CONSTITUTION_VERSION: 1.1.1 | RATIFICATION_DATE: 2026-06-24 | LAST_AMENDED_DATE: 2026-07-04 -->
 
 ## Article I — Identity
 
@@ -26,10 +26,9 @@ Engine: Node.js, TypeScript (strict), CommonJS modules.
 | E2E tests | Playwright (`@playwright/test`) | Screenshots and GIF assets |
 | Coverage | c8 (all four axes ≥ 80 %) | Enforced by PostToolUse hook |
 
-VS Code API-bound classes are excluded from coverage:
-`SchemaAuthManager`, `SchemaCache`, `SchemaAuthStatusBar`,
-`SchemaAuthCodeActionProvider`, `ValidationManager`, `SchemaEditorPanel`,
-`ConfigWebPanel`, `python.js`.
+Excluded from coverage (webview HTML/postMessage plumbing or subprocess-bound,
+not merely VS Code-adjacent — five other `vscode`-API classes are fully
+unit-tested via the mock): `SchemaEditorPanel`, `ConfigWebPanel`, `python.js`.
 
 ## Article III — Architecture Principles
 

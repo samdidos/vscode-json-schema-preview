@@ -257,95 +257,95 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F03-FR-01": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-02": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-03": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-04": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-05": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-06": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-07": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-08": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-09": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-10": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-11": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-12": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F03-FR-13": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F04-FR-01": {
       "status": "implemented",
@@ -579,11 +579,11 @@
       "note": "inferSchema: bind hint notification (unit-tested)"
     },
     "F07-FR-01": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F07-FR-02": {
       "status": "manual",
@@ -600,25 +600,25 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-04": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F07-FR-05": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F07-FR-06": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F07-FR-07": {
       "status": "manual",
@@ -628,11 +628,11 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F07-FR-08": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F07-FR-09": {
       "status": "implemented",
@@ -642,25 +642,25 @@
       "note": "AuthRequiredError unit-tested"
     },
     "F07-FR-10": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthStatusBar.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F07-FR-11": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthCodeActionProvider.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F07-FR-12": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F07-FR-13": {
       "status": "manual",
@@ -684,25 +684,25 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-01": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaCache.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F08-FR-02": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaCache.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F08-FR-03": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaCache.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F08-FR-04": {
       "status": "manual",
@@ -733,11 +733,11 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-08": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaCache.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F08-FR-09": {
       "status": "manual",
@@ -1228,11 +1228,11 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-03": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "S03-SR-04": {
       "status": "manual",
@@ -1320,18 +1320,18 @@
       "note": "classifyFetchFailure+shouldFallbackToCache unit-tested; wired into loadSchema fallback"
     },
     "S04-SR-02": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "non-blocking warning on stale fallback (VS Code UI)"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "S04-SR-03": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/ValidationManager.ts"
       ],
-      "note": "re-throw surfaces existing actionable error when no cache"
+      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "S04-SR-04": {
       "status": "implemented",
