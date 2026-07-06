@@ -33,3 +33,30 @@ export function getRemoteFetchTimeoutMs(): number {
   const cfg = vscode.workspace.getConfiguration('jsonschema');
   return resolveTimeoutMs(cfg.get<number>('remoteFetchTimeout'), DEFAULT_REMOTE_FETCH_TIMEOUT_MS);
 }
+
+/** Whether schema linting is enabled (F17-FR-03; default true). */
+export function getLintEnabled(): boolean {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.lint');
+  return cfg.get<boolean>('enabled') !== false;
+}
+
+/** Per-rule severity overrides for schema linting (F17-FR-03). */
+export function getLintRuleSeverities(): Record<string, string> {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.lint');
+  const rules = cfg.get<Record<string, string>>('rules');
+  return rules && typeof rules === 'object' ? rules : {};
+}
+
+/** Automatic cache-revalidation policy (F08-FR-14). */
+export type CacheAutoRefresh = 'off' | 'onOpen' | 'daily';
+
+/**
+ * Read the `jsonschema.cache.autoRefresh` setting, defaulting to `off` for any
+ * missing or unrecognised value so an invalid config never enables background
+ * network activity unexpectedly.
+ */
+export function getCacheAutoRefresh(): CacheAutoRefresh {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.cache');
+  const value = cfg.get<string>('autoRefresh');
+  return value === 'onOpen' || value === 'daily' ? value : 'off';
+}

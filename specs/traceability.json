@@ -810,24 +810,36 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-14": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts",
+        "src/SchemaCache.ts",
+        "src/extension.ts"
+      ],
+      "note": "getCacheAutoRefresh + SchemaCache.revalidate (off/onOpen/daily); wired on active-editor change"
     },
     "F08-FR-15": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaAuthManager.ts",
+        "src/SchemaCache.ts"
+      ],
+      "note": "fetchConditional sends If-None-Match/If-Modified-Since; 304 leaves file untouched, 200 overwrites"
     },
     "F08-FR-16": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "CacheEntry persists etag/lastModified/fetchedAt in globalState (survives restart)"
     },
     "F08-FR-17": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCache.ts",
+        "src/extension.ts"
+      ],
+      "note": "revalidate() swallows failures returning \"failed\"; auto path is fire-and-forget"
     },
     "F08-NFR-01": {
       "status": "manual",
@@ -1229,64 +1241,93 @@
       "note": ""
     },
     "F13-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefProvider.ts",
+        "src/extension.ts"
+      ],
+      "note": "DefinitionProvider+HoverProvider registered for json/jsonc/yaml/yml"
     },
     "F13-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts",
+        "src/SchemaRefProvider.ts"
+      ],
+      "note": "findRefAtOffset returns a hit only on a $ref key/value; refAt gates on isJsonSchemaFile"
     },
     "F13-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts"
+      ],
+      "note": "parseJsonPointer (RFC 6901 ~0/~1) + resolvePointer over jsonc/yaml AST values"
     },
     "F13-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts",
+        "src/SchemaRefProvider.ts"
+      ],
+      "note": "same-doc refs → locatePointerTarget returns the key span"
     },
     "F13-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefProvider.ts"
+      ],
+      "note": "relative refs resolved against the schema file dir and opened"
     },
     "F13-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefProvider.ts"
+      ],
+      "note": "remote refs use cache.readCached; uncached offers Cache Schema Locally"
     },
     "F13-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts",
+        "src/SchemaRefProvider.ts"
+      ],
+      "note": "unresolvable pointer → undefined definition / explanatory hover"
     },
     "F13-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts"
+      ],
+      "note": "describeRefTarget: title, describeType, description, first 10 props"
     },
     "F13-FR-09": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts"
+      ],
+      "note": "escapeMarkdown on every schema-derived string; MarkdownString (no HTML)"
     },
     "F13-FR-10": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefProvider.ts"
+      ],
+      "note": "hover never fetches; uncached remote states not-cached + command hint"
     },
     "F13-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts",
+        "src/SchemaRefProvider.ts"
+      ],
+      "note": "pure in-process resolution; no subprocess, no hover network I/O"
     },
     "F13-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts"
+      ],
+      "note": "schemaPointer is a pure module unit-tested incl escapes/missing/arrays/YAML"
     },
     "F14-FR-01": {
       "status": "planned",
@@ -1409,134 +1450,189 @@
       "note": ""
     },
     "F16-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "jsonschema.generateSampleData; gated on isJsonSchemaFile"
     },
     "F16-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "QuickPick JSON/YAML → new untitled editor of that language"
     },
     "F16-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts"
+      ],
+      "note": "value priority const → examples[0] → default → enum[0]"
     },
     "F16-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts"
+      ],
+      "note": "type-derived: string len/format, number min/multipleOf, array minItems, object required/minProperties"
     },
     "F16-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts"
+      ],
+      "note": "allOf merged; oneOf/anyOf use first branch"
     },
     "F16-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts",
+        "src/extension.ts"
+      ],
+      "note": "resolveRef callback: local pointer, relative file, cached remote"
     },
     "F16-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts"
+      ],
+      "note": "maxDepth cap (default 5) returns minimalValue; recursion terminates"
     },
     "F16-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts"
+      ],
+      "note": "generateAndValidate gates output through Ajv; returns errors instead of invalid data"
     },
     "F16-FR-09": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts"
+      ],
+      "note": "deterministic (no randomness); byte-identical repeated output"
     },
     "F16-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts"
+      ],
+      "note": "pure in-process; no subprocess, network only via caller-supplied cached-ref reads"
     },
     "F16-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts"
+      ],
+      "note": "pure module unit-tested per rule + fast-check property (never invalid, never throws)"
     },
     "F17-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaLintManager.ts"
+      ],
+      "note": "lints json/jsonc/yaml/yml detected by isJsonSchemaFile OR *.schema.* filename"
     },
     "F17-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaLintManager.ts"
+      ],
+      "note": "lintDocument on open; debounced on change; cleared on close/not-schema"
     },
     "F17-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts",
+        "src/SchemaLintManager.ts"
+      ],
+      "note": "jsonschema.lint.enabled + jsonschema.lint.rules severity overrides (off/hint/info/warning)"
     },
     "F17-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "no-unknown-keywords: union vocabulary; editDistance suggests nearest; skips x- and schema-map positions"
     },
     "F17-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "require-schema-declaration (info) when root lacks $schema"
     },
     "F17-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "require-root-id (hint) when root lacks $id/id"
     },
     "F17-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "require-descriptions (hint) for root and each named property"
     },
     "F17-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "explicit-additional-properties (hint) when properties present without additionalProperties"
     },
     "F17-FR-09": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "no-duplicate-enum (warning) via deep-equality normalisation"
     },
     "F17-FR-10": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "no-empty-required (warning) for required names absent from properties when closed"
     },
     "F17-FR-11": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts",
+        "src/SchemaLintManager.ts"
+      ],
+      "note": "findings carry jsonc/yaml AST source ranges, ruleId as code, configured severity"
     },
     "F17-FR-12": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaLintManager.ts"
+      ],
+      "note": "quick fixes: insert $schema (draft QuickPick, 2020-12 first), add additionalProperties:false, dedupe enum"
     },
     "F17-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "in-process; single parse per lintDocument call"
     },
     "F17-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "each rule is a pure function over the AST with its own unit suite"
     },
     "F17-NFR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaLintManager.ts"
+      ],
+      "note": "dedicated DiagnosticCollection source 'json-schema-lint'"
     },
     "S01-SR-01": {
       "status": "manual",

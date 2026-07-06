@@ -79,10 +79,13 @@ const _getCommands      = sinon.stub();
 // workspace (additional listeners)
 const _onDidOpenTextDocument    = sinon.stub();
 const _onDidChangeTextDocument  = sinon.stub();
+const _onDidCloseTextDocument   = sinon.stub();
 
 // languages
 const _createDiagnosticCollection       = sinon.stub();
 const _registerCodeActionsProvider      = sinon.stub();
+const _registerDefinitionProvider       = sinon.stub();
+const _registerHoverProvider            = sinon.stub();
 
 // authentication
 const _onDidChangeSessions = sinon.stub();
@@ -98,8 +101,9 @@ const _allStubs: sinon.SinonStub[] = [
   _showQuickPick, _showInputBox, _showTextDocument, _showOpenDialog, _createWebviewPanel, _withProgress,
   _getWorkspaceFolder, _asRelativePath, _getConfiguration,
   _findFiles, _openTextDocument, _onDidChangeConfiguration, _onDidSaveTextDocument, _applyEdit,
-  _onDidOpenTextDocument, _onDidChangeTextDocument,
+  _onDidOpenTextDocument, _onDidChangeTextDocument, _onDidCloseTextDocument,
   _createDiagnosticCollection, _registerCodeActionsProvider,
+  _registerDefinitionProvider, _registerHoverProvider,
   _onDidChangeSessions, _getSession,
   _getExtension,
   _registerCommand, _executeCommand, _getCommands,
@@ -135,10 +139,13 @@ function applyDefaults() {
   _applyEdit.resolves(true);
   _onDidOpenTextDocument.returns(_disposable);
   _onDidChangeTextDocument.returns(_disposable);
+  _onDidCloseTextDocument.returns(_disposable);
   _createDiagnosticCollection.returns({
     delete: sinon.stub(), set: sinon.stub(), clear: sinon.stub(), dispose: sinon.stub(),
   });
   _registerCodeActionsProvider.returns(_disposable);
+  _registerDefinitionProvider.returns(_disposable);
+  _registerHoverProvider.returns(_disposable);
   _onDidChangeSessions.returns(_disposable);
   _getSession.resolves(undefined);
   _getExtension.returns(undefined);
@@ -218,6 +225,7 @@ export const workspace = {
   onDidSaveTextDocument:    _onDidSaveTextDocument,
   onDidOpenTextDocument:    _onDidOpenTextDocument,
   onDidChangeTextDocument:  _onDidChangeTextDocument,
+  onDidCloseTextDocument:   _onDidCloseTextDocument,
   applyEdit:                _applyEdit,
 };
 
@@ -234,6 +242,8 @@ export const extensions = {
 export const languages = {
   createDiagnosticCollection: _createDiagnosticCollection,
   registerCodeActionsProvider: _registerCodeActionsProvider,
+  registerDefinitionProvider: _registerDefinitionProvider,
+  registerHoverProvider: _registerHoverProvider,
 };
 
 export const authentication = {
@@ -249,6 +259,7 @@ export const CodeActionKind = {
 export class CodeAction {
   diagnostics?: unknown[];
   command?: unknown;
+  edit?: unknown;
   isPreferred?: boolean;
   constructor(public title: string, public kind?: unknown) {}
 }
@@ -282,9 +293,29 @@ export class Range {
       this.endChar = (b as Position).character;
     }
   }
+  get start(): Position { return new Position(this.startLine, this.startChar); }
+  get end(): Position { return new Position(this.endLine, this.endChar); }
 }
 export class Diagnostic {
+  code?: string | number;
+  source?: string;
   constructor(public range: Range, public message: string, public severity?: number) {}
+}
+
+export class Location {
+  constructor(public uri: any, public range: Range) {}
+}
+
+export class MarkdownString {
+  constructor(public value = '') {}
+  appendMarkdown(v: string): this { this.value += v; return this; }
+}
+
+export class Hover {
+  contents: unknown[];
+  constructor(contents: unknown, public range?: Range) {
+    this.contents = Array.isArray(contents) ? contents : [contents];
+  }
 }
 
 export interface MockWorkspaceEditOp {

@@ -67,7 +67,13 @@ suite('extension — maybeAutoPreview gating', () => {
     vscode.resetAll();
     vscode.setConfig('jsonschema.preview', 'autoOpen', autoOpen);
     vscode.window.activeTextEditor = {
-      document: { languageId, getText: () => text, uri: { fsPath: `/ws/f.${languageId}`, scheme } },
+      document: {
+        languageId,
+        getText: () => text,
+        uri: { fsPath: `/ws/f.${languageId}`, scheme, toString: () => `${scheme}:///ws/f.${languageId}` },
+        positionAt: (off: number) => new vscode.Position(0, off),
+        offsetAt: (pos: any) => pos.character ?? 0,
+      },
     } as any;
     ext.activate(makeContext());
   }
