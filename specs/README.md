@@ -19,6 +19,12 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [F09-configuration.md](F09-configuration.md) | Preview configuration panel and file |
 | [F10-inline-binding.md](F10-inline-binding.md) | Inline `$schema` binding |
 | [F11-toml-support.md](F11-toml-support.md) | TOML data-file support |
+| [F12-schema-catalog.md](F12-schema-catalog.md) | Schema catalog & registry binding (SchemaStore + private catalogs) |
+| [F13-ref-navigation.md](F13-ref-navigation.md) | `$ref` go-to-definition and hover |
+| [F14-schema-bundling.md](F14-schema-bundling.md) | Schema bundling / dereferencing |
+| [F15-schema-diff.md](F15-schema-diff.md) | Schema diff & breaking-change detection |
+| [F16-sample-data.md](F16-sample-data.md) | Sample data generation from a schema |
+| [F17-schema-linting.md](F17-schema-linting.md) | Schema quality linting |
 | [S01-security.md](S01-security.md) | Webview security (CSP, nonces, sanitisation) |
 | [S02-workspace-trust.md](S02-workspace-trust.md) | Workspace Trust integration |
 | [S03-performance.md](S03-performance.md) | Performance and resource management |

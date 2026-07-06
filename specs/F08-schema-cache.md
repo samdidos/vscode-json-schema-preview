@@ -47,6 +47,26 @@ server's inability to fetch authenticated endpoints.
 - **F08-FR-10** If no cached schema is found for the active file the command MUST
   show an informational message.
 
+### Freshness — Automatic Revalidation (planned)
+
+- **F08-FR-14** A setting `jsonschema.cache.autoRefresh` MUST control automatic
+  cache revalidation with the values `off` (default), `onOpen` (revalidate a
+  cached schema when a data file bound to it becomes the active editor, at most
+  once per session per schema), and `daily` (revalidate at most once per
+  24 hours per schema, checked lazily on activity).
+- **F08-FR-15** When the original response carried an `ETag` or `Last-Modified`
+  header, revalidation MUST be conditional (`If-None-Match` /
+  `If-Modified-Since`); a `304 Not Modified` response MUST NOT rewrite the
+  cache file. Responses without validators fall back to a full re-download.
+- **F08-FR-16** The extension MUST persist per-entry cache metadata (`etag`,
+  `lastModified`, `fetchedAt`) alongside the existing URL mapping so
+  conditional requests survive VS Code restarts.
+- **F08-FR-17** A failed automatic revalidation MUST be silent — no modal or
+  toast; the stale cached copy remains in use (see S04 stale-cache fallback)
+  and the failure MAY be reflected in the schema-auth status bar tooltip.
+  Manual **Refresh Schema Cache** keeps its existing error reporting
+  (F08-FR-11/12).
+
 ### Error Handling
 
 - **F08-FR-11** If the download returns 401/403 an `AuthRequiredError` MUST be
@@ -72,3 +92,7 @@ server's inability to fetch authenticated endpoints.
 2. Running the command a second time shows "Schema is already cached" and suggests
    Refresh.
 3. Running **Refresh Schema Cache** re-downloads the file from the original URL.
+4. With `jsonschema.cache.autoRefresh: "onOpen"`, activating a bound data file
+   sends a conditional request; on `304` the cache file's mtime is unchanged.
+5. With the network unplugged and `autoRefresh` enabled, activating a bound data
+   file produces no error UI and validation still uses the cached schema.
