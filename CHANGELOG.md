@@ -2,6 +2,26 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.4.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.3.1...v0.4.0) (2026-07-06)
+
+
+### Features
+
+* **binding:** add inline $schema binding scope and fix workspace-scope paths ([712887c](https://github.com/samdidos/vscode-json-schema-preview/commit/712887cc77b8c325d1c6584db788287b33328297))
+* **config:** make render and remote-fetch timeouts user-configurable ([3d7b797](https://github.com/samdidos/vscode-json-schema-preview/commit/3d7b797b570430a0ffe5f23db5b64aad28635ff2))
+* **maturity:** compute the maturity score from repo facts, not judgement ([d6e31ff](https://github.com/samdidos/vscode-json-schema-preview/commit/d6e31ff2a14b609f0447d9796359769ae449b9b1))
+* **maturity:** fold in the live OpenSSF Scorecard grade as an optional cached check ([a76083a](https://github.com/samdidos/vscode-json-schema-preview/commit/a76083a8db795e10da55995295a2cf74c696e787))
+* **preview:** built-in pure-JS fallback renderer when Python is unavailable ([9bfbbe0](https://github.com/samdidos/vscode-json-schema-preview/commit/9bfbbe06c8f13082842cd833c9d2329a11a897ab))
+* **reliability:** fall back to stale cached schema when remote is unreachable ([326170e](https://github.com/samdidos/vscode-json-schema-preview/commit/326170edc93fe87f1de22c5e7968f2854f7ec134))
+
+
+### Bug Fixes
+
+* **ci:** retry the draft-release check for a GitHub propagation race ([1d3ffe2](https://github.com/samdidos/vscode-json-schema-preview/commit/1d3ffe255d97c727644cc0363dd1d8e8346770c5))
+* **maturity:** make maturity:check deterministic across Node versions ([c7a8251](https://github.com/samdidos/vscode-json-schema-preview/commit/c7a8251d3d3cbdbb693a6f3d0a87da5cda5490b0))
+* **security:** harden the OpenSSF fetch against CodeQL taint findings ([3b82db3](https://github.com/samdidos/vscode-json-schema-preview/commit/3b82db315279465f19d9ff52eb478cf38918422b))
+* **security:** sanitise OSSF response fields with a charset allowlist ([2e65105](https://github.com/samdidos/vscode-json-schema-preview/commit/2e6510586680b956dad225e6b31b1f9d02084f18))
+
 ## [0.3.1](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.3.0...v0.3.1) (2026-07-02)
 
 
