@@ -53,11 +53,11 @@ suite('[F03-FR-01] validateCurrentFile() — entry gating', () => {
     assert.ok(vscode.window.showInformationMessage.calledWith('Open a JSON or YAML file to validate.'));
   });
 
-  test('[F03-FR-02] shows an info message for an unsupported language', async () => {
+  test('[F03-FR-02][F11-FR-07] shows an info message for an unsupported language', async () => {
     activate(makeDoc('typescript', 'const x = 1;'));
     await validateCurrentFile(fakeAuth(async () => '{}') as any)();
     assert.ok(vscode.window.showInformationMessage.calledWith(
-      'Validation supports JSON, JSONC, JSONL, and YAML files.',
+      'Validation supports JSON, JSONC, JSONL, YAML, and TOML files.',
     ));
   });
 
@@ -149,6 +149,47 @@ suite('[F03-FR-05] validateCurrentFile() — data parse failures', () => {
     activate(makeDoc('json', '{not valid json'));
     await validateCurrentFile(fakeAuth(async () => '{}') as any)();
     assert.ok(vscode.window.showErrorMessage.calledWithMatch(/Cannot parse data\.json/));
+  });
+});
+
+// ── TOML validation (F11-FR-06) ─────────────────────────────────────────────────
+
+suite('[F11-FR-06] validateCurrentFile() — TOML', () => {
+  const tomlUri = 'https://example.com/s.json';
+
+  test('validates a valid TOML file against its inline $schema', async () => {
+    const doc = makeDoc('toml', `"$schema" = "${tomlUri}"\nname = "Alice"\n`, '/ws/config.toml');
+    activate(doc);
+    vscode.workspace.asRelativePath.callsFake(() => 'config.toml');
+    const schema = { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] };
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any)();
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/✓ config\.toml is valid/));
+  });
+
+  test('[F11-AC-8] treats TOML native dates as strings so date fields validate', async () => {
+    const doc = makeDoc('toml', `"$schema" = "${tomlUri}"\ncreated = 2020-01-02T03:04:05Z\n`, '/ws/config.toml');
+    activate(doc);
+    vscode.workspace.asRelativePath.callsFake(() => 'config.toml');
+    const schema = { type: 'object', properties: { created: { type: 'string' } } };
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any)();
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/is valid/));
+  });
+
+  test('reports invalid TOML data as a parse error', async () => {
+    const doc = makeDoc('toml', `"$schema" = "${tomlUri}"\nbroken = = =\n`, '/ws/config.toml');
+    activate(doc);
+    vscode.workspace.asRelativePath.callsFake(() => 'config.toml');
+    await validateCurrentFile(fakeAuth(async () => '{"type":"object"}') as any)();
+    assert.ok(vscode.window.showErrorMessage.calledWithMatch(/Cannot parse config\.toml/));
+  });
+
+  test('[F11-FR-08] sets diagnostics when TOML data violates the schema', async () => {
+    const doc = makeDoc('toml', `"$schema" = "${tomlUri}"\nname = 5\n`, '/ws/config.toml');
+    activate(doc);
+    vscode.workspace.asRelativePath.callsFake(() => 'config.toml');
+    const schema = { type: 'object', properties: { name: { type: 'string' } } };
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any)();
+    assert.ok(validationDiagnostics.set.calledWith(doc.uri));
   });
 });
 

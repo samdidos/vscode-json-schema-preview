@@ -50,8 +50,9 @@ value tree, so date/time values are validated as strings.
 
 - **F11-FR-05** The project MUST add `smol-toml` as a production dependency.
   It is pure TypeScript (~15 KB), dual ESM/CJS (compatible with the VS Code
-  extension host's CommonJS runtime), MIT-licensed, and actively maintained
-  with no native bindings.
+  extension host's CommonJS runtime), BSD-3-Clause-licensed (a permissive,
+  MIT-compatible OSI licence), and actively maintained with no native bindings
+  and no transitive dependencies.
 
 ### Validation
 

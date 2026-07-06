@@ -46,7 +46,8 @@
     "onLanguage:yaml",
     "onLanguage:json",
     "onLanguage:jsonc",
-    "onLanguage:jsonl"
+    "onLanguage:jsonl",
+    "onLanguage:toml"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -204,12 +205,12 @@
           "group": "1_run@1"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.validateFile",
           "group": "navigation@4"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.inferSchema",
           "group": "navigation@5"
         }
@@ -260,14 +261,14 @@
       "editor/context": [
         {
           "command": "jsonschema.bindToCurrentFile",
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
           "group": "1_modification@99"
         }
       ],
       "explorer/context": [
         {
           "command": "jsonschema.bindToCurrentFile",
-          "when": "resourceExtname == .json || resourceExtname == .jsonc || resourceExtname == .jsonl || resourceExtname == .yaml || resourceExtname == .yml",
+          "when": "resourceExtname == .json || resourceExtname == .jsonc || resourceExtname == .jsonl || resourceExtname == .yaml || resourceExtname == .yml || resourceExtname == .toml",
           "group": "7_modification@99"
         }
       ],
@@ -357,6 +358,7 @@
     "ajv": "^8.20.0",
     "genson-js": "^0.0.8",
     "jsonc-parser": "^3.3.1",
+    "smol-toml": "^1.7.0",
     "yaml": "^2.9.0"
   }
 }

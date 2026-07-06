@@ -60,6 +60,17 @@ suite('extension — inferSchema produces the right schema', () => {
     const { schema } = await inferredSchemaFrom('jsonc', '// header\n{"name":"Bob"}');
     assert.strictEqual(schema.properties.name.type, 'string');
   });
+
+  test('[F11-FR-09] TOML is parsed as TOML into the schema', async () => {
+    const { schema } = await inferredSchemaFrom('toml', 'name = "Alice"\nage = 30');
+    assert.strictEqual(schema.properties.name.type, 'string');
+    assert.ok(['integer', 'number'].includes(schema.properties.age.type));
+  });
+
+  test('[F11-FR-10] TOML native dates are inferred as strings', async () => {
+    const { schema } = await inferredSchemaFrom('toml', 'created = 2020-01-02T03:04:05Z');
+    assert.strictEqual(schema.properties.created.type, 'string');
+  });
 });
 
 suite('extension — maybeAutoPreview gating', () => {

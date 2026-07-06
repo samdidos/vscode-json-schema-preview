@@ -1,8 +1,8 @@
 import * as assert from 'assert';
 import {
-  JSON_LANGS, YAML_LANGS, ALL_LANGS,
-  isYaml, isSupported,
-  stripJsoncComments, parseJsonl,
+  JSON_LANGS, YAML_LANGS, TOML_LANGS, ALL_LANGS,
+  isYaml, isToml, isSupported,
+  stripJsoncComments, parseJsonl, parseToml,
 } from '../../languages';
 
 suite('language constants', () => {
@@ -14,8 +14,47 @@ suite('language constants', () => {
     assert.deepStrictEqual([...YAML_LANGS], ['yaml', 'yml']);
   });
 
-  test('ALL_LANGS is union of JSON and YAML', () => {
-    assert.deepStrictEqual([...ALL_LANGS], ['json', 'jsonc', 'jsonl', 'yaml', 'yml']);
+  test('[F11-FR-02] TOML_LANGS contains toml', () => {
+    assert.deepStrictEqual([...TOML_LANGS], ['toml']);
+  });
+
+  test('[F11-FR-02] ALL_LANGS is the union of JSON, YAML and TOML', () => {
+    assert.deepStrictEqual([...ALL_LANGS], ['json', 'jsonc', 'jsonl', 'yaml', 'yml', 'toml']);
+  });
+});
+
+suite('[F11-FR-03] isToml()', () => {
+  test('returns true for toml', () => assert.ok(isToml('toml')));
+  test('returns false for json / yaml / empty', () => {
+    assert.ok(!isToml('json'));
+    assert.ok(!isToml('yaml'));
+    assert.ok(!isToml(''));
+  });
+});
+
+suite('[F11-FR-04][F11-NFR-01][F11-NFR-03] parseToml()', () => {
+  test('parses scalars, tables and arrays into a JSON-compatible tree', () => {
+    const out = parseToml('title = "cfg"\nn = 5\nflag = true\n[server]\nhost = "localhost"\nports = [80, 443]');
+    assert.deepStrictEqual(out, {
+      title: 'cfg', n: 5, flag: true,
+      server: { host: 'localhost', ports: [80, 443] },
+    });
+  });
+
+  test('[F11-FR-10] normalises native date/time values to ISO-8601 strings', () => {
+    const out = parseToml('created = 2020-01-02T03:04:05Z\nday = 2021-06-07') as Record<string, unknown>;
+    assert.strictEqual(typeof out.created, 'string');
+    assert.match(out.created as string, /^2020-01-02T03:04:05/);
+    assert.strictEqual(typeof out.day, 'string');
+  });
+
+  test('[F11-FR-10] normalises dates nested inside tables and arrays', () => {
+    const out = parseToml('[[events]]\nat = 2020-01-01T00:00:00Z') as { events: Array<{ at: unknown }> };
+    assert.strictEqual(typeof out.events[0].at, 'string');
+  });
+
+  test('[F11-FR-04] throws on invalid TOML', () => {
+    assert.throws(() => parseToml('this is = = not valid'));
   });
 });
 
@@ -29,7 +68,7 @@ suite('isYaml()', () => {
 
 suite('isSupported()', () => {
   test('returns true for all supported IDs', () => {
-    for (const id of ['json', 'jsonc', 'jsonl', 'yaml', 'yml']) {
+    for (const id of ['json', 'jsonc', 'jsonl', 'yaml', 'yml', 'toml']) {
       assert.ok(isSupported(id), `expected ${id} to be supported`);
     }
   });
