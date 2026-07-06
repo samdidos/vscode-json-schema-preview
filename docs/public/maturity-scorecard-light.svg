@@ -3,7 +3,7 @@
   <text x="190" y="28" font-size="16" font-weight="600" fill="#0b0b0b"
         font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Project Maturity Scorecard</text>
   <text x="190" y="48" font-size="12" fill="#52514e"
-        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Snapshot: 2026-07-04 — scored out of 5</text>
+        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Snapshot: 2026-07-06 — scored out of 5</text>
   
     <line x1="268.8" y1="92" x2="268.8" y2="392"
           stroke="#e1e0d9" stroke-width="1" />
@@ -61,9 +61,9 @@
     <text x="174" y="305" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Testing</text>
-    <rect x="190" y="290" width="370.36" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="570.36" y="305" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.7</text>
+    <rect x="190" y="290" width="378.24" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="578.24" y="305" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.8</text>
     <text x="174" y="341" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Docs</text>
@@ -73,7 +73,7 @@
     <text x="174" y="377" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Code quality</text>
-    <rect x="190" y="362" width="315.20000000000005" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="515.2" y="377" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.0</text>
+    <rect x="190" y="362" width="307.32" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="507.32" y="377" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">3.9</text>
 </svg>
