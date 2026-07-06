@@ -821,6 +821,71 @@ suite('SchemaBindingManager — inline binding (F10)', () => {
   });
 });
 
+// ─── TOML inline-only binding [F11] ──────────────────────────────────────────
+
+suite('SchemaBindingManager — TOML inline binding (F11)', () => {
+  setup(() => vscode.resetAll());
+
+  test('[F11-FR-12][F11-FR-13] the TOML scope picker offers Inline only, with the explanatory subtitle', async () => {
+    let scopeItems: any[] = [];
+    let scopeOptions: any;
+    vscode.window.activeTextEditor = { document: makeDoc('toml', '/ws/config.toml', 'title = "x"\n') };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[], options: any) => { scopeItems = items; scopeOptions = options; return undefined; });
+    vscode.window.showInputBox.resolves('https://example.com/schema.json');
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.strictEqual(scopeItems.length, 1);
+    assert.strictEqual(scopeItems[0].target, INLINE_SCOPE);
+    assert.match(scopeOptions.placeHolder, /TOML binding is inline only/);
+  });
+
+  test('[F11-FR-16] binding a TOML file writes "$schema" = "<ref>" as the first line', async () => {
+    const text = 'title = "x"\nn = 1\n';
+    vscode.window.activeTextEditor = { document: makeDoc('toml', '/ws/config.toml', text) };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isUrl))
+      .onSecondCall().callsFake(async (items: any[]) => items[0]);
+    vscode.window.showInputBox.resolves('https://example.com/s.json');
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(vscode.workspace.applyEdit.calledOnce);
+    const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+    assert.ok(result.startsWith('"$schema" = "https://example.com/s.json"\n'), result);
+  });
+
+  test('[F11-FR-17] removing a TOML binding strips the "$schema" line, leaving valid TOML', async () => {
+    const { parseToml } = require('../../languages');
+    const text = '"$schema" = "./s.json"\ntitle = "x"\n';
+    vscode.window.activeTextEditor = { document: makeDoc('toml', '/ws/config.toml', text) };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.isRemove))
+      .onSecondCall().callsFake(async (items: any[]) => items[0]);
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(vscode.workspace.applyEdit.calledOnce);
+    const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+    assert.strictEqual(result, 'title = "x"\n');
+    assert.deepStrictEqual(parseToml(result), { title: 'x' });
+  });
+
+  test('[F11-FR-11] the status bar shows the inline schema for a TOML file', () => {
+    vscode.workspace.asRelativePath.callsFake(() => 'config.toml');
+    new SchemaBindingManager(makeContext());
+    const cb = vscode.window.onDidChangeActiveTextEditor.lastCall.args[0];
+    cb({ document: makeDoc('toml', '/ws/config.toml', '"$schema" = "./s.json"\ntitle = "x"\n') });
+    assert.ok(statusBarItem.text.includes('file-symlink-file'));
+    assert.ok(statusBarItem.text.includes('s.json'));
+  });
+});
+
 // ─── refresh() inline precedence [F10-FR-12][F10-FR-13][F10-FR-15] ────────────
 
 suite('SchemaBindingManager — refresh() inline precedence', () => {

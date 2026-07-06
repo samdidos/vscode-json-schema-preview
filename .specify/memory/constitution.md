@@ -21,6 +21,7 @@ Engine: Node.js, TypeScript (strict), CommonJS modules.
 | Schema renderer | `json-schema-for-humans` (Python, subprocess) | Produces the HTML output |
 | Schema inference | `genson-js` | Pure JS, no subprocess needed |
 | YAML parsing | `yaml` npm package | Handles YAML data files |
+| TOML parsing | `smol-toml` | Pure JS, no subprocess, no transitive deps (F11) |
 | HTML sanitisation | `sanitizeHtml` | XSS prevention in webviews |
 | Unit tests | mocha + sinon | No VS Code download needed |
 | E2E tests | Playwright (`@playwright/test`) | Screenshots and GIF assets |

@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './SchemaBindingManager';
 import * as YAML from 'yaml';
-import { isYaml, isSupported, stripJsoncComments, parseJsonl } from './languages';
+import { isYaml, isToml, isSupported, stripJsoncComments, parseJsonl, parseToml } from './languages';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
@@ -27,7 +27,7 @@ export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache
 
     const doc = editor.document;
     if (!isSupported(doc.languageId)) {
-      vscode.window.showInformationMessage('Validation supports JSON, JSONC, JSONL, and YAML files.');
+      vscode.window.showInformationMessage('Validation supports JSON, JSONC, JSONL, YAML, and TOML files.');
       return;
     }
 
@@ -76,6 +76,8 @@ export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache
       const text = doc.getText();
       if (isYaml(doc.languageId)) {
         items = [YAML.parse(text)];
+      } else if (isToml(doc.languageId)) {
+        items = [parseToml(text)];
       } else if (doc.languageId === 'jsonl') {
         items = parseJsonl(text);
       } else if (doc.languageId === 'jsonc') {

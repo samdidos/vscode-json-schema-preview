@@ -263,11 +263,15 @@ export function activate(context: vscode.ExtensionContext) {
       const doc = editor.document;
       let data: unknown;
       try {
-        const { stripJsoncComments, parseJsonl } = await import('./languages');
+        const { stripJsoncComments, parseJsonl, isToml, parseToml } = await import('./languages');
         const text = doc.getText();
         if (isYaml(doc.languageId)) {
           const YAML = await import('yaml');
           data = YAML.parse(text);
+        } else if (isToml(doc.languageId)) {
+          // parseToml already normalises TOML dates to ISO strings so genson-js
+          // infers them as { type: "string" } (F11-FR-10).
+          data = parseToml(text);
         } else if (doc.languageId === 'jsonl') {
           data = parseJsonl(text);
         } else if (doc.languageId === 'jsonc') {

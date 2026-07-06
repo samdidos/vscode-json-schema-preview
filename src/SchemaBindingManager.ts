@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { modify, parseTree, Edit as JsoncEdit, FormattingOptions } from 'jsonc-parser';
-import { isSupported, isYaml, stripJsoncComments } from './languages';
+import { isSupported, isYaml, isToml, stripJsoncComments } from './languages';
 
 /** Sentinel scope value for an inline `$schema` binding (F10) — distinct from
  * `vscode.ConfigurationTarget`'s numeric values so it can flow through the
@@ -136,6 +136,7 @@ export class SchemaBindingManager {
 
     const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
     const docIsYaml = isYaml(doc.languageId);
+    const docIsToml = isToml(doc.languageId);
     const current = findBoundSchemaPath(doc);
     const currentInline = extractInlineSchemaUrl(doc);
     // JSONL has no standardised $schema mechanism (F10-FR-02) — every other
@@ -185,6 +186,7 @@ export class SchemaBindingManager {
       const target = await this.pickScope(folder !== undefined, {
         forRemove: true,
         allowInline: inlineSupported && currentInline !== undefined,
+        tomlInlineOnly: docIsToml,
       });
       if (target === undefined) return;
       if (target === INLINE_SCOPE) {
@@ -247,7 +249,10 @@ export class SchemaBindingManager {
       localSchemaUri = pick.uri!;
     }
 
-    const target = await this.pickScope(folder !== undefined, { allowInline: inlineSupported });
+    const target = await this.pickScope(folder !== undefined, {
+      allowInline: inlineSupported,
+      tomlInlineOnly: docIsToml,
+    });
     if (target === undefined) return;
 
     if (target === vscode.ConfigurationTarget.Workspace && !folder) {
@@ -340,6 +345,8 @@ export class SchemaBindingManager {
     if (isYaml(doc.languageId)) {
       const yamlExtensionInstalled = vscode.extensions.getExtension('redhat.vscode-yaml') !== undefined;
       edits = [computeYamlSchemaUpsertEdit(text, schemaRef, yamlExtensionInstalled)];
+    } else if (isToml(doc.languageId)) {
+      edits = [computeTomlSchemaUpsertEdit(text, schemaRef)];
     } else {
       const result = computeJsonSchemaInsertEdits(text, schemaRef, this.formattingOptionsFor(doc));
       if ('error' in result) {
@@ -371,9 +378,14 @@ export class SchemaBindingManager {
     }
 
     const text = doc.getText();
-    const edits = isYaml(doc.languageId)
-      ? [computeYamlSchemaRemoveEdit(text)].filter((e): e is JsoncEdit => e !== undefined)
-      : computeJsonSchemaRemoveEdits(text, this.formattingOptionsFor(doc));
+    let edits: JsoncEdit[];
+    if (isYaml(doc.languageId)) {
+      edits = [computeYamlSchemaRemoveEdit(text)].filter((e): e is JsoncEdit => e !== undefined);
+    } else if (isToml(doc.languageId)) {
+      edits = [computeTomlSchemaRemoveEdit(text)].filter((e): e is JsoncEdit => e !== undefined);
+    } else {
+      edits = computeJsonSchemaRemoveEdits(text, this.formattingOptionsFor(doc));
+    }
 
     if (!edits.length) return; // nothing to remove
     await this.applyJsoncEdits(doc, edits);
@@ -411,10 +423,25 @@ export class SchemaBindingManager {
 
   private async pickScope(
     hasFolder: boolean,
-    opts: { forRemove?: boolean; allowInline?: boolean } = {}
+    opts: { forRemove?: boolean; allowInline?: boolean; tomlInlineOnly?: boolean } = {}
   ): Promise<BindingTarget | undefined> {
-    const { forRemove = false, allowInline = false } = opts;
+    const { forRemove = false, allowInline = false, tomlInlineOnly = false } = opts;
     type ScopeItem = vscode.QuickPickItem & { target: BindingTarget };
+
+    // TOML has no settings-based binding mechanism, so the scope is always
+    // inline. Still show the picker so the explanatory subtitle appears
+    // (F11-FR-12).
+    if (tomlInlineOnly) {
+      const inlineItem: ScopeItem = {
+        label: '$(file-symlink-file) Inline (this file)',
+        description: '$schema key',
+        target: INLINE_SCOPE,
+      };
+      const pick = await vscode.window.showQuickPick([inlineItem], {
+        placeHolder: 'TOML binding is inline only — the $schema key is written into your file.',
+      });
+      return pick?.target;
+    }
 
     const items: ScopeItem[] = [];
 
@@ -614,6 +641,9 @@ export class SchemaBindingManager {
 // below (write) so detection and writing always agree on notation.
 const YAML_DIRECTIVE_RE = /^#\s*yaml-language-server:\s*\$schema=(\S+)/im;
 const YAML_KEY_RE = /^\$schema:\s*(\S+)/m;
+// TOML inline `$schema` key (F11-FR-15). TOML requires the quoted-key form
+// because `$` is not a bare-key character.
+const TOML_SCHEMA_KEY_RE = /^"\$schema"\s*=\s*"([^"]+)"/m;
 
 /**
  * Returns the schema URL/path bound to this document via any settings scope,
@@ -742,6 +772,12 @@ export function extractInlineSchemaUrl(doc: vscode.TextDocument): string | undef
       const inline = YAML_KEY_RE.exec(text);
       return inline?.[1];
     }
+    if (isToml(doc.languageId)) {
+      // Lightweight regex rather than full TOML parsing, matching how YAML
+      // inline extraction works (F11-FR-15).
+      const inline = TOML_SCHEMA_KEY_RE.exec(doc.getText());
+      return inline?.[1];
+    }
     const text = doc.languageId === 'jsonc' ? stripJsoncComments(doc.getText()) : doc.getText();
     const parsed = JSON.parse(text);
     const s = (parsed as Record<string, unknown>).$schema;
@@ -837,5 +873,51 @@ export function computeYamlSchemaRemoveEdit(text: string): JsoncEdit | undefined
   if (directiveLine) return { offset: directiveLine.index, length: directiveLine[0].length, content: '' };
   const keyLine = /^\$schema:\s*\S+\r?\n?/m.exec(text);
   if (keyLine) return { offset: keyLine.index, length: keyLine[0].length, content: '' };
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Inline binding — TOML (F11-FR-16/17)
+//
+// TOML has no built-in schema-binding mechanism, so the inline `"$schema"` key
+// is the sole binding form. `$` is not a bare-key character, so the key is
+// written in the quoted-key form: `"$schema" = "<ref>"`.
+// ---------------------------------------------------------------------------
+
+/**
+ * Computes the single edit needed to write an inline TOML schema reference:
+ * replace an existing `"$schema" = "<ref>"` value in place, or insert a fresh
+ * `"$schema" = "<ref>"` line before the first non-comment, non-blank line so it
+ * sits above any `[table]` header (TOML requires top-level keys to precede
+ * table sections). (F11-FR-16)
+ */
+export function computeTomlSchemaUpsertEdit(text: string, schemaRef: string): JsoncEdit {
+  const existing = TOML_SCHEMA_KEY_RE.exec(text);
+  if (existing) {
+    // Replace just the quoted value, preserving surrounding whitespace.
+    const valueOffset = existing.index + existing[0].lastIndexOf(existing[1]);
+    return { offset: valueOffset, length: existing[1].length, content: schemaRef };
+  }
+
+  // Find the first line that is neither blank nor a `#` comment.
+  const lines = text.split('\n');
+  let offset = 0;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed !== '' && !trimmed.startsWith('#')) { break; }
+    offset += line.length + 1; // + newline
+  }
+  if (offset > text.length) { offset = text.length; }
+  return { offset, length: 0, content: `"$schema" = "${schemaRef}"\n` };
+}
+
+/**
+ * Computes the edit needed to remove an inline TOML schema reference — the whole
+ * `"$schema" = "..."` line including its trailing newline. Returns undefined
+ * when no such line is present (F11-FR-17).
+ */
+export function computeTomlSchemaRemoveEdit(text: string): JsoncEdit | undefined {
+  const line = /^"\$schema"\s*=\s*"[^"]*"[^\n]*\r?\n?/m.exec(text);
+  if (line) return { offset: line.index, length: line[0].length, content: '' };
   return undefined;
 }

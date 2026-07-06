@@ -1066,109 +1066,152 @@
       "note": "Edits are computed from doc.getText() and applied via WorkspaceEdit against the live document, so unsaved-but-open documents are handled the same as saved ones — verified by code inspection."
     },
     "F11-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "onLanguage:toml activation event"
     },
     "F11-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/languages.ts"
+      ],
+      "note": "TOML_LANGS constant included in ALL_LANGS"
     },
     "F11-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/languages.ts"
+      ],
+      "note": "isToml(languageId)"
     },
     "F11-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/languages.ts"
+      ],
+      "note": "parseToml via smol-toml; throws on invalid"
     },
     "F11-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json",
+        ".specify/memory/constitution.md"
+      ],
+      "note": "smol-toml production dependency (BSD-3-Clause, no transitive deps)"
     },
     "F11-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "ValidationManager parses TOML via parseToml before Ajv"
     },
     "F11-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "supports message updated to include TOML"
     },
     "F11-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "locateInDocument reused; exact column not required (first version)"
     },
     "F11-FR-09": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "inferSchema parses TOML via parseToml into genson-js"
     },
     "F11-FR-10": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/languages.ts"
+      ],
+      "note": "parseToml normalises TOML Date values to ISO-8601 strings"
     },
     "F11-FR-11": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "status bar visible for TOML via isSupported; reflects inline $schema"
     },
     "F11-FR-12": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "pickScope tomlInlineOnly: Inline-only picker with required subtitle"
     },
     "F11-FR-13": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "TOML always resolves to INLINE_SCOPE; json/yaml.schemas never written"
     },
     "F11-FR-15": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "extractInlineSchemaUrl TOML regex /^\"\\$schema\"\\s*=\\s*\"([^\"]+)\"/m"
     },
     "F11-FR-16": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "computeTomlSchemaUpsertEdit inserts/replaces \"$schema\" = \"<ref>\" as first non-comment line"
     },
     "F11-FR-17": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "computeTomlSchemaRemoveEdit deletes the whole \"$schema\" line"
     },
     "F11-FR-18": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "validate/infer/bind menus + explorer extname extended with toml"
     },
     "F11-FR-19": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "preview/edit/configure remain gated on jsonschema.isJsonSchema (false for TOML)"
     },
     "F11-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/languages.ts"
+      ],
+      "note": "parseToml synchronous, no subprocess"
     },
     "F11-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "smol-toml ~15KB, no transitive deps; static import acceptable"
     },
     "F11-NFR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/languages.ts"
+      ],
+      "note": "new languages.ts paths unit-tested (languages.test.ts)"
     },
     "F12-FR-01": {
       "status": "planned",

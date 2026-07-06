@@ -18,6 +18,8 @@ const {
   computeJsonSchemaRemoveEdits,
   computeYamlSchemaUpsertEdit,
   computeYamlSchemaRemoveEdit,
+  computeTomlSchemaUpsertEdit,
+  computeTomlSchemaRemoveEdit,
 } = require('../../SchemaBindingManager');
 
 const { ConfigurationTarget } = vscode;
@@ -242,6 +244,67 @@ suite('extractInlineSchemaUrl()', () => {
       extractInlineSchemaUrl(doc('yaml', '# yaml-language-server: $schema=/abs/schema.json')),
       '/abs/schema.json'
     ));
+
+  // [F11-FR-15] TOML inline $schema quoted-key form
+  test('toml "$schema" quoted key', () =>
+    assert.strictEqual(
+      extractInlineSchemaUrl(doc('toml', '"$schema" = "./config.schema.json"\ntitle = "x"')),
+      './config.schema.json'
+    ));
+  test('toml without $schema → undefined', () =>
+    assert.strictEqual(extractInlineSchemaUrl(doc('toml', 'title = "x"\nn = 1')), undefined));
+  test('toml $schema with a remote URL', () =>
+    assert.strictEqual(
+      extractInlineSchemaUrl(doc('toml', '"$schema" = "https://x/s.json"')),
+      'https://x/s.json'
+    ));
+});
+
+// ─── Inline binding — TOML edit computation [F11] ─────────────────────────────
+
+suite('computeTomlSchemaUpsertEdit() [F11-FR-16]', () => {
+  test('inserts a new "$schema" line before the first non-comment line', () => {
+    const text = 'title = "cfg"\nn = 1\n';
+    const edit = computeTomlSchemaUpsertEdit(text, './s.json');
+    assert.strictEqual(edit.offset, 0);
+    assert.strictEqual(edit.length, 0);
+    assert.strictEqual(edit.content, '"$schema" = "./s.json"\n');
+  });
+
+  test('inserts below leading comment lines but above the first table', () => {
+    const text = '# a comment\n\ntitle = "cfg"\n[server]\nhost = "x"\n';
+    const edit = computeTomlSchemaUpsertEdit(text, './s.json');
+    // Applying the edit puts the $schema key ahead of both title and [server].
+    const result = text.slice(0, edit.offset) + edit.content + text.slice(edit.offset);
+    assert.match(result, /# a comment\n\n"\$schema" = "\.\/s\.json"\ntitle/);
+  });
+
+  test('replaces an existing "$schema" value in place', () => {
+    const text = '"$schema" = "./old.json"\ntitle = "cfg"\n';
+    const edit = computeTomlSchemaUpsertEdit(text, './new.json');
+    const result = text.slice(0, edit.offset) + edit.content + text.slice(edit.offset + edit.length);
+    assert.strictEqual(result, '"$schema" = "./new.json"\ntitle = "cfg"\n');
+  });
+
+  test('handles an all-comment file by appending at the end', () => {
+    const text = '# just a comment\n';
+    const edit = computeTomlSchemaUpsertEdit(text, './s.json');
+    assert.strictEqual(edit.offset, text.length);
+    assert.strictEqual(edit.content, '"$schema" = "./s.json"\n');
+  });
+});
+
+suite('computeTomlSchemaRemoveEdit() [F11-FR-17]', () => {
+  test('removes the whole "$schema" line including its newline', () => {
+    const text = '"$schema" = "./s.json"\ntitle = "cfg"\n';
+    const edit = computeTomlSchemaRemoveEdit(text);
+    const result = text.slice(0, edit.offset) + text.slice(edit.offset + edit.length);
+    assert.strictEqual(result, 'title = "cfg"\n');
+  });
+
+  test('returns undefined when there is no "$schema" line', () => {
+    assert.strictEqual(computeTomlSchemaRemoveEdit('title = "cfg"\n'), undefined);
+  });
 });
 
 // ─── Inline binding — pure edit computation [F10] ─────────────────────────────

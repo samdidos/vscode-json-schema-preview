@@ -5,7 +5,7 @@
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/samdidos.json-schema-preview?logo=visual-studio-code&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
 [![CI](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/ci.yml?label=CI&logo=github)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/docs.yml?label=docs&logo=github)](https://samdidos.github.io/vscode-json-schema-preview/)
-[![Coverage](https://img.shields.io/badge/coverage-83.5%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-86.5%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-0366d6?logo=dependabot)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/.github/dependabot.yml)
 [![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.125.0-blue?logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -24,7 +24,7 @@
 
 **Preview, validate, and work with JSON Schemas — including private ones — right inside VS Code.**
 
-Renders schemas as clean HTML documentation. Validates JSON and YAML data files inline. Handles schemas behind authentication (GitHub private repos, Artifactory, any HTTP endpoint) with zero friction.
+Renders schemas as clean HTML documentation. Validates JSON, YAML, and TOML data files inline. Handles schemas behind authentication (GitHub private repos, Artifactory, any HTTP endpoint) with zero friction.
 
 ---
 
@@ -44,7 +44,7 @@ Renders schemas as clean HTML documentation. Validates JSON and YAML data files 
 | **Lint schemas** | Flags quality issues in the schema itself: missing descriptions, unknown keywords, duplicate enums |
 | **Live reload** | Preview refreshes as you type |
 
-> Supports JSON, YAML, JSONC, and JSONL formats
+> Supports JSON, YAML, JSONC, JSONL, and TOML formats
 
 ---
 
