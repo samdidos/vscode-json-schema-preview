@@ -5,7 +5,7 @@
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/samdidos.json-schema-preview?logo=visual-studio-code&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
 [![CI](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/ci.yml?label=CI&logo=github)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/docs.yml?label=docs&logo=github)](https://samdidos.github.io/vscode-json-schema-preview/)
-[![Coverage](https://img.shields.io/badge/coverage-95.3%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-83.5%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-0366d6?logo=dependabot)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/.github/dependabot.yml)
 [![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.125.0-blue?logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -37,8 +37,11 @@ Renders schemas as clean HTML documentation. Validates JSON and YAML data files 
 | **Validate** | Validates data files against a bound schema with inline error highlighting |
 | **Bind schemas** | Link a data file to a schema (workspace or user scope) for validation & IntelliSense |
 | **Authenticate** | Fetches schemas from private endpoints using GitHub OAuth or stored tokens |
-| **Cache locally** | Downloads authenticated schemas once so VS Code's language server uses them too |
+| **Cache locally** | Downloads authenticated schemas once so VS Code's language server uses them too — with optional automatic revalidation |
 | **Infer schemas** | Generates a draft schema from any existing data file |
+| **Sample data** | Generates a valid example instance *from* a schema (the inverse of infer) |
+| **Navigate `$ref`** | Go-to-definition and hover on `$ref` — local, cross-file, and cached remote |
+| **Lint schemas** | Flags quality issues in the schema itself: missing descriptions, unknown keywords, duplicate enums |
 | **Live reload** | Preview refreshes as you type |
 
 > Supports JSON, YAML, JSONC, and JSONL formats
@@ -96,6 +99,8 @@ The lightbulb offers **Cache schema locally** directly, or you can run **JSON Sc
 | **JSON Schema: Bind Schema…** | Bind a schema to the current data file |
 | **JSON Schema: Validate This File** | Validate against the bound (or inline) schema |
 | **JSON Schema: Generate Schema from This File** | Infer a schema from existing data |
+| **JSON Schema: Generate Sample Data from This Schema** | Produce a valid example instance from a schema |
+| **JSON Schema: Insert $schema Declaration** | Add a draft `$schema` to a schema file (lint quick fix) |
 | **JSON Schema: Configure Schema Authentication…** | Set up credentials for a remote host |
 | **JSON Schema: Cache Schema Locally** | Download with auth and redirect the language server |
 | **JSON Schema: Refresh Schema Cache** | Re-download a previously cached schema |
@@ -111,6 +116,9 @@ The lightbulb offers **Cache schema locally** directly, or you can run **JSON Sc
 | `jsonschema.preview.autoOpen` | `false` | Open preview automatically when a schema file is activated |
 | `jsonschema.preview.liveUpdate` | `false` | Refresh preview while typing |
 | `jsonschema.preview.liveUpdateDelay` | `1500` | Debounce delay in ms |
+| `jsonschema.cache.autoRefresh` | `off` | Revalidate cached schemas via conditional requests (`off` / `onOpen` / `daily`) |
+| `jsonschema.lint.enabled` | `true` | Report schema-quality diagnostics on schema files |
+| `jsonschema.lint.rules` | `{}` | Per-rule severity overrides (`off` / `hint` / `info` / `warning`) |
 
 Drop a `.json-schema-preview-config.json` in your workspace root to customise the renderer — all [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) options are supported, including alternative templates.
 

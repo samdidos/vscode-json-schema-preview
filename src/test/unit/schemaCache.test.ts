@@ -20,7 +20,31 @@ function makeContext() {
 }
 
 function fakeAuth(content: string) {
-  return { fetchText: async (_url: string) => content };
+  return {
+    fetchText: async (_url: string) => content,
+    // download() captures validators via fetchConditional; mirror fetchText.
+    fetchConditional: async (_url: string) => ({ status: 200, text: content }),
+  };
+}
+
+/**
+ * Scriptable auth double for revalidation tests: each call to fetchConditional
+ * shifts the next queued response (or reuses the last). Records the validators
+ * it was asked to send so conditional-request behaviour can be asserted.
+ */
+function scriptedAuth(responses: any[]) {
+  const calls: any[] = [];
+  const queue = [...responses];
+  return {
+    calls,
+    fetchText: async (_url: string) => JSON.stringify({}),
+    fetchConditional: async (_url: string, _t?: number, validators?: any) => {
+      calls.push(validators);
+      const next = queue.length > 1 ? queue.shift() : queue[0];
+      if (next instanceof Error) { throw next; }
+      return next;
+    },
+  };
 }
 
 suite('[F08-FR-01][F08-FR-02] SchemaCache.download()', () => {
@@ -104,6 +128,105 @@ suite('[F08-FR-03] SchemaCache.isCached() / getOriginalUrl()', () => {
     assert.notStrictEqual(a, b);
     assert.strictEqual(cache.getOriginalUrl(a), 'https://example.com/a.json');
     assert.strictEqual(cache.getOriginalUrl(b), 'https://example.com/b.json');
+  });
+});
+
+suite('[F08-FR-14][F08-FR-15][F08-FR-16][F08-FR-17] SchemaCache.revalidate()', () => {
+  let ctx: ReturnType<typeof makeContext>;
+  teardown(() => { if (ctx) fs.rmSync(ctx._dir, { recursive: true, force: true }); });
+
+  test('[F08-FR-14] returns "no-entry" when nothing is cached for the URL', async () => {
+    ctx = makeContext();
+    const cache = new SchemaCache(ctx, scriptedAuth([{ status: 200, text: '{}' }]));
+    assert.strictEqual(await cache.revalidate('https://example.com/x.json', 'onOpen'), 'no-entry');
+  });
+
+  test('[F08-FR-16] download() persists the ETag so the next revalidation is conditional', async () => {
+    ctx = makeContext();
+    const auth = scriptedAuth([
+      { status: 200, text: '{"v":1}', etag: 'W/"abc"' },      // initial download
+      { status: 304, etag: 'W/"abc"' },                          // revalidation
+    ]);
+    const cache = new SchemaCache(ctx, auth);
+    await cache.download('https://example.com/s.json');
+    await cache.revalidate('https://example.com/s.json', 'onOpen');
+    // Second fetchConditional call was asked to send the stored ETag.
+    assert.deepStrictEqual(auth.calls[1], { etag: 'W/"abc"', lastModified: undefined });
+  });
+
+  test('[F08-FR-15] a 304 leaves the cache file byte-for-byte unchanged', async () => {
+    ctx = makeContext();
+    const auth = scriptedAuth([
+      { status: 200, text: '{"v":1}', etag: '"e1"' },
+      { status: 304, etag: '"e1"' },
+    ]);
+    const cache = new SchemaCache(ctx, auth);
+    const localPath = await cache.download('https://example.com/s.json');
+    const before = fs.readFileSync(localPath, 'utf-8');
+    const outcome = await cache.revalidate('https://example.com/s.json', 'onOpen');
+    assert.strictEqual(outcome, 'not-modified');
+    assert.strictEqual(fs.readFileSync(localPath, 'utf-8'), before);
+  });
+
+  test('[F08-FR-15] a 200 overwrites the cache file with the fresh body', async () => {
+    ctx = makeContext();
+    const auth = scriptedAuth([
+      { status: 200, text: '{"v":1}', etag: '"e1"' },
+      { status: 200, text: '{"v":2}', etag: '"e2"' },
+    ]);
+    const cache = new SchemaCache(ctx, auth);
+    const localPath = await cache.download('https://example.com/s.json');
+    const outcome = await cache.revalidate('https://example.com/s.json', 'onOpen');
+    assert.strictEqual(outcome, 'updated');
+    assert.strictEqual(fs.readFileSync(localPath, 'utf-8'), '{"v":2}');
+  });
+
+  test('[F08-FR-17] a failed revalidation is swallowed and leaves the stale copy', async () => {
+    ctx = makeContext();
+    const auth = scriptedAuth([
+      { status: 200, text: '{"v":1}' },
+      new Error('getaddrinfo ENOTFOUND example.com'),
+    ]);
+    const cache = new SchemaCache(ctx, auth);
+    const localPath = await cache.download('https://example.com/s.json');
+    const outcome = await cache.revalidate('https://example.com/s.json', 'onOpen');
+    assert.strictEqual(outcome, 'failed');
+    assert.strictEqual(fs.readFileSync(localPath, 'utf-8'), '{"v":1}');
+  });
+
+  test('[F08-FR-14] "daily" mode skips a revalidation within the 24 h window', async () => {
+    ctx = makeContext();
+    const auth = scriptedAuth([{ status: 200, text: '{"v":1}' }]);
+    const cache = new SchemaCache(ctx, auth);
+    await cache.download('https://example.com/s.json'); // fetchedAt = now
+    const outcome = await cache.revalidate('https://example.com/s.json', 'daily');
+    assert.strictEqual(outcome, 'skipped');
+    assert.strictEqual(auth.calls.length, 1); // no second network call
+  });
+
+  test('[F08-FR-14] "daily" mode revalidates once the entry is older than 24 h', async () => {
+    ctx = makeContext();
+    const auth = scriptedAuth([
+      { status: 200, text: '{"v":1}' },
+      { status: 304 },
+    ]);
+    const cache = new SchemaCache(ctx, auth);
+    await cache.download('https://example.com/s.json');
+    // Age the stored entry past the 24 h throttle.
+    const stored = ctx.globalState.get('schemaauth.cache', []);
+    stored[0].fetchedAt = Date.now() - (25 * 60 * 60 * 1000);
+    await ctx.globalState.update('schemaauth.cache', stored);
+    const outcome = await cache.revalidate('https://example.com/s.json', 'daily');
+    assert.strictEqual(outcome, 'not-modified');
+  });
+
+  test('[F08-FR-14] returns "no-entry" if the cached file was deleted out-of-band', async () => {
+    ctx = makeContext();
+    const auth = scriptedAuth([{ status: 200, text: '{}' }]);
+    const cache = new SchemaCache(ctx, auth);
+    const localPath = await cache.download('https://example.com/s.json');
+    fs.unlinkSync(localPath);
+    assert.strictEqual(await cache.revalidate('https://example.com/s.json', 'onOpen'), 'no-entry');
   });
 });
 

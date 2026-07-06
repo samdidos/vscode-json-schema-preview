@@ -90,6 +90,15 @@
         "icon": "$(wand)"
       },
       {
+        "command": "jsonschema.generateSampleData",
+        "title": "JSON Schema: Generate Sample Data from This Schema",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "jsonschema.lint.insertSchemaDeclaration",
+        "title": "JSON Schema: Insert $schema Declaration"
+      },
+      {
         "command": "jsonschema.configureSchemaAuth",
         "title": "JSON Schema: Configure Schema Authentication…",
         "icon": "$(lock)"
@@ -135,6 +144,40 @@
           "default": 30000,
           "minimum": 1000,
           "markdownDescription": "Milliseconds to wait for an outbound remote-schema HTTP request before it is aborted. Values below 1000 ms are clamped."
+        },
+        "jsonschema.cache.autoRefresh": {
+          "type": "string",
+          "default": "off",
+          "enum": [
+            "off",
+            "onOpen",
+            "daily"
+          ],
+          "enumDescriptions": [
+            "Never revalidate a locally cached schema automatically; use the Refresh Schema Cache command.",
+            "Revalidate a cached schema when a data file bound to it becomes the active editor (at most once per schema per session).",
+            "Revalidate a cached schema at most once every 24 hours, checked lazily when a bound file is activated."
+          ],
+          "markdownDescription": "Automatically revalidate locally cached schemas against their origin using conditional (`ETag` / `Last-Modified`) requests. A `304 Not Modified` response leaves the cache untouched; failures are silent and the cached copy keeps serving IntelliSense."
+        },
+        "jsonschema.lint.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Report schema-quality diagnostics (missing `description`/`$schema`, unknown keywords, duplicate enums, …) on JSON Schema files."
+        },
+        "jsonschema.lint.rules": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Per-rule severity overrides for schema linting. Map a rule id to `off`, `hint`, `info`, or `warning`. Rule ids: `no-unknown-keywords`, `require-schema-declaration`, `require-root-id`, `require-descriptions`, `explicit-additional-properties`, `no-duplicate-enum`, `no-empty-required`.",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hint",
+              "info",
+              "warning"
+            ]
+          }
         }
       }
     },
@@ -154,6 +197,11 @@
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
           "command": "jsonschema.configure",
           "group": "navigation@3"
+        },
+        {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.generateSampleData",
+          "group": "1_run@1"
         },
         {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml) && !jsonschema.isJsonSchema",
@@ -189,6 +237,14 @@
         {
           "command": "jsonschema.inferSchema",
           "when": "!jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.generateSampleData",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.lint.insertSchemaDeclaration",
+          "when": "jsonschema.isJsonSchema"
         },
         {
           "command": "jsonschema.configureSchemaAuth"

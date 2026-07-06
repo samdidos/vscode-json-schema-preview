@@ -171,6 +171,99 @@ suite('[S03-SR-03][S03-SR-12] SchemaAuthManager.fetchText()', () => {
   });
 });
 
+// ── fetchConditional() ────────────────────────────────────────────────────────
+
+function conditionalResponse(
+  status: number,
+  body = '',
+  headers: Record<string, string> = {},
+): Response {
+  const lower: Record<string, string> = {};
+  for (const [k, v] of Object.entries(headers)) { lower[k.toLowerCase()] = v; }
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    text: () => Promise.resolve(body),
+    headers: { get: (name: string) => lower[name.toLowerCase()] ?? null },
+  } as unknown as Response;
+}
+
+suite('[F08-FR-15][F08-FR-16] SchemaAuthManager.fetchConditional()', () => {
+  test('returns the body plus ETag / Last-Modified on a 200', async () => {
+    fetchStub.resolves(conditionalResponse(200, '{"v":1}', {
+      ETag: 'W/"abc"',
+      'Last-Modified': 'Wed, 21 Oct 2026 07:28:00 GMT',
+    }));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    const res = await auth.fetchConditional('https://example.com/s.json');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.text, '{"v":1}');
+    assert.strictEqual(res.etag, 'W/"abc"');
+    assert.strictEqual(res.lastModified, 'Wed, 21 Oct 2026 07:28:00 GMT');
+  });
+
+  test('[F08-FR-15] sends If-None-Match / If-Modified-Since when validators are supplied', async () => {
+    fetchStub.resolves(conditionalResponse(304));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    await auth.fetchConditional('https://example.com/s.json', 30_000, {
+      etag: 'W/"abc"',
+      lastModified: 'Wed, 21 Oct 2026 07:28:00 GMT',
+    });
+    const [, opts] = fetchStub.firstCall.args;
+    assert.strictEqual(opts.headers['If-None-Match'], 'W/"abc"');
+    assert.strictEqual(opts.headers['If-Modified-Since'], 'Wed, 21 Oct 2026 07:28:00 GMT');
+  });
+
+  test('[F08-FR-15] a 304 returns no body and echoes the sent validators', async () => {
+    fetchStub.resolves(conditionalResponse(304));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    const res = await auth.fetchConditional('https://example.com/s.json', 30_000, { etag: '"e1"' });
+    assert.strictEqual(res.status, 304);
+    assert.strictEqual(res.text, undefined);
+    assert.strictEqual(res.etag, '"e1"');
+  });
+
+  test('throws AuthRequiredError on 401', async () => {
+    fetchStub.resolves(conditionalResponse(401));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    await assert.rejects(
+      () => auth.fetchConditional('https://example.com/s.json'),
+      (e: any) => e instanceof AuthRequiredError && e.status === 401,
+    );
+  });
+
+  test('throws HttpError on a non-ok, non-auth status', async () => {
+    fetchStub.resolves(conditionalResponse(500));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    await assert.rejects(
+      () => auth.fetchConditional('https://example.com/s.json'),
+      (e: any) => e.name === 'HttpError' && e.status === 500,
+    );
+  });
+
+  test('maps an aborted request to a "Timed out" error', async () => {
+    fetchStub.callsFake((_url: string, opts: { signal: AbortSignal }) => new Promise((_r, reject) => {
+      opts.signal.addEventListener('abort', () => {
+        const err = new Error('aborted'); err.name = 'AbortError'; reject(err);
+      });
+    }));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    await assert.rejects(
+      () => auth.fetchConditional('https://example.com/s.json', 10),
+      /Timed out fetching .* after 10 ms/,
+    );
+  });
+
+  test('propagates a non-abort network failure unchanged', async () => {
+    fetchStub.rejects(new Error('getaddrinfo ENOTFOUND example.com'));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    await assert.rejects(
+      () => auth.fetchConditional('https://example.com/s.json'),
+      /ENOTFOUND/,
+    );
+  });
+});
+
 // ── isConfigured() ────────────────────────────────────────────────────────────
 
 suite('SchemaAuthManager.isConfigured()', () => {

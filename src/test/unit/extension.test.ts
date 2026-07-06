@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as sinon from 'sinon';
 import * as vscode from '../mocks/vscode';
 
 // Load after setup.ts has hooked require('vscode')
@@ -12,7 +13,7 @@ suite('extension — activate()', () => {
     context = { subscriptions: [] };
   });
 
-  test('registers all 10 commands', () => {
+  test('registers all commands', () => {
     ext.activate(context);
     const ids: string[] = vscode.commands.registerCommand.args.map((a: any[]) => a[0]);
     assert.ok(ids.includes('jsonschema.preview'));
@@ -22,6 +23,7 @@ suite('extension — activate()', () => {
     assert.ok(ids.includes('jsonschema.bindToCurrentFile'));
     assert.ok(ids.includes('jsonschema.validateFile'));
     assert.ok(ids.includes('jsonschema.inferSchema'));
+    assert.ok(ids.includes('jsonschema.generateSampleData'));
     assert.ok(ids.includes('jsonschema.configureSchemaAuth'));
     assert.ok(ids.includes('jsonschema.cacheSchemaLocally'));
     assert.ok(ids.includes('jsonschema.refreshSchemaCache'));
@@ -206,6 +208,69 @@ suite('extension — command handlers', () => {
     assert.ok(vscode.window.showErrorMessage.called);
   });
 
+  // ── jsonschema.generateSampleData ─────────────────────────────────────────
+
+  test('[F16-FR-01] generateSampleData — non-schema file shows info message', async () => {
+    const doc = { languageId: 'json', getText: () => '{"just":"data"}', uri: { fsPath: '/ws/data.json' } };
+    vscode.window.activeTextEditor = { document: doc };
+    await handler('jsonschema.generateSampleData')();
+    assert.ok(vscode.window.showInformationMessage.calledWith(
+      'Open a JSON Schema file to generate sample data from it.'));
+  });
+
+  test('[F16-FR-02] generateSampleData — JSON output opens an untitled document', async () => {
+    const doc = {
+      languageId: 'json',
+      getText: () => JSON.stringify({ $schema: 'x', type: 'object', required: ['name'], properties: { name: { type: 'string' } } }),
+      uri: { fsPath: '/ws/schema.json' },
+    };
+    vscode.window.activeTextEditor = { document: doc };
+    vscode.window.showQuickPick.resolves({ label: 'JSON', id: 'json' });
+    await handler('jsonschema.generateSampleData')();
+    assert.ok(vscode.workspace.openTextDocument.called);
+    const arg = vscode.workspace.openTextDocument.lastCall.args[0];
+    assert.strictEqual(arg.language, 'json');
+    assert.match(arg.content, /"name": "string"/);
+  });
+
+  test('[F16-FR-02] generateSampleData — YAML output uses yaml language', async () => {
+    const doc = {
+      languageId: 'json',
+      getText: () => JSON.stringify({ $schema: 'x', type: 'object', properties: { n: { type: 'number' } }, required: ['n'] }),
+      uri: { fsPath: '/ws/schema.json' },
+    };
+    vscode.window.activeTextEditor = { document: doc };
+    vscode.window.showQuickPick.resolves({ label: 'YAML', id: 'yaml' });
+    await handler('jsonschema.generateSampleData')();
+    const arg = vscode.workspace.openTextDocument.lastCall.args[0];
+    assert.strictEqual(arg.language, 'yaml');
+  });
+
+  test('generateSampleData — cancelling the format picker does nothing', async () => {
+    const doc = {
+      languageId: 'json',
+      getText: () => JSON.stringify({ $schema: 'x', type: 'string' }),
+      uri: { fsPath: '/ws/schema.json' },
+    };
+    vscode.window.activeTextEditor = { document: doc };
+    vscode.window.showQuickPick.resolves(undefined);
+    await handler('jsonschema.generateSampleData')();
+    assert.ok(!vscode.workspace.openTextDocument.called);
+  });
+
+  test('[F16-FR-08] generateSampleData — unsatisfiable schema shows an error', async () => {
+    const doc = {
+      languageId: 'json',
+      getText: () => JSON.stringify({ $schema: 'x', type: 'string', minLength: 5, maxLength: 2 }),
+      uri: { fsPath: '/ws/schema.json' },
+    };
+    vscode.window.activeTextEditor = { document: doc };
+    vscode.window.showQuickPick.resolves({ label: 'JSON', id: 'json' });
+    await handler('jsonschema.generateSampleData')();
+    assert.ok(vscode.window.showErrorMessage.called);
+    assert.ok(!vscode.workspace.openTextDocument.called);
+  });
+
   // ── jsonschema.configureSchemaAuth ────────────────────────────────────────
 
   test('configureSchemaAuth — no active editor shows info message', async () => {
@@ -354,5 +419,98 @@ suite('extension — event listener branches', () => {
     vscode.window.activeTextEditor = { document: doc };
     ext.activate(context);
     assert.ok(!vscode.window.createWebviewPanel.called);
+  });
+});
+
+suite('[F08-FR-14][F08-FR-17] extension — automatic cache revalidation', () => {
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+  let context: any;
+  let dir: string;
+  let fetchStub: sinon.SinonStub;
+  const URL = 'https://example.com/s.json';
+
+  function makeCacheContext() {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-ext-reval-'));
+    const cachedPath = path.join(dir, 'cached.json');
+    fs.writeFileSync(cachedPath, '{"v":1}', 'utf-8');
+    const store: Record<string, any> = {
+      'schemaauth.cache': [{ originalUrl: URL, cachedPath, etag: '"e1"', fetchedAt: 0 }],
+    };
+    return {
+      subscriptions: [],
+      secrets: { get: () => Promise.resolve(undefined), store: () => Promise.resolve(), delete: () => Promise.resolve() },
+      globalStorageUri: { fsPath: dir },
+      globalState: {
+        get: (k: string, d?: any) => (k in store ? store[k] : d),
+        update: (k: string, v: any) => { store[k] = v; return Promise.resolve(); },
+      },
+    };
+  }
+
+  const dataDoc = {
+    languageId: 'json',
+    getText: () => JSON.stringify({ $schema: URL, name: 'x' }),
+    uri: { fsPath: '/ws/data.json', scheme: 'file', toString: () => 'file:///ws/data.json' },
+    positionAt: (off: number) => new vscode.Position(0, off),
+    offsetAt: (pos: any) => pos.character ?? 0,
+  };
+
+  setup(() => {
+    vscode.resetAll();
+    // Another test file registers root-level hooks that stub global.fetch for
+    // every test; restore any existing wrap before installing ours so sinon
+    // does not throw "already wrapped".
+    const g = globalThis as any;
+    if (g.fetch && typeof g.fetch.restore === 'function') { g.fetch.restore(); }
+    fetchStub = sinon.stub(g, 'fetch');
+    fetchStub.resolves({ status: 304, ok: false, text: () => Promise.resolve(''), headers: { get: () => null } });
+  });
+  teardown(() => {
+    if (fetchStub) { fetchStub.restore(); }
+    if (dir) { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  test('does not revalidate when autoRefresh is off (default)', async () => {
+    context = makeCacheContext();
+    vscode.window.activeTextEditor = { document: dataDoc };
+    ext.activate(context);
+    await new Promise(r => setImmediate(r));
+    assert.ok(!fetchStub.called, 'off mode must not touch the network');
+  });
+
+  test('[F08-FR-14] revalidates a cached bound schema on activation in onOpen mode', async () => {
+    vscode.setConfig('jsonschema.cache', 'autoRefresh', 'onOpen');
+    context = makeCacheContext();
+    vscode.window.activeTextEditor = { document: dataDoc };
+    ext.activate(context);
+    await new Promise(r => setImmediate(r));
+    assert.ok(fetchStub.called, 'onOpen mode should send a conditional request');
+    const [, opts] = fetchStub.firstCall.args;
+    assert.strictEqual(opts.headers['If-None-Match'], '"e1"');
+  });
+
+  test('[F08-FR-14] onOpen revalidates each schema at most once per session', async () => {
+    vscode.setConfig('jsonschema.cache', 'autoRefresh', 'onOpen');
+    context = makeCacheContext();
+    ext.activate(context);
+    const cb = vscode.window.onDidChangeActiveTextEditor.lastCall.args[0];
+    cb({ document: dataDoc });
+    await new Promise(r => setImmediate(r));
+    const firstCount = fetchStub.callCount;
+    cb({ document: dataDoc });
+    await new Promise(r => setImmediate(r));
+    assert.strictEqual(fetchStub.callCount, firstCount, 'second activation must not re-fetch');
+  });
+
+  test('skips revalidation for a data file with no bound/inline schema', async () => {
+    vscode.setConfig('jsonschema.cache', 'autoRefresh', 'onOpen');
+    context = makeCacheContext();
+    ext.activate(context);
+    const cb = vscode.window.onDidChangeActiveTextEditor.lastCall.args[0];
+    cb({ document: { languageId: 'json', getText: () => '{"name":"x"}', uri: { fsPath: '/ws/plain.json', scheme: 'file' } } });
+    await new Promise(r => setImmediate(r));
+    assert.ok(!fetchStub.called);
   });
 });

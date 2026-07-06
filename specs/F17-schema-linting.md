@@ -22,8 +22,13 @@ warnings) so the feature informs without nagging.
 
 ### Activation and Lifecycle
 
-- **F17-FR-01** Linting MUST apply only to schema files (F01-FR-02 detection)
-  in `json`, `jsonc`, `yaml`, and `yml` documents.
+- **F17-FR-01** Linting MUST apply only to schema files, in `json`, `jsonc`,
+  `yaml`, and `yml` documents. A document counts as a schema file when it is
+  detected by F01-FR-02 (a `$schema` declaration) **or** its filename matches
+  the `*.schema.{json,jsonc,yaml,yml}` convention. The filename fallback is
+  required so `require-schema-declaration` (F17-FR-05) can fire on a
+  schema-named file that is *missing* its `$schema` — which F01-FR-02 alone
+  could never surface.
 - **F17-FR-02** Diagnostics MUST refresh on open and on change (debounced,
   reusing the F02 debounce configuration pattern) and MUST be cleared when the
   document closes or stops being a schema.

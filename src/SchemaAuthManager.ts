@@ -15,6 +15,20 @@ export class AuthRequiredError extends Error {
   }
 }
 
+/** HTTP validators (ETag / Last-Modified) captured from a response, used to
+ *  make a later revalidation request conditional (F08-FR-15/16). */
+export interface CacheValidators {
+  etag?: string;
+  lastModified?: string;
+}
+
+/** Result of a conditional fetch. `text` is present only on a 200; a 304
+ *  ("not modified") carries the validators back unchanged and no body. */
+export interface ConditionalFetchResult extends CacheValidators {
+  status: number;
+  text?: string;
+}
+
 export class SchemaAuthManager {
   private static readonly SECRET_PREFIX = 'schemaauth:';
 
@@ -76,6 +90,52 @@ export class SchemaAuthManager {
     if (res.status === 401 || res.status === 403) throw new AuthRequiredError(url, res.status);
     if (!res.ok) throw new HttpError(res.status, `HTTP ${res.status} fetching ${url}`);
     return res.text();
+  }
+
+  /**
+   * Fetch `url`, optionally conditionally. When `validators` carries an ETag or
+   * Last-Modified value the request sends `If-None-Match` / `If-Modified-Since`
+   * so the server can answer `304 Not Modified` without a body (F08-FR-15). The
+   * returned object echoes the response's validators so the caller can persist
+   * them for the next revalidation (F08-FR-16). Auth and non-ok statuses are
+   * surfaced exactly as {@link fetchText} does.
+   */
+  async fetchConditional(
+    url: string,
+    timeoutMs = 30_000,
+    validators?: CacheValidators,
+  ): Promise<ConditionalFetchResult> {
+    const headers = await this.getAuthHeaders(url);
+    if (validators?.etag) { headers['If-None-Match'] = validators.etag; }
+    if (validators?.lastModified) { headers['If-Modified-Since'] = validators.lastModified; }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let res: Response;
+    try {
+      res = await fetch(url, { headers, signal: controller.signal });
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') {
+        throw new Error(`Timed out fetching ${url} after ${timeoutMs} ms`);
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+
+    if (res.status === 401 || res.status === 403) { throw new AuthRequiredError(url, res.status); }
+    if (res.status === 304) {
+      // Not modified — return the validators we sent so metadata is preserved.
+      return { status: 304, etag: validators?.etag, lastModified: validators?.lastModified };
+    }
+    if (!res.ok) { throw new HttpError(res.status, `HTTP ${res.status} fetching ${url}`); }
+
+    return {
+      status: res.status,
+      text: await res.text(),
+      etag: res.headers?.get('etag') ?? undefined,
+      lastModified: res.headers?.get('last-modified') ?? undefined,
+    };
   }
 
   // ── Credential state ──────────────────────────────────────────────────────

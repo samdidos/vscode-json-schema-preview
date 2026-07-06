@@ -8,9 +8,24 @@ import { getRemoteFetchTimeoutMs } from './settings';
 interface CacheEntry {
   originalUrl: string;
   cachedPath: string;
+  // Revalidation metadata (F08-FR-16). Persisted so conditional requests and
+  // the daily throttle survive a VS Code restart. Absent on entries written
+  // before this feature (they simply revalidate unconditionally the first time).
+  etag?: string;
+  lastModified?: string;
+  fetchedAt?: number; // epoch ms of the last successful (200/304) fetch
 }
 
+/** Outcome of an automatic revalidation (F08-FR-14/15/17). */
+export type RevalidateOutcome =
+  | 'no-entry'      // nothing cached for this URL
+  | 'skipped'       // within the daily throttle window
+  | 'not-modified'  // server answered 304
+  | 'updated'       // cache file rewritten from a fresh 200
+  | 'failed';       // network/auth error — stale copy left in place, silently
+
 const CACHE_KEY = 'schemaauth.cache';
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export class SchemaCache {
   constructor(
@@ -25,11 +40,59 @@ export class SchemaCache {
     const localPath = this.localPathFor(url);
     fs.mkdirSync(path.dirname(localPath), { recursive: true });
 
-    const content = await this.auth.fetchText(url, getRemoteFetchTimeoutMs());
-    fs.writeFileSync(localPath, content, 'utf-8');
+    // Capture ETag / Last-Modified on the initial download so later automatic
+    // revalidations can be conditional (F08-FR-15/16).
+    const res = await this.auth.fetchConditional(url, getRemoteFetchTimeoutMs());
+    fs.writeFileSync(localPath, res.text ?? '', 'utf-8');
 
-    await this.upsertEntry({ originalUrl: url, cachedPath: localPath });
+    await this.upsertEntry({
+      originalUrl: url,
+      cachedPath: localPath,
+      etag: res.etag,
+      lastModified: res.lastModified,
+      fetchedAt: Date.now(),
+    });
     return localPath;
+  }
+
+  /**
+   * Revalidate a cached schema without user-visible errors (F08-FR-14/15/17).
+   * In `daily` mode the check is skipped when the entry was fetched within the
+   * last 24 h. A conditional request is sent when validators are known; a `304`
+   * leaves the file untouched, a `200` overwrites it, and any failure is
+   * swallowed so the stale copy keeps serving the language server.
+   */
+  async revalidate(url: string, mode: 'onOpen' | 'daily'): Promise<RevalidateOutcome> {
+    const entry = this.entries().find(e => e.originalUrl === url);
+    if (!entry || !fs.existsSync(entry.cachedPath)) { return 'no-entry'; }
+
+    if (mode === 'daily' && entry.fetchedAt !== undefined && Date.now() - entry.fetchedAt < DAY_MS) {
+      return 'skipped';
+    }
+
+    try {
+      const res = await this.auth.fetchConditional(url, getRemoteFetchTimeoutMs(), {
+        etag: entry.etag,
+        lastModified: entry.lastModified,
+      });
+      if (res.status === 304 || res.text === undefined) {
+        // Unchanged — refresh only the throttle timestamp so `daily` resets.
+        await this.upsertEntry({ ...entry, fetchedAt: Date.now() });
+        return 'not-modified';
+      }
+      fs.writeFileSync(entry.cachedPath, res.text, 'utf-8');
+      await this.upsertEntry({
+        originalUrl: url,
+        cachedPath: entry.cachedPath,
+        etag: res.etag,
+        lastModified: res.lastModified,
+        fetchedAt: Date.now(),
+      });
+      return 'updated';
+    } catch {
+      // F08-FR-17: automatic revalidation never surfaces UI; keep the stale copy.
+      return 'failed';
+    }
   }
 
   /** True if a local copy of `url` exists on disk. */

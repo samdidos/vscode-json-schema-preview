@@ -4,6 +4,9 @@ import {
   resolveTimeoutMs,
   getRenderTimeoutMs,
   getRemoteFetchTimeoutMs,
+  getCacheAutoRefresh,
+  getLintEnabled,
+  getLintRuleSeverities,
   DEFAULT_RENDER_TIMEOUT_MS,
   DEFAULT_REMOTE_FETCH_TIMEOUT_MS,
   MIN_TIMEOUT_MS,
@@ -60,5 +63,44 @@ suite('getRemoteFetchTimeoutMs()', () => {
   test('[S03-SR-14] reads jsonschema.remoteFetchTimeout', () => {
     setConfig('jsonschema', 'remoteFetchTimeout', 8_000);
     assert.strictEqual(getRemoteFetchTimeoutMs(), 8_000);
+  });
+});
+
+suite('[F08-FR-14] getCacheAutoRefresh()', () => {
+  setup(() => resetAll());
+
+  test('defaults to "off" when unset', () => {
+    assert.strictEqual(getCacheAutoRefresh(), 'off');
+  });
+  test('reads a valid "onOpen" value', () => {
+    setConfig('jsonschema.cache', 'autoRefresh', 'onOpen');
+    assert.strictEqual(getCacheAutoRefresh(), 'onOpen');
+  });
+  test('reads a valid "daily" value', () => {
+    setConfig('jsonschema.cache', 'autoRefresh', 'daily');
+    assert.strictEqual(getCacheAutoRefresh(), 'daily');
+  });
+  test('falls back to "off" for an unrecognised value', () => {
+    setConfig('jsonschema.cache', 'autoRefresh', 'hourly');
+    assert.strictEqual(getCacheAutoRefresh(), 'off');
+  });
+});
+
+suite('[F17-FR-03] getLintEnabled() / getLintRuleSeverities()', () => {
+  setup(() => resetAll());
+
+  test('lint is enabled by default', () => {
+    assert.strictEqual(getLintEnabled(), true);
+  });
+  test('lint can be disabled', () => {
+    setConfig('jsonschema.lint', 'enabled', false);
+    assert.strictEqual(getLintEnabled(), false);
+  });
+  test('rule severities default to an empty object', () => {
+    assert.deepStrictEqual(getLintRuleSeverities(), {});
+  });
+  test('rule severities are read through', () => {
+    setConfig('jsonschema.lint', 'rules', { 'no-duplicate-enum': 'off' });
+    assert.deepStrictEqual(getLintRuleSeverities(), { 'no-duplicate-enum': 'off' });
   });
 });

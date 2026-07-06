@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import {
   isJsonSchemaFile,
   openJsonSchema,
@@ -20,7 +21,10 @@ import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { SchemaAuthCodeActionProvider } from './SchemaAuthCodeActionProvider';
 import { SchemaAuthStatusBar } from './SchemaAuthStatusBar';
-import { isYaml } from './languages';
+import { SchemaRefProvider } from './SchemaRefProvider';
+import { SchemaLintManager } from './SchemaLintManager';
+import { isYaml, isSupported } from './languages';
+import { getCacheAutoRefresh } from './settings';
 import { createSchema } from 'genson-js';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -45,10 +49,33 @@ export function activate(context: vscode.ExtensionContext) {
     openJsonSchema(context, doc.uri, /* silent */ true);
   }
 
+  // ── Automatic schema-cache revalidation (F08-FR-14/17) ─────────────────────
+  // `onOpen` revalidates at most once per schema per session; `daily` relies on
+  // the cache's own 24 h throttle. Failures are swallowed inside revalidate().
+  const revalidatedThisSession = new Set<string>();
+  function maybeRevalidateCache(doc: vscode.TextDocument): void {
+    const mode = getCacheAutoRefresh();
+    if (mode === 'off') { return; }
+    if (doc.uri.scheme === 'untitled') { return; }
+    if (!isSupported(doc.languageId)) { return; }
+
+    const ref = findBoundSchemaPath(doc) ?? extractInlineSchemaUrl(doc);
+    if (!ref) { return; }
+    const url = SchemaAuthManager.isRemoteUrl(ref) ? ref : schemaCache.getOriginalUrl(ref);
+    if (!url || !schemaCache.isCached(url)) { return; }
+
+    if (mode === 'onOpen') {
+      if (revalidatedThisSession.has(url)) { return; }
+      revalidatedThisSession.add(url);
+    }
+    void schemaCache.revalidate(url, mode);
+  }
+
   if (vscode.window.activeTextEditor?.document) {
     const doc = vscode.window.activeTextEditor.document;
     setJsonSchemaPreviewContext(doc);
     maybeAutoPreview(doc);
+    maybeRevalidateCache(doc);
   }
 
   context.subscriptions.push(
@@ -56,6 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (e?.document) {
         setJsonSchemaPreviewContext(e.document);
         maybeAutoPreview(e.document);
+        maybeRevalidateCache(e.document);
       }
     }),
 
@@ -100,6 +128,12 @@ export function activate(context: vscode.ExtensionContext) {
       { providedCodeActionKinds: SchemaAuthCodeActionProvider.providedCodeActionKinds },
     ),
   );
+
+  // ── $ref navigation & hover (F13) ─────────────────────────────────────────
+  context.subscriptions.push(...SchemaRefProvider.register(schemaCache));
+
+  // ── Schema linting (F17) ───────────────────────────────────────────────────
+  new SchemaLintManager().register(context);
 
   // ── Commands ───────────────────────────────────────────────────────────────
   context.subscriptions.push(
@@ -257,6 +291,68 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage(
         'Schema inferred — save the file and bind it to use it for validation.'
       );
+    }),
+
+    // ── Generate a valid sample instance from a schema (F16) ─────────────────
+    vscode.commands.registerCommand('jsonschema.generateSampleData', async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor || !isJsonSchemaFile(editor.document)) {
+        vscode.window.showInformationMessage('Open a JSON Schema file to generate sample data from it.');
+        return;
+      }
+      const doc = editor.document;
+      const { parseSchemaText, parseRef, refKind, parseJsonPointer, resolvePointer } =
+        await import('./schemaPointer');
+      const { generateAndValidate } = await import('./sampleDataGenerator');
+
+      const root = parseSchemaText(doc.getText(), doc.languageId);
+      if (root === undefined) {
+        vscode.window.showErrorMessage('Cannot parse the schema file.');
+        return;
+      }
+
+      const format = await vscode.window.showQuickPick(
+        [
+          { label: 'JSON', id: 'json' as const },
+          { label: 'YAML', id: 'yaml' as const },
+        ],
+        { title: 'Sample data format', placeHolder: 'Choose the output format' },
+      );
+      if (!format) { return; }
+
+      // Ref resolver: local pointers resolve within the root schema; relative
+      // and cached-remote refs are read best-effort (F16-FR-06).
+      const resolveRef = (ref: string): unknown => {
+        const { uri, fragment } = parseRef(ref);
+        const segments = parseJsonPointer(fragment);
+        const kind = refKind(ref);
+        if (kind === 'local') { return resolvePointer(root, segments); }
+        let text: string | undefined;
+        if (kind === 'remote') {
+          text = schemaCache.readCached(uri || ref);
+        } else {
+          try {
+            text = fs.readFileSync(path.resolve(path.dirname(doc.uri.fsPath), uri), 'utf-8');
+          } catch { text = undefined; }
+        }
+        if (text === undefined) { return undefined; }
+        const targetLang = uri.endsWith('.yaml') || uri.endsWith('.yml') ? 'yaml' : 'json';
+        return resolvePointer(parseSchemaText(text, targetLang), segments);
+      };
+
+      const result = generateAndValidate(root, { resolveRef });
+      if (!result.ok) {
+        vscode.window.showErrorMessage(
+          `Could not generate valid sample data: ${result.errors.slice(0, 5).join('; ')}`,
+        );
+        return;
+      }
+
+      const content = format.id === 'yaml'
+        ? (await import('yaml')).stringify(result.value)
+        : JSON.stringify(result.value, null, 2);
+      const newDoc = await vscode.workspace.openTextDocument({ content, language: format.id });
+      await vscode.window.showTextDocument(newDoc, vscode.ViewColumn.Beside);
     }),
   );
 }
