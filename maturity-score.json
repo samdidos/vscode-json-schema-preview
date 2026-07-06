@@ -164,8 +164,8 @@
     },
     {
       "label": "Docs",
-      "score": 4,
-      "earned": 8.09,
+      "score": 3.9,
+      "earned": 7.71,
       "possible": 10,
       "checks": [
         {
@@ -207,7 +207,7 @@
         {
           "id": "guide-coverage",
           "points": 3,
-          "earned": 1.09,
+          "earned": 0.71,
           "note": "guide pages cover the feature specs"
         },
         {
@@ -333,11 +333,11 @@
       "branches": 91.98
     },
     "requirements": {
-      "total": 213,
+      "total": 297,
       "byStatus": {
-        "manual": 107,
+        "manual": 115,
         "implemented": 80,
-        "planned": 26
+        "planned": 102
       }
     },
     "pinnedActionRatio": 0.968

@@ -73,6 +73,26 @@ in a VS Code webview panel beside the editor. Rendering is delegated to the
 - **F01-FR-17** When the preview panel is refreshed (on save) the webview MUST
   restore the previous scroll position.
 
+### Python Interpreter and Dependency Management
+
+- **F01-FR-23** The extension MUST resolve the Python interpreter in this
+  order: the active environment reported by the VS Code Python extension
+  (`ms-python.python`, environments API with legacy-API fallback), then the
+  `python.defaultInterpreterPath` / `python.pythonPath` setting, then plain
+  `python3` on the `PATH`.
+- **F01-FR-24** Before rendering, if the `json_schema_for_humans` package is
+  not importable under the resolved interpreter, the extension MUST attempt to
+  install it automatically via pip under a progress notification. Install
+  attempts MUST try `--user` first and MUST include `--break-system-packages`
+  variants so PEP 668 externally-managed system Pythons (Ubuntu 23.04+/Debian
+  Bookworm+) are handled, before falling back to `pip3`/`pip` executables.
+- **F01-FR-25** Once the package is confirmed importable under an interpreter,
+  the check MUST NOT re-run for that interpreter within the same extension-host
+  session.
+- **F01-FR-26** If every automatic install attempt fails the resulting error
+  MUST include manual installation instructions (a copy-pasteable `pip`
+  command and a virtual-environment alternative).
+
 ### Error Handling
 
 - **F01-FR-18** If `json-schema-for-humans` is not installed the error page MUST

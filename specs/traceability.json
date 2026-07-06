@@ -164,6 +164,34 @@
       ],
       "note": "static CSP, no scripts, sanitizeHtml on all schema text; unit-tested"
     },
+    "F01-FR-23": {
+      "status": "manual",
+      "impl": [
+        "src/python.ts"
+      ],
+      "note": "getPythonInterpreter: Python-ext environments API -> legacy API -> settings -> python3; python.ts is subprocess-bound (coverage-excluded), verified manually"
+    },
+    "F01-FR-24": {
+      "status": "manual",
+      "impl": [
+        "src/python.ts"
+      ],
+      "note": "ensureInstalled: pip candidates incl. --user and --break-system-packages under withProgress; python.ts is subprocess-bound (coverage-excluded), verified manually"
+    },
+    "F01-FR-25": {
+      "status": "manual",
+      "impl": [
+        "src/python.ts"
+      ],
+      "note": "packageReadyFor per-interpreter set skips re-checking within the session; python.ts is subprocess-bound (coverage-excluded), verified manually"
+    },
+    "F01-FR-26": {
+      "status": "manual",
+      "impl": [
+        "src/python.ts"
+      ],
+      "note": "final throw includes pip command and venv alternative instructions; python.ts is subprocess-bound (coverage-excluded), verified manually"
+    },
     "F01-NFR-01": {
       "status": "manual",
       "impl": [
@@ -433,7 +461,9 @@
     },
     "F04-FR-13": {
       "status": "implemented",
-      "impl": ["src/SchemaBindingManager.ts"],
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
       "note": "resolveLocalSchemaRef(): relative for WorkspaceFolder/Inline scope, absolute for Workspace/Global scope or schemas outside the workspace."
     },
     "F05-FR-01": {
@@ -779,6 +809,26 @@
       ],
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
+    "F08-FR-14": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-15": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-16": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F08-FR-17": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
     "F08-NFR-01": {
       "status": "manual",
       "impl": [
@@ -1108,6 +1158,386 @@
       "impl": [],
       "note": ""
     },
+    "F12-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-10": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-FR-11": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F12-NFR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-FR-10": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F13-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-FR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F14-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-10": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-FR-11": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F15-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-FR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F16-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-10": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-11": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-FR-12": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F17-NFR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
     "S01-SR-01": {
       "status": "manual",
       "impl": [
@@ -1412,19 +1842,28 @@
       "note": "credentials scoped to their stored host (F07)"
     },
     "S06-SR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": "accessibility floor specced 2026-07-04"
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts",
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "all injected controls are native <button>/<a href>/form elements (audit 2026-07); Enter/Space native"
     },
     "S06-SR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": "accessibility floor specced 2026-07-04"
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts",
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "no keydown handlers or focus traps in any webview script (audit 2026-07); F6/Tab cycling verified manually"
     },
     "S06-SR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": "accessibility floor specced 2026-07-04"
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts",
+        "src/SchemaEditorPanel.ts"
+      ],
+      "note": "no icon-only controls; every button carries visible text (Download HTML, Save, Open file)"
     },
     "S06-SR-04": {
       "status": "implemented",
@@ -1441,9 +1880,12 @@
       "note": "Download button carries a text label alongside the down-arrow glyph"
     },
     "S06-SR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": "accessibility floor specced 2026-07-04"
+      "status": "manual",
+      "impl": [
+        "src/webviewUtils.ts",
+        "src/fallbackRenderer.ts"
+      ],
+      "note": "loading #9d9d9d, error #d4d4d4, fallback #d4d4d4 on #1e1e1e all >=4.5:1; pages are fixed-dark so ratio holds in both themes"
     },
     "S06-SR-07": {
       "status": "implemented",
