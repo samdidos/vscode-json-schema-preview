@@ -50,7 +50,11 @@ suite('[F12-FR-03][F12-FR-05] SchemaCatalogManager.loadEntries() — fetching', 
     const { warnings, suggested, rest } = await mgr.loadEntries('x');
     assert.strictEqual(suggested.length + rest.length, 0);
     assert.strictEqual(warnings.length, 1);
-    assert.ok(warnings[0].includes('schemastore.org'));
+    // Anchored at position 0 against the full known catalog URL (not a bare hostname
+    // fragment matched "anywhere") — codeql[js/incomplete-url-substring-sanitization]
+    // false positive: this asserts our own error-message construction in a test, not a
+    // security-relevant host check.
+    assert.ok(warnings[0].startsWith(`Could not load schema catalog ${STORE}: `));
   });
 
   // Regression: loadEntries used to await each source's fetch in a sequential
