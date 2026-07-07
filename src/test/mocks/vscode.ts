@@ -55,6 +55,7 @@ const _showInformationMessage      = sinon.stub();
 const _showErrorMessage            = sinon.stub();
 const _showWarningMessage          = sinon.stub();
 const _showQuickPick               = sinon.stub();
+const _createQuickPick             = sinon.stub();
 const _showInputBox                = sinon.stub();
 const _showTextDocument            = sinon.stub();
 const _showOpenDialog              = sinon.stub();
@@ -98,7 +99,7 @@ const _allStubs: sinon.SinonStub[] = [
   statusBarItem.show, statusBarItem.hide, statusBarItem.dispose,
   _createStatusBarItem, _onDidChangeActiveTextEditor,
   _showInformationMessage, _showErrorMessage, _showWarningMessage,
-  _showQuickPick, _showInputBox, _showTextDocument, _showOpenDialog, _createWebviewPanel, _withProgress,
+  _showQuickPick, _createQuickPick, _showInputBox, _showTextDocument, _showOpenDialog, _createWebviewPanel, _withProgress,
   _getWorkspaceFolder, _asRelativePath, _getConfiguration,
   _findFiles, _openTextDocument, _onDidChangeConfiguration, _onDidSaveTextDocument, _applyEdit,
   _onDidOpenTextDocument, _onDidChangeTextDocument, _onDidCloseTextDocument,
@@ -127,6 +128,20 @@ function applyDefaults() {
   _withProgress.callsFake((_opts: any, task: any) =>
     task({ report: () => {} }, { isCancellationRequested: false })
   );
+  // Fresh QuickPick stand-in per call; tests drive selection by calling the
+  // captured onDidAccept/onDidHide handlers after setting selectedItems.
+  _createQuickPick.callsFake(() => {
+    const qp: any = {
+      title: '', placeholder: '', value: '',
+      matchOnDescription: false, matchOnDetail: false, busy: false,
+      items: [] as any[], selectedItems: [] as any[],
+      show: sinon.stub(), hide: sinon.stub(), dispose: sinon.stub(),
+      onDidAccept: (cb: () => void) => { qp._accept = cb; return _disposable; },
+      onDidHide: (cb: () => void) => { qp._hide = cb; return _disposable; },
+      onDidChangeValue: (_cb: (v: string) => void) => _disposable,
+    };
+    return qp;
+  });
   _getWorkspaceFolder.returns(undefined);
   _asRelativePath.callsFake((uri: any, _inc?: boolean) =>
     typeof uri === 'string' ? uri : uri.fsPath
@@ -198,6 +213,7 @@ export const window = {
   showErrorMessage:            _showErrorMessage,
   showWarningMessage:          _showWarningMessage,
   showQuickPick:               _showQuickPick,
+  createQuickPick:             _createQuickPick,
   showInputBox:                _showInputBox,
   showTextDocument:            _showTextDocument,
   showOpenDialog:              _showOpenDialog,

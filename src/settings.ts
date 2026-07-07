@@ -47,6 +47,27 @@ export function getLintRuleSeverities(): Record<string, string> {
   return rules && typeof rules === 'object' ? rules : {};
 }
 
+/** The built-in public SchemaStore catalog (F12-FR-03). */
+export const SCHEMASTORE_CATALOG_URL = 'https://www.schemastore.org/api/json/catalog.json';
+
+/**
+ * Resolve the enabled schema-catalog source URLs (F12-FR-03/04): the public
+ * SchemaStore catalog (unless disabled) followed by any user-configured
+ * private catalogs.
+ */
+export function getCatalogSources(): string[] {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.catalog');
+  const sources: string[] = [];
+  if (cfg.get<boolean>('useSchemaStore') !== false) {
+    sources.push(SCHEMASTORE_CATALOG_URL);
+  }
+  const extra = cfg.get<unknown>('sources');
+  if (Array.isArray(extra)) {
+    sources.push(...extra.filter((s): s is string => typeof s === 'string' && s.trim() !== ''));
+  }
+  return sources;
+}
+
 /** Automatic cache-revalidation policy (F08-FR-14). */
 export type CacheAutoRefresh = 'off' | 'onOpen' | 'daily';
 

@@ -5,8 +5,10 @@ import {
   getRenderTimeoutMs,
   getRemoteFetchTimeoutMs,
   getCacheAutoRefresh,
+  getCatalogSources,
   getLintEnabled,
   getLintRuleSeverities,
+  SCHEMASTORE_CATALOG_URL,
   DEFAULT_RENDER_TIMEOUT_MS,
   DEFAULT_REMOTE_FETCH_TIMEOUT_MS,
   MIN_TIMEOUT_MS,
@@ -83,6 +85,22 @@ suite('[F08-FR-14] getCacheAutoRefresh()', () => {
   test('falls back to "off" for an unrecognised value', () => {
     setConfig('jsonschema.cache', 'autoRefresh', 'hourly');
     assert.strictEqual(getCacheAutoRefresh(), 'off');
+  });
+});
+
+suite('[F12-FR-03][F12-FR-04] getCatalogSources()', () => {
+  setup(() => resetAll());
+
+  test('defaults to the SchemaStore catalog only', () => {
+    assert.deepStrictEqual(getCatalogSources(), [SCHEMASTORE_CATALOG_URL]);
+  });
+  test('disabling SchemaStore removes it', () => {
+    setConfig('jsonschema.catalog', 'useSchemaStore', false);
+    assert.deepStrictEqual(getCatalogSources(), []);
+  });
+  test('appends configured private sources after SchemaStore', () => {
+    setConfig('jsonschema.catalog', 'sources', ['https://corp/a.json', '  ', 5]);
+    assert.deepStrictEqual(getCatalogSources(), [SCHEMASTORE_CATALOG_URL, 'https://corp/a.json']);
   });
 });
 

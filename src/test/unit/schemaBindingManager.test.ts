@@ -821,6 +821,62 @@ suite('SchemaBindingManager — inline binding (F10)', () => {
   });
 });
 
+// ─── Catalog binding [F12] ────────────────────────────────────────────────────
+
+suite('SchemaBindingManager — catalog binding (F12)', () => {
+  setup(() => vscode.resetAll());
+
+  test('[F12-FR-01] a "Browse catalog…" item is offered only when a catalog is wired in', async () => {
+    let items: any[] = [];
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', '{"a":1}') };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick.callsFake(async (i: any[]) => { items = i; return undefined; });
+    const catalog = { browse: async () => undefined };
+    const mgr = new SchemaBindingManager(makeContext(), catalog);
+    await mgr.bindToCurrentFile();
+    assert.ok(items.some((i: any) => i.isCatalog));
+  });
+
+  test('no catalog item when no catalog is wired in', async () => {
+    let items: any[] = [];
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', '{"a":1}') };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick.callsFake(async (i: any[]) => { items = i; return undefined; });
+    const mgr = new SchemaBindingManager(makeContext());
+    await mgr.bindToCurrentFile();
+    assert.ok(!items.some((i: any) => i.isCatalog));
+  });
+
+  test('[F12-FR-02] selecting a catalog schema binds its URL via the normal scope flow', async () => {
+    const text = '{\n  "a": 1\n}';
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', text) };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (i: any[]) => i.find((x: any) => x.isCatalog))
+      .onSecondCall().callsFake(async (i: any[]) => i.find((x: any) => x.target === INLINE_SCOPE));
+    const catalog = { browse: async () => 'https://schemastore.org/package.json' };
+    const mgr = new SchemaBindingManager(makeContext(), catalog);
+    await mgr.bindToCurrentFile();
+    assert.ok(vscode.workspace.applyEdit.calledOnce);
+    const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+    assert.deepStrictEqual(JSON.parse(result), { $schema: 'https://schemastore.org/package.json', a: 1 });
+  });
+
+  test('cancelling the catalog picker aborts without binding', async () => {
+    vscode.window.activeTextEditor = { document: makeDoc('json', '/ws/data.json', '{"a":1}') };
+    vscode.workspace.getWorkspaceFolder.returns(undefined);
+    vscode.workspace.findFiles.resolves([]);
+    vscode.window.showQuickPick.onFirstCall().callsFake(async (i: any[]) => i.find((x: any) => x.isCatalog));
+    const catalog = { browse: async () => undefined };
+    const mgr = new SchemaBindingManager(makeContext(), catalog);
+    await mgr.bindToCurrentFile();
+    assert.ok(!vscode.workspace.applyEdit.called);
+  });
+});
+
 // ─── TOML inline-only binding [F11] ──────────────────────────────────────────
 
 suite('SchemaBindingManager — TOML inline binding (F11)', () => {
