@@ -1214,74 +1214,107 @@
       "note": "new languages.ts paths unit-tested (languages.test.ts)"
     },
     "F12-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "Browse catalog… item added to bindToCurrentFile when a catalog manager is wired in"
     },
     "F12-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "catalog supplies the URL; existing scope picker/write path unchanged"
     },
     "F12-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts",
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "SchemaStore catalog built-in; jsonschema.catalog.useSchemaStore toggle"
     },
     "F12-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts",
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "jsonschema.catalog.sources array merged after SchemaStore"
     },
     "F12-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "fetchCatalog uses auth.fetchText + getRemoteFetchTimeoutMs"
     },
     "F12-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaCatalog.ts",
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "parseCatalog skips malformed entries, throws on total failure; manager warns per source"
     },
     "F12-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "buildItems: filterable QuickPick items with url/host detail"
     },
     "F12-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaCatalog.ts",
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "rankByFileMatch puts fileMatch hits under Suggested separator"
     },
     "F12-FR-09": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaBindingManager.ts",
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "catalog URL flows through the standard bind/validate path → F07 401/403 handling"
     },
     "F12-FR-10": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "24h TTL global-storage cache; served without network within TTL"
     },
     "F12-FR-11": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "stale fallback on fetch failure; QuickPick title marked offline"
     },
     "F12-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "browse() opens a busy createQuickPick immediately; loads async"
     },
     "F12-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "no telemetry; catalog data only in native QuickPicks"
     },
     "F12-NFR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaCatalog.ts"
+      ],
+      "note": "schemaCatalog is a pure module unit-tested via the vscode mock"
     },
     "F13-FR-01": {
       "status": "implemented",

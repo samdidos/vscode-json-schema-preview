@@ -36,9 +36,14 @@ interface TempBindingRecord {
 export class SchemaBindingManager {
   private readonly statusBar: vscode.StatusBarItem;
   private readonly ctx: vscode.ExtensionContext;
+  private readonly catalog?: { browse(fileName: string): Promise<string | undefined> };
 
-  constructor(context: vscode.ExtensionContext) {
+  constructor(
+    context: vscode.ExtensionContext,
+    catalog?: { browse(fileName: string): Promise<string | undefined> },
+  ) {
     this.ctx = context;
+    this.catalog = catalog;
     this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 2);
     this.statusBar.command = 'jsonschema.bindToCurrentFile';
     context.subscriptions.push(this.statusBar);
@@ -143,12 +148,19 @@ export class SchemaBindingManager {
     // supported format can carry an inline binding.
     const inlineSupported = doc.languageId !== 'jsonl';
 
-    type Item = vscode.QuickPickItem & { uri?: vscode.Uri; isUrl?: true; isBrowse?: true; isRemove?: true };
+    type Item = vscode.QuickPickItem & {
+      uri?: vscode.Uri; isUrl?: true; isBrowse?: true; isRemove?: true; isCatalog?: true;
+    };
 
     const urlItem: Item = {
       label: '$(globe) Enter URL...',
       description: 'Paste a schema URL (e.g. from SchemaStore)',
       isUrl: true,
+    };
+    const catalogItem: Item = {
+      label: '$(book) Browse catalog...',
+      description: 'Search SchemaStore and configured private catalogs',
+      isCatalog: true,
     };
     const browseItem: Item = {
       label: '$(folder-opened) Browse file system...',
@@ -164,7 +176,7 @@ export class SchemaBindingManager {
     };
 
     const schemaItems = await this.findWorkspaceSchemas();
-    const items: Item[] = [urlItem, browseItem];
+    const items: Item[] = this.catalog ? [urlItem, catalogItem, browseItem] : [urlItem, browseItem];
 
     if (schemaItems.length) {
       items.push({ label: 'Workspace schemas', kind: vscode.QuickPickItemKind.Separator } as Item);
@@ -233,6 +245,12 @@ export class SchemaBindingManager {
           }
         });
       }
+    } else if (pick.isCatalog) {
+      // F12: catalog only supplies the URL; scope handling below is unchanged.
+      const fileName = vscode.workspace.asRelativePath(doc.uri, false);
+      const url = await this.catalog!.browse(fileName);
+      if (!url) return;
+      schemaRef = url.trim();
     } else if (pick.isBrowse) {
       const defaultUri = folder?.uri ?? vscode.Uri.file(path.dirname(doc.uri.fsPath));
       const uris = await vscode.window.showOpenDialog({

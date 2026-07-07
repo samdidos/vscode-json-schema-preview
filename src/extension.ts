@@ -23,6 +23,7 @@ import { SchemaAuthCodeActionProvider } from './SchemaAuthCodeActionProvider';
 import { SchemaAuthStatusBar } from './SchemaAuthStatusBar';
 import { SchemaRefProvider } from './SchemaRefProvider';
 import { SchemaLintManager } from './SchemaLintManager';
+import { SchemaCatalogManager } from './SchemaCatalogManager';
 import { isYaml, isSupported } from './languages';
 import { getCacheAutoRefresh } from './settings';
 import { createSchema } from 'genson-js';
@@ -112,7 +113,8 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   // ── Binding manager & auth status bar ─────────────────────────────────────
-  const bindingManager = new SchemaBindingManager(context);
+  const catalogManager = new SchemaCatalogManager(context, authManager);
+  const bindingManager = new SchemaBindingManager(context, catalogManager);
   new SchemaAuthStatusBar(authManager, context);
 
   // ── Code action provider (Options 1: lightbulb on $schema lines) ──────────

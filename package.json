@@ -161,6 +161,19 @@
           ],
           "markdownDescription": "Automatically revalidate locally cached schemas against their origin using conditional (`ETag` / `Last-Modified`) requests. A `304 Not Modified` response leaves the cache untouched; failures are silent and the cached copy keeps serving IntelliSense."
         },
+        "jsonschema.catalog.useSchemaStore": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Include the public [SchemaStore](https://www.schemastore.org) catalog in the **Bind Schema… → Browse catalog…** picker."
+        },
+        "jsonschema.catalog.sources": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "markdownDescription": "Additional schema-catalog URLs in the SchemaStore catalog format (`{ \"schemas\": [{ \"name\", \"description\", \"url\", \"fileMatch\" }] }`). Private catalogs are fetched with the credentials configured via **Configure Schema Authentication…**."
+        },
         "jsonschema.lint.enabled": {
           "type": "boolean",
           "default": true,
