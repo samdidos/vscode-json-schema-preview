@@ -4,6 +4,9 @@
     "src/test/unit/**/*.test.ts",
     "src/test/e2e/**/*.test.ts",
     "src/test/mocks/setup.ts",
+    "src/test/integration/runTest.ts",
+    "src/test/integration/index.ts",
+    "src/test/integration/suites/**/*.test.ts",
     "scripts/**/*.{js,mjs}"
   ],
   "project": ["src/**/*.ts", "scripts/**/*.{js,mjs}"],

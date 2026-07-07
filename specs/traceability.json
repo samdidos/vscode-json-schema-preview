@@ -2363,57 +2363,77 @@
     "S08-NFR-01": {
       "status": "planned",
       "impl": [],
-      "note": ""
+      "note": "harness runs; wall-clock budget not yet measured against a real CI run"
     },
     "S08-NFR-02": {
       "status": "planned",
       "impl": [],
-      "note": ""
+      "note": "nothing implemented so far needs the network (no remote-schema scenario yet); the local HTTP fixture server itself has not been built"
     },
     "S08-SR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/test/integration/runTest.ts",
+        "src/test/integration/index.ts",
+        "tsconfig.integration.json"
+      ],
+      "note": "runTest.ts launches @vscode/test-electron once per fixture; index.ts is the tdd mocha loader run inside the Extension Host; npm run test:integration"
     },
     "S08-SR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/test/integration/fixtures/single-folder",
+        "src/test/integration/fixtures/multi-root"
+      ],
+      "note": "single-folder fixture (JSON/YAML/TOML) and a 2-folder multi-root .code-workspace with distinct .vscode/settings.json per folder"
     },
     "S08-SR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/test/integration/index.ts",
+        "scripts/check-traceability.mjs"
+      ],
+      "note": "suites use suite()/test() (tdd); check-traceability.mjs already walks all of src/test/**/*.ts so [ID] tags in integration suites count with no changes needed"
     },
     "S08-SR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/test/integration/suites/singleFolder.bindingScope.test.ts",
+        "src/test/integration/suites/multiRoot.bindingScope.test.ts"
+      ],
+      "note": "WorkspaceFolder/Global x JSON/YAML in the single-folder fixture, Workspace scope and the cross-folder WorkspaceFolder case in multi-root; each asserts both the settings-file path form and that the real validator recognises the binding"
     },
     "S08-SR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/test/integration/suites/singleFolder.inlineBinding.test.ts",
+        "src/test/integration/suites/multiRoot.inlineBinding.test.ts"
+      ],
+      "note": "JSON/YAML/TOML round trip, a TOML file with a pre-existing [table] header, and a cross-folder TOML case exercising absolute-path escaping"
     },
     "S08-SR-06": {
       "status": "planned",
       "impl": [],
-      "note": ""
+      "note": "harness supports it (executeCommand works against real fixtures); not yet written — scenarios so far only exercise bindToCurrentFile/validateFile"
     },
     "S08-SR-07": {
       "status": "planned",
       "impl": [],
-      "note": ""
+      "note": "no timing instrumentation added yet; needs a real CI run to produce numbers worth reporting"
     },
     "S08-SR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml"
+      ],
+      "note": "new \"integration\" job, continue-on-error (non-blocking) until 2 clean weeks per this requirement; promotion to required not yet recorded"
     },
     "S08-SR-09": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml"
+      ],
+      "note": "integration job matrix runs on ubuntu-latest (via xvfb-run) and windows-latest"
     }
   }
 }
