@@ -1486,69 +1486,99 @@
       "note": "pure module unit-tested: cycles, dedup, $id handling, YAML round-trip"
     },
     "F15-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaDiffCommand.ts",
+        "src/extension.ts",
+        "package.json"
+      ],
+      "note": "jsonschema.diffSchema command; gated on isJsonSchemaFile"
     },
     "F15-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaDiffCommand.ts"
+      ],
+      "note": "baseline picker: Git HEAD / Workspace file… / Remote URL… (auth); order preserved"
     },
     "F15-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaDiffCommand.ts"
+      ],
+      "note": "git via vscode.git extension API getRepository().show(HEAD,path); option hidden when unavailable"
     },
     "F15-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts"
+      ],
+      "note": "order-insensitive deepEqual; key-order/whitespace not reported"
     },
     "F15-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts"
+      ],
+      "note": "breaking rules: required+, type-, enum/const narrow, bound tighten, addlProps→false, allOf+"
     },
     "F15-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts"
+      ],
+      "note": "non-breaking rules: optional prop+, required-, relax, enum+, type+"
     },
     "F15-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts"
+      ],
+      "note": "title/description/examples/default/$comment and unknown keywords → informational"
     },
     "F15-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts"
+      ],
+      "note": "unreasoned changes → unclassified, never dropped; comparator never throws"
     },
     "F15-FR-09": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts",
+        "src/SchemaDiffCommand.ts"
+      ],
+      "note": "grouped text-first Markdown report (pointer path, old→new); read-only virtual doc"
     },
     "F15-FR-10": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts",
+        "src/SchemaDiffCommand.ts"
+      ],
+      "note": "summaryLine notification with Open report button"
     },
     "F15-FR-11": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaDiffCommand.ts"
+      ],
+      "note": "identical versions → \"No structural changes\" message, no report"
     },
     "F15-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts"
+      ],
+      "note": "in-process pure comparison"
     },
     "F15-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts"
+      ],
+      "note": "pure module, no vscode import; table-driven per-rule tests + fast-check never-throws"
     },
     "F16-FR-01": {
       "status": "implemented",

@@ -81,6 +81,7 @@ const _getCommands      = sinon.stub();
 const _onDidOpenTextDocument    = sinon.stub();
 const _onDidChangeTextDocument  = sinon.stub();
 const _onDidCloseTextDocument   = sinon.stub();
+const _registerTextDocumentContentProvider = sinon.stub();
 
 // languages
 const _createDiagnosticCollection       = sinon.stub();
@@ -103,6 +104,7 @@ const _allStubs: sinon.SinonStub[] = [
   _getWorkspaceFolder, _asRelativePath, _getConfiguration,
   _findFiles, _openTextDocument, _onDidChangeConfiguration, _onDidSaveTextDocument, _applyEdit,
   _onDidOpenTextDocument, _onDidChangeTextDocument, _onDidCloseTextDocument,
+  _registerTextDocumentContentProvider,
   _createDiagnosticCollection, _registerCodeActionsProvider,
   _registerDefinitionProvider, _registerHoverProvider,
   _onDidChangeSessions, _getSession,
@@ -155,6 +157,7 @@ function applyDefaults() {
   _onDidOpenTextDocument.returns(_disposable);
   _onDidChangeTextDocument.returns(_disposable);
   _onDidCloseTextDocument.returns(_disposable);
+  _registerTextDocumentContentProvider.returns(_disposable);
   _createDiagnosticCollection.returns({
     delete: sinon.stub(), set: sinon.stub(), clear: sinon.stub(), dispose: sinon.stub(),
   });
@@ -194,13 +197,13 @@ export const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3
 export const ViewColumn = { One: 1, Two: 2, Three: 3 };
 
 export const Uri = {
-  file: (p: string) => ({ fsPath: p, scheme: 'file' }),
+  file: (p: string) => ({ fsPath: p, scheme: 'file', toString: () => `file://${p}` }),
   joinPath: (base: any, ...parts: string[]) =>
     ({ fsPath: `${base.fsPath}/${parts.join('/')}`, scheme: 'file' }),
   parse: (uriString: string) =>
     uriString.startsWith('file://')
-      ? { fsPath: uriString.slice('file://'.length), scheme: 'file' }
-      : { fsPath: uriString, scheme: 'unknown' },
+      ? { fsPath: uriString.slice('file://'.length), scheme: 'file', toString: () => uriString }
+      : { fsPath: uriString, scheme: uriString.split(':')[0], toString: () => uriString },
 };
 
 let _activeEditor: any = undefined;
@@ -242,6 +245,7 @@ export const workspace = {
   onDidOpenTextDocument:    _onDidOpenTextDocument,
   onDidChangeTextDocument:  _onDidChangeTextDocument,
   onDidCloseTextDocument:   _onDidCloseTextDocument,
+  registerTextDocumentContentProvider: _registerTextDocumentContentProvider,
   applyEdit:                _applyEdit,
 };
 

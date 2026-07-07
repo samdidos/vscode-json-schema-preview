@@ -73,7 +73,7 @@
     <text x="174" y="377" font-size="13"
           font-weight="400" fill="#ffffff" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Code quality</text>
-    <rect x="190" y="362" width="212.76000000000002" height="22" rx="4" ry="4" fill="#3987e5" />
-    <text x="412.76" y="377" font-size="13" font-weight="600"
-          fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">2.7</text>
+    <rect x="190" y="362" width="204.88" height="22" rx="4" ry="4" fill="#3987e5" />
+    <text x="404.88" y="377" font-size="13" font-weight="600"
+          fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">2.6</text>
 </svg>
