@@ -18,7 +18,7 @@ export type TreeNode =
   | { kind: 'array'; offset: number; length: number; items: TreeNode[] }
   | { kind: 'scalar'; offset: number; length: number; value: string | number | boolean | null };
 
-export interface LintFix {
+interface LintFix {
   /** 'insertText' inserts at `atOffset`; 'replaceRange' rewrites [offset,offset+length). */
   kind: 'insertText' | 'replaceRange' | 'command';
   title: string;

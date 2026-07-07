@@ -41,11 +41,15 @@ binding via the same command. JSONL is explicitly excluded (see Out of Scope).
   workspace edit so the change appears in the undo stack.
 - **F10-FR-05** The `"$schema"` value MUST be a path relative to the
   workspace folder (prefixed `./`) when the schema is a local file inside the
-  same workspace, consistent with the existing settings-based binding path
-  resolution. When the schema is outside the workspace, the absolute file
-  system path MUST be used and the command MUST display an information message
-  warning the user that the embedded path is machine-specific and reduces
-  portability.
+  **same workspace folder as the data file**, consistent with the existing
+  settings-based binding path resolution (a relative reference is resolved
+  against the data file's own workspace folder, so a path relative to any
+  *other* folder would resolve inside the wrong project). When the schema is
+  outside the data file's workspace folder — whether outside the workspace
+  entirely or in a different folder of a multi-root workspace — the absolute
+  file system path MUST be used and the command MUST display an information
+  message warning the user that the embedded path is machine-specific and
+  reduces portability.
 - **F10-FR-06** If the file is not a JSON object at the root level (e.g. an
   array, a scalar), the command MUST show an error message and abort without
   modifying the file.

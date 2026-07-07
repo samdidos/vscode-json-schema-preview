@@ -80,6 +80,20 @@ const features = [
     gif: 'demo-visual-editor.gif',
     desc: 'Click the pencil icon to open a form-based editor. Edit keywords without touching raw JSON — saves back to the file on click.',
   },
+  {
+    id: 'schema-auth',
+    icon: '🔒',
+    title: 'Private Schema Auth',
+    gif: 'demo-schema-auth.gif',
+    desc: 'Fetch schemas behind GitHub OAuth, Bearer tokens, or Basic auth via JSON Schema: Configure Schema Authentication — cached locally so the language server reads them too.',
+  },
+  {
+    id: 'workspace-trust',
+    icon: '🛡️',
+    title: 'Workspace Trust',
+    gif: 'demo-workspace-trust.gif',
+    desc: 'In Restricted Mode the Python-based preview is disabled with a clear warning, while validation, binding, and inference keep working.',
+  },
 ]
 
 const active = ref(features[0].id)
@@ -154,12 +168,14 @@ const activeFeature = computed(() => features.find(f => f.id === active.value)!)
 .demo-gif-wrap {
   background: #0d1117;
   line-height: 0;
+  padding: 20px 28px;
 }
 
 .demo-gif-wrap img {
   display: block;
   width: 100%;
   height: auto;
+  border-radius: 6px;
 }
 
 .demo-desc {

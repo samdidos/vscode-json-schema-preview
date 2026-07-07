@@ -279,7 +279,7 @@ export class SchemaBindingManager {
     }
 
     if (localSchemaUri) {
-      schemaRef = this.resolveLocalSchemaRef(localSchemaUri, target);
+      schemaRef = this.resolveLocalSchemaRef(localSchemaUri, target, folder);
     }
 
     if (target === INLINE_SCOPE) {
@@ -324,20 +324,28 @@ export class SchemaBindingManager {
    * Resolves a locally-picked schema file to the string stored as the binding's
    * `url` / `$schema` value.
    *
-   * A relative `./...` path (relative to the schema's own workspace folder) is
-   * used for WorkspaceFolder and Inline scope — this matches how this
-   * extension's own validator resolves relative refs (`loadSchema` in
-   * ValidationManager always joins against the *document's* workspace folder).
+   * A relative `./...` path is used for WorkspaceFolder and Inline scope, but
+   * only when the schema lives in the *same* workspace folder as the document
+   * being bound (F04-FR-13 / F10-FR-05): every consumer resolves the relative
+   * reference against the *document's* folder — VS Code's language servers for
+   * a folder-scoped `json.schemas` entry, and this extension's own validator
+   * (`loadSchema` in ValidationManager). A path made relative to a different
+   * workspace folder of a multi-root setup would silently resolve inside the
+   * wrong project, so cross-folder picks store the absolute path instead.
    *
    * Workspace (.code-workspace) and Global (User) scope always get the
-   * absolute path instead: relative `json.schemas` / `yaml.schemas` URLs are
+   * absolute path: relative `json.schemas` / `yaml.schemas` URLs are
    * documented as unreliable once the setting lives outside a single folder's
    * own .vscode/settings.json (see e.g. microsoft/vscode#156006, #181187), and
    * User settings have no workspace folder to resolve "./" against at all.
    */
-  private resolveLocalSchemaRef(uri: vscode.Uri, target: BindingTarget): string {
+  private resolveLocalSchemaRef(
+    uri: vscode.Uri,
+    target: BindingTarget,
+    docFolder: vscode.WorkspaceFolder | undefined
+  ): string {
     const schemaFolder = vscode.workspace.getWorkspaceFolder(uri);
-    if (!schemaFolder) return uri.fsPath;
+    if (!schemaFolder || schemaFolder.uri.fsPath !== docFolder?.uri.fsPath) return uri.fsPath;
     if (target === vscode.ConfigurationTarget.WorkspaceFolder || target === INLINE_SCOPE) {
       return `./${vscode.workspace.asRelativePath(uri, false)}`;
     }
@@ -377,10 +385,11 @@ export class SchemaBindingManager {
     if (!(await this.applyJsoncEdits(doc, edits))) return;
 
     // F10-FR-05: warn when the embedded reference had to fall back to an
-    // absolute, machine-specific path (schema lives outside the workspace).
+    // absolute, machine-specific path (schema lives outside the data file's
+    // workspace folder — including in another folder of a multi-root workspace).
     if (!/^https?:\/\//i.test(schemaRef) && path.isAbsolute(schemaRef)) {
       vscode.window.showInformationMessage(
-        `Schema is outside the workspace, so the absolute path was embedded: ${schemaRef}\n` +
+        `Schema is outside this file's workspace folder, so the absolute path was embedded: ${schemaRef}\n` +
         'This makes the binding machine-specific and reduces portability.'
       );
     }

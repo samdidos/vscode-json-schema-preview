@@ -645,6 +645,51 @@ suite('SchemaBindingManager — local schema path resolution by scope', () => {
       fs.rmdirSync(tmpB);
     }
   });
+
+  test('[F04-FR-13] multi-root workspace: WorkspaceFolder scope stores an absolute path for a schema in a different project folder — a ./ path would resolve inside the doc\'s own project', async () => {
+    // The reported bug: bind a schema living in project B to a data file in
+    // project A at "Local project" scope. The old code stored
+    // "./<path relative to project B>", which every consumer then resolved
+    // against project A — pointing at a file in the wrong project.
+    const tmpA = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-projA-'));
+    const tmpB = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-projB-'));
+    const schema = path.join(tmpB, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmpA, 'data.json')) };
+      vscode.workspace.workspaceFolders = [
+        { uri: { fsPath: tmpA }, name: 'projA' },
+        { uri: { fsPath: tmpB }, name: 'projB' },
+      ] as any;
+      vscode.workspace.getWorkspaceFolder.callsFake((u: any) => {
+        const p = typeof u === 'string' ? u : u.fsPath;
+        if (p.startsWith(tmpA)) return { uri: { fsPath: tmpA }, name: 'projA' };
+        if (p.startsWith(tmpB)) return { uri: { fsPath: tmpB }, name: 'projB' };
+        return undefined;
+      });
+      vscode.workspace.asRelativePath.callsFake((u: any) => {
+        const p = typeof u === 'string' ? u : u.fsPath;
+        if (p.startsWith(tmpA)) return path.relative(tmpA, p);
+        if (p.startsWith(tmpB)) return path.relative(tmpB, p);
+        return p;
+      });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const stored = getStoredConfig('json', 'schemas') as any[];
+      const entry = stored.find((s: any) => s.fileMatch?.includes('data.json'));
+      assert.ok(entry, 'binding entry exists for the data file');
+      assert.strictEqual(entry.url, schema,
+        "url is the schema's absolute path, not './schema.json' which would resolve inside projA");
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmpA);
+      fs.rmdirSync(tmpB);
+    }
+  });
 });
 
 // ─── Inline binding — integration via bindToCurrentFile [F10] ─────────────────
@@ -817,6 +862,47 @@ suite('SchemaBindingManager — inline binding (F10)', () => {
     } finally {
       fs.unlinkSync(schema);
       fs.rmdirSync(tmp);
+    }
+  });
+
+  test('[F10-FR-05] Inline binding uses an absolute path and warns when the schema is in a different workspace folder (multi-root)', async () => {
+    const tmpA = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-projA-'));
+    const tmpB = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-projB-'));
+    const schema = path.join(tmpB, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      const text = '{"a":1}';
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmpA, 'data.json'), text) };
+      vscode.workspace.workspaceFolders = [
+        { uri: { fsPath: tmpA }, name: 'projA' },
+        { uri: { fsPath: tmpB }, name: 'projB' },
+      ] as any;
+      vscode.workspace.getWorkspaceFolder.callsFake((u: any) => {
+        const p = typeof u === 'string' ? u : u.fsPath;
+        if (p.startsWith(tmpA)) return { uri: { fsPath: tmpA }, name: 'projA' };
+        if (p.startsWith(tmpB)) return { uri: { fsPath: tmpB }, name: 'projB' };
+        return undefined;
+      });
+      vscode.workspace.asRelativePath.callsFake((u: any) => {
+        const p = typeof u === 'string' ? u : u.fsPath;
+        if (p.startsWith(tmpA)) return path.relative(tmpA, p);
+        if (p.startsWith(tmpB)) return path.relative(tmpB, p);
+        return p;
+      });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === INLINE_SCOPE));
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      const result = applyMockEdit(text, vscode.workspace.applyEdit.firstCall.args[0]);
+      assert.deepStrictEqual(JSON.parse(result), { $schema: schema, a: 1 },
+        "embedded value is the schema's absolute path — a './' path would resolve inside projA, the doc's folder");
+      assert.ok(vscode.window.showInformationMessage.calledOnce, 'portability warning shown');
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmpA);
+      fs.rmdirSync(tmpB);
     }
   });
 });
