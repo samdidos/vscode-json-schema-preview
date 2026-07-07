@@ -26,7 +26,9 @@ async function bindActiveFile(schemaBasename: string, target: vscode.Configurati
       if (call === 0) { return items.find((i: any) => i.uri?.fsPath?.endsWith(schemaBasename)); }
       return items.find((i: any) => i.target === target);
     },
-    () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    () => withCapturedMessages(
+      () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    ),
   );
 }
 
@@ -38,7 +40,7 @@ async function openFixtureFile(basename: string): Promise<vscode.TextDocument> {
 
 async function assertValidatorRecognisesBinding(basename: string): Promise<void> {
   await openFixtureFile(basename);
-  const { info, warnings } = await withCapturedMessages(
+  const { info, warnings, errors } = await withCapturedMessages(
     () => vscode.commands.executeCommand('jsonschema.validateFile') as Promise<void>,
   );
   assert.ok(
@@ -47,7 +49,7 @@ async function assertValidatorRecognisesBinding(basename: string): Promise<void>
   );
   assert.ok(
     info.some(m => m.includes('is valid against')),
-    `expected a successful validation message for ${basename} (got info: ${JSON.stringify(info)})`
+    `expected a successful validation message for ${basename} (got info: ${JSON.stringify(info)}, warnings: ${JSON.stringify(warnings)}, errors: ${JSON.stringify(errors)})`
   );
 }
 
