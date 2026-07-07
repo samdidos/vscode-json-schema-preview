@@ -221,7 +221,7 @@
     {
       "label": "Code quality",
       "score": 3.5,
-      "earned": 7.09,
+      "earned": 7.08,
       "possible": 10,
       "checks": [
         {
@@ -239,7 +239,7 @@
         {
           "id": "few-lint-warnings",
           "points": 3,
-          "earned": 0.09,
+          "earned": 0.08,
           "note": "eslint warnings vs a 200 ceiling"
         },
         {
@@ -327,16 +327,16 @@
   ],
   "facts": {
     "coverage": {
-      "lines": 96.13,
-      "statements": 96.13,
+      "lines": 96.11,
+      "statements": 96.11,
       "functions": 98.8,
-      "branches": 88.08
+      "branches": 88.03
     },
     "requirements": {
-      "total": 350,
+      "total": 351,
       "byStatus": {
         "manual": 123,
-        "implemented": 191,
+        "implemented": 192,
         "planned": 36
       }
     },

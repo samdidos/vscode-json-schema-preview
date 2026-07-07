@@ -17,10 +17,10 @@ interface FormatCase {
 
 const CASES: FormatCase[] = [
   { file: 'inline.json', originalContent: '{\n  "name": "example"\n}\n', schemaKeyFragment: '"$schema"' },
-  // The harness installs redhat.vscode-yaml (see runTest.ts, needed for the
-  // yaml.schemas settings-scope matrix), so F10-FR-09's directive-comment
-  // form is what actually gets written here, not a plain `$schema:` key.
-  { file: 'inline.yaml', originalContent: 'name: example\n', schemaKeyFragment: '# yaml-language-server: $schema=' },
+  // The support fixture extension registers yaml.schemas but is NOT
+  // redhat.vscode-yaml, so F10-FR-09's "extension installed?" check is false
+  // and the plain `$schema:` YAML key is written (not the directive comment).
+  { file: 'inline.yaml', originalContent: 'name: example\n', schemaKeyFragment: '$schema:' },
   { file: 'inline.toml', originalContent: 'name = "example"\n', schemaKeyFragment: '"$schema"' },
 ];
 

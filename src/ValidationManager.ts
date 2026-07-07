@@ -5,7 +5,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './SchemaBindingManager';
 import * as YAML from 'yaml';
-import { isYaml, isToml, isSupported, stripJsoncComments, parseJsonl, parseToml } from './languages';
+import { isYaml, isToml, isSupported, stripJsoncComments, parseJsonl, parseToml, languageForSchemaSource } from './languages';
+import { parseSchemaText } from './schemaPointer';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
@@ -144,7 +145,7 @@ async function loadSchema(
 ): Promise<LoadedSchema> {
   if (SchemaAuthManager.isRemoteUrl(schemaPath)) {
     try {
-      return { schema: JSON.parse(await auth.fetchText(schemaPath, getRemoteFetchTimeoutMs())), stale: false };
+      return { schema: parseSchema(await auth.fetchText(schemaPath, getRemoteFetchTimeoutMs()), schemaPath), stale: false };
     } catch (e) {
       // S04-SR-01/04: on a transient failure (5xx or network-level), fall back
       // to the last cached copy if one exists. Auth (401/403) and other 4xx
@@ -152,7 +153,9 @@ async function loadSchema(
       if (shouldFallbackToCache(classifyFetchFailure(e)) && cache) {
         const cached = cache.readCached(schemaPath);
         if (cached !== undefined) {
-          return { schema: JSON.parse(cached), stale: true };
+          // F03-FR-14/F13-FR-06: parse the cached copy by the ORIGINAL URL's
+          // format — the cache file is always named .json regardless of source.
+          return { schema: parseSchema(cached, schemaPath), stale: true };
         }
       }
       throw e;
@@ -166,7 +169,22 @@ async function loadSchema(
     const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
     if (folder) { resolved = path.join(folder.uri.fsPath, normalise(resolved)); }
   }
-  return { schema: JSON.parse(fs.readFileSync(resolved, 'utf-8')), stale: false };
+  return { schema: parseSchema(fs.readFileSync(resolved, 'utf-8'), resolved), stale: false };
+}
+
+/**
+ * Parses a schema document by its own source format (F03-FR-14): YAML when the
+ * source path/URL ends in `.yaml`/`.yml`, otherwise JSON/JSONC. Throws a
+ * descriptive error when the text does not parse, so `loadSchema`'s caller can
+ * surface the cause (F03-FR-11) instead of receiving a silent `undefined`.
+ */
+function parseSchema(text: string, source: string): unknown {
+  const languageId = languageForSchemaSource(source);
+  const parsed = parseSchemaText(text, languageId);
+  if (parsed === undefined) {
+    throw new Error(`schema is not valid ${languageId === 'yaml' ? 'YAML' : 'JSON'}`);
+  }
+  return parsed;
 }
 
 function locateInDocument(doc: vscode.TextDocument, instancePath: string): vscode.Range {

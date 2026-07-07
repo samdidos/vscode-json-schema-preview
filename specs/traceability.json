@@ -375,6 +375,13 @@
       ],
       "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
+    "F03-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/ValidationManager.ts"
+      ],
+      "note": "loadSchema parses a schema document by its source format (parseSchema -> languageForSchemaSource + parseSchemaText); unit-tested for YAML-format schema load and a non-parsing schema, and exercised end-to-end by the S08 YAML settings-scope suite"
+    },
     "F04-FR-01": {
       "status": "implemented",
       "impl": [

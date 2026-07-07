@@ -31,6 +31,14 @@ Errors are reported as VS Code diagnostics in the Problems panel.
   formats.
 - **F03-FR-06** JSONC files MUST have comments stripped before parsing.
 - **F03-FR-07** JSONL files MUST be validated as an array of records (one per line).
+- **F03-FR-14** A resolved **schema document** MUST be parsed according to its
+  own source format, not assumed to be JSON: when the schema path/URL ends in
+  `.yaml`/`.yml` it MUST be parsed as YAML (a remote copy is parsed by the
+  *original* URL's extension, per F13-FR-06). This keeps the validator
+  consistent with the other schema consumers (`SchemaRefProvider`,
+  `SchemaBundleCommand`), which already resolve a schema document via
+  `languageForSchemaSource` + `parseSchemaText`; loading a YAML-format schema
+  MUST NOT fail with a JSON parse error.
 
 ### Diagnostics
 

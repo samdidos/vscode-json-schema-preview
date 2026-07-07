@@ -152,6 +152,30 @@ suite('[F03-FR-05] validateCurrentFile() — data parse failures', () => {
   });
 });
 
+// ── Schema document format (F03-FR-14) ──────────────────────────────────────────
+
+suite('[F03-FR-14] validateCurrentFile() — schema document format', () => {
+  test('loads and validates against a YAML-format schema file', async () => {
+    const schemaFile = path.join(tmpDir, 'schema.yaml');
+    fs.writeFileSync(schemaFile, 'type: object\nproperties:\n  name:\n    type: string\nrequired:\n  - name\n');
+    setConfig('json', 'schemas', [{ url: schemaFile, fileMatch: ['data.json'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    activate(makeDoc('json', '{"name":"Alice"}'));
+    await validateCurrentFile(fakeAuth(async () => '{}') as any)();
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/is valid against schema\.yaml/));
+  });
+
+  test('a schema file whose content does not parse shows a descriptive load error', async () => {
+    const schemaFile = path.join(tmpDir, 'broken.json');
+    fs.writeFileSync(schemaFile, '{ this is not json');
+    setConfig('json', 'schemas', [{ url: schemaFile, fileMatch: ['data.json'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    activate(makeDoc('json', '{"name":"Alice"}'));
+    await validateCurrentFile(fakeAuth(async () => '{}') as any)();
+    assert.ok(vscode.window.showErrorMessage.calledWithMatch(/Cannot load schema "broken\.json": schema is not valid JSON/));
+  });
+});
+
 // ── TOML validation (F11-FR-06) ─────────────────────────────────────────────────
 
 suite('[F11-FR-06] validateCurrentFile() — TOML', () => {
