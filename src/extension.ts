@@ -25,6 +25,7 @@ import { SchemaRefProvider } from './SchemaRefProvider';
 import { SchemaLintManager } from './SchemaLintManager';
 import { SchemaCatalogManager } from './SchemaCatalogManager';
 import { bundleSchemaCommand } from './SchemaBundleCommand';
+import { registerSchemaDiff } from './SchemaDiffCommand';
 import { isYaml, isSupported } from './languages';
 import { getCacheAutoRefresh } from './settings';
 import { createSchema } from 'genson-js';
@@ -137,6 +138,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   // ── Schema linting (F17) ───────────────────────────────────────────────────
   new SchemaLintManager().register(context);
+
+  // ── Schema diff (F15) ──────────────────────────────────────────────────────
+  registerSchemaDiff(context, authManager);
 
   // ── Commands ───────────────────────────────────────────────────────────────
   context.subscriptions.push(

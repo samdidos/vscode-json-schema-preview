@@ -101,6 +101,11 @@
         "icon": "$(references)"
       },
       {
+        "command": "jsonschema.diffSchema",
+        "title": "JSON Schema: Diff Against Baseline",
+        "icon": "$(diff)"
+      },
+      {
         "command": "jsonschema.lint.insertSchemaDeclaration",
         "title": "JSON Schema: Insert $schema Declaration"
       },
@@ -228,6 +233,11 @@
           "group": "1_run@2"
         },
         {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.diffSchema",
+          "group": "1_run@3"
+        },
+        {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.validateFile",
           "group": "navigation@4"
@@ -268,6 +278,10 @@
         },
         {
           "command": "jsonschema.bundleSchema",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.diffSchema",
           "when": "jsonschema.isJsonSchema"
         },
         {
