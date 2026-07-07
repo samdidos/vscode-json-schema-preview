@@ -1406,59 +1406,84 @@
       "note": "schemaPointer is a pure module unit-tested incl escapes/missing/arrays/YAML"
     },
     "F14-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBundleCommand.ts",
+        "src/extension.ts",
+        "package.json"
+      ],
+      "note": "jsonschema.bundleSchema command; gated on isJsonSchemaFile; palette + editor title"
     },
     "F14-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBundleCommand.ts"
+      ],
+      "note": "mode QuickPick: Bundle (refs→$defs) / Dereference (inline)"
     },
     "F14-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBundleCommand.ts"
+      ],
+      "note": "output opens in a new untitled editor of the same language; source untouched"
     },
     "F14-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBundleCommand.ts"
+      ],
+      "note": "makeResolver: relative reads from disk; remote prefers cache then auth.fetchText"
     },
     "F14-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaBundler.ts"
+      ],
+      "note": "bundleSchema embeds each external doc once under $defs with deterministic key; refs rewritten"
     },
     "F14-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaBundler.ts"
+      ],
+      "note": "dereferenceSchema inlines; cycles hoisted into $defs and kept as $ref; always terminates"
     },
     "F14-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaBundler.ts"
+      ],
+      "note": "root $schema/$id preserved; nested $id stripped from embedded/inlined copies, reported"
     },
     "F14-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaBundler.ts",
+        "src/SchemaBundleCommand.ts"
+      ],
+      "note": "unresolvable ref throws naming it; 401/403 → Configure Auth offer"
     },
     "F14-FR-09": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "manual",
+      "impl": [
+        "src/SchemaBundleCommand.ts"
+      ],
+      "note": "withProgress reports the fetched uri and is cancellable"
     },
     "F14-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaBundler.ts"
+      ],
+      "note": "in-process; maxDocs cap (default 100) aborts with a clear error"
     },
     "F14-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/schemaBundler.ts"
+      ],
+      "note": "pure module unit-tested: cycles, dedup, $id handling, YAML round-trip"
     },
     "F15-FR-01": {
       "status": "planned",
