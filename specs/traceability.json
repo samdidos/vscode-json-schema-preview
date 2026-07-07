@@ -2120,6 +2120,83 @@
         "src/fallbackRenderer.ts"
       ],
       "note": "required column uses textual Yes/—, not colour alone; unit-tested"
+    },
+    "S07-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-doc-traceability.mjs"
+      ],
+      "note": "plain HTML comments only; no vendor-specific doc-tracing tool or format"
+    },
+    "S07-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-doc-traceability.mjs"
+      ],
+      "note": "zero-dependency Node script (fs/path/url only); scans an explicit path list, never node_modules"
+    },
+    "S07-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-doc-traceability.mjs"
+      ],
+      "note": "HTML-comment tag <!-- spec:<IDs> -->; TAG_RE accepts feature ids and requirement ids, comma-separated"
+    },
+    "S07-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-doc-traceability.mjs"
+      ],
+      "note": "inline tags (no keyword) and start/end section pairs matched via a per-file stack, order-insensitive id-set comparison"
+    },
+    "S07-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "README.md",
+        "docs/index.md",
+        "docs/guide/index.md",
+        "docs/guide/commands.md",
+        "docs/guide/authentication.md",
+        "docs/guide/configuration.md"
+      ],
+      "note": "README.md and docs/**/*.md tagged per feature"
+    },
+    "S07-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-doc-traceability.mjs",
+        "AGENTS.md"
+      ],
+      "note": "AGENTS.md is scanned (ids validated) but excluded from the required-coverage set"
+    },
+    "S07-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-doc-traceability.mjs",
+        "package.json"
+      ],
+      "note": "npm run check:doc-traceability cross-references feature ids (filenames) + requirement ids (bold defs) against spec: tags"
+    },
+    "S07-SR-06": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-doc-traceability.mjs"
+      ],
+      "note": "unknown id -> error; unmatched start/end or mismatched id-set between start/end -> error"
+    },
+    "S07-SR-07": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-doc-traceability.mjs"
+      ],
+      "note": "per-feature coverage printed; undocumented features listed as warnings, exit code unaffected"
+    },
+    "S07-SR-08": {
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "check:doc-traceability wired into npm run verify (runs before test:coverage)"
     }
   }
 }

@@ -35,6 +35,22 @@
   guarantee is `npm run check:traceability`, which runs inside
   `npm run verify` (git pre-commit hook + CI) and fails on spec/matrix/test
   drift regardless of which agent or human makes the change.
+<!-- spec:S07 start -->
+- **Documentation traceability**: documentation follows the same discipline as
+  code — every user-facing doc section (in `README.md` and `docs/`) SHOULD
+  name the spec(s) it documents via an HTML-comment tag, so a spec's
+  documentation can be found (or found missing) mechanically instead of by
+  memory. Two placements: inline — `<!-- spec:F13 -->` right before/after the
+  element — and a matched section pair — `<!-- spec:F14 start -->` … `<!--
+  spec:F14 end -->` wrapping a block. A tag's id list is comma-separated and
+  MAY name several specs at once when one section covers all of them (e.g.
+  `<!-- spec:F03,F11 -->` for a line describing JSON/YAML/TOML support
+  together) — don't split a single cohesive section into one tag per spec.
+  `npm run check:doc-traceability` (part of `npm run verify`) fails on a
+  stale/mistyped id or an unbalanced start/end pair, and warns (without
+  failing) when a feature spec has no documentation tag anywhere. Full
+  convention: `specs/S07-documentation-traceability.md`.
+<!-- spec:S07 end -->
 - Mutation testing (`mutation.yml`) and OpenSSF Scorecard / CodeQL run in CI
   (`scorecard.yml`, `codeql.yml`); SLSA build provenance for the `.vsix` is
   attested in the `release-please.yml` publish job. Knip runs as a
