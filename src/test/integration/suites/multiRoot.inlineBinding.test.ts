@@ -9,7 +9,7 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { withQuickPick, withCapturedMessages, writeFile, closeAllEditors, FIXTURES_ROOT } from '../helpers';
+import { withQuickPick, withCapturedMessages, writeFile, closeAllEditors, openDocument, FIXTURES_ROOT } from '../helpers';
 
 const ROOT = path.join(FIXTURES_ROOT, 'multi-root');
 const PROJ_A = path.join(ROOT, 'projA');
@@ -27,7 +27,9 @@ async function bindInline(): Promise<void> {
       if (call === 0) { return items.find((i: any) => i.uri?.fsPath?.endsWith('schema.json')); }
       return items[0]; // TOML's picker only ever offers the single inline item.
     },
-    () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    () => withCapturedMessages(
+      () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    ),
   );
 }
 
@@ -37,7 +39,9 @@ async function removeInline(): Promise<void> {
       if (call === 0) { return items.find((i: any) => i.isRemove); }
       return items[0];
     },
-    () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    () => withCapturedMessages(
+      () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    ),
   );
 }
 
@@ -52,8 +56,7 @@ suite('[S08-SR-05] Inline TOML binding across workspace folders (path escaping)'
   });
 
   test('[S08-SR-05][F11-FR-16] embeds an absolute, correctly-escaped path to a schema in a different folder', async () => {
-    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath()));
-    await vscode.window.showTextDocument(doc);
+    await openDocument(filePath());
     await bindInline();
 
     const boundDoc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath()));

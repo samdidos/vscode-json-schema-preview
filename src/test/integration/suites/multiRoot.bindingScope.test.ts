@@ -34,7 +34,9 @@ async function bindActiveFile(schemaBasename: string, target: vscode.Configurati
       if (call === 0) { return items.find((i: any) => i.uri?.fsPath?.endsWith(schemaBasename)); }
       return items.find((i: any) => i.target === target);
     },
-    () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    () => withCapturedMessages(
+      () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    ),
   );
 }
 
@@ -90,7 +92,7 @@ suite('[S08-SR-04] Binding scope matrix — multi-root workspace', () => {
       // Read side (F04-FR-14): the extension's own validator must resolve this
       // WorkspaceFolder-scoped, cross-folder binding — this is the exact
       // read-path regression findBoundSchemaPath's resource-scoping fix covers.
-      const { info, warnings } = await withCapturedMessages(
+      const { info, warnings, errors } = await withCapturedMessages(
         () => vscode.commands.executeCommand('jsonschema.validateFile') as Promise<void>,
       );
       assert.ok(
@@ -99,7 +101,7 @@ suite('[S08-SR-04] Binding scope matrix — multi-root workspace', () => {
       );
       assert.ok(
         info.some(m => m.includes('is valid against')),
-        `expected a successful validation message (got info: ${JSON.stringify(info)})`
+        `expected a successful validation message (got info: ${JSON.stringify(info)}, warnings: ${JSON.stringify(warnings)}, errors: ${JSON.stringify(errors)})`
       );
     },
   );

@@ -4,7 +4,7 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { withQuickPick, withCapturedMessages, writeFile, closeAllEditors, FIXTURES_ROOT } from '../helpers';
+import { withQuickPick, withCapturedMessages, writeFile, closeAllEditors, openDocument, FIXTURES_ROOT } from '../helpers';
 
 const FIXTURE = path.join(FIXTURES_ROOT, 'single-folder');
 const SCHEMA_PATH = path.join(FIXTURE, 'schema.json');
@@ -17,7 +17,10 @@ interface FormatCase {
 
 const CASES: FormatCase[] = [
   { file: 'inline.json', originalContent: '{\n  "name": "example"\n}\n', schemaKeyFragment: '"$schema"' },
-  { file: 'inline.yaml', originalContent: 'name: example\n', schemaKeyFragment: '$schema:' },
+  // The harness installs redhat.vscode-yaml (see runTest.ts, needed for the
+  // yaml.schemas settings-scope matrix), so F10-FR-09's directive-comment
+  // form is what actually gets written here, not a plain `$schema:` key.
+  { file: 'inline.yaml', originalContent: 'name: example\n', schemaKeyFragment: '# yaml-language-server: $schema=' },
   { file: 'inline.toml', originalContent: 'name = "example"\n', schemaKeyFragment: '"$schema"' },
 ];
 
@@ -33,7 +36,9 @@ async function bindInline(): Promise<void> {
       // offers Inline/Local project/User — match by label either way.
       return items.find((i: any) => /inline/i.test(i.label ?? '')) ?? items[0];
     },
-    () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    () => withCapturedMessages(
+      () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    ),
   );
 }
 
@@ -43,14 +48,14 @@ async function removeInline(): Promise<void> {
       if (call === 0) { return items.find((i: any) => i.isRemove); }
       return items.find((i: any) => /inline/i.test(i.label ?? '')) ?? items[0];
     },
-    () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    () => withCapturedMessages(
+      () => vscode.commands.executeCommand('jsonschema.bindToCurrentFile') as Promise<void>,
+    ),
   );
 }
 
 async function openFixtureFile(file: string): Promise<vscode.TextDocument> {
-  const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(fixturePath(file)));
-  await vscode.window.showTextDocument(doc);
-  return doc;
+  return openDocument(fixturePath(file));
 }
 
 suite('[S08-SR-05] Inline binding round-trip — JSON/YAML/TOML', () => {
@@ -82,7 +87,7 @@ suite('[S08-SR-05] Inline binding round-trip — JSON/YAML/TOML', () => {
         `expected ${c.file}'s inline binding to reference schema.json, got:\n${boundText}`
       );
 
-      const { info, warnings } = await withCapturedMessages(
+      const { info, warnings, errors } = await withCapturedMessages(
         () => vscode.commands.executeCommand('jsonschema.validateFile') as Promise<void>,
       );
       assert.ok(
@@ -91,7 +96,7 @@ suite('[S08-SR-05] Inline binding round-trip — JSON/YAML/TOML', () => {
       );
       assert.ok(
         info.some(m => m.includes('is valid against')),
-        `expected a successful validation message for ${c.file} (got info: ${JSON.stringify(info)})`
+        `expected a successful validation message for ${c.file} (got info: ${JSON.stringify(info)}, warnings: ${JSON.stringify(warnings)}, errors: ${JSON.stringify(errors)})`
       );
 
       await removeInline();
