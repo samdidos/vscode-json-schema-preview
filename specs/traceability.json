@@ -464,7 +464,7 @@
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "resolveLocalSchemaRef(): relative for WorkspaceFolder/Inline scope, absolute for Workspace/Global scope or schemas outside the workspace."
+      "note": "resolveLocalSchemaRef(): relative only for WorkspaceFolder/Inline scope AND only when the schema is in the same workspace folder as the data file; absolute otherwise (Workspace/Global scope, schema outside the workspace, or schema in a different folder of a multi-root workspace)."
     },
     "F05-FR-01": {
       "status": "manual",
@@ -965,7 +965,7 @@
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
+      "note": "Inline  binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate); relative path only when the schema shares the data file's workspace folder, absolute + portability warning otherwise (incl. multi-root cross-folder picks)."
     },
     "F10-FR-06": {
       "status": "implemented",

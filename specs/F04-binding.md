@@ -60,10 +60,15 @@ recognise them.
 ### Local Schema Path Resolution
 
 - **F04-FR-13** When the picked schema is a local file, the stored `url` /
-  `$schema` value MUST be a path relative to the schema's own workspace
-  folder (prefixed `./`) **only** for WorkspaceFolder scope. For Workspace
-  (`.code-workspace` file) and User (Global) scope the value MUST be the
-  absolute file system path instead, because:
+  `$schema` value MUST be a `./`-prefixed relative path **only** for
+  WorkspaceFolder scope **and only when the schema file lives in the same
+  workspace folder as the data file being bound**. In every other case the
+  value MUST be the absolute file system path, because:
+  - a relative `url` is resolved against the **data file's** workspace folder
+    (both by VS Code's language servers reading the folder's
+    `.vscode/settings.json` and by this extension's own validator), so a path
+    made relative to a *different* workspace folder of a multi-root workspace
+    would silently resolve inside the wrong project;
   - relative `json.schemas` / `yaml.schemas` `url` resolution is documented
     as unreliable once the setting is defined outside a single folder's own
     `.vscode/settings.json` (see microsoft/vscode#156006, #181187, #92348),
@@ -83,3 +88,7 @@ recognise them.
 4. Binding a local schema at Workspace or User scope stores the absolute file
    system path; binding the same schema at WorkspaceFolder scope stores a
    `./`-relative path instead (F04-FR-13).
+5. In a multi-root workspace, binding a schema that lives in a *different*
+   workspace folder than the data file stores the absolute path at every
+   scope — never a `./`-relative path that would resolve inside the data
+   file's own folder (F04-FR-13).

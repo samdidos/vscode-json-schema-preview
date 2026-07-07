@@ -28,7 +28,7 @@ const SCHEMA_KEYWORDS = new Set([
 // Keywords whose value is a map of schemas → recurse per key.
 const SCHEMA_MAP_KEYWORDS = new Set(['properties', 'patternProperties', '$defs', 'definitions']);
 
-export function isObject(v: unknown): v is Record<string, unknown> {
+function isObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 
