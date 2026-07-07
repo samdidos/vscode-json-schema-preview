@@ -61,7 +61,11 @@ suite('[S08-SR-05] Inline TOML binding across workspace folders (path escaping)'
 
     const boundDoc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath()));
     const boundText = boundDoc.getText();
-    const match = /"\$schema"\s*=\s*"([^"]*(?:\\.[^"]*)*)"/.exec(boundText);
+    // Alternation form (not `[^"]*(?:\\.[^"]*)*`) — the nested-quantifier
+    // version is exponential-backtracking-prone on pathological input
+    // (unterminated strings with many backslashes); this linear-time
+    // equivalent matches the same escaped-TOML-string content.
+    const match = /"\$schema"\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(boundText);
     assert.ok(match, `expected an inline "$schema" key, got:\n${boundText}`);
 
     // Reverse the same escaping the extension applies (backslash, then quote)

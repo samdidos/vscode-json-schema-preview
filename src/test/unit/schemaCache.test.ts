@@ -76,6 +76,24 @@ suite('[F08-FR-01][F08-FR-02] SchemaCache.download()', () => {
     assert.strictEqual(first, second);
     assert.strictEqual(fs.readFileSync(second, 'utf-8'), '{"v":2}');
   });
+
+  test('[F08-FR-18] a YAML-origin schema is re-serialized to canonical JSON before being cached', async () => {
+    ctx = makeContext();
+    const cache = new SchemaCache(ctx, fakeAuth('type: object\nproperties:\n  name:\n    type: string\n'));
+    const localPath = await cache.download('https://example.com/schema.yaml');
+    const cached = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
+    assert.deepStrictEqual(cached, { type: 'object', properties: { name: { type: 'string' } } });
+  });
+
+  test('[F08-FR-18] refuses to cache unparseable content and does not write anything', async () => {
+    ctx = makeContext();
+    const cache = new SchemaCache(ctx, fakeAuth('{ this is not json'));
+    await assert.rejects(
+      () => cache.download('https://example.com/schema.json'),
+      /not valid JSON\/YAML/,
+    );
+    assert.strictEqual(cache.isCached('https://example.com/schema.json'), false);
+  });
 });
 
 suite('[F08-FR-03] SchemaCache.isCached() / getOriginalUrl()', () => {
@@ -194,6 +212,19 @@ suite('[F08-FR-14][F08-FR-15][F08-FR-16][F08-FR-17] SchemaCache.revalidate()', (
     assert.strictEqual(fs.readFileSync(localPath, 'utf-8'), '{"v":1}');
   });
 
+  test('[F08-FR-17][F08-FR-18] a revalidation fetching unparseable content is treated as failed, stale copy kept', async () => {
+    ctx = makeContext();
+    const auth = scriptedAuth([
+      { status: 200, text: '{"v":1}' },
+      { status: 200, text: '{ not json', etag: '"e2"' },
+    ]);
+    const cache = new SchemaCache(ctx, auth);
+    const localPath = await cache.download('https://example.com/s.json');
+    const outcome = await cache.revalidate('https://example.com/s.json', 'onOpen');
+    assert.strictEqual(outcome, 'failed');
+    assert.strictEqual(fs.readFileSync(localPath, 'utf-8'), '{"v":1}');
+  });
+
   test('[F08-FR-14] "daily" mode skips a revalidation within the 24 h window', async () => {
     ctx = makeContext();
     const auth = scriptedAuth([{ status: 200, text: '{"v":1}' }]);
@@ -220,7 +251,7 @@ suite('[F08-FR-14][F08-FR-15][F08-FR-16][F08-FR-17] SchemaCache.revalidate()', (
     assert.strictEqual(outcome, 'not-modified');
   });
 
-  test('[F08-FR-14] returns "no-entry" if the cached file was deleted out-of-band', async () => {
+  test('[F08-FR-14][F08-FR-19] returns "no-entry" if the cached file was deleted out-of-band', async () => {
     ctx = makeContext();
     const auth = scriptedAuth([{ status: 200, text: '{}' }]);
     const cache = new SchemaCache(ctx, auth);

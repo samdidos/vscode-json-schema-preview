@@ -4,6 +4,8 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { SchemaAuthManager } from './SchemaAuthManager';
 import { getRemoteFetchTimeoutMs } from './settings';
+import { languageForSchemaSource } from './languages';
+import { parseSchemaText } from './schemaPointer';
 
 interface CacheEntry {
   originalUrl: string;
@@ -43,7 +45,7 @@ export class SchemaCache {
     // Capture ETag / Last-Modified on the initial download so later automatic
     // revalidations can be conditional (F08-FR-15/16).
     const res = await this.auth.fetchConditional(url, getRemoteFetchTimeoutMs());
-    fs.writeFileSync(localPath, res.text ?? '', 'utf-8');
+    fs.writeFileSync(localPath, toCacheableText(url, res.text ?? ''), 'utf-8');
 
     await this.upsertEntry({
       originalUrl: url,
@@ -64,7 +66,15 @@ export class SchemaCache {
    */
   async revalidate(url: string, mode: 'onOpen' | 'daily'): Promise<RevalidateOutcome> {
     const entry = this.entries().find(e => e.originalUrl === url);
-    if (!entry || !fs.existsSync(entry.cachedPath)) { return 'no-entry'; }
+    if (!entry) { return 'no-entry'; }
+    // F08-FR-19: attempt the real operation instead of a separate existence
+    // check (fs.existsSync) whose result would otherwise be relied on by the
+    // write far below, across an async network await — a TOCTOU gap.
+    try {
+      fs.readFileSync(entry.cachedPath);
+    } catch {
+      return 'no-entry';
+    }
 
     if (mode === 'daily' && entry.fetchedAt !== undefined && Date.now() - entry.fetchedAt < DAY_MS) {
       return 'skipped';
@@ -80,7 +90,7 @@ export class SchemaCache {
         await this.upsertEntry({ ...entry, fetchedAt: Date.now() });
         return 'not-modified';
       }
-      fs.writeFileSync(entry.cachedPath, res.text, 'utf-8');
+      fs.writeFileSync(entry.cachedPath, toCacheableText(url, res.text), 'utf-8');
       await this.upsertEntry({
         originalUrl: url,
         cachedPath: entry.cachedPath,
@@ -148,4 +158,20 @@ export class SchemaCache {
     updated.push(entry);
     await this.context.globalState.update(CACHE_KEY, updated);
   }
+}
+
+/**
+ * Validates fetched schema content as parseable per its source format
+ * (JSON/JSONC or YAML) and returns a canonical JSON re-serialization to
+ * persist (F08-FR-18). This rejects a malformed/corrupted response before it
+ * is ever written to disk, and — since the cached bytes are now derived from
+ * a parsed value rather than passed through verbatim — breaks the direct
+ * network-response-to-disk-write data flow.
+ */
+function toCacheableText(url: string, text: string): string {
+  const parsed = parseSchemaText(text, languageForSchemaSource(url));
+  if (parsed === undefined) {
+    throw new Error(`Fetched content for ${SchemaAuthManager.hostOf(url)} is not valid JSON/YAML — refusing to cache it.`);
+  }
+  return JSON.stringify(parsed);
 }
