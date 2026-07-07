@@ -45,13 +45,13 @@
     {
       "label": "Testing",
       "score": 4.8,
-      "earned": 9.5,
+      "earned": 9.51,
       "possible": 10,
       "checks": [
         {
           "id": "branch-coverage",
           "points": 3,
-          "earned": 2.76,
+          "earned": 2.75,
           "note": "branch coverage vs a 95% target"
         },
         {
@@ -75,7 +75,7 @@
         {
           "id": "low-exclusion",
           "points": 2,
-          "earned": 1.74,
+          "earned": 1.76,
           "note": "few source files excluded from coverage"
         }
       ]
@@ -221,7 +221,7 @@
     {
       "label": "Code quality",
       "score": 2.7,
-      "earned": 5.48,
+      "earned": 5.33,
       "possible": 10,
       "checks": [
         {
@@ -239,7 +239,7 @@
         {
           "id": "few-lint-warnings",
           "points": 3,
-          "earned": 0.48,
+          "earned": 0.33,
           "note": "eslint warnings vs a 200 ceiling"
         },
         {
@@ -327,17 +327,17 @@
   ],
   "facts": {
     "coverage": {
-      "lines": 95.89,
-      "statements": 95.89,
-      "functions": 97.53,
-      "branches": 87.48
+      "lines": 95.74,
+      "statements": 95.74,
+      "functions": 97.7,
+      "branches": 87.22
     },
     "requirements": {
       "total": 297,
       "byStatus": {
-        "manual": 122,
-        "implemented": 150,
-        "planned": 25
+        "manual": 123,
+        "implemented": 160,
+        "planned": 14
       }
     },
     "pinnedActionRatio": 0.968

@@ -24,6 +24,7 @@ import { SchemaAuthStatusBar } from './SchemaAuthStatusBar';
 import { SchemaRefProvider } from './SchemaRefProvider';
 import { SchemaLintManager } from './SchemaLintManager';
 import { SchemaCatalogManager } from './SchemaCatalogManager';
+import { bundleSchemaCommand } from './SchemaBundleCommand';
 import { isYaml, isSupported } from './languages';
 import { getCacheAutoRefresh } from './settings';
 import { createSchema } from 'genson-js';
@@ -254,6 +255,8 @@ export function activate(context: vscode.ExtensionContext) {
         },
       );
     }),
+
+    vscode.commands.registerCommand('jsonschema.bundleSchema', bundleSchemaCommand(authManager, schemaCache)),
 
     vscode.commands.registerCommand('jsonschema.inferSchema', async () => {
       const editor = vscode.window.activeTextEditor;

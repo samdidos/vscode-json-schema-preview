@@ -96,6 +96,11 @@
         "icon": "$(beaker)"
       },
       {
+        "command": "jsonschema.bundleSchema",
+        "title": "JSON Schema: Bundle / Dereference Schema",
+        "icon": "$(references)"
+      },
+      {
         "command": "jsonschema.lint.insertSchemaDeclaration",
         "title": "JSON Schema: Insert $schema Declaration"
       },
@@ -218,6 +223,11 @@
           "group": "1_run@1"
         },
         {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.bundleSchema",
+          "group": "1_run@2"
+        },
+        {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.validateFile",
           "group": "navigation@4"
@@ -254,6 +264,10 @@
         },
         {
           "command": "jsonschema.generateSampleData",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.bundleSchema",
           "when": "jsonschema.isJsonSchema"
         },
         {

@@ -24,6 +24,7 @@ suite('extension — activate()', () => {
     assert.ok(ids.includes('jsonschema.validateFile'));
     assert.ok(ids.includes('jsonschema.inferSchema'));
     assert.ok(ids.includes('jsonschema.generateSampleData'));
+    assert.ok(ids.includes('jsonschema.bundleSchema'));
     assert.ok(ids.includes('jsonschema.configureSchemaAuth'));
     assert.ok(ids.includes('jsonschema.cacheSchemaLocally'));
     assert.ok(ids.includes('jsonschema.refreshSchemaCache'));
