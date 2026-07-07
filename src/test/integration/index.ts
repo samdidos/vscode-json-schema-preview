@@ -9,7 +9,7 @@ import Mocha from 'mocha';
 
 export function run(): Promise<void> {
   const mocha = new Mocha({ ui: 'tdd', color: true, timeout: 60_000 });
-  const suiteDir = path.resolve(__dirname, '../suites');
+  const suiteDir = path.resolve(__dirname, './suites');
   const which = process.env.JSONSCHEMA_E2E_SUITE ?? 'single-folder';
   const prefix = which === 'multi-root' ? 'multiRoot.' : 'singleFolder.';
   const files = fs.readdirSync(suiteDir).filter(f => f.startsWith(prefix) && f.endsWith('.test.js'));

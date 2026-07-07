@@ -5,7 +5,19 @@
 // too — the standard technique for automating VS Code's UI-blocking APIs
 // (QuickPick, input boxes, message prompts) in integration tests.
 import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
+
+/**
+ * Fixtures are plain data (JSON/YAML/TOML/.code-workspace) with no
+ * compilation step, so they exist only under src/ — tsc never copies them
+ * into out/. Resolve via process.cwd() (the repo root, since `npm run
+ * test:integration` always runs from there), not __dirname, which points
+ * into out/ after compilation and would resolve to a directory that was
+ * never populated (the same gotcha already documented in
+ * playwright.e2e.config.ts for the demo-GIF suite).
+ */
+export const FIXTURES_ROOT = path.join(process.cwd(), 'src', 'test', 'integration', 'fixtures');
 
 /**
  * Stubs vscode.window.showQuickPick for the duration of `fn`, always restoring

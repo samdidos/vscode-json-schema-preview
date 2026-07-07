@@ -8,6 +8,14 @@ import * as os from 'os';
 import * as fs from 'fs';
 import { runTests } from '@vscode/test-electron';
 
+// Fixtures are plain data (JSON/YAML/TOML/.code-workspace) with no
+// compilation step, so they exist only under src/ — tsc never copies them
+// into out/. Resolve via process.cwd() (the repo root, since `npm run
+// test:integration` always runs from there), not __dirname, which points
+// into out/ after compilation (the same gotcha already documented in
+// playwright.e2e.config.ts for the demo-GIF suite).
+const FIXTURES_ROOT = path.join(process.cwd(), 'src', 'test', 'integration', 'fixtures');
+
 async function runSuite(workspacePath: string, suiteEnv: string): Promise<void> {
   const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
   const extensionTestsPath = path.resolve(__dirname, './index');
@@ -34,9 +42,9 @@ async function runSuite(workspacePath: string, suiteEnv: string): Promise<void> 
 }
 
 async function main(): Promise<void> {
-  await runSuite(path.resolve(__dirname, './fixtures/single-folder'), 'single-folder');
+  await runSuite(path.join(FIXTURES_ROOT, 'single-folder'), 'single-folder');
   await runSuite(
-    path.resolve(__dirname, './fixtures/multi-root/multi-root.code-workspace'),
+    path.join(FIXTURES_ROOT, 'multi-root', 'multi-root.code-workspace'),
     'multi-root',
   );
 }
