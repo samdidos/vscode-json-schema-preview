@@ -45,6 +45,9 @@ export class SchemaCache {
     // Capture ETag / Last-Modified on the initial download so later automatic
     // revalidations can be conditional (F08-FR-15/16).
     const res = await this.auth.fetchConditional(url, getRemoteFetchTimeoutMs());
+    // codeql[js/http-to-file-access] Intentional (F08): this *is* the schema cache. `localPath`
+    // is a SHA-256 hash of `url` (no path traversal); `toCacheableText` above already rejects
+    // content that isn't parseable JSON/YAML before it ever reaches this write.
     fs.writeFileSync(localPath, toCacheableText(url, res.text ?? ''), 'utf-8');
 
     await this.upsertEntry({
@@ -90,6 +93,8 @@ export class SchemaCache {
         await this.upsertEntry({ ...entry, fetchedAt: Date.now() });
         return 'not-modified';
       }
+      // codeql[js/http-to-file-access] Intentional (F08): automatic revalidation of the same
+      // schema cache entry — see the justification on the `download()` write above.
       fs.writeFileSync(entry.cachedPath, toCacheableText(url, res.text), 'utf-8');
       await this.upsertEntry({
         originalUrl: url,
