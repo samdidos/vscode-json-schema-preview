@@ -53,7 +53,16 @@ features:
     details: Choose from multiple json-schema-for-humans templates (flat, JS, Markdown, RST, HTML). Config lives in .json-schema-preview-config.json, committed alongside your project.
 ---
 
-<!-- spec:F01,F02,F03,F04,F05,F06,F07,F08,F09,S02 -->
-<!-- The feature cards above (frontmatter) cover these specs; kept as a
-     trailing comment since HTML comments inside VitePress YAML frontmatter
-     would risk breaking the frontmatter parse. -->
+<!--
+  The feature cards above (frontmatter) are each tagged below, in the same
+  order, since HTML comments inside VitePress YAML frontmatter would risk
+  breaking the frontmatter parse.
+-->
+<!-- spec:F01,F02 --> <!-- Live Preview -->
+<!-- spec:F03 --> <!-- Instant Validation -->
+<!-- spec:F05 --> <!-- Visual Editor -->
+<!-- spec:F04 --> <!-- Schema Binding -->
+<!-- spec:F06 --> <!-- Schema Inference -->
+<!-- spec:F07,F08 --> <!-- Private Schema Auth -->
+<!-- spec:S02 --> <!-- Workspace Trust Aware -->
+<!-- spec:F09 --> <!-- Configurable Rendering -->

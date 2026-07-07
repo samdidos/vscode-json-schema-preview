@@ -67,3 +67,8 @@ Enable [`jsonschema.preview.autoOpen`](/guide/configuration#jsonschema-preview-a
 ## Live Preview
 
 Enable [`jsonschema.preview.liveUpdate`](/guide/configuration#jsonschema-preview-liveupdate) to refresh the preview as you type (debounced). The preview panel must already be open.
+
+<!-- spec:F13 -->
+## Navigating `$ref`s
+
+Inside a schema file, <kbd>Ctrl</kbd>+click (or <kbd>⌘</kbd>+click) a `$ref` value to jump straight to the definition it points to — in the same file, another workspace file, or a cached remote schema. Hovering a `$ref` shows a summary of its target (title, type, description, and its main properties) without navigating away. An uncached remote `$ref` offers to cache the schema locally so navigation and hover work for it too.

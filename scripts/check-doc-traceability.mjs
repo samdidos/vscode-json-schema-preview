@@ -87,10 +87,15 @@ function lineAt(text, index) {
   return text.slice(0, index).split('\n').length;
 }
 
-// Blank out fenced code blocks (preserving line count) so documentation that
-// *shows* the tag syntax as an example doesn't get parsed as a real tag.
+// Blank out fenced code blocks and inline code spans (preserving line count)
+// so documentation that *shows* the tag syntax as an example — including a
+// single-backtick inline mention like `<!-- spec:F13 -->` in prose — doesn't
+// get parsed as a real tag.
 function stripFencedCode(text) {
-  return text.replace(/```[\s\S]*?```/g, m => '\n'.repeat((m.match(/\n/g) ?? []).length));
+  const noFences = text.replace(/```[\s\S]*?```/g, m => '\n'.repeat((m.match(/\n/g) ?? []).length));
+  // Inline code spans may wrap a single soft line break (CommonMark treats it
+  // as a space) but never cross a blank line — a blank line ends the block.
+  return noFences.replace(/`(?:[^`\n]|\n(?!\n))*?`/g, m => m.replace(/[^\n]/g, ' '));
 }
 
 /** Scan one file's tags: validates ids, pairs start/end sections, and records
