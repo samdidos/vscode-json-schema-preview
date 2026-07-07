@@ -9,9 +9,9 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { withQuickPick, withCapturedMessages, writeFile, closeAllEditors } from '../helpers';
+import { withQuickPick, withCapturedMessages, writeFile, closeAllEditors, FIXTURES_ROOT } from '../helpers';
 
-const ROOT = path.resolve(__dirname, '../fixtures/multi-root');
+const ROOT = path.join(FIXTURES_ROOT, 'multi-root');
 const PROJ_A = path.join(ROOT, 'projA');
 const PROJ_B = path.join(ROOT, 'projB');
 const FILE = 'inline-cross-folder.toml';

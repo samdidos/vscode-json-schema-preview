@@ -4,9 +4,9 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { withQuickPick, withCapturedMessages, writeFile, closeAllEditors } from '../helpers';
+import { withQuickPick, withCapturedMessages, writeFile, closeAllEditors, FIXTURES_ROOT } from '../helpers';
 
-const FIXTURE = path.resolve(__dirname, '../fixtures/single-folder');
+const FIXTURE = path.join(FIXTURES_ROOT, 'single-folder');
 const SCHEMA_PATH = path.join(FIXTURE, 'schema.json');
 
 interface FormatCase {
