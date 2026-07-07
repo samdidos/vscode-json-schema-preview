@@ -3,7 +3,7 @@
 // relative files, fetching remote refs with auth/cache) is delegated to a
 // caller-supplied async resolver. Reuses the RFC 6901 helpers from schemaPointer.
 
-import { parseRef, parseJsonPointer, resolvePointer } from './schemaPointer';
+import { parseRef, parseJsonPointer, resolvePointer, isObject } from './schemaPointer';
 
 /** A resolved external document. `id` is a canonical identifier for dedup. */
 export interface ResolvedDoc {
@@ -25,10 +25,6 @@ const DEFAULT_MAX_DOCS = 100;
 
 function clone<T>(v: T): T {
   return structuredClone(v);
-}
-
-function isObject(v: unknown): v is Record<string, unknown> {
-  return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 
 /** Derive a $defs key from a schema's `$id` or the ref URI; sanitised. */

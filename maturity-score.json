@@ -45,13 +45,13 @@
     {
       "label": "Testing",
       "score": 4.8,
-      "earned": 9.54,
+      "earned": 9.56,
       "possible": 10,
       "checks": [
         {
           "id": "branch-coverage",
           "points": 3,
-          "earned": 2.76,
+          "earned": 2.78,
           "note": "branch coverage vs a 95% target"
         },
         {
@@ -221,7 +221,7 @@
     {
       "label": "Code quality",
       "score": 3.6,
-      "earned": 7.12,
+      "earned": 7.11,
       "possible": 10,
       "checks": [
         {
@@ -239,7 +239,7 @@
         {
           "id": "few-lint-warnings",
           "points": 3,
-          "earned": 0.12,
+          "earned": 0.11,
           "note": "eslint warnings vs a 200 ceiling"
         },
         {
@@ -327,10 +327,10 @@
   ],
   "facts": {
     "coverage": {
-      "lines": 95.69,
-      "statements": 95.69,
-      "functions": 97.95,
-      "branches": 87.34
+      "lines": 96.13,
+      "statements": 96.13,
+      "functions": 98.8,
+      "branches": 88.08
     },
     "requirements": {
       "total": 350,

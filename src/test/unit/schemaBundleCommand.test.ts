@@ -69,6 +69,30 @@ suite('[F14-FR-03][F14-FR-05] bundleSchemaCommand — bundle', () => {
     assert.deepStrictEqual(out.$defs.address, { type: 'object', properties: { city: { type: 'string' } } });
   });
 
+  // Regression: makeResolver used to call fetch/read + parse once per $ref
+  // occurrence, so a schema with N refs into the same external document paid
+  // for N network round-trips (or file reads) for one document.
+  test('fetches an external document referenced by more than one $ref only once', async () => {
+    const rootPath = path.join(dir, 'root.json');
+    activate(rootPath, JSON.stringify({
+      $schema: 'x',
+      properties: {
+        a: { $ref: 'https://corp/shared.json#/$defs/id' },
+        b: { $ref: 'https://corp/shared.json#/$defs/id' },
+      },
+    }));
+    pickMode('bundle');
+    let fetchCount = 0;
+    const auth = fakeAuth(async () => {
+      fetchCount++;
+      return JSON.stringify({ $defs: { id: { type: 'string' } } });
+    });
+    await bundleSchemaCommand(auth, fakeCache())();
+    assert.strictEqual(fetchCount, 1, 'the shared external document should be fetched exactly once');
+    const out = JSON.parse(vscode.workspace.openTextDocument.lastCall.args[0].content);
+    assert.strictEqual(out.properties.a.$ref, out.properties.b.$ref);
+  });
+
   test('[F14-FR-08] an unresolvable ref shows an error and opens nothing', async () => {
     const rootPath = path.join(dir, 'root.json');
     activate(rootPath, JSON.stringify({ $schema: 'x', properties: { a: { $ref: 'missing.json' } } }));
@@ -98,6 +122,24 @@ suite('[F14-FR-03][F14-FR-05] bundleSchemaCommand — bundle', () => {
     assert.strictEqual(fetched, false);
     const out = JSON.parse(vscode.workspace.openTextDocument.lastCall.args[0].content);
     assert.strictEqual(out.properties.a.$ref, '#/$defs/s/$defs/id');
+  });
+
+  // Regression: makeResolver used to set keyHint from the URL's filename for
+  // every resolved document, which schemaBundler's handleRef prefers over
+  // deriveKey() — so a referenced schema's own $id (F14-FR-05's first choice)
+  // was silently ignored whenever it was reached through the command, only
+  // ever exercised by schemaBundler's own direct unit tests.
+  test("[F14-FR-05] derives the $defs key from the referenced schema's own $id, not the URL filename", async () => {
+    const rootPath = path.join(dir, 'root.json');
+    activate(rootPath, JSON.stringify({ $schema: 'x', properties: { a: { $ref: 'https://corp/weird-file-name.json#/$defs/id' } } }));
+    pickMode('bundle');
+    const cache = fakeCache({
+      'https://corp/weird-file-name.json': JSON.stringify({ $id: 'person', $defs: { id: { type: 'string' } } }),
+    });
+    await bundleSchemaCommand(fakeAuth(async () => { throw new Error('no network'); }), cache)();
+    const out = JSON.parse(vscode.workspace.openTextDocument.lastCall.args[0].content);
+    assert.strictEqual(out.properties.a.$ref, '#/$defs/person/$defs/id');
+    assert.ok(out.$defs.person, 'expected the $defs key derived from $id ("person"), not the filename ("weird-file-name")');
   });
 });
 

@@ -47,7 +47,6 @@ function firstType(schema: Schema | undefined): string | undefined {
   if (typeof schema.type === 'string') { return schema.type; }
   if (asSchema(schema.properties) || schema.required) { return 'object'; }
   if (schema.items) { return 'array'; }
-  if (Array.isArray(schema.enum)) { return undefined; }
   return undefined;
 }
 
@@ -64,9 +63,9 @@ export function generateSample(rootSchema: Json, opts: GenerateOptions = {}): Js
 }
 
 function gen(node: Json, ctx: Ctx, depth: number): Json {
-  // Boolean schemas: `true` accepts anything, `false` accepts nothing.
-  if (node === true) { return null; }
-  if (node === false) { return null; }
+  // Boolean schemas: `true` accepts anything, `false` accepts nothing — both
+  // are minimally satisfied here by `null`.
+  if (typeof node === 'boolean') { return null; }
   const schema = asSchema(node);
   if (!schema) { return null; }
 

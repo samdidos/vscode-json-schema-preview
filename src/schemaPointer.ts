@@ -8,6 +8,12 @@ import { parseDocument, visit, isScalar } from 'yaml';
 import { describeType } from './fallbackRenderer';
 import { isYaml, stripJsoncComments } from './languages';
 
+/** Generic object type guard (excludes arrays and null), shared by F14/F15
+ *  which otherwise each redefined it identically. */
+export function isObject(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
 // ── JSON Pointer (RFC 6901) ─────────────────────────────────────────────────
 
 /** Unescape a single RFC 6901 reference token: `~1` → `/`, `~0` → `~`.
@@ -130,6 +136,24 @@ function isRefProperty(prop: Node | undefined): prop is Node {
   return !!prop && prop.type === 'property' && prop.children?.[0]?.value === '$ref';
 }
 
+type YamlDoc = ReturnType<typeof parseDocument>;
+
+/** A parsed document AST, tagged by shape so callers can find a `$ref` and
+ *  locate a pointer target without re-parsing the same text for each (F13-NFR). */
+export type SchemaAst =
+  | { kind: 'json'; tree: Node }
+  | { kind: 'yaml'; doc: YamlDoc };
+
+/** Parse `text` once into the AST shape `findRefInAst`/`locateInAst` expect.
+ *  Returns `undefined` on unparsable input, mirroring the text-based functions. */
+export function parseSchemaAst(text: string, languageId: string): SchemaAst | undefined {
+  if (isYaml(languageId)) {
+    try { return { kind: 'yaml', doc: parseDocument(text) }; } catch { return undefined; }
+  }
+  const tree = parseTree(text);
+  return tree ? { kind: 'json', tree } : undefined;
+}
+
 /**
  * If `offset` sits on a `$ref` key or its string value, return the ref string
  * and the value's source span; otherwise `undefined` (F13-FR-02).
@@ -139,14 +163,18 @@ export function findRefAtOffset(
   languageId: string,
   offset: number,
 ): RefHit | undefined {
-  return isYaml(languageId)
-    ? findRefYaml(text, offset)
-    : findRefJson(text, offset);
+  const ast = parseSchemaAst(text, languageId);
+  return ast ? findRefInAst(ast, offset) : undefined;
 }
 
-function findRefJson(text: string, offset: number): RefHit | undefined {
-  const tree = parseTree(text);
-  if (!tree) { return undefined; }
+/** Same as {@link findRefAtOffset}, operating on an already-parsed AST. */
+export function findRefInAst(ast: SchemaAst, offset: number): RefHit | undefined {
+  return ast.kind === 'yaml'
+    ? findRefInYamlDoc(ast.doc, offset)
+    : findRefInJsonTree(ast.tree, offset);
+}
+
+function findRefInJsonTree(tree: Node, offset: number): RefHit | undefined {
   const node = findNodeAtOffset(tree, offset);
   const prop = node?.parent;
   if (!isRefProperty(prop)) { return undefined; }
@@ -155,9 +183,7 @@ function findRefJson(text: string, offset: number): RefHit | undefined {
   return { ref: valueNode.value, valueStart: valueNode.offset, valueEnd: valueNode.offset + valueNode.length };
 }
 
-function findRefYaml(text: string, offset: number): RefHit | undefined {
-  let doc;
-  try { doc = parseDocument(text); } catch { return undefined; }
+function findRefInYamlDoc(doc: YamlDoc, offset: number): RefHit | undefined {
   let hit: RefHit | undefined;
   visit(doc, {
     Pair(_, pair) {
@@ -187,14 +213,18 @@ export function locatePointerTarget(
   languageId: string,
   segments: string[],
 ): SourceSpan | undefined {
-  return isYaml(languageId)
-    ? locateYaml(text, segments)
-    : locateJson(text, segments);
+  const ast = parseSchemaAst(text, languageId);
+  return ast ? locateInAst(ast, segments) : undefined;
 }
 
-function locateJson(text: string, segments: string[]): SourceSpan | undefined {
-  const tree = parseTree(text);
-  if (!tree) { return undefined; }
+/** Same as {@link locatePointerTarget}, operating on an already-parsed AST. */
+export function locateInAst(ast: SchemaAst, segments: string[]): SourceSpan | undefined {
+  return ast.kind === 'yaml'
+    ? locateInYamlDoc(ast.doc, segments)
+    : locateInJsonTree(ast.tree, segments);
+}
+
+function locateInJsonTree(tree: Node, segments: string[]): SourceSpan | undefined {
   const node = findNodeAtLocation(tree, toAstPath(segments));
   if (!node) { return undefined; }
   const keyNode = node.parent?.type === 'property' ? node.parent.children?.[0] : undefined;
@@ -202,9 +232,7 @@ function locateJson(text: string, segments: string[]): SourceSpan | undefined {
   return { start: target.offset, end: target.offset + target.length };
 }
 
-function locateYaml(text: string, segments: string[]): SourceSpan | undefined {
-  let doc;
-  try { doc = parseDocument(text); } catch { return undefined; }
+function locateInYamlDoc(doc: YamlDoc, segments: string[]): SourceSpan | undefined {
   if (segments.length === 0) {
     const r = (doc.contents as { range?: [number, number, number] } | null)?.range;
     return r ? { start: r[0], end: r[1] } : undefined;

@@ -1366,7 +1366,7 @@
       "impl": [
         "src/SchemaRefProvider.ts"
       ],
-      "note": "remote refs use cache.readCached; uncached offers Cache Schema Locally"
+      "note": "remote refs use cache.readCached; language for the cached copy comes from languageForSchemaSource(url), not the cached file extension; uncached offers Cache Schema Locally"
     },
     "F13-FR-07": {
       "status": "implemented",
@@ -1403,7 +1403,7 @@
         "src/schemaPointer.ts",
         "src/SchemaRefProvider.ts"
       ],
-      "note": "pure in-process resolution; no subprocess, no hover network I/O"
+      "note": "pure in-process resolution; no subprocess, no hover network I/O; SchemaRefProvider memoizes the parsed AST/value-tree per document version (per-version caching allowance in the requirement text)"
     },
     "F13-NFR-02": {
       "status": "implemented",

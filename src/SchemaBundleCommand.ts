@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import { bundleSchema, dereferenceSchema, type ResolvedDoc } from './schemaBundler';
 import { parseSchemaText } from './schemaPointer';
 import { isJsonSchemaFile } from './PreviewWebPanel';
-import { isYaml } from './languages';
+import { isYaml, languageForSchemaSource } from './languages';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
@@ -62,13 +62,7 @@ export function bundleSchemaCommand(auth: SchemaAuthManager, cache: SchemaCache)
 
     if (failure) {
       if (failure instanceof AuthRequiredError) {
-        const action = await vscode.window.showErrorMessage(
-          `A referenced schema at ${SchemaAuthManager.hostOf(failure.url)} requires authentication.`,
-          'Configure Auth',
-        );
-        if (action === 'Configure Auth') {
-          void vscode.commands.executeCommand('jsonschema.configureSchemaAuth', failure.url);
-        }
+        await SchemaAuthManager.offerConfigureAuth('A referenced schema at', failure.url);
       } else if ((failure as Error).name === 'Canceled' || (failure as Error).message === 'Canceled') {
         /* user cancelled — no message */
       } else {
@@ -114,40 +108,55 @@ function trackProgress(
  * Build the document resolver: relative refs read from disk, remote refs prefer
  * the local cache then fetch with auth (F14-FR-04). `baseId` is the referring
  * document's absolute path or URL; the returned `id` canonicalises the target.
+ * `keyHint` is deliberately left unset — schemaBundler's own `deriveKey` derives
+ * it from the resolved schema's `$id` first, falling back to the ref/filename
+ * (F14-FR-05); setting a filename-only hint here would always take priority
+ * over `deriveKey` and so silently defeat the `$id` preference.
  */
 export function makeResolver(auth: SchemaAuthManager, cache: SchemaCache, rootFsPath: string) {
-  return async (uri: string, baseId: string): Promise<ResolvedDoc> => {
-    const base = baseId || rootFsPath;
-    if (SchemaAuthManager.isRemoteUrl(uri)) {
-      const cached = cache.readCached(uri);
-      const text = cached ?? await auth.fetchText(uri, getRemoteFetchTimeoutMs());
-      return { id: uri, schema: parseSchemaText(text, langForUri(uri)) ?? {}, keyHint: keyHintFor(uri) };
+  // Keyed by the resolved target id (computeTargetId), not by (uri, baseId) —
+  // several $refs across a schema commonly point at the same external
+  // document, and without this each occurrence would re-read/re-fetch and
+  // re-parse it. Caches the in-flight promise (not just the settled result)
+  // so concurrent refs to the same target awaiting resolution share one fetch.
+  const inFlight = new Map<string, Promise<ResolvedDoc>>();
+
+  async function fetchAndParse(id: string, uri: string): Promise<ResolvedDoc> {
+    if (SchemaAuthManager.isRemoteUrl(id)) {
+      const cached = cache.readCached(id);
+      const text = cached ?? await auth.fetchText(id, getRemoteFetchTimeoutMs());
+      return { id, schema: parseSchemaText(text, languageForSchemaSource(id)) ?? {} };
     }
-    // Relative to the referring document's directory.
-    const baseDir = SchemaAuthManager.isRemoteUrl(base) ? base : path.dirname(base);
-    if (SchemaAuthManager.isRemoteUrl(base)) {
-      const resolved = new URL(uri, base).toString();
-      const cached = cache.readCached(resolved);
-      const text = cached ?? await auth.fetchText(resolved, getRemoteFetchTimeoutMs());
-      return { id: resolved, schema: parseSchemaText(text, langForUri(resolved)) ?? {}, keyHint: keyHintFor(resolved) };
-    }
-    const filePath = path.resolve(baseDir, uri);
     let text: string;
     try {
-      text = fs.readFileSync(filePath, 'utf-8');
+      text = fs.readFileSync(id, 'utf-8');
     } catch {
-      throw new Error(`Cannot resolve $ref "${uri}" (looked for ${filePath}).`);
+      throw new Error(`Cannot resolve $ref "${uri}" (looked for ${id}).`);
     }
-    return { id: filePath, schema: parseSchemaText(text, langForUri(filePath)) ?? {}, keyHint: keyHintFor(filePath) };
+    return { id, schema: parseSchemaText(text, languageForSchemaSource(id)) ?? {} };
+  }
+
+  return (uri: string, baseId: string): Promise<ResolvedDoc> => {
+    const base = baseId || rootFsPath;
+    const id = computeTargetId(uri, base);
+    let pending = inFlight.get(id);
+    if (!pending) {
+      pending = fetchAndParse(id, uri);
+      inFlight.set(id, pending);
+      // A transient failure (network blip) shouldn't permanently poison every
+      // other $ref into the same document for the rest of this bundle run.
+      pending.catch(() => inFlight.delete(id));
+    }
+    return pending;
   };
 }
 
-function langForUri(uri: string): string {
-  const ext = uri.split('#')[0].split('.').pop()?.toLowerCase();
-  return ext === 'yaml' || ext === 'yml' ? 'yaml' : 'json';
-}
-
-function keyHintFor(uri: string): string {
-  const stem = uri.split('#')[0].split(/[\\/]/).pop() ?? uri;
-  return stem.replace(/\.[^.]+$/, '').replace(/[^A-Za-z0-9_-]/g, '_') || 'schema';
+/** The canonical id a `$ref`'s `uri` part resolves to against `base` (the
+ *  referring document's absolute path or URL) — remote refs by themselves,
+ *  relative refs resolved against a remote base as an absolute URL, and
+ *  relative refs resolved against a local base as an absolute file path. */
+function computeTargetId(uri: string, base: string): string {
+  if (SchemaAuthManager.isRemoteUrl(uri)) { return uri; }
+  if (SchemaAuthManager.isRemoteUrl(base)) { return new URL(uri, base).toString(); }
+  return path.resolve(path.dirname(base), uri);
 }

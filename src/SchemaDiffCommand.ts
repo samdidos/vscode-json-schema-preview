@@ -113,13 +113,7 @@ async function pickBaseline(doc: vscode.TextDocument, auth: SchemaAuthManager): 
     return { text, label: SchemaAuthManager.hostOf(url) };
   } catch (e) {
     if (e instanceof AuthRequiredError) {
-      const action = await vscode.window.showErrorMessage(
-        `Baseline at ${SchemaAuthManager.hostOf(e.url)} requires authentication.`,
-        'Configure Auth',
-      );
-      if (action === 'Configure Auth') {
-        void vscode.commands.executeCommand('jsonschema.configureSchemaAuth', e.url);
-      }
+      await SchemaAuthManager.offerConfigureAuth('Baseline at', e.url);
     } else {
       vscode.window.showErrorMessage(`Cannot fetch baseline: ${(e as Error).message}`);
     }

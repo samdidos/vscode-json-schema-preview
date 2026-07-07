@@ -53,6 +53,33 @@ suite('[F12-FR-03][F12-FR-05] SchemaCatalogManager.loadEntries() — fetching', 
     assert.match(warnings[0], /schemastore\.org/);
   });
 
+  // Regression: loadEntries used to await each source's fetch in a sequential
+  // for-await loop, so with N configured sources the picker's load time was
+  // the sum of N round-trips instead of the slowest one.
+  test('fetches multiple catalog sources concurrently, not one at a time', async () => {
+    setConfig('jsonschema.catalog', 'useSchemaStore', false);
+    setConfig('jsonschema.catalog', 'sources', ['https://corp/a.json', 'https://corp/b.json']);
+    const started: string[] = [];
+    const resolvers: Record<string, (v: string) => void> = {};
+    const auth = {
+      fetchText: (u: string) => {
+        started.push(u);
+        return new Promise<string>(resolve => { resolvers[u] = resolve; });
+      },
+    };
+    const mgr = new SchemaCatalogManager(makeContext(), auth as any);
+    const pending = mgr.loadEntries('x');
+    await new Promise(r => setImmediate(r)); // let both fetches start
+    assert.deepStrictEqual(
+      started.sort(), ['https://corp/a.json', 'https://corp/b.json'],
+      'both sources should have started fetching before either resolved'
+    );
+    resolvers['https://corp/a.json'](catalogJson('A'));
+    resolvers['https://corp/b.json'](catalogJson('B'));
+    const { suggested, rest } = await pending;
+    assert.deepStrictEqual([...suggested, ...rest].map((e: any) => e.name).sort(), ['A', 'B']);
+  });
+
   test('[F12-FR-08] fileMatch-matching entries are ranked as suggested', async () => {
     const auth = { fetchText: async (_u: string) => catalogJson('package', 'tsconfig') };
     const mgr = new SchemaCatalogManager(makeContext(), auth as any);

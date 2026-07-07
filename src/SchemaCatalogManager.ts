@@ -63,21 +63,27 @@ export class SchemaCatalogManager {
   /**
    * Load and rank catalog entries from every enabled source. Never throws — a
    * source that fails and has no cache contributes a warning instead (F12-FR-06).
+   * Sources are fetched concurrently (independent network calls) rather than
+   * one at a time, so the picker's load time is the slowest single source, not
+   * their sum; results/warnings stay in source-list order regardless of which
+   * settles first.
    */
   async loadEntries(fileName: string): Promise<LoadResult> {
     const warnings: string[] = [];
     const all: CatalogEntry[] = [];
     let anyStale = false;
 
-    for (const source of getCatalogSources()) {
-      try {
-        const { entries, stale } = await this.fetchCatalog(source);
-        anyStale ||= stale;
-        for (const e of entries) { all.push({ ...e, source }); }
-      } catch (e) {
-        warnings.push(`Could not load schema catalog ${source}: ${(e as Error).message}`);
+    const sources = getCatalogSources();
+    const results = await Promise.allSettled(sources.map(source => this.fetchCatalog(source)));
+    results.forEach((result, i) => {
+      const source = sources[i];
+      if (result.status === 'fulfilled') {
+        anyStale ||= result.value.stale;
+        for (const e of result.value.entries) { all.push({ ...e, source }); }
+      } else {
+        warnings.push(`Could not load schema catalog ${source}: ${(result.reason as Error).message}`);
       }
-    }
+    });
 
     const { suggested, rest } = rankByFileMatch(all, fileName);
     return { suggested, rest, stale: anyStale, warnings };
@@ -124,7 +130,7 @@ export function buildItems(
   const toItem = (e: CatalogEntry): CatalogQuickPickItem => ({
     label: e.name,
     description: e.description,
-    detail: e.source ? `${e.url}  ·  ${hostOf(e.source)}` : e.url,
+    detail: e.source ? `${e.url}  ·  ${SchemaAuthManager.hostOf(e.source)}` : e.url,
     url: e.url,
   });
   if (suggested.length) {
@@ -136,8 +142,4 @@ export function buildItems(
   }
   items.push(...rest.map(toItem));
   return items;
-}
-
-function hostOf(url: string): string {
-  try { return new URL(url).hostname; } catch { return url; }
 }

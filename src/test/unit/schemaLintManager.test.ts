@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as sinon from 'sinon';
 import * as vscode from '../mocks/vscode';
 
 const { SchemaLintManager } = require('../../SchemaLintManager');
@@ -119,6 +120,62 @@ suite('SchemaLintManager — registration', () => {
     const mgr = new SchemaLintManager();
     mgr.register({ subscriptions: [] });
     assert.ok(collection().set.called);
+  });
+});
+
+// Regression: clear() used to delete diagnostics/findings but never cancel a
+// pending debounce timer, so a document edited then closed within the 400ms
+// window would still lint after close, re-populating the diagnostics this
+// same call was meant to remove. scheduleLint also used to start a timer for
+// every document regardless of whether it could ever be linted.
+suite('SchemaLintManager — debounce lifecycle [F17-FR-02][F17-FR-03]', () => {
+  let clock: sinon.SinonFakeTimers;
+  setup(() => { clock = sinon.useFakeTimers(); });
+  teardown(() => { clock.restore(); });
+
+  function registeredHandler(mockFn: sinon.SinonStub): (...args: any[]) => void {
+    return mockFn.args[0][0];
+  }
+
+  test('[F17-FR-02] a document closed within the debounce window is not linted after close', () => {
+    const mgr = new SchemaLintManager();
+    mgr.register({ subscriptions: [] as any[] });
+    const onChange = registeredHandler(vscode.workspace.onDidChangeTextDocument);
+    const onClose = registeredHandler(vscode.workspace.onDidCloseTextDocument);
+    const doc = makeDoc('{"type":"object"}');
+
+    onChange({ document: doc }); // schedules a debounced lint
+    onClose(doc);                // closes before the debounce fires
+    clock.tick(1000);            // let any (leaked) pending timer fire
+
+    assert.ok(collection().delete.called, 'clear() should delete diagnostics on close');
+    assert.strictEqual(
+      collection().set.callCount, 0,
+      'the cancelled debounce must not run lintDocument and re-populate diagnostics after close'
+    );
+  });
+
+  test('scheduleLint does not start a timer for a document that can never lint', () => {
+    const mgr = new SchemaLintManager();
+    mgr.register({ subscriptions: [] as any[] });
+    const onChange = registeredHandler(vscode.workspace.onDidChangeTextDocument);
+    const doc = makeDoc('{"just":"data"}', 'json', '/ws/data.json');
+
+    const before = clock.countTimers();
+    onChange({ document: doc });
+    assert.strictEqual(clock.countTimers(), before, 'no timer should be scheduled for a non-lintable document');
+  });
+
+  test('scheduleLint still debounces and lints an eligible document', () => {
+    const mgr = new SchemaLintManager();
+    mgr.register({ subscriptions: [] as any[] });
+    const onChange = registeredHandler(vscode.workspace.onDidChangeTextDocument);
+    const doc = makeDoc('{"type":"object"}');
+
+    onChange({ document: doc });
+    assert.strictEqual(collection().set.callCount, 0, 'lint should not run before the debounce elapses');
+    clock.tick(1000);
+    assert.strictEqual(collection().set.callCount, 1);
   });
 });
 

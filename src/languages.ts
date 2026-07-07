@@ -19,6 +19,22 @@ export function isSupported(languageId: string): boolean {
 }
 
 /**
+ * Maps a schema file path or URL (extension-based; query string and fragment
+ * ignored) to the language its content should be parsed as. Used when a
+ * schema is reached via `$ref` rather than opened as a document (F13, F14),
+ * where only a path/URL — not a `languageId` — is available. Schemas are
+ * always authored as JSON or YAML (TOML is a data-only format, F11), so this
+ * only ever resolves to `'json'`, `'jsonc'`, or `'yaml'`.
+ */
+export function languageForSchemaSource(pathOrUrl: string): string {
+  const withoutQueryOrFragment = pathOrUrl.split(/[?#]/)[0];
+  const ext = /\.([a-z0-9]+)$/i.exec(withoutQueryOrFragment)?.[1]?.toLowerCase();
+  if (ext === 'yaml' || ext === 'yml') { return 'yaml'; }
+  if (ext === 'jsonc') { return 'jsonc'; }
+  return 'json';
+}
+
+/**
  * Parse TOML text into a JSON-compatible value tree (F11-FR-04). Throws on
  * invalid TOML (smol-toml raises `TomlError`). TOML native date/time values are
  * parsed by smol-toml as `Date` objects; they are normalised to ISO-8601
