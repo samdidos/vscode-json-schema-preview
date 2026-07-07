@@ -327,16 +327,16 @@
   ],
   "facts": {
     "coverage": {
-      "lines": 96.11,
-      "statements": 96.11,
+      "lines": 96.16,
+      "statements": 96.16,
       "functions": 98.8,
-      "branches": 88.03
+      "branches": 88.09
     },
     "requirements": {
-      "total": 351,
+      "total": 353,
       "byStatus": {
         "manual": 123,
-        "implemented": 192,
+        "implemented": 194,
         "planned": 36
       }
     },

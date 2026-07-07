@@ -855,6 +855,20 @@
       ],
       "note": "revalidate() swallows failures returning \"failed\"; auto path is fire-and-forget"
     },
+    "F08-FR-18": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "toCacheableText() parses fetched content per source format and writes JSON.stringify(parsed) instead of the raw response text; unparseable content throws before any write (surfaced via existing F08-FR-11/12 error reporting in download(), treated as a normal revalidate() failure per F08-FR-17). Fixes a CodeQL 'network data written to file' finding by deriving the write from a parsed value rather than passing tainted network text through verbatim."
+    },
+    "F08-FR-19": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCache.ts"
+      ],
+      "note": "revalidate() replaced its fs.existsSync(...) pre-check with a direct fs.readFileSync attempt in try/catch, eliminating the check-then-much-later-write (across an async network await) pattern CodeQL's file-system-race query flags."
+    },
     "F08-NFR-01": {
       "status": "manual",
       "impl": [

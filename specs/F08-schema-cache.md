@@ -66,6 +66,21 @@ server's inability to fetch authenticated endpoints.
   and the failure MAY be reflected in the schema-auth status bar tooltip.
   Manual **Refresh Schema Cache** keeps its existing error reporting
   (F08-FR-11/12).
+- **F08-FR-18** Fetched schema content MUST be validated as parseable (per its
+  source format, JSON/JSONC or YAML) and re-serialized to canonical JSON
+  before being persisted to the local cache file — the raw network response
+  bytes MUST NOT be written to disk directly. Unparseable content MUST NOT be
+  cached: `download()` fails with an error (surfaced via F08-FR-11/12's
+  existing reporting) and `revalidate()` treats it like any other failure
+  (F08-FR-17 — silent, stale copy kept). This prevents ever persisting a
+  corrupted/malformed response and breaks the direct network-to-disk data
+  flow a security scan flags on an unvalidated write.
+- **F08-FR-19** `revalidate()` MUST NOT determine whether a cached copy
+  exists via a separate existence check (e.g. `fs.existsSync`) whose result
+  is then relied on by a later, distinct file operation — that check-then-use
+  split is a TOCTOU race between the check and the (much later, post-network-
+  await) write. Existence MUST instead be established by directly attempting
+  the real file operation and handling its failure.
 
 ### Error Handling
 

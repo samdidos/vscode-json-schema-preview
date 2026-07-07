@@ -50,7 +50,7 @@ suite('[F12-FR-03][F12-FR-05] SchemaCatalogManager.loadEntries() — fetching', 
     const { warnings, suggested, rest } = await mgr.loadEntries('x');
     assert.strictEqual(suggested.length + rest.length, 0);
     assert.strictEqual(warnings.length, 1);
-    assert.match(warnings[0], /schemastore\.org/);
+    assert.ok(warnings[0].includes('schemastore.org'));
   });
 
   // Regression: loadEntries used to await each source's fetch in a sequential
