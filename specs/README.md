@@ -25,6 +25,9 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [F15-schema-diff.md](F15-schema-diff.md) | Schema diff & breaking-change detection |
 | [F16-sample-data.md](F16-sample-data.md) | Sample data generation from a schema |
 | [F17-schema-linting.md](F17-schema-linting.md) | Schema quality linting |
+| [F18-code-generation.md](F18-code-generation.md) | Code generation (schema → TypeScript types) |
+| [F19-toml-intellisense.md](F19-toml-intellisense.md) | TOML schema IntelliSense (completions & hover) |
+| [F20-workspace-validation.md](F20-workspace-validation.md) | Workspace-wide validation report |
 | [S01-security.md](S01-security.md) | Webview security (CSP, nonces, sanitisation) |
 | [S02-workspace-trust.md](S02-workspace-trust.md) | Workspace Trust integration |
 | [S03-performance.md](S03-performance.md) | Performance and resource management |
@@ -32,6 +35,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S05-privacy.md](S05-privacy.md) | Privacy and data collection (zero telemetry) |
 | [S06-accessibility.md](S06-accessibility.md) | Accessibility (keyboard, screen-reader, contrast) |
 | [S07-documentation-traceability.md](S07-documentation-traceability.md) | Documentation ↔ spec traceability (`spec:` tags) |
+| [S08-e2e-testing.md](S08-e2e-testing.md) | End-to-end testing in a real VS Code instance |
 
 ## Scope
 
