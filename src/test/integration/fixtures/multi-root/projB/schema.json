@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fixture Schema (projB)",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" }
+  }
+}

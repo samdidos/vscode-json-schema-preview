@@ -331,6 +331,7 @@
     "test:coverage": "npm test && node scripts/check-coverage.js",
     "test:mutation": "stryker run",
     "test:e2e": "npm run compile && playwright test --config playwright.e2e.config.ts",
+    "test:integration": "npm run compile && tsc -p tsconfig.integration.json && node ./out/test/integration/runTest.js",
     "update:deps": "npx npm-check-updates -u && npm install",
     "make-gifs": "node scripts/make-gifs.mjs",
     "maturity": "node scripts/maturity-score.mjs && node scripts/generate-maturity-chart.mjs",

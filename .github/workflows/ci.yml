@@ -67,3 +67,33 @@ jobs:
 
       - name: Knip (unused files, exports, dependencies)
         run: npm run knip
+
+  integration:
+    name: Integration tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # S08 — real VS Code via @vscode/test-electron, per S08-SR-08/09. Runs
+    # non-blocking (continue-on-error) while flakiness is measured; promote to
+    # a required check only after 2 consecutive clean weeks (S08-SR-08), and
+    # record the promotion in specs/S08-e2e-testing.md's History.
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Integration tests (xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:integration
+
+      - name: Integration tests
+        if: runner.os != 'Linux'
+        run: npm run test:integration

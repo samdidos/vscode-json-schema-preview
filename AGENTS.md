@@ -16,6 +16,14 @@
 - **Mutation testing**: `npm run test:mutation` (StrykerJS — report in `reports/mutation/`)
 - **Dead code / unused deps**: `npm run knip`
 - **Package**: `npx @vscode/vsce package --no-dependencies`
+<!-- spec:S08 -->
+- **Integration tests** (real VS Code via `@vscode/test-electron`, downloads a
+  build the first time): `npm run test:integration`. Covers settings-scope
+  binding round-trips (including multi-root/cross-folder cases the mocked
+  unit suite structurally cannot — see `specs/S08-e2e-testing.md`) and inline
+  `$schema` binding for JSON/YAML/TOML. Runs in CI on Linux + Windows as a
+  non-blocking `integration` job (`.github/workflows/ci.yml`) while flakiness
+  is measured.
 
 ## Quality gates & hooks
 - **`npm run verify`** is the single source of truth for the local gate. It is
