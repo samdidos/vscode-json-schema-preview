@@ -24,12 +24,14 @@
 
 **Preview, validate, and work with JSON Schemas — including private ones — right inside VS Code.**
 
+<!-- spec:F01,F03,F07,F11 -->
 Renders schemas as clean HTML documentation. Validates JSON, YAML, and TOML data files inline. Handles schemas behind authentication (GitHub private repos, Artifactory, any HTTP endpoint) with zero friction.
 
 ---
 
 ## Features
 
+<!-- spec:F01,F02,F03,F04,F05,F06,F07,F08,F12,F13,F14,F15,F16,F17 start -->
 | | |
 |---|---|
 | **Preview** | Renders any JSON/YAML schema as navigable HTML documentation in a side panel |
@@ -46,7 +48,9 @@ Renders schemas as clean HTML documentation. Validates JSON, YAML, and TOML data
 | **Diff schemas** | Compare against Git HEAD, a file, or a URL and classify each change as breaking / non-breaking |
 | **Lint schemas** | Flags quality issues in the schema itself: missing descriptions, unknown keywords, duplicate enums |
 | **Live reload** | Preview refreshes as you type |
+<!-- spec:F01,F02,F03,F04,F05,F06,F07,F08,F12,F13,F14,F15,F16,F17 end -->
 
+<!-- spec:F03,F11 -->
 > Supports JSON, YAML, JSONC, JSONL, and TOML formats
 
 ---
@@ -55,18 +59,24 @@ Renders schemas as clean HTML documentation. Validates JSON, YAML, and TOML data
 
 ### Prerequisites
 
+<!-- spec:F01 -->
 Python 3 on your `PATH`. The extension installs [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) on first use via `pip` — nothing else needed.
 
+<!-- spec:F01,F02 start -->
 ### Preview a schema
 
 Open any file with a `$schema` field. Click the **Preview** button in the editor title bar, or run **JSON Schema: Preview** from the Command Palette.
+<!-- spec:F01,F02 end -->
 
+<!-- spec:F03,F04,F10 start -->
 ### Validate a data file
 
 Bind a schema via the **Bind Schema** icon in the title bar (or right-click in the explorer), then run **JSON Schema: Validate This File**. Errors appear in the Problems panel. If the file already has a `$schema` field, validation uses it automatically — no binding required.
+<!-- spec:F03,F04,F10 end -->
 
 ---
 
+<!-- spec:F07,F08 start -->
 ## Private and Authenticated Schemas
 
 When a schema is behind authentication, VS Code's language server gets a 401, draws a red squiggle, and IntelliSense goes dark. This extension fixes that.
@@ -85,14 +95,18 @@ You don't need to hunt for the command. Authentication setup is surfaced whereve
 - **Validate command** — if fetching the schema returns a 401/403, the error message has a *Configure Auth* button
 - **Status bar** — a `🔒` / `🔓` indicator shows auth status for the current file's schema; click it to configure
 
+<!-- spec:F08 start -->
 ### Eliminating the red squiggle (Option 4)
 
 After configuring auth, you can cache the schema to a local file. The extension rewrites the `json.schemas` / `yaml.schemas` entry to point at the local copy — so the built-in JSON language server and the Red Hat YAML extension both read it successfully. The squiggle disappears and IntelliSense works.
 
-The lightbulb offers **Cache schema locally** directly, or you can run **JSON Schema: Cache Schema Locally** from the palette. Refresh the cache any time with **JSON Schema: Refresh Schema Cache**.
+The lightbulb offers **Cache schema locally** directly, or you can run **JSON Schema: Cache Schema Locally** from the palette. Refresh the cache any time with **JSON Schema: Refresh Schema Cache**. Automatic revalidation can be enabled via `jsonschema.cache.autoRefresh`.
+<!-- spec:F08 end -->
+<!-- spec:F07,F08 end -->
 
 ---
 
+<!-- spec:F01,F03,F04,F05,F06,F07,F08,F09,F14,F15,F16,F17 start -->
 ## Commands
 
 | Command | Description |
@@ -103,15 +117,19 @@ The lightbulb offers **Cache schema locally** directly, or you can run **JSON Sc
 | **JSON Schema: Validate This File** | Validate against the bound (or inline) schema |
 | **JSON Schema: Generate Schema from This File** | Infer a schema from existing data |
 | **JSON Schema: Generate Sample Data from This Schema** | Produce a valid example instance from a schema |
+| **JSON Schema: Bundle / Dereference Schema** | Flatten a multi-file schema — refs into `$defs`, or fully inlined |
+| **JSON Schema: Diff Against Baseline** | Compare against Git HEAD, a file, or a URL and classify each change |
 | **JSON Schema: Insert $schema Declaration** | Add a draft `$schema` to a schema file (lint quick fix) |
 | **JSON Schema: Configure Schema Authentication…** | Set up credentials for a remote host |
 | **JSON Schema: Cache Schema Locally** | Download with auth and redirect the language server |
 | **JSON Schema: Refresh Schema Cache** | Re-download a previously cached schema |
 | **JSON Schema: Configure Preview** | Adjust rendering options |
 | **JSON Schema: Open Config File** | Open `.json-schema-preview-config.json` |
+<!-- spec:F01,F03,F04,F05,F06,F07,F08,F09,F14,F15,F16,F17 end -->
 
 ---
 
+<!-- spec:F01,F02,F03,F07,F08,F09,F12,F17,S03 start -->
 ## Configuration
 
 | Setting | Default | Description |
@@ -119,14 +137,21 @@ The lightbulb offers **Cache schema locally** directly, or you can run **JSON Sc
 | `jsonschema.preview.autoOpen` | `false` | Open preview automatically when a schema file is activated |
 | `jsonschema.preview.liveUpdate` | `false` | Refresh preview while typing |
 | `jsonschema.preview.liveUpdateDelay` | `1500` | Debounce delay in ms |
+| `jsonschema.preview.renderTimeout` | `30000` | Milliseconds before the render subprocess is killed |
+| `jsonschema.remoteFetchTimeout` | `30000` | Milliseconds before an outbound remote-schema request is aborted |
 | `jsonschema.cache.autoRefresh` | `off` | Revalidate cached schemas via conditional requests (`off` / `onOpen` / `daily`) |
+| `jsonschema.catalog.useSchemaStore` | `true` | Include the public SchemaStore catalog in **Bind Schema… → Browse catalog…** |
+| `jsonschema.catalog.sources` | `[]` | Additional private catalog URLs, in the SchemaStore catalog format |
 | `jsonschema.lint.enabled` | `true` | Report schema-quality diagnostics on schema files |
 | `jsonschema.lint.rules` | `{}` | Per-rule severity overrides (`off` / `hint` / `info` / `warning`) |
+<!-- spec:F01,F02,F03,F07,F08,F09,F12,F17,S03 end -->
 
+<!-- spec:F09 -->
 Drop a `.json-schema-preview-config.json` in your workspace root to customise the renderer — all [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) options are supported, including alternative templates.
 
 ---
 
+<!-- spec:F04,F10,F11 start -->
 ## Schema Binding Scopes
 
 | Scope | Stored in | Lifetime |
@@ -134,6 +159,19 @@ Drop a `.json-schema-preview-config.json` in your workspace root to customise th
 | Workspace file | `.code-workspace` file | Committed with repo (multi-root workspaces only) |
 | Workspace folder | `.vscode/settings.json` | Committed with the repo |
 | User | User `settings.json` | All workspaces on this machine |
+| Inline (`$schema` field) | The data file itself | Portable to other editors and tools; the only scope available for TOML |
+<!-- spec:F04,F10,F11 end -->
+
+---
+
+<!-- spec:S01,S04,S05,S06 start -->
+## Security, Privacy & Accessibility
+
+- **Zero telemetry** — the extension collects and transmits nothing about your usage; the only network requests it makes are the ones you trigger (fetching a schema, its catalog, or a diff baseline). <!-- spec:S05 -->
+- **Hardened webviews** — the preview, visual editor, and config panels run under a nonce-based Content Security Policy with no unsanctioned inline scripts, and all schema-derived content is HTML-escaped before rendering. <!-- spec:S01 -->
+- **Offline-friendly** — if a remote schema becomes unreachable during validation, the extension falls back to the last successfully cached copy rather than failing outright, and tells you it did so. <!-- spec:S04 -->
+- **Accessible by default** — every control the extension injects into a webview is keyboard-operable and screen-reader-labelled, and status (like required fields) is never conveyed by colour alone. <!-- spec:S06 -->
+<!-- spec:S01,S04,S05,S06 end -->
 
 ---
 

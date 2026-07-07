@@ -123,7 +123,12 @@ Breaking changes append `!` (`feat!:`) and include a `BREAKING CHANGE:` footer.
 - User-facing docs live under `docs/` (VitePress), deployed via
   `.github/workflows/docs.yml`.
 - Every new feature in a `feat:` commit MUST be documented in the relevant
-  `docs/guide/*.md` page before the PR is merged.
+  `docs/guide/*.md` page (and `README.md` where user-facing) before the PR is
+  merged, tagged with its spec id(s) via the `<!-- spec:<IDs> -->` convention
+  (see `S07-documentation-traceability.md`) so documentation stays traceable to
+  the spec the same way tests are. `npm run check:doc-traceability` (part of
+  `npm run verify`) enforces tag validity; it warns, but does not fail, on an
+  undocumented feature.
 - Animated GIF demos for the docs site are generated from E2E screenshots via
   `npm run make-gifs`.
 

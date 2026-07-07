@@ -31,6 +31,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S04-reliability.md](S04-reliability.md) | Reliability and offline behaviour (stale-cache fallback) |
 | [S05-privacy.md](S05-privacy.md) | Privacy and data collection (zero telemetry) |
 | [S06-accessibility.md](S06-accessibility.md) | Accessibility (keyboard, screen-reader, contrast) |
+| [S07-documentation-traceability.md](S07-documentation-traceability.md) | Documentation ↔ spec traceability (`spec:` tags) |
 
 ## Scope
 

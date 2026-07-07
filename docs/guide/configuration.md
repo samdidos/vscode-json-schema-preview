@@ -4,6 +4,7 @@ All settings are in the `jsonschema` namespace and can be set in **User**, **Wor
 
 ---
 
+<!-- spec:F01 start -->
 ## `jsonschema.preview.autoOpen`
 
 | Type | Default |
@@ -18,9 +19,11 @@ When `true`, the preview panel opens automatically whenever a JSON Schema file b
   "jsonschema.preview.autoOpen": true
 }
 ```
+<!-- spec:F01 end -->
 
 ---
 
+<!-- spec:F02 start -->
 ## `jsonschema.preview.liveUpdate`
 
 | Type | Default |
@@ -50,9 +53,120 @@ Milliseconds to wait after the last keystroke before the live preview refreshes.
   "jsonschema.preview.liveUpdateDelay": 800
 }
 ```
+<!-- spec:F02 end -->
 
 ---
 
+<!-- spec:F01,S03 start -->
+## `jsonschema.preview.renderTimeout`
+
+| Type | Default | Minimum |
+|------|---------|---------|
+| `number` (ms) | `30000` | `1000` |
+
+Milliseconds to wait for the `json-schema-for-humans` render subprocess before it is killed and an error page (with a timeout hint) is shown instead. Values below the minimum are clamped.
+
+```json
+{
+  "jsonschema.preview.renderTimeout": 60000
+}
+```
+<!-- spec:F01,S03 end -->
+
+---
+
+<!-- spec:F07,F08,F12,S03 start -->
+## `jsonschema.remoteFetchTimeout`
+
+| Type | Default | Minimum |
+|------|---------|---------|
+| `number` (ms) | `30000` | `1000` |
+
+Milliseconds to wait for any outbound remote-schema HTTP request — authentication fetches, schema caching, and catalog lookups all share this timeout — before it is aborted.
+
+```json
+{
+  "jsonschema.remoteFetchTimeout": 15000
+}
+```
+<!-- spec:F07,F08,F12,S03 end -->
+
+---
+
+<!-- spec:F08 start -->
+## `jsonschema.cache.autoRefresh`
+
+| Type | Default | Values |
+|------|---------|--------|
+| `string` | `"off"` | `off`, `onOpen`, `daily` |
+
+Automatically revalidates a locally cached schema against its origin using conditional (`ETag` / `Last-Modified`) requests. `off` never revalidates automatically; `onOpen` revalidates a schema at most once per session when a bound file becomes the active editor; `daily` revalidates at most once every 24 hours. A `304 Not Modified` response leaves the cache untouched, and a failed revalidation is silent — the stale cached copy keeps serving IntelliSense.
+
+```json
+{
+  "jsonschema.cache.autoRefresh": "onOpen"
+}
+```
+<!-- spec:F08 end -->
+
+---
+
+<!-- spec:F12 start -->
+## `jsonschema.catalog.useSchemaStore`
+
+| Type | Default |
+|------|---------|
+| `boolean` | `true` |
+
+Includes the public [SchemaStore](https://www.schemastore.org) catalog in the **Bind Schema… → Browse catalog…** picker.
+
+## `jsonschema.catalog.sources`
+
+| Type | Default |
+|------|---------|
+| `array` of `string` | `[]` |
+
+Additional schema-catalog URLs in the SchemaStore catalog format (`{ "schemas": [{ "name", "description", "url", "fileMatch" }] }`). Private catalogs are fetched with the credentials configured via **Configure Schema Authentication…**.
+
+```json
+{
+  "jsonschema.catalog.sources": ["https://internal.example.com/schema-catalog.json"]
+}
+```
+<!-- spec:F12 end -->
+
+---
+
+<!-- spec:F17 start -->
+## `jsonschema.lint.enabled`
+
+| Type | Default |
+|------|---------|
+| `boolean` | `true` |
+
+Reports schema-quality diagnostics — missing `description`/`$schema`, unknown keywords, duplicate enums, and similar — on JSON Schema files, in a dedicated Problems-panel source separate from data-file validation.
+
+## `jsonschema.lint.rules`
+
+| Type | Default |
+|------|---------|
+| `object` | `{}` |
+
+Per-rule severity overrides. Map a rule id to `off`, `hint`, `info`, or `warning`. Rule ids: `no-unknown-keywords`, `require-schema-declaration`, `require-root-id`, `require-descriptions`, `explicit-additional-properties`, `no-duplicate-enum`, `no-empty-required`.
+
+```json
+{
+  "jsonschema.lint.rules": {
+    "require-descriptions": "off",
+    "no-unknown-keywords": "warning"
+  }
+}
+```
+<!-- spec:F17 end -->
+
+---
+
+<!-- spec:F09 start -->
 ## `.json-schema-preview-config.json`
 
 The extension discovers a `.json-schema-preview-config.json` file in the workspace folder that contains the schema being rendered (with fallback to other workspace folders in order). The file controls the `json-schema-for-humans` renderer and the output template.
@@ -82,17 +196,21 @@ The `template_name` field controls the rendered format:
 | `html` | Standalone HTML | Self-contained file with embedded styles |
 
 The **Download** button in the preview panel uses the correct extension (`.html` or `.md`) based on the active template.
+<!-- spec:F09 end -->
 
 ---
 
+<!-- spec:F04,F10,F11 start -->
 ## Schema Binding (`json.schemas` / `yaml.schemas`)
 
-Schema bindings created via **Bind Schema…** are written to VS Code's standard `json.schemas` (for JSON/JSONC/JSONL files) and `yaml.schemas` (for YAML files) settings. Choose the scope when prompted:
+Schema bindings created via **Bind Schema…** are written to VS Code's standard `json.schemas` (for JSON/JSONC/JSONL files) and `yaml.schemas` (for YAML files) settings, or inline as the file's own `$schema` field. Choose the scope when prompted:
 
 | Scope | Stored in | Lifetime |
 |---|---|---|
 | Workspace file | `.code-workspace` file | Committed with the repo (multi-root workspaces only) |
 | Workspace folder | `.vscode/settings.json` | Committed with the repo |
 | User | User `settings.json` | All workspaces on this machine |
+| Inline (`$schema` field) | The data file itself | Portable to other editors and tools |
 
-Bindings can be edited manually in the relevant `settings.json` file.
+Bindings can be edited manually in the relevant `settings.json` file. **TOML files use the inline scope exclusively** — VS Code has no built-in `toml.schemas` mechanism, so the picker offers only the inline option for `.toml` files.
+<!-- spec:F04,F10,F11 end -->

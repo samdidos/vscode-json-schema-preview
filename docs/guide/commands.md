@@ -6,6 +6,7 @@ Commands that act on the current file are also available as **editor toolbar ico
 
 ---
 
+<!-- spec:F01 start -->
 ## JSON Schema: Preview
 
 **ID:** `jsonschema.preview`
@@ -17,9 +18,11 @@ Disabled in untrusted workspaces — see [Workspace Trust](/guide/#workspace-tru
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (eye icon) | ✅ |
+<!-- spec:F01 end -->
 
 ---
 
+<!-- spec:F05 start -->
 ## JSON Schema: Edit (visual)
 
 **ID:** `jsonschema.edit`
@@ -29,9 +32,11 @@ Opens a form-based editor panel for the active schema file. Edit the most common
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (pencil icon) | ✅ |
+<!-- spec:F05 end -->
 
 ---
 
+<!-- spec:F09 start -->
 ## JSON Schema: Configure Preview
 
 **ID:** `jsonschema.configure`
@@ -53,49 +58,118 @@ Opens the `.json-schema-preview-config.json` configuration file directly in the 
 | Toolbar | Command Palette |
 |---------|----------------|
 | — | ✅ |
+<!-- spec:F09 end -->
 
 ---
 
+<!-- spec:F04,F10,F12 start -->
 ## JSON Schema: Bind Schema…
 
 **ID:** `jsonschema.bindToCurrentFile`
 
-Shows a Quick Pick list of all schema files in the workspace and binds the selected schema to the currently active data file. The binding is written to VS Code's `json.schemas` / `yaml.schemas` settings at the scope you choose (workspace file, folder, or user). The status bar updates to show the bound schema name.
+Shows a Quick Pick list of all schema files in the workspace and binds the selected schema to the currently active data file. The binding is written to VS Code's `json.schemas` / `yaml.schemas` settings at the scope you choose (workspace file, folder, or user), or inline as the file's own `$schema` field. A **Browse catalog…** entry searches SchemaStore and any configured private catalogs instead of pasting a URL. The status bar updates to show the bound schema name.
 
 Also available via **right-click** in the editor and the **Explorer** context menu.
 
 | Toolbar | Command Palette | Context Menu |
 |---------|----------------|---|
 | — | ✅ | ✅ |
+<!-- spec:F04,F10,F12 end -->
 
 ---
 
+<!-- spec:F03 start -->
 ## JSON Schema: Validate This File
 
 **ID:** `jsonschema.validateFile`
 
-Validates the active JSON or YAML file against its bound schema (see [Bind Schema…](#json-schema-bind-schema)) using AJV. Errors appear in the **Problems** panel with precise line/column locations.
+Validates the active JSON, YAML, or TOML file against its bound schema (see [Bind Schema…](#json-schema-bind-schema)) using AJV. Errors appear in the **Problems** panel with precise line/column locations.
 
 If the file already has an inline `$schema` field the bound schema is inferred from it — no explicit binding needed.
 
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (checkmark icon, data files only) | ✅ |
+<!-- spec:F03 end -->
 
 ---
 
+<!-- spec:F06,F11 start -->
 ## JSON Schema: Generate Schema from This File
 
 **ID:** `jsonschema.inferSchema`
 
-Infers a JSON Schema from the active JSON, JSONC, JSONL, or YAML data file using `genson-js`. Opens the generated schema in a new editor tab beside the original. A great starting point for adopting schema-first workflows.
+Infers a JSON Schema from the active JSON, JSONC, JSONL, YAML, or TOML data file using `genson-js`. Opens the generated schema in a new editor tab beside the original. A great starting point for adopting schema-first workflows.
 
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (wand icon, data files only) | ✅ |
+<!-- spec:F06,F11 end -->
 
 ---
 
+<!-- spec:F16 start -->
+## JSON Schema: Generate Sample Data from This Schema
+
+**ID:** `jsonschema.generateSampleData`
+
+The inverse of inference: generates a valid example instance from the active JSON Schema, honouring `const`/`examples`/`default`/`enum` and common format/constraint keywords where present. Choose JSON or YAML output; the result opens in a new editor tab beside the schema. Useful for seeding fixtures or trying out a schema you just bound.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| ✅ (beaker icon, schema files only) | ✅ |
+<!-- spec:F16 end -->
+
+---
+
+<!-- spec:F14 start -->
+## JSON Schema: Bundle / Dereference Schema
+
+**ID:** `jsonschema.bundleSchema`
+
+Flattens a multi-file schema into one self-contained document, opened in a new editor tab — the source file is never modified. Two modes:
+
+- **Bundle** — external refs are pulled into `$defs` and rewritten to local pointers (round-trippable).
+- **Dereference** — refs are replaced inline by their targets (maximally portable); cyclic references are detected and kept as `$defs` refs so expansion always terminates.
+
+Remote refs resolve using stored credentials and prefer an existing local cache entry over the network.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| ✅ (references icon, schema files only) | ✅ |
+<!-- spec:F14 end -->
+
+---
+
+<!-- spec:F15 start -->
+## JSON Schema: Diff Against Baseline
+
+**ID:** `jsonschema.diffSchema`
+
+Compares the active schema against a baseline — Git HEAD, another workspace file, or a remote URL — and classifies every change as **breaking**, **non-breaking**, **informational**, or **unclassified** for instance-document compatibility. Shows a one-line summary with a button to open the full grouped report (a read-only document listing each change's JSON Pointer path and old → new values).
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| ✅ (diff icon, schema files only) | ✅ |
+<!-- spec:F15 end -->
+
+---
+
+<!-- spec:F17 start -->
+## JSON Schema: Insert $schema Declaration
+
+**ID:** `jsonschema.lint.insertSchemaDeclaration`
+
+Inserts a `$schema` declaration into the active schema file, prompting for which JSON Schema draft to target (2020-12 first). Offered as a quick fix by the built-in schema linter when a schema is missing this declaration — see [Configuration](/guide/configuration) for the linter's settings.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — | ✅ |
+<!-- spec:F17 end -->
+
+---
+
+<!-- spec:F07 start -->
 ## JSON Schema: Configure Schema Authentication…
 
 **ID:** `jsonschema.configureSchemaAuth`
@@ -114,14 +188,16 @@ The command is also reachable from:
 | Toolbar | Command Palette |
 |---------|----------------|
 | — | ✅ |
+<!-- spec:F07 end -->
 
 ---
 
+<!-- spec:F08 start -->
 ## JSON Schema: Cache Schema Locally
 
 **ID:** `jsonschema.cacheSchemaLocally`
 
-Downloads the remote schema (using stored credentials) and saves it as a local file. Rewrites the `json.schemas` / `yaml.schemas` entry to point at the local copy so VS Code's built-in JSON language server and the Red Hat YAML extension both see it — eliminating the red squiggle and restoring IntelliSense.
+Downloads the remote schema (using stored credentials) and saves it as a local file. Rewrites the `json.schemas` / `yaml.schemas` entry to point at the local copy so VS Code's built-in JSON language server and the Red Hat YAML extension both see it — eliminating the red squiggle and restoring IntelliSense. Can also be revalidated automatically — see `jsonschema.cache.autoRefresh` in [Configuration](/guide/configuration).
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -138,3 +214,4 @@ Re-downloads a previously cached schema from its original remote URL. Use this w
 | Toolbar | Command Palette |
 |---------|----------------|
 | — | ✅ |
+<!-- spec:F08 end -->

@@ -1,5 +1,6 @@
 # Introduction
 
+<!-- spec:F01,F03,F05,F06 -->
 **JSON Schema Preview** is a VS Code extension that turns JSON Schema files (`.json` or `.yaml`/`.yml`) into live, human-readable documentation panels — with built-in validation, a visual form editor, and schema inference.
 
 ## Installation
@@ -16,6 +17,7 @@ ext install samdidos.json-schema-preview
 
 Or search for **"JSON Schema Preview"** in the Extensions panel (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>).
 
+<!-- spec:F01 start -->
 ## Opening a Preview
 
 1. Open any `.json` or `.yaml` file whose root object contains a `$schema` key.
@@ -38,7 +40,9 @@ pip install json-schema-for-humans
 ```
 
 The extension checks for the package on startup and shows a notification if it is missing.
+<!-- spec:F01 end -->
 
+<!-- spec:S02 start -->
 ## Workspace Trust
 
 The preview renders by calling a local Python tool, so it is **disabled in untrusted workspaces** (VS Code's Restricted Mode). The extension is declared as `untrustedWorkspaces: limited` in its manifest:
@@ -52,11 +56,14 @@ The preview renders by calling a local Python tool, so it is **disabled in untru
 | Auth configuration | ✅ | ✅ |
 
 If the preview command is run in an untrusted workspace a warning is displayed with a **Manage Workspace Trust** button.
+<!-- spec:S02 end -->
 
+<!-- spec:F01 -->
 ## Auto-Open Preview
 
 Enable [`jsonschema.preview.autoOpen`](/guide/configuration#jsonschema-preview-autoopen) in settings to open the preview panel automatically whenever a schema file becomes the active editor.
 
+<!-- spec:F02 -->
 ## Live Preview
 
 Enable [`jsonschema.preview.liveUpdate`](/guide/configuration#jsonschema-preview-liveupdate) to refresh the preview as you type (debounced). The preview panel must already be open.

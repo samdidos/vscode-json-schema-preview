@@ -1,3 +1,4 @@
+<!-- spec:F07,F08 start -->
 # Private & Authenticated Schemas
 
 When a schema lives behind authentication, VS Code's language server gets a `401`,
@@ -33,6 +34,7 @@ the problem shows up:
 - **Status bar** — a `🔒` / `🔓` indicator reflects auth status for the current
   file's schema; click it to configure.
 
+<!-- spec:F08 start -->
 ## Eliminating the red squiggle
 
 Configuring auth lets *this extension* fetch the schema, but VS Code's built-in JSON
@@ -46,10 +48,14 @@ servers then read it successfully — the squiggle disappears and IntelliSense w
 
 When the remote schema changes, run
 [**JSON Schema: Refresh Schema Cache**](/guide/commands#json-schema-refresh-schema-cache)
-to re-download the latest version.
+to re-download the latest version, or enable `jsonschema.cache.autoRefresh` (see
+[Configuration](/guide/configuration#jsonschema-cache-autorefresh)) to revalidate it
+automatically.
+<!-- spec:F08 end -->
 
 ## Related commands
 
 - [Configure Schema Authentication…](/guide/commands#json-schema-configure-schema-authentication)
 - [Cache Schema Locally](/guide/commands#json-schema-cache-schema-locally)
 - [Refresh Schema Cache](/guide/commands#json-schema-refresh-schema-cache)
+<!-- spec:F07,F08 end -->
