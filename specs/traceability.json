@@ -1765,6 +1765,161 @@
       ],
       "note": "dedicated DiagnosticCollection source 'json-schema-lint'"
     },
+    "F18-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-FR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F18-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F19-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F19-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F19-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F19-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F19-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F19-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F19-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F19-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F19-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-FR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-FR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-FR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-FR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-FR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-FR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-FR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-FR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "F20-NFR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
     "S01-SR-01": {
       "status": "manual",
       "impl": [
@@ -2197,6 +2352,61 @@
         "package.json"
       ],
       "note": "check:doc-traceability wired into npm run verify (runs before test:coverage)"
+    },
+    "S08-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-NFR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-SR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-SR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-SR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-SR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-SR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-SR-06": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-SR-07": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-SR-08": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
+    },
+    "S08-SR-09": {
+      "status": "planned",
+      "impl": [],
+      "note": ""
     }
   }
 }

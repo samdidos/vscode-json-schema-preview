@@ -67,9 +67,9 @@
     <text x="174" y="341" font-size="13"
           font-weight="400" fill="#ffffff" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Docs</text>
-    <rect x="190" y="326" width="307.32" height="22" rx="4" ry="4" fill="#3987e5" />
-    <text x="507.32" y="341" font-size="13" font-weight="600"
-          fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">3.9</text>
+    <rect x="190" y="326" width="299.44" height="22" rx="4" ry="4" fill="#3987e5" />
+    <text x="499.44" y="341" font-size="13" font-weight="600"
+          fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">3.8</text>
     <text x="174" y="377" font-size="13"
           font-weight="400" fill="#ffffff" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Code quality</text>
