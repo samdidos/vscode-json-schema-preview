@@ -4,6 +4,8 @@
 // anything the rules cannot reason about is reported as `unclassified`, never
 // dropped (F15-FR-08). The command layer supplies the two versions and renders.
 
+import { isObject } from './schemaPointer';
+
 export type DiffKind = 'breaking' | 'non-breaking' | 'informational' | 'unclassified';
 
 export interface DiffEntry {
@@ -27,10 +29,6 @@ const SCHEMA_KEYWORDS = new Set([
 ]);
 // Keywords whose value is a map of schemas → recurse per key.
 const SCHEMA_MAP_KEYWORDS = new Set(['properties', 'patternProperties', '$defs', 'definitions']);
-
-function isObject(v: unknown): v is Record<string, unknown> {
-  return !!v && typeof v === 'object' && !Array.isArray(v);
-}
 
 /** Order-insensitive deep equality (F15-FR-04). */
 export function deepEqual(a: unknown, b: unknown): boolean {
@@ -195,28 +193,39 @@ function diffBound(at: string, kind: 'min' | 'max', ov: unknown, nv: unknown, ou
   }
 }
 
-function diffAllOf(at: string, ov: unknown, nv: unknown, out: DiffEntry[]): void {
+/**
+ * Classifies a change in an array-valued composition keyword (`allOf`,
+ * `oneOf`/`anyOf`) purely by branch count. `allOf` narrows the set of valid
+ * instances as branches are added (so adding is breaking, removing is not);
+ * `oneOf`/`anyOf` widens it (so removing is breaking, adding is not) — hence
+ * `addedKind`/`removedKind` are swapped between the two callers below.
+ */
+function diffBranchCount(
+  at: string,
+  label: string,
+  ov: unknown,
+  nv: unknown,
+  out: DiffEntry[],
+  addedKind: DiffKind,
+  removedKind: DiffKind,
+): void {
   const oldLen = Array.isArray(ov) ? ov.length : 0;
   const newLen = Array.isArray(nv) ? nv.length : 0;
   if (newLen > oldLen) {
-    out.push({ path: at, kind: 'breaking', change: 'allOf branch added (restricts valid instances)', oldValue: ov, newValue: nv });
+    out.push({ path: at, kind: addedKind, change: `${label} branch added`, oldValue: ov, newValue: nv });
   } else if (newLen < oldLen) {
-    out.push({ path: at, kind: 'non-breaking', change: 'allOf branch removed', oldValue: ov, newValue: nv });
+    out.push({ path: at, kind: removedKind, change: `${label} branch removed`, oldValue: ov, newValue: nv });
   } else {
-    out.push({ path: at, kind: 'unclassified', change: 'allOf branches changed', oldValue: ov, newValue: nv });
+    out.push({ path: at, kind: 'unclassified', change: `${label} branches changed`, oldValue: ov, newValue: nv });
   }
 }
 
+function diffAllOf(at: string, ov: unknown, nv: unknown, out: DiffEntry[]): void {
+  diffBranchCount(at, 'allOf', ov, nv, out, 'breaking', 'non-breaking');
+}
+
 function diffOneAnyOf(at: string, key: string, ov: unknown, nv: unknown, out: DiffEntry[]): void {
-  const oldLen = Array.isArray(ov) ? ov.length : 0;
-  const newLen = Array.isArray(nv) ? nv.length : 0;
-  if (newLen < oldLen) {
-    out.push({ path: at, kind: 'breaking', change: `${key} branch removed`, oldValue: ov, newValue: nv });
-  } else if (newLen > oldLen) {
-    out.push({ path: at, kind: 'non-breaking', change: `${key} branch added`, oldValue: ov, newValue: nv });
-  } else {
-    out.push({ path: at, kind: 'unclassified', change: `${key} branches changed`, oldValue: ov, newValue: nv });
-  }
+  diffBranchCount(at, key, ov, nv, out, 'non-breaking', 'breaking');
 }
 
 function diffSchemaMap(at: string, closedNew: boolean, ov: unknown, nv: unknown, out: DiffEntry[]): void {

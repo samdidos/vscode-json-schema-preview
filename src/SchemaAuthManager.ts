@@ -56,6 +56,23 @@ export class SchemaAuthManager {
     try { return new URL(url).hostname; } catch { return url; }
   }
 
+  /**
+   * Shows the standard "requires authentication" error for a failed remote
+   * schema fetch, with a one-click "Configure Auth" action. Shared by every
+   * command that can hit an `AuthRequiredError` from a `$ref` (F14, F15).
+   * `subject` describes what needed the schema, e.g. `"A referenced schema
+   * at"` or `"Baseline at"` — the host is appended automatically.
+   */
+  static async offerConfigureAuth(subject: string, url: string): Promise<void> {
+    const action = await vscode.window.showErrorMessage(
+      `${subject} ${SchemaAuthManager.hostOf(url)} requires authentication.`,
+      'Configure Auth',
+    );
+    if (action === 'Configure Auth') {
+      void vscode.commands.executeCommand('jsonschema.configureSchemaAuth', url);
+    }
+  }
+
   // ── Auth header resolution ────────────────────────────────────────────────
 
   async getAuthHeaders(url: string): Promise<Record<string, string>> {

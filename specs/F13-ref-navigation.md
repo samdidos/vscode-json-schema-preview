@@ -44,7 +44,11 @@ schema *authors*.
 - **F13-FR-06** Remote (`http(s)://`) refs MUST resolve to the local cached
   copy when one exists (F08). When none exists, Go to Definition MUST offer a
   one-click "Cache schema locally" action (reusing F08/F07) instead of failing
-  silently.
+  silently. The cached copy MUST be parsed as YAML when the schema's
+  **original URL** ends `.yaml`/`.yml`, and as JSON/JSONC otherwise — F08's
+  on-disk cache file is always named with a `.json` extension regardless of
+  the schema's authored format, so language detection MUST use the original
+  URL, never the cached file's own extension.
 - **F13-FR-07** An unresolvable pointer (no such path in the target document)
   MUST produce a non-modal message naming the missing pointer, not an error.
 

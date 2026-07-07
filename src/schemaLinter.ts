@@ -294,15 +294,13 @@ function checkEmptyRequired(node: Extract<TreeNode, { kind: 'object' }>, finding
 
 function checkDuplicateEnum(value: TreeNode, findings: LintFinding[], isJson: boolean): void {
   if (value.kind !== 'array') { return; }
-  const seen: string[] = [];
+  const seen = new Set<string>();
   const unique: string[] = [];
-  let hasDup = false;
   for (const item of value.items) {
     const norm = normaliseScalar(item);
-    if (seen.includes(norm)) { hasDup = true; } else { unique.push(norm); }
-    seen.push(norm);
+    if (!seen.has(norm)) { seen.add(norm); unique.push(norm); }
   }
-  if (!hasDup) { return; }
+  if (unique.length === value.items.length) { return; }
   findings.push({
     ruleId: 'no-duplicate-enum',
     message: 'Enum contains duplicate values.',

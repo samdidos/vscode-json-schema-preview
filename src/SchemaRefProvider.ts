@@ -4,18 +4,23 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-  findRefAtOffset,
   parseRef,
   refKind,
   parseJsonPointer,
   locatePointerTarget,
+  locateInAst,
+  findRefInAst,
+  parseSchemaAst,
   resolvePointer,
   describeRefTarget,
   parseSchemaText,
+  type SchemaAst,
+  type RefHit,
 } from './schemaPointer';
 import { isJsonSchemaFile } from './PreviewWebPanel';
 import { SchemaAuthManager } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
+import { languageForSchemaSource } from './languages';
 
 const SELECTOR: vscode.DocumentSelector = [
   { language: 'json' },
@@ -31,8 +36,24 @@ interface TargetDoc {
   uri: vscode.Uri;
 }
 
+/** Memoized parse of the active document, keyed by uri+version. A single slot
+ *  is enough to avoid re-parsing the same unchanged document on every hover
+ *  event or go-to-definition within one file — the common interactive case —
+ *  without needing disposal wiring for closed documents (F13-NFR). */
+interface ParsedDoc {
+  uri: string;
+  version: number;
+  text: string;
+  languageId: string;
+  ast: SchemaAst;
+  pojo?: unknown;
+  pojoComputed: boolean;
+}
+
 export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.HoverProvider {
   constructor(private readonly cache: SchemaCache) {}
+
+  private parsed: ParsedDoc | undefined;
 
   /** Register both providers; returns the disposables. */
   static register(cache: SchemaCache): vscode.Disposable[] {
@@ -49,13 +70,17 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
     document: vscode.TextDocument,
     position: vscode.Position,
   ): vscode.Location | undefined {
-    const hit = this.refAt(document, position);
-    if (!hit) { return undefined; }
+    const found = this.refAt(document, position);
+    if (!found) { return undefined; }
+    const { hit, parsed } = found;
     const { uri, fragment } = parseRef(hit.ref);
     const segments = parseJsonPointer(fragment);
 
     if (refKind(hit.ref) === 'local') {
-      return this.locationIn({ text: document.getText(), languageId: document.languageId, uri: document.uri }, segments);
+      const span = locateInAst(parsed.ast, segments);
+      if (!span) { return undefined; }
+      const range = new vscode.Range(positionAt(parsed.text, span.start), positionAt(parsed.text, span.end));
+      return new vscode.Location(document.uri, range);
     }
 
     const target = this.resolveTargetDoc(document, uri, hit.ref);
@@ -69,29 +94,31 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
     document: vscode.TextDocument,
     position: vscode.Position,
   ): vscode.Hover | undefined {
-    const hit = this.refAt(document, position);
-    if (!hit) { return undefined; }
+    const found = this.refAt(document, position);
+    if (!found) { return undefined; }
+    const { hit, parsed } = found;
     const { uri, fragment } = parseRef(hit.ref);
     const segments = parseJsonPointer(fragment);
     const kind = refKind(hit.ref);
 
-    let target: TargetDoc | undefined;
+    let root: unknown;
     if (kind === 'local') {
-      target = { text: document.getText(), languageId: document.languageId, uri: document.uri };
+      root = this.getPojo(parsed);
     } else if (kind === 'relative') {
-      target = this.readRelative(document, uri);
+      const target = this.readRelative(document, uri);
+      if (!target) { return undefined; }
+      root = parseSchemaText(target.text, target.languageId);
     } else {
-      target = this.readCachedRemote(uri || hit.ref);
+      const target = this.readCachedRemote(uri || hit.ref);
       if (!target) {
         // F13-FR-10: never fetch on hover; point at the caching command instead.
         return new vscode.Hover(new vscode.MarkdownString(
           `**$ref** \`${hit.ref}\`\n\n_Remote schema is not cached. Run **JSON Schema: Cache Schema Locally** to enable navigation and hover._`,
         ));
       }
+      root = parseSchemaText(target.text, target.languageId);
     }
-    if (!target) { return undefined; }
 
-    const root = parseSchemaText(target.text, target.languageId);
     const value = resolvePointer(root, segments);
     if (value === undefined) {
       return new vscode.Hover(new vscode.MarkdownString(
@@ -104,10 +131,42 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
 
   // ── Shared helpers ───────────────────────────────────────────────────────────
 
-  private refAt(document: vscode.TextDocument, position: vscode.Position) {
+  private refAt(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+  ): { hit: RefHit; parsed: ParsedDoc } | undefined {
     if (!isJsonSchemaFile(document)) { return undefined; }
+    const parsed = this.getParsed(document);
+    if (!parsed) { return undefined; }
     const offset = document.offsetAt(position);
-    return findRefAtOffset(document.getText(), document.languageId, offset);
+    const hit = findRefInAst(parsed.ast, offset);
+    return hit ? { hit, parsed } : undefined;
+  }
+
+  /** Parses `document` once and reuses the result across calls for the same
+   *  uri+version, so repeated hover/definition requests on an unchanged
+   *  document (the common case) never re-parse it. */
+  private getParsed(document: vscode.TextDocument): ParsedDoc | undefined {
+    const key = document.uri.toString();
+    if (this.parsed && this.parsed.uri === key && this.parsed.version === document.version) {
+      return this.parsed;
+    }
+    const text = document.getText();
+    const ast = parseSchemaAst(text, document.languageId);
+    if (!ast) { this.parsed = undefined; return undefined; }
+    this.parsed = { uri: key, version: document.version, text, languageId: document.languageId, ast, pojoComputed: false };
+    return this.parsed;
+  }
+
+  /** Lazily parses (and caches) the plain-value tree for a local-ref hover —
+   *  computed only when actually needed, since a relative/remote-ref hover
+   *  never uses the active document's own value tree. */
+  private getPojo(parsed: ParsedDoc): unknown {
+    if (!parsed.pojoComputed) {
+      parsed.pojo = parseSchemaText(parsed.text, parsed.languageId);
+      parsed.pojoComputed = true;
+    }
+    return parsed.pojo;
   }
 
   private locationIn(target: TargetDoc, segments: string[]): vscode.Location | undefined {
@@ -147,7 +206,7 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
       const baseDir = path.dirname(document.uri.fsPath);
       const filePath = path.resolve(baseDir, relUri);
       const text = fs.readFileSync(filePath, 'utf-8');
-      return { text, languageId: languageForPath(filePath), uri: vscode.Uri.file(filePath) };
+      return { text, languageId: languageForSchemaSource(filePath), uri: vscode.Uri.file(filePath) };
     } catch {
       return undefined;
     }
@@ -156,7 +215,10 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
   private readCachedRemote(url: string): TargetDoc | undefined {
     const text = this.cache.readCached(url);
     if (text === undefined) { return undefined; }
-    return { text, languageId: 'json', uri: vscode.Uri.file(`${url}`) };
+    // F13-FR-06: the cache file on disk is always named `<hash>.json` (F08)
+    // regardless of the schema's authored format, so the language must be
+    // determined from the original URL, not the cached file's own extension.
+    return { text, languageId: languageForSchemaSource(url), uri: vscode.Uri.file(`${url}`) };
   }
 }
 
@@ -171,11 +233,4 @@ export function positionAt(text: string, offset: number): vscode.Position {
     if (text.charCodeAt(i) === 10 /* \n */) { line++; lastNl = i; }
   }
   return new vscode.Position(line, clamped - lastNl - 1);
-}
-
-function languageForPath(filePath: string): string {
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext === '.yaml' || ext === '.yml') { return 'yaml'; }
-  if (ext === '.jsonc') { return 'jsonc'; }
-  return 'json';
 }

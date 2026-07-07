@@ -10,6 +10,9 @@ import {
   findRefAtOffset,
   locatePointerTarget,
   parseSchemaText,
+  parseSchemaAst,
+  findRefInAst,
+  locateInAst,
 } from '../../schemaPointer';
 
 suite('[F13-FR-03] parseJsonPointer() / unescapePointerToken()', () => {
@@ -156,6 +159,72 @@ suite('[F13-FR-03] findRefAtOffset() / locatePointerTarget() — YAML', () => {
   test('returns undefined off a $ref', () => {
     const idx = text.indexOf('type: object');
     assert.strictEqual(findRefAtOffset(text, 'yaml', idx), undefined);
+  });
+});
+
+// parseSchemaAst/findRefInAst/locateInAst let a caller parse a document once
+// and reuse the AST for both ref-finding and pointer-locating (F13-NFR),
+// instead of findRefAtOffset/locatePointerTarget each re-parsing the text.
+suite('parseSchemaAst() / findRefInAst() / locateInAst()', () => {
+  const jsonText = JSON.stringify({ $defs: { address: { type: 'object' } }, use: { $ref: '#/$defs/address' } }, null, 2);
+  const yamlText = ['$defs:', '  address:', '    type: object', 'use:', "  $ref: '#/$defs/address'", ''].join('\n');
+
+  test('returns undefined for empty JSON input', () => {
+    // jsonc-parser's parseTree is lenient about malformed content (it returns
+    // a best-effort partial tree) but returns undefined for empty/whitespace
+    // input — mirroring findRefAtOffset/locatePointerTarget's existing guard.
+    assert.strictEqual(parseSchemaAst('', 'json'), undefined);
+  });
+
+  test('returns undefined for unparsable YAML', () => {
+    // yaml's parseDocument rarely throws outright; parseSchemaAst still must
+    // not throw for genuinely malformed input.
+    assert.doesNotThrow(() => parseSchemaAst(':::', 'yaml'));
+  });
+
+  test('findRefInAst(parseSchemaAst(...)) matches findRefAtOffset(...) for JSON', () => {
+    const refIndex = jsonText.indexOf('#/$defs/address');
+    const ast = parseSchemaAst(jsonText, 'json');
+    assert.ok(ast);
+    const viaAst = findRefInAst(ast!, refIndex + 2);
+    const viaText = findRefAtOffset(jsonText, 'json', refIndex + 2);
+    assert.deepStrictEqual(viaAst, viaText);
+  });
+
+  test('locateInAst(parseSchemaAst(...)) matches locatePointerTarget(...) for JSON', () => {
+    const ast = parseSchemaAst(jsonText, 'json');
+    assert.ok(ast);
+    const viaAst = locateInAst(ast!, ['$defs', 'address']);
+    const viaText = locatePointerTarget(jsonText, 'json', ['$defs', 'address']);
+    assert.deepStrictEqual(viaAst, viaText);
+  });
+
+  test('findRefInAst(parseSchemaAst(...)) matches findRefAtOffset(...) for YAML', () => {
+    const idx = yamlText.indexOf('#/$defs/address');
+    const ast = parseSchemaAst(yamlText, 'yaml');
+    assert.ok(ast);
+    const viaAst = findRefInAst(ast!, idx + 1);
+    const viaText = findRefAtOffset(yamlText, 'yaml', idx + 1);
+    assert.deepStrictEqual(viaAst, viaText);
+  });
+
+  test('locateInAst(parseSchemaAst(...)) matches locatePointerTarget(...) for YAML', () => {
+    const ast = parseSchemaAst(yamlText, 'yaml');
+    assert.ok(ast);
+    const viaAst = locateInAst(ast!, ['$defs', 'address']);
+    const viaText = locatePointerTarget(yamlText, 'yaml', ['$defs', 'address']);
+    assert.deepStrictEqual(viaAst, viaText);
+  });
+
+  test('the same parsed AST can be queried for both a ref and a pointer target', () => {
+    const ast = parseSchemaAst(jsonText, 'json');
+    assert.ok(ast);
+    const refIndex = jsonText.indexOf('#/$defs/address');
+    const hit = findRefInAst(ast!, refIndex + 2);
+    assert.ok(hit);
+    const span = locateInAst(ast!, ['$defs', 'address']);
+    assert.ok(span);
+    assert.strictEqual(jsonText.slice(span!.start, span!.end), '"address"');
   });
 });
 

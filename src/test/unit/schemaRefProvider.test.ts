@@ -7,12 +7,13 @@ import * as vscode from '../mocks/vscode';
 const { SchemaRefProvider, positionAt } = require('../../SchemaRefProvider');
 
 /** Build a document double with the offset/position plumbing the provider needs. */
-function makeDoc(text: string, languageId = 'json', fsPath = '/ws/schema.json') {
+function makeDoc(text: string, languageId = 'json', fsPath = '/ws/schema.json', version = 1) {
   return {
     languageId,
-    uri: { fsPath, scheme: 'file' },
+    uri: { fsPath, scheme: 'file', toString: () => `file://${fsPath}` },
     getText: () => text,
     offsetAt: (pos: any) => pos.__offset ?? 0,
+    version,
   };
 }
 
@@ -122,6 +123,20 @@ suite('[F13-FR-06] provideDefinition() — remote ref', () => {
     assert.strictEqual(loc, undefined);
     assert.ok(vscode.window.showInformationMessage.called);
   });
+
+  // Regression: F08's on-disk cache file is always named "<hash>.json"
+  // regardless of the schema's authored format, so language detection for a
+  // cached remote schema must come from the *original* URL, not the cached
+  // file's extension (which is meaningless) or a hardcoded assumption.
+  test('[F13-FR-06] resolves a pointer in a cached remote schema authored as YAML', () => {
+    const url = 'https://example.com/s.yaml';
+    const cached = 'defs:\n  id:\n    type: string\n';
+    const text = JSON.stringify({ $schema: 'x', use: { $ref: `${url}#/defs/id` } }, null, 2);
+    const provider = new SchemaRefProvider(fakeCache({ [url]: cached }));
+    const doc = makeDoc(text);
+    const loc = provider.provideDefinition(doc, posAt(text.indexOf(url) + 5));
+    assert.ok(loc, 'expected the YAML pointer to resolve');
+  });
 });
 
 suite('[F13-FR-08] provideHover()', () => {
@@ -162,6 +177,56 @@ suite('[F13-FR-08] provideHover()', () => {
     const provider = new SchemaRefProvider(fakeCache());
     const doc = makeDoc(text);
     assert.strictEqual(provider.provideHover(doc, posAt(text.indexOf('"type"') + 1)), undefined);
+  });
+});
+
+// Regression: provideHover and provideDefinition each independently parsed the
+// active document (once to find the $ref under the cursor, once more to
+// locate/resolve the target) on every single call, even for a local ref where
+// both parses read the exact same unchanged text. SchemaRefProvider now
+// memoizes the parse per document version.
+suite('SchemaRefProvider — parse caching [F13-NFR]', () => {
+  test('does not re-parse the document on a second hover/definition call for an unchanged version', () => {
+    const text = JSON.stringify(
+      { $schema: 'x', $defs: { address: { title: 'Address', type: 'object' } }, use: { $ref: '#/$defs/address' } },
+    );
+    let getTextCalls = 0;
+    const doc: any = makeDoc(text);
+    const realGetText = doc.getText;
+    doc.getText = () => { getTextCalls++; return realGetText(); };
+
+    const provider = new SchemaRefProvider(fakeCache());
+    const pos = posAt(text.indexOf('#/$defs/address') + 2);
+
+    provider.provideHover(doc, pos);
+    const afterFirst = getTextCalls;
+    getTextCalls = 0;
+    provider.provideDefinition(doc, pos);
+    const afterSecond = getTextCalls;
+
+    assert.ok(afterFirst >= 1, 'sanity: getText() should be read at least once on the first call');
+    assert.ok(
+      afterSecond < afterFirst,
+      `a second call on the same unchanged document version must read getText() fewer times than the first ` +
+      `(first call read it ${afterFirst}x, second read it ${afterSecond}x) — the parsed AST/value-tree must be reused`
+    );
+  });
+
+  test('does not return a stale result after the document changes version', () => {
+    const provider = new SchemaRefProvider(fakeCache());
+    const textV1 = JSON.stringify({ $schema: 'x', $defs: { a: { type: 'string' } }, use: { $ref: '#/$defs/a' } });
+    const doc: any = makeDoc(textV1, 'json', '/ws/schema.json', 1);
+    const posV1 = posAt(textV1.indexOf('#/$defs/a') + 2);
+    const loc1 = provider.provideDefinition(doc, posV1);
+    assert.ok(loc1, 'expected the v1 pointer to resolve');
+
+    // Same uri, new version, no $ref anywhere — if the cache incorrectly kept
+    // serving v1's parsed AST, this offset would still resolve against it.
+    const textV2 = JSON.stringify({ $schema: 'x', note: 'no ref in this version' });
+    doc.getText = () => textV2;
+    doc.version = 2;
+    const stale = provider.provideDefinition(doc, posV1);
+    assert.strictEqual(stale, undefined, 'a v1-only $ref offset must not resolve once the document has moved to v2');
   });
 });
 

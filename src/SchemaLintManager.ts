@@ -50,7 +50,7 @@ export class SchemaLintManager implements vscode.CodeActionProvider {
   /** Lint one document now, updating diagnostics (F17-FR-01/02/11). */
   lintDocument(document: vscode.TextDocument): void {
     const uriKey = document.uri.toString();
-    if (!getLintEnabled() || !isSupported(document.languageId) || !isSchemaFileForLint(document)) {
+    if (!this.isLintCandidate(document)) {
       this.diagnostics.delete(document.uri);
       this.findingsByUri.delete(uriKey);
       return;
@@ -149,7 +149,15 @@ export class SchemaLintManager implements vscode.CodeActionProvider {
 
   // ── Lifecycle helpers ───────────────────────────────────────────────────────
 
+  /** Shared with lintDocument() so scheduling and the actual lint gate never drift apart. */
+  private isLintCandidate(document: vscode.TextDocument): boolean {
+    return getLintEnabled() && isSupported(document.languageId) && isSchemaFileForLint(document);
+  }
+
   private scheduleLint(document: vscode.TextDocument): void {
+    // Skip the timer entirely for documents that can never lint (F17-FR-03),
+    // rather than allocating and clearing one on every keystroke in every file.
+    if (!this.isLintCandidate(document)) { return; }
     const key = document.uri.toString();
     const existing = this.timers.get(key);
     if (existing) { clearTimeout(existing); }
@@ -159,9 +167,15 @@ export class SchemaLintManager implements vscode.CodeActionProvider {
     }, DEBOUNCE_MS));
   }
 
+  /** Cancels any pending debounced lint for `document` too (F17-FR-02) — otherwise
+   *  a document edited then closed within the debounce window would still lint
+   *  after close, re-populating diagnostics this same call is meant to clear. */
   private clear(document: vscode.TextDocument): void {
+    const key = document.uri.toString();
+    const timer = this.timers.get(key);
+    if (timer) { clearTimeout(timer); this.timers.delete(key); }
     this.diagnostics.delete(document.uri);
-    this.findingsByUri.delete(document.uri.toString());
+    this.findingsByUri.delete(key);
   }
 }
 
