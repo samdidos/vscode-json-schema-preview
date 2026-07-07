@@ -96,13 +96,24 @@ value tree, so date/time values are validated as strings.
 - **F11-FR-15** `extractInlineSchemaUrl` MUST be extended to detect TOML
   files and extract the `"$schema"` key value using a lightweight regex
   (`/^"\$schema"\s*=\s*"([^"]+)"/m`) rather than full TOML parsing, consistent
-  with how YAML inline extraction uses a regex.
+  with how YAML inline extraction uses a regex. The search MUST be restricted
+  to the text **before the first `[table]` or `[[array-of-table]]` header
+  line** — a `"$schema"` key appearing after such a header is a nested key
+  (e.g. `tool.foo."$schema"`), not the document's own binding, and MUST NOT
+  be mistaken for one.
 - **F11-FR-16** The F10 inline binding write path MUST support TOML: inserting
-  or replacing `"$schema" = "<ref>"` as the first non-comment line of the file,
-  using a `WorkspaceEdit`.
+  or replacing `"$schema" = "<ref>"` as the first non-comment line of the file
+  (searched under the same root-table restriction as F11-FR-15), using a
+  `WorkspaceEdit`. The `<ref>` value MUST be escaped as a valid TOML basic
+  string (backslash and `"` escaped) before being embedded — a raw Windows
+  absolute path (e.g. `C:\Users\...`) contains backslashes that are otherwise
+  interpreted as TOML escape sequences, an invalid one (e.g. `\U` not
+  followed by 8 hex digits) can make the whole file fail to parse. Extraction
+  (F11-FR-15) MUST reverse the same escaping when reading the value back.
 - **F11-FR-17** Inline removal for TOML MUST delete the `"$schema" = ...` line
   entirely (TOML key–value pairs are self-contained lines; no trailing-comma
-  repair is needed unlike JSON).
+  repair is needed unlike JSON), restricted to the same root-table region as
+  F11-FR-15.
 
 ### Menus and Command Palette
 

@@ -79,6 +79,24 @@ recognise them.
   - When the picked schema file is outside the workspace entirely, the
     absolute path MUST be used regardless of scope (pre-existing behaviour).
 
+### Reading Back a Binding
+
+- **F04-FR-14** Any code that determines whether the *active* document has a
+  bound schema (the status bar, the validator, F08's cache auto-revalidation)
+  MUST resolve `json.schemas` / `yaml.schemas` the same way VS Code itself
+  does for that document: scoped to the document's own resource (so a
+  WorkspaceFolder-scoped entry written in a *different* folder's
+  `.vscode/settings.json` is correctly excluded), and checked against
+  **every** scope that can hold a binding for that document — Global,
+  Workspace, and the document's own WorkspaceFolder — since a workspace can
+  contain bindings written at different scopes for different files
+  simultaneously. Matching MUST try both path forms a binding can be stored
+  in (plain folder-relative, from WorkspaceFolder/Global scope, and
+  workspace-root-relative with a folder-name prefix, from Workspace scope in
+  a multi-root workspace — see F04-FR-13 and `relFileForTarget`), since which
+  form applies depends on which scope produced the entry, not on which scope
+  is being read.
+
 ## Acceptance Criteria
 
 1. Binding `person-valid.json` to `person.schema.json` at Workspace scope adds an
@@ -92,3 +110,8 @@ recognise them.
    workspace folder than the data file stores the absolute path at every
    scope — never a `./`-relative path that would resolve inside the data
    file's own folder (F04-FR-13).
+6. In a multi-root workspace with two folders, a WorkspaceFolder-scoped
+   binding written in folder A is recognised by the status bar and validator
+   for files in folder A, and does not leak into folder B; a Workspace-scoped
+   binding (folder-prefixed `fileMatch`) is recognised for the file it names
+   regardless of which folder is currently active (F04-FR-14).

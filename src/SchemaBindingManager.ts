@@ -671,24 +671,80 @@ const YAML_KEY_RE = /^\$schema:\s*(\S+)/m;
 // TOML inline `$schema` key (F11-FR-15). TOML requires the quoted-key form
 // because `$` is not a bare-key character.
 const TOML_SCHEMA_KEY_RE = /^"\$schema"\s*=\s*"([^"]+)"/m;
+// A `[table]` or `[[array-of-table]]` header line — everything from here on
+// belongs to that table, not the document root (F11-FR-15/16/17).
+const TOML_TABLE_HEADER_RE = /^[ \t]*\[\[?[^\]\r\n]+\]?\][ \t]*(#.*)?$/m;
+
+/**
+ * The text preceding the first `[table]`/`[[array-of-table]]` header — the
+ * document's root table, and the only place a document-level `"$schema"`
+ * binding can live. A `"$schema"` key found after a header belongs to that
+ * table (e.g. `tool.foo."$schema"`), not the document's own binding.
+ */
+function tomlRootTableText(text: string): string {
+  const header = TOML_TABLE_HEADER_RE.exec(text);
+  return header ? text.slice(0, header.index) : text;
+}
+
+/** Escapes a value for embedding in a TOML basic string ("..."). TOML basic
+ *  strings share JSON's core escape sequences (`\\`, `\"`, `\uXXXX`-escaped
+ *  control characters), so this reuses JSON's escaper instead of hand-rolling
+ *  a second one — important because an un-escaped Windows path's backslashes
+ *  (e.g. `C:\Users\...`) would otherwise be read back as TOML escape
+ *  sequences, and an invalid one (`\U` not followed by 8 hex digits) makes
+ *  the whole file fail to parse (F11-FR-16). */
+function escapeTomlBasicString(value: string): string {
+  return JSON.stringify(value).slice(1, -1);
+}
+
+/** Reverses {@link escapeTomlBasicString} (F11-FR-15). */
+function unescapeTomlBasicString(value: string): string {
+  try {
+    return JSON.parse(`"${value}"`);
+  } catch {
+    return value;
+  }
+}
 
 /**
  * Returns the schema URL/path bound to this document via any settings scope,
  * or undefined if none. Exported for use by ValidationManager.
+ *
+ * Resolves the same way VS Code itself does (F04-FR-14): scoped to the
+ * document's own resource, so a WorkspaceFolder-scoped entry from a
+ * *different* folder is excluded, but checked against every scope that can
+ * hold a binding (Global, Workspace, WorkspaceFolder) rather than only
+ * whichever `get()` happens to consider "effective" — a workspace can have
+ * bindings for different files written at different scopes at once. Matching
+ * tries both path forms a binding can be stored in, since which form applies
+ * depends on which scope wrote the entry, not on which scope is being read.
  */
 export function findBoundSchemaPath(doc: vscode.TextDocument): string | undefined {
-  const rel = vscode.workspace.asRelativePath(doc.uri, false);
+  const relFolder = relFileForTarget(doc.uri, vscode.ConfigurationTarget.WorkspaceFolder);
+  const relWorkspace = relFileForTarget(doc.uri, vscode.ConfigurationTarget.Workspace);
+  const candidates = relFolder === relWorkspace ? [relFolder] : [relFolder, relWorkspace];
 
-  const jsonSchemas = vscode.workspace.getConfiguration('json').get<any[]>('schemas') ?? [];
+  const jsonInspect = vscode.workspace.getConfiguration('json', doc.uri).inspect<any[]>('schemas');
+  const jsonSchemas = [
+    ...(jsonInspect?.globalValue ?? []),
+    ...(jsonInspect?.workspaceValue ?? []),
+    ...(jsonInspect?.workspaceFolderValue ?? []),
+  ];
   for (const entry of jsonSchemas) {
-    if (matchesFile(entry.fileMatch ?? [], rel)) return entry.url as string;
+    const patterns: string[] = entry.fileMatch ?? [];
+    if (candidates.some(rel => matchesFile(patterns, rel))) return entry.url as string;
   }
 
-  const yamlSchemas =
-    vscode.workspace.getConfiguration('yaml').get<Record<string, string | string[]>>('schemas') ?? {};
+  const yamlInspect = vscode.workspace.getConfiguration('yaml', doc.uri)
+    .inspect<Record<string, string | string[]>>('schemas');
+  const yamlSchemas: Record<string, string | string[]> = {
+    ...(yamlInspect?.globalValue ?? {}),
+    ...(yamlInspect?.workspaceValue ?? {}),
+    ...(yamlInspect?.workspaceFolderValue ?? {}),
+  };
   for (const [schemaPath, patterns] of Object.entries(yamlSchemas)) {
     const arr = Array.isArray(patterns) ? patterns : [patterns];
-    if (arr.some(p => normalise(p) === normalise(rel))) return schemaPath;
+    if (arr.some(p => candidates.some(rel => normalise(p) === normalise(rel)))) return schemaPath;
   }
 
   return undefined;
@@ -801,9 +857,9 @@ export function extractInlineSchemaUrl(doc: vscode.TextDocument): string | undef
     }
     if (isToml(doc.languageId)) {
       // Lightweight regex rather than full TOML parsing, matching how YAML
-      // inline extraction works (F11-FR-15).
-      const inline = TOML_SCHEMA_KEY_RE.exec(doc.getText());
-      return inline?.[1];
+      // inline extraction works, restricted to the root table (F11-FR-15).
+      const inline = TOML_SCHEMA_KEY_RE.exec(tomlRootTableText(doc.getText()));
+      return inline ? unescapeTomlBasicString(inline[1]) : undefined;
     }
     const text = doc.languageId === 'jsonc' ? stripJsoncComments(doc.getText()) : doc.getText();
     const parsed = JSON.parse(text);
@@ -919,11 +975,14 @@ export function computeYamlSchemaRemoveEdit(text: string): JsoncEdit | undefined
  * table sections). (F11-FR-16)
  */
 export function computeTomlSchemaUpsertEdit(text: string, schemaRef: string): JsoncEdit {
-  const existing = TOML_SCHEMA_KEY_RE.exec(text);
+  const escapedRef = escapeTomlBasicString(schemaRef);
+  // Restricted to the root table so a nested `"$schema"` key under a
+  // `[table]` header isn't mistaken for the document's own binding (F11-FR-15).
+  const existing = TOML_SCHEMA_KEY_RE.exec(tomlRootTableText(text));
   if (existing) {
     // Replace just the quoted value, preserving surrounding whitespace.
     const valueOffset = existing.index + existing[0].lastIndexOf(existing[1]);
-    return { offset: valueOffset, length: existing[1].length, content: schemaRef };
+    return { offset: valueOffset, length: existing[1].length, content: escapedRef };
   }
 
   // Find the first line that is neither blank nor a `#` comment.
@@ -935,7 +994,7 @@ export function computeTomlSchemaUpsertEdit(text: string, schemaRef: string): Js
     offset += line.length + 1; // + newline
   }
   if (offset > text.length) { offset = text.length; }
-  return { offset, length: 0, content: `"$schema" = "${schemaRef}"\n` };
+  return { offset, length: 0, content: `"$schema" = "${escapedRef}"\n` };
 }
 
 /**
@@ -944,7 +1003,9 @@ export function computeTomlSchemaUpsertEdit(text: string, schemaRef: string): Js
  * when no such line is present (F11-FR-17).
  */
 export function computeTomlSchemaRemoveEdit(text: string): JsoncEdit | undefined {
-  const line = /^"\$schema"\s*=\s*"[^"]*"[^\n]*\r?\n?/m.exec(text);
+  // Restricted to the root table, mirroring computeTomlSchemaUpsertEdit (F11-FR-15/17).
+  const rootText = tomlRootTableText(text);
+  const line = /^"\$schema"\s*=\s*"[^"]*"[^\n]*\r?\n?/m.exec(rootText);
   if (line) return { offset: line.index, length: line[0].length, content: '' };
   return undefined;
 }
