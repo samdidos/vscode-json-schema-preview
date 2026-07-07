@@ -68,6 +68,28 @@ the mock necessarily lies.
   F04-FR-13/F10-FR-05, TOML string escaping) are platform bugs the unit
   suite cannot catch on Linux alone.
 
+### Harness notes (implementation)
+
+- The `toml` language id and the `yaml.schemas` configuration key are not
+  provided by any bundled VS Code extension (they normally come from the
+  marketplace extensions `tamasfe.even-better-toml` and `redhat.vscode-yaml`).
+  A **contribution-only fixture extension**
+  (`src/test/integration/fixtures/test-lang-support`) declares both and is
+  loaded via `extensionDevelopmentPath` — which is honoured even under
+  `--disable-extensions` — so `.toml` files get a real language id and
+  folder/workspace/user-scoped `yaml.schemas` writes succeed, all without a
+  marketplace `--install-extension` step (satisfying S08-NFR-02 and avoiding
+  the Windows `.cmd` spawn pitfalls that step brings). Because
+  `redhat.vscode-yaml` itself is absent, inline YAML binding writes the plain
+  `$schema:` key form rather than the `# yaml-language-server:` directive
+  (F10-FR-09).
+- Fixture schemas use **draft-07** (`http://json-schema.org/draft-07/schema#`):
+  the extension's validator uses Ajv's default export, which bundles draft-07
+  and does not know the draft 2020-12 meta-schema. This is also why the
+  validator must parse YAML-format schema files (F03-FR-14) — the `schema.yaml`
+  fixture proved `loadSchema` was JSON-only, an inconsistency with the other
+  schema consumers that S08 was built to surface.
+
 ## Non-Functional Requirements
 
 - **S08-NFR-01** The E2E job SHOULD finish in under 10 minutes; scenario

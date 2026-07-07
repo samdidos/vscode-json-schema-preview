@@ -1,0 +1,31 @@
+{
+  "name": "jsonschema-e2e-lang-support",
+  "displayName": "JSON Schema Preview — E2E language support (test only)",
+  "description": "Contribution-only fixture extension loaded via extensionDevelopmentPath during the S08 integration suite. Registers the `toml` language id and the `yaml.schemas` configuration key, which no bundled VS Code extension provides — they are normally contributed by third-party marketplace extensions (tamasfe.even-better-toml, redhat.vscode-yaml). Loading these declaratively keeps the run deterministic and offline instead of installing marketplace extensions in CI.",
+  "version": "0.0.0",
+  "publisher": "jsonschema-preview-tests",
+  "private": true,
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "toml",
+        "aliases": ["TOML", "toml"],
+        "extensions": [".toml"]
+      }
+    ],
+    "configuration": {
+      "title": "YAML (E2E test stub)",
+      "properties": {
+        "yaml.schemas": {
+          "type": "object",
+          "scope": "resource",
+          "default": {},
+          "description": "Test-only registration of yaml.schemas so the S08 suite can write folder/workspace/user-scoped YAML bindings without the redhat.vscode-yaml extension."
+        }
+      }
+    }
+  }
+}
