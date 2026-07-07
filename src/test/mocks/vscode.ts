@@ -13,18 +13,75 @@ export function getStoredConfig(section: string, key: string): any {
   return configStore[section]?.[key];
 }
 
-function makeConfig(section: string) {
+// ─── Scope-differentiated config store ────────────────────────────────────────
+// setConfig() above stores one value visible at every scope/resource — enough
+// for most tests. Multi-root scope-resolution tests (e.g. a WorkspaceFolder-
+// scoped setting that must only be visible for resources inside that folder)
+// need Global/Workspace/WorkspaceFolder to genuinely differ per resource, so
+// this second store layers scope-specific overrides on top of the legacy one.
+
+interface ScopedEntry {
+  globalValue?: any;
+  workspaceValue?: any;
+  workspaceFolderValues: Map<string, any>; // keyed by folder fsPath
+}
+const scopedStore: Record<string, Record<string, ScopedEntry>> = {};
+
+export function setScopedConfig(
+  section: string,
+  key: string,
+  scope: { global?: any; workspace?: any; workspaceFolder?: [string, any][] }
+): void {
+  if (!scopedStore[section]) { scopedStore[section] = {}; }
+  const entry: ScopedEntry = scopedStore[section][key] ?? { workspaceFolderValues: new Map() };
+  if ('global' in scope) { entry.globalValue = scope.global; }
+  if ('workspace' in scope) { entry.workspaceValue = scope.workspace; }
+  for (const [folderFsPath, value] of scope.workspaceFolder ?? []) {
+    entry.workspaceFolderValues.set(folderFsPath, value);
+  }
+  scopedStore[section][key] = entry;
+}
+
+/** The workspace folder (from the mocked `workspace.workspaceFolders`) whose
+ *  path contains `resource`, mirroring `vscode.workspace.getWorkspaceFolder`. */
+function folderFsPathFor(resource: any): string | undefined {
+  if (!resource || !_workspaceFolders) { return undefined; }
+  const fsPath = typeof resource === 'string' ? resource : resource.fsPath;
+  const matches = _workspaceFolders.filter((f: any) => fsPath.startsWith(f.uri.fsPath));
+  matches.sort((a: any, b: any) => b.uri.fsPath.length - a.uri.fsPath.length);
+  return matches[0]?.uri.fsPath;
+}
+
+function makeConfig(section: string, resource?: any) {
   if (!configStore[section]) { configStore[section] = {}; }
+  const folderFsPath = folderFsPathFor(resource);
   return {
-    get: <T>(key: string) => configStore[section]?.[key] as T | undefined,
+    get: <T>(key: string) => {
+      const scoped = scopedStore[section]?.[key];
+      if (scoped) {
+        const folderValue = folderFsPath ? scoped.workspaceFolderValues.get(folderFsPath) : undefined;
+        if (folderValue !== undefined) { return folderValue as T; }
+        if (scoped.workspaceValue !== undefined) { return scoped.workspaceValue as T; }
+        if (scoped.globalValue !== undefined) { return scoped.globalValue as T; }
+      }
+      return configStore[section]?.[key] as T | undefined;
+    },
     update: (key: string, value: any) => {
       configStore[section][key] = value;
       return Promise.resolve();
     },
-    has: (key: string) => key in configStore[section],
+    has: (key: string) => key in configStore[section] || key in (scopedStore[section] ?? {}),
     inspect: (key: string) => {
+      const scoped = scopedStore[section]?.[key];
+      if (scoped) {
+        return {
+          globalValue: scoped.globalValue,
+          workspaceValue: scoped.workspaceValue,
+          workspaceFolderValue: folderFsPath ? scoped.workspaceFolderValues.get(folderFsPath) : undefined,
+        };
+      }
       const val = configStore[section]?.[key];
-      if (val === undefined) return undefined;
+      if (val === undefined) { return undefined; }
       // Return the stored value for all scopes so tests that pre-set config
       // via setConfig() can exercise the read-modify-write path.
       return { workspaceValue: val, globalValue: val, workspaceFolderValue: val };
@@ -148,7 +205,7 @@ function applyDefaults() {
   _asRelativePath.callsFake((uri: any, _inc?: boolean) =>
     typeof uri === 'string' ? uri : uri.fsPath
   );
-  _getConfiguration.callsFake((section = '') => makeConfig(section as string));
+  _getConfiguration.callsFake((section = '', resource?: any) => makeConfig(section as string, resource));
   _findFiles.resolves([]);
   _openTextDocument.resolves(undefined);
   _onDidChangeConfiguration.returns(_disposable);
@@ -181,6 +238,7 @@ export function resetAll(): void {
   workspace.workspaceFolders = undefined;
   workspace.isTrusted = true;
   Object.keys(configStore).forEach(k => delete configStore[k]);
+  Object.keys(scopedStore).forEach(k => delete scopedStore[k]);
   statusBarItem.text = '';
   statusBarItem.tooltip = undefined;
   statusBarItem.command = undefined;

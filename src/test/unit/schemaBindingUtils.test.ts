@@ -5,7 +5,7 @@
 import * as assert from 'assert';
 import { applyEdits } from 'jsonc-parser';
 import * as vscode from '../mocks/vscode';
-import { setConfig } from '../mocks/vscode';
+import { setConfig, setScopedConfig } from '../mocks/vscode';
 
 const {
   findBoundSchemaPath,
@@ -74,6 +74,84 @@ suite('findBoundSchemaPath()', () => {
   test('tolerates a json entry with no fileMatch', () => {
     setConfig('json', 'schemas', [{ url: 'x' }]); // no fileMatch → defaults to []
     assert.strictEqual(findBoundSchemaPath(doc), undefined);
+  });
+});
+
+// A regression suite for the multi-root scope-resolution bug: findBoundSchemaPath
+// used to call getConfiguration() with no resource, so a WorkspaceFolder-scoped
+// binding written in a *different* folder's .vscode/settings.json could still
+// be considered (or, depending on VS Code's own resolution, a same-folder
+// WorkspaceFolder-scoped binding could be missed entirely), and it only ever
+// matched the folder-relative path form even though Workspace-scope bindings
+// in a multi-root workspace are stored folder-prefixed (relFileForTarget).
+// setScopedConfig lets the mock hold genuinely different values per scope and
+// per folder, which setConfig() (same value everywhere) cannot exercise.
+suite('findBoundSchemaPath() — multi-root scope resolution [F04-FR-14]', () => {
+  const tmpA = '/ws/projA';
+  const tmpB = '/ws/projB';
+
+  setup(() => {
+    vscode.resetAll();
+    (vscode.workspace as any).workspaceFile = { fsPath: '/ws/multi-root.code-workspace' };
+    vscode.workspace.workspaceFolders = [
+      { uri: { fsPath: tmpA }, name: 'projA' },
+      { uri: { fsPath: tmpB }, name: 'projB' },
+    ] as any;
+    vscode.workspace.asRelativePath.callsFake((u: any, includeFolder?: boolean) => {
+      const p = typeof u === 'string' ? u : u.fsPath;
+      if (p.startsWith(`${tmpA}/`)) {
+        const rel = p.slice(tmpA.length + 1);
+        return includeFolder ? `projA/${rel}` : rel;
+      }
+      if (p.startsWith(`${tmpB}/`)) {
+        const rel = p.slice(tmpB.length + 1);
+        return includeFolder ? `projB/${rel}` : rel;
+      }
+      return p;
+    });
+  });
+
+  test('a WorkspaceFolder-scoped binding in folder A is found for a document in folder A', () => {
+    setScopedConfig('json', 'schemas', {
+      workspaceFolder: [[tmpA, [{ url: 'https://a.example/s.json', fileMatch: ['data.json'] }]]],
+    });
+    assert.strictEqual(
+      findBoundSchemaPath({ uri: { fsPath: `${tmpA}/data.json` } }),
+      'https://a.example/s.json'
+    );
+  });
+
+  test('a WorkspaceFolder-scoped binding in folder A does not leak into folder B', () => {
+    setScopedConfig('json', 'schemas', {
+      workspaceFolder: [[tmpA, [{ url: 'https://a.example/s.json', fileMatch: ['data.json'] }]]],
+    });
+    assert.strictEqual(findBoundSchemaPath({ uri: { fsPath: `${tmpB}/data.json` } }), undefined);
+  });
+
+  test('a Workspace-scoped (folder-prefixed) binding is found for the file it names regardless of which folder is queried', () => {
+    setScopedConfig('json', 'schemas', {
+      workspace: [{ url: 'https://shared.example/s.json', fileMatch: ['projB/data.json'] }],
+    });
+    assert.strictEqual(findBoundSchemaPath({ uri: { fsPath: `${tmpA}/other.json` } }), undefined);
+    assert.strictEqual(
+      findBoundSchemaPath({ uri: { fsPath: `${tmpB}/data.json` } }),
+      'https://shared.example/s.json'
+    );
+  });
+
+  test('a WorkspaceFolder-scoped binding and a Workspace-scoped binding for different files coexist', () => {
+    setScopedConfig('json', 'schemas', {
+      workspaceFolder: [[tmpA, [{ url: 'https://a.example/local.json', fileMatch: ['local.json'] }]]],
+      workspace: [{ url: 'https://shared.example/shared.json', fileMatch: ['projB/shared.json'] }],
+    });
+    assert.strictEqual(
+      findBoundSchemaPath({ uri: { fsPath: `${tmpA}/local.json` } }),
+      'https://a.example/local.json'
+    );
+    assert.strictEqual(
+      findBoundSchemaPath({ uri: { fsPath: `${tmpB}/shared.json` } }),
+      'https://shared.example/shared.json'
+    );
   });
 });
 
@@ -291,6 +369,81 @@ suite('computeTomlSchemaUpsertEdit() [F11-FR-16]', () => {
     const edit = computeTomlSchemaUpsertEdit(text, './s.json');
     assert.strictEqual(edit.offset, text.length);
     assert.strictEqual(edit.content, '"$schema" = "./s.json"\n');
+  });
+
+  // A raw Windows path embeds backslashes, which TOML basic strings interpret
+  // as escape sequences (`\U` not followed by 8 hex digits is an invalid
+  // escape and makes the whole file fail to parse) — the ref must be escaped.
+  test('escapes backslashes in a Windows-style path so the written file stays valid TOML', () => {
+    const edit = computeTomlSchemaUpsertEdit('title = "cfg"\n', 'C:\\Users\\dev\\schema.json');
+    assert.strictEqual(edit.content, '"$schema" = "C:\\\\Users\\\\dev\\\\schema.json"\n');
+  });
+
+  test('escapes backslashes when replacing an existing value too', () => {
+    const text = '"$schema" = "./old.json"\n';
+    const edit = computeTomlSchemaUpsertEdit(text, 'C:\\Users\\dev\\schema.json');
+    const result = text.slice(0, edit.offset) + edit.content + text.slice(edit.offset + edit.length);
+    assert.strictEqual(result, '"$schema" = "C:\\\\Users\\\\dev\\\\schema.json"\n');
+  });
+
+  test('round-trips a backslash-containing path through extractInlineSchemaUrl', () => {
+    const text = 'title = "cfg"\n';
+    const ref = 'C:\\Users\\dev\\schema.json';
+    const edit = computeTomlSchemaUpsertEdit(text, ref);
+    const written = text.slice(0, edit.offset) + edit.content + text.slice(edit.offset);
+    assert.strictEqual(
+      extractInlineSchemaUrl({ languageId: 'toml', getText: () => written } as any),
+      ref
+    );
+  });
+});
+
+// A regression suite for the TOML root-table scoping bug: the "$schema"
+// detection regex used to search the whole document, so a `"$schema"` key
+// nested under a `[table]` header (a legitimate, unrelated nested key, e.g.
+// `tool.foo."$schema"`) was mistaken for the document's own binding.
+suite('TOML "$schema" detection is restricted to the root table [F11-FR-15][F11-FR-16][F11-FR-17]', () => {
+  const nested = '"$schema" = "https://root.example/s.json"\n[tool.foo]\n"$schema" = "not-a-binding"\n';
+  const onlyNested = '[tool.foo]\n"$schema" = "not-a-binding"\n';
+
+  test('extractInlineSchemaUrl reads the root binding, ignoring the nested key', () => {
+    assert.strictEqual(
+      extractInlineSchemaUrl({ languageId: 'toml', getText: () => nested } as any),
+      'https://root.example/s.json'
+    );
+  });
+
+  test('extractInlineSchemaUrl returns undefined when the only "$schema" key is nested under a table', () => {
+    assert.strictEqual(
+      extractInlineSchemaUrl({ languageId: 'toml', getText: () => onlyNested } as any),
+      undefined
+    );
+  });
+
+  test('computeTomlSchemaUpsertEdit replaces the root binding, leaving the nested key untouched', () => {
+    const edit = computeTomlSchemaUpsertEdit(nested, 'https://new.example/s.json');
+    const result = nested.slice(0, edit.offset) + edit.content + nested.slice(edit.offset + edit.length);
+    assert.strictEqual(
+      result,
+      '"$schema" = "https://new.example/s.json"\n[tool.foo]\n"$schema" = "not-a-binding"\n'
+    );
+  });
+
+  test('computeTomlSchemaUpsertEdit inserts a new root binding above the table, ignoring the nested key', () => {
+    const edit = computeTomlSchemaUpsertEdit(onlyNested, 'https://new.example/s.json');
+    assert.strictEqual(edit.offset, 0);
+    assert.strictEqual(edit.content, '"$schema" = "https://new.example/s.json"\n');
+  });
+
+  test('computeTomlSchemaRemoveEdit removes only the root "$schema" line, leaving the nested one intact', () => {
+    const edit = computeTomlSchemaRemoveEdit(nested);
+    assert.ok(edit);
+    const result = nested.slice(0, edit!.offset) + nested.slice(edit!.offset + edit!.length);
+    assert.strictEqual(result, '[tool.foo]\n"$schema" = "not-a-binding"\n');
+  });
+
+  test('computeTomlSchemaRemoveEdit returns undefined when the only "$schema" key is nested under a table', () => {
+    assert.strictEqual(computeTomlSchemaRemoveEdit(onlyNested), undefined);
   });
 });
 

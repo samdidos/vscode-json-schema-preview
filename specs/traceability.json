@@ -466,6 +466,13 @@
       ],
       "note": "resolveLocalSchemaRef(): relative only for WorkspaceFolder/Inline scope AND only when the schema is in the same workspace folder as the data file; absolute otherwise (Workspace/Global scope, schema outside the workspace, or schema in a different folder of a multi-root workspace)."
     },
+    "F04-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "findBoundSchemaPath resolves scoped to doc.uri and unions Global/Workspace/WorkspaceFolder, matching both folder-relative and workspace-prefixed path forms"
+    },
     "F05-FR-01": {
       "status": "manual",
       "impl": [
@@ -1162,21 +1169,21 @@
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "extractInlineSchemaUrl TOML regex /^\"\\$schema\"\\s*=\\s*\"([^\"]+)\"/m"
+      "note": "extractInlineSchemaUrl TOML regex restricted to tomlRootTableText(); unescapes via unescapeTomlBasicString"
     },
     "F11-FR-16": {
       "status": "implemented",
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "computeTomlSchemaUpsertEdit inserts/replaces \"$schema\" = \"<ref>\" as first non-comment line"
+      "note": "computeTomlSchemaUpsertEdit escapes the ref via escapeTomlBasicString and restricts existing-key detection to tomlRootTableText()"
     },
     "F11-FR-17": {
       "status": "implemented",
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "computeTomlSchemaRemoveEdit deletes the whole \"$schema\" line"
+      "note": "computeTomlSchemaRemoveEdit restricts removal to tomlRootTableText()"
     },
     "F11-FR-18": {
       "status": "manual",
