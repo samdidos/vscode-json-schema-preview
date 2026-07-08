@@ -2,6 +2,13 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.5.1](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.5.0...v0.5.1) (2026-07-08)
+
+
+### Bug Fixes
+
+* **ci:** grant resolve-tag contents:write so it can see draft releases ([dd85330](https://github.com/samdidos/vscode-json-schema-preview/commit/dd85330a36e2e8343fa14c84e5839f00c856550d))
+
 ## [0.5.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.4.0...v0.5.0) (2026-07-08)
 
 
