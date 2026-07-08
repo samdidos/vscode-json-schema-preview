@@ -2,6 +2,31 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.5.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.4.0...v0.5.0) (2026-07-08)
+
+
+### Features
+
+* **bundle:** implement F14 schema bundling & dereferencing ([7d4c679](https://github.com/samdidos/vscode-json-schema-preview/commit/7d4c6790f5ba0535a70d5e39499d8f3b72bc5529))
+* **catalog:** implement F12 schema catalog & registry binding ([7590b22](https://github.com/samdidos/vscode-json-schema-preview/commit/7590b22f7de2fe1bdcc6ad949c51997c2faf94c5))
+* **diff:** implement F15 schema diff & breaking-change detection ([e04bb1e](https://github.com/samdidos/vscode-json-schema-preview/commit/e04bb1e8e8603923b1c11ee2ed8fd9d07648285a))
+* **docs:** implement S07 documentation traceability with spec: tags ([6a64405](https://github.com/samdidos/vscode-json-schema-preview/commit/6a64405825f18ebe7525e4633cc28b0f998d0fd9))
+* implement F13 $ref navigation, F16 sample data, F17 linting, F08 cache freshness ([22b1248](https://github.com/samdidos/vscode-json-schema-preview/commit/22b12488d0165bffcc0c22b434dddad1979f4a23))
+* **test:** implement S08 real-VS-Code integration test suite ([dadb85d](https://github.com/samdidos/vscode-json-schema-preview/commit/dadb85d698c3a6e69217b1fb4fa28d98182c010f))
+* **toml:** implement F11 TOML data-file support ([01bbefe](https://github.com/samdidos/vscode-json-schema-preview/commit/01bbefed10793da599b04d72fbd746111d4cac20))
+
+
+### Bug Fixes
+
+* **binding:** resolve multi-root scope reads and escape TOML inline paths ([04b2348](https://github.com/samdidos/vscode-json-schema-preview/commit/04b23489f0f6b23851fe7b1a04c13df01eed851c))
+* **binding:** store absolute path when schema is in a different workspace folder ([e6bce1f](https://github.com/samdidos/vscode-json-schema-preview/commit/e6bce1f5d5fcabc5019a2becb7c16a57abf54424))
+* **ref:** correct cached-remote language, dedup fetches, reduce re-parsing ([6338d38](https://github.com/samdidos/vscode-json-schema-preview/commit/6338d38102e128f42a06fd5a6f2dd35efef3f6bc))
+* **S08:** green the integration suite — real bugs the first CI run surfaced ([df25047](https://github.com/samdidos/vscode-json-schema-preview/commit/df2504791f32cd4fabfa70c2fec7679c8be7b26a))
+* **S08:** resolve integration-suite failures found in first real CI run ([2a22975](https://github.com/samdidos/vscode-json-schema-preview/commit/2a22975f7227c2e9fd8582d70f36a45d91959392))
+* **security:** address CodeQL alerts — cache write taint, TOCTOU, ReDoS ([832702a](https://github.com/samdidos/vscode-json-schema-preview/commit/832702a34ce950dcbb4d145445184bb7e1e1eb37))
+* **security:** suppress remaining CodeQL false positives after F08-FR-18/19 ([ca30ed9](https://github.com/samdidos/vscode-json-schema-preview/commit/ca30ed91d8b7dae5901d7c4962ea1f58cc865aa2))
+* **test:** correct out/ vs src/ path resolution in the integration suite ([8b1f432](https://github.com/samdidos/vscode-json-schema-preview/commit/8b1f432a1aa853a009fef24ba90299aa23b808d9))
+
 ## [0.4.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.3.1...v0.4.0) (2026-07-06)
 
 
