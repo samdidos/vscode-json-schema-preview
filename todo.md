@@ -282,3 +282,53 @@ an array" report. Two separate, confirmed findings:
 `anyOf` snippet (or which file — was it a live squiggle or the output of
 running "Validate" explicitly?), I can tell you definitively which of the
 two explanations applies.
+
+## 10. Skip GH Actions workflows based on what a PR touches
+**Valid — confirmed none of the 9 workflows use path filtering at all**
+(`grep -n "paths-ignore\|^\s*paths:" .github/workflows/*.yml` — zero hits).
+Today, a docs/spec-only PR (like this one) still runs `ci.yml`'s full
+`build` job (lint, `tsc`, webpack compile, full coverage suite,
+`maturity:check`, `npm audit`), its `security`/Trivy job, `knip`, and the
+two-OS `integration` job (each downloads a real VS Code build) — plus all of
+`codeql.yml`. None of those touch anything a doc/spec-only change could
+have broken.
+
+**More interesting finding while checking this: CI is currently checking the
+wrong things for exactly this scenario.** `ci.yml`'s `build` job runs lint,
+`tsc`, `compile`, and `test:coverage` directly — it does **not** call
+`check:traceability` or `check:doc-traceability` anywhere. Those two checks
+only run locally, via the Husky pre-commit hook and the Claude Code
+PreToolUse hook (both call `npm run verify`, which is the only place that
+chains them in). So today: a docs/spec-only PR pays for a full CodeQL scan,
+full coverage run, and two VS Code downloads that can't catch anything —
+while the one check that actually matters for a specs/traceability.json
+change (drift detection) **never runs in CI at all**, only on whoever's
+machine happens to commit through the hook (bypassable with
+`git commit --no-verify`). That's a real gap independent of path filtering.
+
+**Suggested fix, two parts:**
+1. Add `check:traceability` and `check:doc-traceability` as explicit steps
+   in `ci.yml`'s `build` job (or just run `npm run verify` there instead of
+   re-listing lint/tsc/coverage separately) — this closes the enforcement
+   gap regardless of anything else, and per this repo's own stated principle
+   (`AGENTS.md`: "guarantees live *below* the agent," CI is the real
+   guarantee, hooks are only a convenience) this arguably should already be
+   true.
+2. Once that's in place, it's safe to add `paths-ignore` (or `paths`) to
+   `ci.yml` and `codeql.yml` so the expensive src-oriented jobs (lint, tsc,
+   compile, coverage, CodeQL, Trivy, knip, integration) only run when
+   something that could actually break shows up in the diff — `src/**`,
+   `package*.json`, `webpack.config.js`, `tsconfig*.json`, or the workflow
+   files themselves. Doing this *before* part 1 would be a mistake: a blanket
+   `paths-ignore: [specs/**, docs/**, *.md]` would also silence the
+   traceability checks for exactly the PRs most likely to touch
+   `specs/traceability.json` — the opposite of what's wanted.
+
+**One caveat to check before implementing, not yet verified:** if `CI` or
+`CodeQL` are configured as *required* status checks in this repo's branch
+protection rules, a workflow that never triggers (because its `paths` filter
+didn't match) shows up as permanently "Expected — Waiting" and blocks
+merging — GitHub's known gotcha with path-filtered required checks. Needs a
+companion no-op workflow (triggered on the inverse path set, immediately
+reporting success under the same check name) if that's the case here —
+worth confirming the branch protection config first.
