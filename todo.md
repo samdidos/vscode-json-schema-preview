@@ -157,9 +157,34 @@ tails on specs that are otherwise already implemented.
   reuse this repo's own ref/auth/cache machinery for resolution, and let
   quicktype-core own only the keyword→target-language-type mapping —
   gets multi-language support close to free if that's ever wanted, at the
-  cost of one added dependency. Worth prototyping both ways before
-  committing; if TypeScript-only is truly the permanent scope, hand-rolling
-  is still less to maintain long-term.
+  cost of one added dependency.
+
+  **Decision: go with `quicktype-core`**, pre-dereferenced through F14's
+  `dereferenceSchema` as described above. In plain terms, here's what
+  currently *doesn't* line up with the spec as written, and needs a spec
+  amendment before implementing (none of these are hard blockers — they're
+  paperwork, except the last one, which is a real trade-off):
+  - **"No network while generating types"** — quicktype can reach out to the
+    internet on its own to resolve schema links. Fix: resolve every link
+    ourselves first (via F14), so quicktype has nothing left to look up.
+  - **"Schema links resolve the same way everywhere in this extension"** —
+    quicktype has its own private logic for following `$ref` links, separate
+    from the one this extension already uses everywhere else (hover,
+    bundling, etc.). We bypass quicktype's version entirely rather than run
+    two different resolvers side by side.
+  - **"The generator is a plain function: schema in, text out"** — quicktype's
+    version of that function is async (returns a promise) instead of a plain
+    string. Just a one-line wording fix in the spec, not a real problem.
+  - **Dependency size (the real trade-off).** The project keeps a short,
+    deliberate list of dependencies (5 today, each small and single-purpose)
+    with a one-line justification for each. Quicktype is a much bigger
+    library (~14 of its own dependencies) than anything on that list — it
+    needs its own justified entry, and it's a genuine step up in size versus
+    everything else this project depends on.
+  Next step when picked up: amend `specs/F18-code-generation.md` (resolve its
+  own open library question in favor of quicktype-core; reword the
+  "schema in → string out" line) and add the dependency to the project's
+  technology-choices table, before writing any code.
 
 - **F19 — TOML Schema IntelliSense**
   (`specs/F19-toml-intellisense.md`, 9 planned reqs: 7 FR + 2 NFR)
