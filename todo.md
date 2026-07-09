@@ -136,6 +136,30 @@ tails on specs that are otherwise already implemented.
   (enums → unions, `$ref` resolved with F13 semantics, `title`/`description`
   → TSDoc, deterministic output). Fully in-process, no subprocess/network.
   Biggest of the three — new command, new codegen module, new tests.
+  **Library choice (revisited):** first pass here recommended hand-rolling
+  the generator, since the obvious library (`json-schema-to-typescript`)
+  ships its own `$ref` resolver that conflicts with F18-FR-06's requirement
+  to resolve refs with F13 semantics. Revisiting after discussion —
+  **`quicktype-core`** (the library behind the `quicktype` CLI: TypeScript,
+  Python, Go, Rust, Java, C#, Swift, Kotlin, Dart, C++, and more from one
+  schema) is usable in-process as a library, not just a CLI, which changes
+  the calculus if multi-language output beyond TypeScript is wanted later —
+  hand-rolling every target language yourself would be a large undertaking
+  quicktype has already solved. The `$ref`-resolver conflict is avoidable
+  without fighting quicktype's internals: **F14 (`dereferenceSchema` in
+  `src/schemaBundler.ts`) already produces a fully self-contained schema
+  with every `$ref` inlined, using the exact same F13 resolver
+  (`schemaPointer.ts`).** Pre-dereference with that existing function before
+  handing the schema to quicktype-core, and quicktype never needs to
+  resolve a `$ref` itself — satisfying F18-FR-06 by construction and
+  F18-NFR-01 (no network at generation time, since any remote fetch already
+  happened through F14's own auth/cache-aware resolution). Net effect:
+  reuse this repo's own ref/auth/cache machinery for resolution, and let
+  quicktype-core own only the keyword→target-language-type mapping —
+  gets multi-language support close to free if that's ever wanted, at the
+  cost of one added dependency. Worth prototyping both ways before
+  committing; if TypeScript-only is truly the permanent scope, hand-rolling
+  is still less to maintain long-term.
 
 - **F19 — TOML Schema IntelliSense**
   (`specs/F19-toml-intellisense.md`, 9 planned reqs: 7 FR + 2 NFR)
@@ -173,3 +197,57 @@ tails on specs that are otherwise already implemented.
 close out specs (small, additive, no new UI). Of the three new features,
 F19 (TOML IntelliSense) has the smallest surface area; F18 and F20 are
 comparably sized and both add a new top-level command.
+
+## 9. Validation bug report — anyOf (array | object) shows the wrong branch's error
+Investigated the "I entered an object but got an error saying it should be
+an array" report. Two separate, confirmed findings:
+
+- **Likely root cause: two different validators are in play, and it's
+  probably not this extension's own.** This extension writes bindings into
+  VS Code's standard `json.schemas` / `yaml.schemas` settings
+  (`SchemaBindingManager.ts`), which means **VS Code's own built-in
+  JSON/YAML language server** (not this extension) live-validates as you
+  type — completely separate from this extension's on-demand
+  `jsonschema.validateFile` command (`ValidationManager.ts`), which only
+  populates its own Problems-panel collection when explicitly run. If the
+  wrong-branch error appeared as a live squiggle rather than after running
+  "Validate" explicitly, it's VS Code's built-in validator, which has a
+  known, long-standing imprecision with `anyOf`/`oneOf`: when a value fails
+  every branch, it doesn't pick the "closest" branch — it can surface an
+  unrelated branch's error (e.g. reporting "should be array" for an object
+  that was meant to match the object branch but fails there too, for an
+  unrelated reason like a missing `required` field). That behavior lives
+  outside this repo (in `vscode-json-languageservice` / the YAML
+  extension), so it isn't directly fixable here.
+  - **Cheap, worthwhile fix regardless:** `ValidationManager.ts` never sets
+    `Diagnostic.source` on the diagnostics it creates, so even this
+    extension's own on-demand validation is indistinguishable from VS
+    Code's built-in one in the Problems panel today. Setting e.g.
+    `diag.source = 'json-schema-preview'` is a one-line change that would
+    let you (and any user) immediately tell which validator produced a
+    given error — useful for exactly this kind of report going forward.
+
+- **Confirmed, separate gap: this extension's own Ajv instance ignores the
+  schema's declared draft.** `ValidationManager.ts:16` always does
+  `require('ajv').default` — the plain `Ajv` class (draft-07 dialect) —
+  regardless of the schema's `$schema` value. It never switches to
+  `Ajv2019`/`Ajv2020` for schemas declaring the 2019-09 or 2020-12 meta-
+  schema URIs. With `strict: false` (`ValidationManager.ts:96`), any
+  keyword Ajv's core doesn't recognize — 2020-12's `prefixItems`,
+  `$dynamicRef`/`$dynamicAnchor`, 2019-09/2020-12's
+  `unevaluatedProperties`/`unevaluatedItems` — is silently ignored rather
+  than raising an error, so a schema written against a newer draft can
+  validate incorrectly with no warning that anything was skipped. This
+  answers the original question directly: **no, schema-version-aware
+  validation is not implemented** — one Ajv dialect is used for every
+  draft. Fix: pick `Ajv` vs `Ajv2019` vs `Ajv2020` (from `ajv/dist/2019`
+  `/2020`) based on the schema's `$schema`, falling back to draft-07 when
+  absent, in both `ValidationManager.ts` and `sampleDataGenerator.ts`
+  (same pattern, same plain-`Ajv` call at `sampleDataGenerator.ts:224`).
+  This would need a new requirement in `specs/F03-validation.md` before
+  implementing.
+
+**Next step to pin down your specific case:** if you can share the actual
+`anyOf` snippet (or which file — was it a live squiggle or the output of
+running "Validate" explicitly?), I can tell you definitively which of the
+two explanations applies.
