@@ -332,3 +332,44 @@ merging — GitHub's known gotcha with path-filtered required checks. Needs a
 companion no-op workflow (triggered on the inverse path set, immediately
 reporting success under the same check name) if that's the case here —
 worth confirming the branch protection config first.
+
+## 11. Evaluate Snyk (instead of, or in addition to, Aqua Trivy)
+**Idea to evaluate — real trade-offs both ways.** Current state: the
+`security` job in `ci.yml:41-52` runs `aquasecurity/trivy-action` (v0.36.0,
+SHA-pinned) as a filesystem scan for `CRITICAL,HIGH` with `exit-code: 1`
+(blocking). Note the repo *already* has three overlapping security layers:
+this Trivy fs scan, `npm audit --audit-level=high` (`ci.yml:39`, also
+dependency-vuln), and CodeQL (`codeql.yml`, SAST) — plus OpenSSF Scorecard.
+
+What Snyk would bring:
+- **Snyk Open Source (SCA)** — dependency-vuln scanning; overlaps directly
+  with *both* the Trivy fs scan and `npm audit`. Snyk's curated advisory DB
+  is sometimes ahead of public feeds and gives actionable fix/upgrade paths
+  (and auto fix-PRs), which `npm audit`/Trivy don't.
+- **Snyk Code (SAST)** — overlaps with CodeQL.
+- **License compliance + IaC scanning** — genuinely *new* capability not
+  covered by any current tool.
+
+Two honest downsides to weigh before adopting:
+1. **Redundancy / noise.** "In addition to" means a *fourth* dependency-vuln
+   scanner on top of Trivy + `npm audit` + Scorecard — likely duplicate
+   alerts for the same CVEs. If adopting, the cleaner framing is "Snyk
+   *instead of* Trivy (and maybe `npm audit`)", picking one SCA tool rather
+   than stacking a fourth. Decide what it replaces, not just what it adds.
+2. **Vendor/agnosticity tension (the big one for this repo).** Snyk is a
+   commercial, closed product needing an account + a `SNYK_TOKEN` secret in
+   CI. That runs against this project's stated principle (`AGENTS.md`
+   "Agnosticity & standardization" #5: *prefer open, portable, independently
+   verifiable tooling* — SHA-pinned actions, OpenSSF Scorecard, SLSA). Trivy
+   is Apache-2.0 open source with no account/token. Swapping an open tool
+   *out* for a proprietary one is the opposite direction from the
+   constitution — not disqualifying, but it deserves an explicit, documented
+   justification (and probably an Article II / constitution note) the same
+   way the `quicktype-core` decision did (#8). Snyk's free tier is also
+   limited-per-month, which can bite an open-source repo's CI volume.
+
+**Suggested next step:** rather than replace outright, do a time-boxed
+side-by-side — run Snyk in a *non-blocking* CI job for a couple of weeks
+next to Trivy, compare signal quality / false-positive rate / fix guidance
+on this repo's actual dependency tree, then decide whether it earns
+replacing Trivy (+ maybe `npm audit`) or isn't worth the vendor lock-in.
