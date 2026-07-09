@@ -1848,6 +1848,11 @@
       "impl": [],
       "note": ""
     },
+    "F18-NFR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": "pin quicktype-core to an exact version; determinism (F18-FR-09) depends on it"
+    },
     "F19-FR-01": {
       "status": "planned",
       "impl": [],

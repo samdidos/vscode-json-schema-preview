@@ -181,10 +181,16 @@ tails on specs that are otherwise already implemented.
     library (~14 of its own dependencies) than anything on that list — it
     needs its own justified entry, and it's a genuine step up in size versus
     everything else this project depends on.
-  Next step when picked up: amend `specs/F18-code-generation.md` (resolve its
-  own open library question in favor of quicktype-core; reword the
-  "schema in → string out" line) and add the dependency to the project's
-  technology-choices table, before writing any code.
+  **Done:** `specs/F18-code-generation.md` has been amended — Q1 resolved in
+  favor of `quicktype-core`, F18-FR-06 now requires pre-dereferencing via
+  F14, F18-NFR-01/02 reworded for the async/pre-dereferenced pipeline, and a
+  new **F18-NFR-03** added (pin `quicktype-core` to an exact version for
+  determinism). Article II in `.specify/memory/constitution.md` now has a
+  row for the dependency, and `specs/traceability.json` has the new
+  `F18-NFR-03` entry (`planned`). `npm run check:traceability` and
+  `check:doc-traceability` both still pass. Still nothing implemented —
+  next step is actually adding `quicktype-core` to `package.json` and
+  writing the command.
 
 - **F19 — TOML Schema IntelliSense**
   (`specs/F19-toml-intellisense.md`, 9 planned reqs: 7 FR + 2 NFR)
