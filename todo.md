@@ -77,3 +77,47 @@ previews). This would be a genuinely new feature, not a bug fix:
 - straightforward to implement since the renderer already exists and is
   tested (`src/test/unit/fallbackRenderer.test.ts`); this is really "expose
   an existing capability via a setting," not building new rendering logic.
+
+## 6. Root-level cruft / duplicate ESLint config
+**Partially valid.** Checked every root-level file:
+- **`.eslintrc.json` is dead and should be deleted.** `package.json` pins
+  `eslint@^10.6.0`, and ESLint 9+ only reads flat config
+  (`eslint.config.js`, which already exists and is the one actually used by
+  `npm run lint` → `eslint`). `.eslintrc.json` is legacy eslintrc-format and
+  is no longer loaded at all — safe to `git rm .eslintrc.json`.
+- Everything else at root that might look redundant, isn't:
+  - `.json-schema-tool` — not stale; it's deliberately excluded from the
+    packaged `.vsix` via `.vscodeignore:30`, so it's kept at root
+    intentionally (looks like directory/marketplace-listing metadata), not
+    a leftover.
+  - The four `tsconfig*.json` files (`tsconfig.json`, `.test.json`,
+    `.e2e.json`, `.integration.json`) are each used by a distinct build/test
+    target per `AGENTS.md` — not duplicates.
+  - `npx knip` (dead-code/unused-file/dep detector already wired into this
+    repo) reports **zero findings** right now, so there's no other
+    unused-file cruft it can see.
+- Fix: just remove `.eslintrc.json`.
+
+## 7. Command to delete all local feature branches except the current one
+**Valid ask, nothing to actually delete right now.** Checked `git branch -a`:
+only `main` and the current branch
+(`claude/website-modernize-spec-review-na33qs`) exist, locally or on
+`origin` — so there's nothing to clean up yet. For future use, here's the
+command (local branches only; uses `-d` so it refuses to delete anything
+unmerged, as a safety net):
+
+```sh
+git branch | grep -v '^\*' | grep -vx '  main' | xargs -r -n1 git branch -d
+```
+
+Deleting the matching **remote** branches too (more destructive — affects
+what teammates see) would be a separate, explicit step per branch:
+
+```sh
+git push origin --delete <branch-name>
+```
+
+Not run automatically — branch deletion is a destructive, hard-to-reverse
+op per this session's safety rules, so it should be confirmed (and reviewed
+for unmerged work) before running, even though `-d` already blocks
+unmerged branches.
