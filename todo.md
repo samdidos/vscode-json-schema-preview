@@ -121,3 +121,55 @@ Not run automatically — branch deletion is a destructive, hard-to-reverse
 op per this session's safety rules, so it should be confirmed (and reviewed
 for unmerged work) before running, even though `-d` already blocks
 unmerged branches.
+
+## 8. Remaining planned specs — pick what's next
+Pulled straight from `specs/traceability.json` (`status: "planned"` = spec'd
+but not built yet): **36 requirements total**, in 5 files. Three are whole
+unbuilt features (11/9/11 requirements each — biggest lift); two are small
+tails on specs that are otherwise already implemented.
+
+### Whole new features (not started)
+- **F18 — Code Generation (Schema → Types)**
+  (`specs/F18-code-generation.md`, 11 planned reqs: 9 FR + 2 NFR)
+  Adds a `jsonschema.generateTypes` command: turns a bound schema into
+  TypeScript `interface`/`type` declarations in a new untitled editor
+  (enums → unions, `$ref` resolved with F13 semantics, `title`/`description`
+  → TSDoc, deterministic output). Fully in-process, no subprocess/network.
+  Biggest of the three — new command, new codegen module, new tests.
+
+- **F19 — TOML Schema IntelliSense**
+  (`specs/F19-toml-intellisense.md`, 9 planned reqs: 7 FR + 2 NFR)
+  Closes the gap left by F11 (TOML validates, but has no schema-aware
+  editing help): a completion provider (keys, `enum`/`const` values) and a
+  hover provider for inline-`$schema`-bound `.toml` files, reusing the
+  existing schema resolution/cache pipeline and F13's `$ref` semantics.
+  Medium lift — two new VS Code language-feature providers.
+
+- **F20 — Workspace Validation Report**
+  (`specs/F20-workspace-validation.md`, 11 planned reqs: 8 FR + 3 NFR)
+  A `jsonschema.validateWorkspace` command: finds every bound data file
+  workspace-wide, validates each (reusing F03), lints every schema (F17
+  rules), publishes workspace diagnostics + a copyable Markdown summary,
+  with cancellable progress and S02 workspace-trust handling. The "is my
+  repo green?" button. Largest surface area (discovery + aggregation +
+  progress UI + diagnostics), likely the biggest lift of the three.
+
+### Small tails on already-implemented specs
+- **S03-SR-13** (`specs/S03-performance.md`) — one soft NFR: preview
+  generation should complete within 2s p95 for typical schemas. Per its own
+  note ("measure via E2E timing before promoting"), this just needs an E2E
+  timing assertion, not new product code — cheap, and a natural pairing
+  with the next item.
+- **S08 — E2E testing gaps** (`specs/S08-e2e-testing.md`), 4 planned reqs:
+  `SR-06` (one smoke test per user-facing command), `SR-07` (assert
+  S03-SR-13's p95 budget in E2E — same work as above), `NFR-01` (job should
+  finish under 10 min), `NFR-02` (E2E suite must not hit the network). The
+  E2E harness itself already exists and runs in CI
+  (per `AGENTS.md`'s "Integration tests" section) — this is filling
+  remaining coverage/perf assertions in it, not standing up new
+  infrastructure. Cheapest way to close out fully-planned status on a spec.
+
+**For a decision:** S03-SR-13 + S08 together are the cheapest way to fully
+close out specs (small, additive, no new UI). Of the three new features,
+F19 (TOML IntelliSense) has the smallest surface area; F18 and F20 are
+comparably sized and both add a new top-level command.
