@@ -65,7 +65,7 @@ suite('[F07-FR-10] SchemaAuthStatusBar — schema resolution', () => {
     new SchemaAuthStatusBar({ isConfigured: async () => false }, makeContext());
     await tick();
     assert.strictEqual(statusBarItem.text, '$(unlock)');
-    assert.match(statusBarItem.tooltip as string, /example\.com/);
+    assert.ok((statusBarItem.tooltip as string).includes('example.com'));
     assert.ok(statusBarItem.backgroundColor instanceof vscode.ThemeColor);
     assert.strictEqual((statusBarItem.backgroundColor as any).id, 'statusBarItem.warningBackground');
     const command = statusBarItem.command as { command: string; arguments?: unknown[] };
@@ -81,7 +81,7 @@ suite('[F07-FR-10] SchemaAuthStatusBar — schema resolution', () => {
     new SchemaAuthStatusBar({ isConfigured: async () => false }, makeContext());
     await tick();
     assert.strictEqual(statusBarItem.text, '$(unlock)');
-    assert.match(statusBarItem.tooltip as string, /bound\.example\.com/);
+    assert.ok((statusBarItem.tooltip as string).includes('bound.example.com'));
   });
 
   test('shows $(lock) with no background override when the remote schema is configured', async () => {
@@ -89,7 +89,7 @@ suite('[F07-FR-10] SchemaAuthStatusBar — schema resolution', () => {
     new SchemaAuthStatusBar({ isConfigured: async () => true }, makeContext());
     await tick();
     assert.strictEqual(statusBarItem.text, '$(lock)');
-    assert.match(statusBarItem.tooltip as string, /example\.com/);
+    assert.ok((statusBarItem.tooltip as string).includes('example.com'));
     assert.strictEqual(statusBarItem.backgroundColor, undefined);
     assert.ok(statusBarItem.show.called);
   });
