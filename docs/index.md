@@ -26,7 +26,7 @@ features:
 
   - icon: ✅
     title: Instant Validation
-    details: Validates any JSON or YAML data file against its bound schema using AJV. Errors appear inline in the Problems panel with precise line and column locations.
+    details: Validates any JSON, YAML, or TOML data file against its bound schema using AJV. Errors appear inline in the Problems panel with precise line and column locations.
 
   - icon: ✏️
     title: Visual Editor
@@ -34,11 +34,11 @@ features:
 
   - icon: 🔗
     title: Schema Binding
-    details: Bind any JSON or YAML data file to a schema and track it in the status bar. Bindings are stored in VS Code settings (workspace folder or user scope).
+    details: Bind any JSON, YAML, or TOML data file to a schema and track it in the status bar. Bindings are stored in VS Code settings (workspace folder or user scope), or inline via $schema.
 
   - icon: 🪄
     title: Schema Inference
-    details: Generate a JSON Schema from an existing data file with one command. Supports JSON, JSONC, JSONL, and YAML. A great starting point when adopting schema-first workflows.
+    details: Generate a JSON Schema from an existing data file with one command. Supports JSON, JSONC, JSONL, YAML, and TOML. A great starting point when adopting schema-first workflows.
 
   - icon: 🔒
     title: Private Schema Auth
@@ -59,10 +59,10 @@ features:
   breaking the frontmatter parse.
 -->
 <!-- spec:F01,F02 --> <!-- Live Preview -->
-<!-- spec:F03 --> <!-- Instant Validation -->
+<!-- spec:F03,F11 --> <!-- Instant Validation (JSON/YAML/TOML) -->
 <!-- spec:F05 --> <!-- Visual Editor -->
-<!-- spec:F04 --> <!-- Schema Binding -->
-<!-- spec:F06 --> <!-- Schema Inference -->
+<!-- spec:F04,F11 --> <!-- Schema Binding (JSON/YAML/TOML) -->
+<!-- spec:F06,F11 --> <!-- Schema Inference (JSON/JSONC/JSONL/YAML/TOML) -->
 <!-- spec:F07,F08 --> <!-- Private Schema Auth -->
 <!-- spec:S02 --> <!-- Workspace Trust Aware -->
 <!-- spec:F09 --> <!-- Configurable Rendering -->
