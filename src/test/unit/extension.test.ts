@@ -22,6 +22,7 @@ suite('extension — activate()', () => {
     assert.ok(ids.includes('jsonschema.openConfig'));
     assert.ok(ids.includes('jsonschema.bindToCurrentFile'));
     assert.ok(ids.includes('jsonschema.validateFile'));
+    assert.ok(ids.includes('jsonschema.validateWorkspace'));
     assert.ok(ids.includes('jsonschema.inferSchema'));
     assert.ok(ids.includes('jsonschema.generateSampleData'));
     assert.ok(ids.includes('jsonschema.generateTypes'));

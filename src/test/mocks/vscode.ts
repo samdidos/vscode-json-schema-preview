@@ -154,6 +154,9 @@ const _getSession          = sinon.stub();
 // extensions
 const _getExtension = sinon.stub();
 
+// env
+const _clipboardWriteText = sinon.stub();
+
 const _allStubs: sinon.SinonStub[] = [
   statusBarItem.show, statusBarItem.hide, statusBarItem.dispose,
   _createStatusBarItem, _onDidChangeActiveTextEditor,
@@ -168,6 +171,7 @@ const _allStubs: sinon.SinonStub[] = [
   _onDidChangeSessions, _getSession,
   _getExtension,
   _registerCommand, _executeCommand, _getCommands,
+  _clipboardWriteText,
 ];
 
 function applyDefaults() {
@@ -226,6 +230,7 @@ function applyDefaults() {
   _onDidChangeSessions.returns(_disposable);
   _getSession.resolves(undefined);
   _getExtension.returns(undefined);
+  _clipboardWriteText.resolves(undefined);
   _registerCommand.returns(_disposable);
   _executeCommand.resolves(undefined);
   _getCommands.resolves([]);
@@ -317,6 +322,10 @@ export const commands = {
 
 export const extensions = {
   getExtension: _getExtension,
+};
+
+export const env = {
+  clipboard: { writeText: _clipboardWriteText },
 };
 
 export const languages = {

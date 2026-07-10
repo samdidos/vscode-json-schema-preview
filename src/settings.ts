@@ -95,3 +95,15 @@ export function getCacheAutoRefresh(): CacheAutoRefresh {
   const value = cfg.get<string>('autoRefresh');
   return value === 'onOpen' || value === 'daily' ? value : 'off';
 }
+
+/**
+ * Scan cap for the Validate Workspace command (F20-FR-03). Missing,
+ * non-numeric, or non-positive values fall back to the default (2000),
+ * mirroring the timeout-clamping policy above.
+ */
+export function getWorkspaceValidationMaxFiles(): number {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.workspaceValidation');
+  const raw = cfg.get<number>('maxFiles');
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) { return 2000; }
+  return Math.floor(raw);
+}

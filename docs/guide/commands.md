@@ -122,6 +122,24 @@ The inverse of inference: generates a valid example instance from the active JSO
 
 ---
 
+<!-- spec:F20 start -->
+## JSON Schema: Validate Workspace
+
+**ID:** `jsonschema.validateWorkspace`
+
+The "is my repo green?" button: one command that sweeps the whole workspace (all folders in a multi-root setup), validates every data file with a schema binding — settings-based at any scope, or an inline `$schema` — and lints every schema file with the F17 rule set. Findings land in the Problems panel on their real file locations, including files that aren't open; a binding whose schema can't be loaded gets a diagnostic pointing at the binding itself (the inline `$schema` line, or the settings-file line naming the schema). Each run replaces the previous run's diagnostics.
+
+The run shows cancellable progress and finishes with a summary — files checked, valid, with errors, schemas linted, bindings failed — plus a **Copy Report** action that puts a per-folder Markdown report on the clipboard, ready to paste into a PR comment.
+
+Discovery respects `files.exclude`/`search.exclude`, skips files over 1 MiB, and caps the scan at `jsonschema.workspaceValidation.maxFiles` (default 2000, noted in the report when hit). Remote schemas are read cache-first and fetched at most once per run; in an untrusted workspace they're served from the local cache only.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — | ✅ (when a workspace folder is open) |
+<!-- spec:F20 end -->
+
+---
+
 <!-- spec:F18 start -->
 ## JSON Schema: Generate Types from This Schema
 

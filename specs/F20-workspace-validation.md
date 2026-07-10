@@ -33,10 +33,15 @@ file.
   files matched by `json.schemas` / `yaml.schemas` bindings at every settings
   scope this extension writes (Global, Workspace, WorkspaceFolder — resolved
   per folder in multi-root workspaces), and (b) JSON/YAML/TOML files with an
-  inline `$schema` binding (F10/F11), and (c) schema files by the
-  `*.schema.*` convention or a `$schema` declaration (F17's lintable set).
+  inline `$schema` binding (F10/F11) — except when the `$schema` value is a
+  JSON Schema meta-schema URI, which marks the file as a *schema* (c), not a
+  data binding — and (c) schema files by the `*.schema.*` convention or a
+  `$schema` declaration (F17's lintable set). A file can be both (b) and (c)
+  (a bound data file that carries a `$schema` key): it is then both
+  validated and linted.
 - **F20-FR-03** Discovery MUST respect `files.exclude` and
-  `search.exclude`, MUST skip files larger than the S03 size cap, and MUST
+  `search.exclude`, MUST skip files larger than a fixed size cap (1 MiB —
+  S03 defines no shared byte cap, so this spec fixes its own), and MUST
   cap the total scanned file count (configurable, default 2000) with a
   truncation note in the report.
 
@@ -50,8 +55,10 @@ file.
 - **F20-FR-05** Findings MUST be published to the Problems panel as
   diagnostics on their real file locations (creating them for unopened
   files), replacing any previous run's diagnostics; a schema that cannot be
-  loaded at all MUST produce a diagnostic on the *binding* (the settings file
-  line or the inline `$schema` line), naming the unresolved reference.
+  loaded at all MUST produce a diagnostic on the *binding* (the settings
+  file line or the inline `$schema` line, located best-effort — falling
+  back to the top of the data file when the binding line cannot be
+  located), naming the unresolved reference.
 - **F20-FR-06** The run MUST show cancellable progress (files completed /
   total) and MUST finish with a summary notification: files checked, valid,
   with errors, schemas linted, bindings that failed to resolve.
