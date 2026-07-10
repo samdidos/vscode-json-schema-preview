@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { modify, parseTree, Edit as JsoncEdit, FormattingOptions } from 'jsonc-parser';
 import { isSupported, isYaml, isToml, stripJsoncComments } from './languages';
+import { truncateMiddle } from './statusBarFormat';
 
 /** Sentinel scope value for an inline `$schema` binding (F10) — distinct from
  * `vscode.ConfigurationTarget`'s numeric values so it can flow through the
@@ -107,14 +108,14 @@ export class SchemaBindingManager {
     const inline = extractInlineSchemaUrl(doc);
     const settingsBinding = findBoundSchemaPath(doc);
     if (inline) {
-      this.statusBar.text = `$(file-symlink-file) Schema: ${path.basename(inline)}`;
+      this.statusBar.text = `$(file-symlink-file) Schema: ${truncateMiddle(path.basename(inline))}`;
       this.statusBar.tooltip = settingsBinding
         ? `Inline $schema in this file: ${inline}\n` +
           `Note: a settings binding also exists (${settingsBinding}) but is overridden by the inline value\n` +
           `Click to change or remove`
         : `Inline $schema in this file: ${inline}\nClick to change or remove`;
     } else if (settingsBinding) {
-      this.statusBar.text = `$(check) Schema: ${path.basename(settingsBinding)}`;
+      this.statusBar.text = `$(check) Schema: ${truncateMiddle(path.basename(settingsBinding))}`;
       this.statusBar.tooltip = `Schema bound: ${settingsBinding}\nClick to change or remove`;
     } else {
       this.statusBar.text = `$(circle-slash) Schema: unbound`;

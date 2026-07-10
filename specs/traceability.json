@@ -428,9 +428,10 @@
     "F04-FR-06": {
       "status": "implemented",
       "impl": [
-        "src/SchemaBindingManager.ts"
+        "src/SchemaBindingManager.ts",
+        "src/statusBarFormat.ts"
       ],
-      "note": "bound display (unit-tested)"
+      "note": "bound display; long basenames middle-truncated via truncateMiddle (statusBarFormat.ts), full name kept in the tooltip — unit-tested (pure helper + status-bar label/tooltip)"
     },
     "F04-FR-07": {
       "status": "implemented",
@@ -703,7 +704,7 @@
       "impl": [
         "src/SchemaAuthStatusBar.ts"
       ],
-      "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
+      "note": "icon-only label (host moved to the tooltip so the item stays compact); unit-tested via the vscode mock"
     },
     "F07-FR-11": {
       "status": "implemented",

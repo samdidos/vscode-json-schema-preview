@@ -51,7 +51,10 @@ tokens, and Basic auth.
 
 - **F07-FR-10** A **🔒 / 🔓 status bar item** MUST be visible when the active
   file has a remote `$schema`. It MUST indicate whether credentials are
-  configured for the schema's host.
+  configured for the schema's host. To stay compact the item's label MUST be
+  **icon-only** (🔒 when configured, 🔓 otherwise); the schema **host** MUST be
+  shown in the item's **tooltip** rather than in its label, so the item does
+  not widen with the host's domain length.
 - **F07-FR-11** When VS Code cannot load a remote schema a **code action
   (lightbulb)** MUST appear on the `$schema` line offering to configure auth.
 - **F07-FR-12** When the **Validate This File** command returns a 401/403, the

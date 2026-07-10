@@ -35,12 +35,14 @@ export class SchemaAuthStatusBar {
     const host = SchemaAuthManager.hostOf(url);
     const configured = await this.auth.isConfigured(url);
 
+    // F07-FR-10: keep the label icon-only so it doesn't widen with the host's
+    // domain length — the host lives in the tooltip.
     if (configured) {
-      this.item.text = `$(lock) ${host}`;
+      this.item.text = `$(lock)`;
       this.item.tooltip = `Schema authenticated\nClick to manage credentials for ${host}`;
       this.item.backgroundColor = undefined;
     } else {
-      this.item.text = `$(unlock) ${host}`;
+      this.item.text = `$(unlock)`;
       this.item.tooltip = `Schema at ${host} may require authentication\nClick to configure`;
       this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
     }

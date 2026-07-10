@@ -221,6 +221,16 @@ suite('SchemaBindingManager — refresh via editor change', () => {
     assert.ok(statusBarItem.text.includes('myschema.json'));
   });
 
+  test('[F04-FR-06] middle-truncates a long schema basename in the label but not the tooltip', () => {
+    const longName = 'a-really-long-schema-name-that-exceeds-the-limit.schema.json';
+    setConfig('json', 'schemas', [{ url: `./${longName}`, fileMatch: ['data.json'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    triggerEditorChange({ document: makeDoc('json') });
+    assert.ok(statusBarItem.text.includes('…'), 'label should be truncated with an ellipsis');
+    assert.ok(!statusBarItem.text.includes(longName), 'label should not contain the full name');
+    assert.ok((statusBarItem.tooltip as string).includes(longName), 'tooltip should keep the full name');
+  });
+
   test('shows schema name when YAML binding exists', () => {
     setConfig('yaml', 'schemas', { './myschema.json': 'data.yaml' });
     vscode.workspace.asRelativePath.callsFake(() => 'data.yaml');
