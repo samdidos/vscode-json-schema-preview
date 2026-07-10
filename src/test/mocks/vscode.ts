@@ -145,6 +145,7 @@ const _createDiagnosticCollection       = sinon.stub();
 const _registerCodeActionsProvider      = sinon.stub();
 const _registerDefinitionProvider       = sinon.stub();
 const _registerHoverProvider            = sinon.stub();
+const _registerCompletionItemProvider   = sinon.stub();
 
 // authentication
 const _onDidChangeSessions = sinon.stub();
@@ -163,7 +164,7 @@ const _allStubs: sinon.SinonStub[] = [
   _onDidOpenTextDocument, _onDidChangeTextDocument, _onDidCloseTextDocument,
   _registerTextDocumentContentProvider,
   _createDiagnosticCollection, _registerCodeActionsProvider,
-  _registerDefinitionProvider, _registerHoverProvider,
+  _registerDefinitionProvider, _registerHoverProvider, _registerCompletionItemProvider,
   _onDidChangeSessions, _getSession,
   _getExtension,
   _registerCommand, _executeCommand, _getCommands,
@@ -221,6 +222,7 @@ function applyDefaults() {
   _registerCodeActionsProvider.returns(_disposable);
   _registerDefinitionProvider.returns(_disposable);
   _registerHoverProvider.returns(_disposable);
+  _registerCompletionItemProvider.returns(_disposable);
   _onDidChangeSessions.returns(_disposable);
   _getSession.resolves(undefined);
   _getExtension.returns(undefined);
@@ -322,6 +324,7 @@ export const languages = {
   registerCodeActionsProvider: _registerCodeActionsProvider,
   registerDefinitionProvider: _registerDefinitionProvider,
   registerHoverProvider: _registerHoverProvider,
+  registerCompletionItemProvider: _registerCompletionItemProvider,
 };
 
 export const authentication = {
@@ -340,6 +343,16 @@ export class CodeAction {
   edit?: unknown;
   isPreferred?: boolean;
   constructor(public title: string, public kind?: unknown) {}
+}
+
+export const CompletionItemKind = { Field: 4, Value: 11, Property: 9, EnumMember: 19 };
+
+export class CompletionItem {
+  detail?: string;
+  documentation?: unknown;
+  sortText?: string;
+  insertText?: string;
+  constructor(public label: string, public kind?: number) {}
 }
 
 export class ThemeColor {

@@ -51,7 +51,7 @@
         {
           "id": "branch-coverage",
           "points": 3,
-          "earned": 2.79,
+          "earned": 2.78,
           "note": "branch coverage vs a 95% target"
         },
         {
@@ -75,7 +75,7 @@
         {
           "id": "low-exclusion",
           "points": 2,
-          "earned": 1.81,
+          "earned": 1.82,
           "note": "few source files excluded from coverage"
         }
       ]
@@ -327,17 +327,17 @@
   ],
   "facts": {
     "coverage": {
-      "lines": 96.3,
-      "statements": 96.3,
-      "functions": 98.87,
-      "branches": 88.43
+      "lines": 96.45,
+      "statements": 96.45,
+      "functions": 98.64,
+      "branches": 88.11
     },
     "requirements": {
       "total": 356,
       "byStatus": {
         "manual": 123,
-        "implemented": 208,
-        "planned": 25
+        "implemented": 217,
+        "planned": 16
       }
     },
     "pinnedActionRatio": 0.972

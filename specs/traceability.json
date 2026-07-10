@@ -1,7 +1,7 @@
 {
   "$comment": "Requirement traceability matrix. Keys are requirement IDs defined in specs/*.md. status is one of: untracked, planned, implemented, manual, deferred. impl lists source files; test coverage is auto-discovered from [ID] tags in src/test. Run `npm run check:traceability` to validate.",
   "statuses": {
-    "untracked": "predates the traceability system — needs backfill",
+    "untracked": "predates the traceability system \u2014 needs backfill",
     "planned": "specified, not yet implemented",
     "implemented": "code exists; expects unit-test coverage",
     "manual": "VS Code API-bound; verified by manual / E2E testing only",
@@ -439,7 +439,7 @@
         "src/SchemaBindingManager.ts",
         "src/statusBarFormat.ts"
       ],
-      "note": "bound display; long basenames middle-truncated via truncateMiddle (statusBarFormat.ts), full name kept in the tooltip — unit-tested (pure helper + status-bar label/tooltip)"
+      "note": "bound display; long basenames middle-truncated via truncateMiddle (statusBarFormat.ts), full name kept in the tooltip \u2014 unit-tested (pure helper + status-bar label/tooltip)"
     },
     "F04-FR-07": {
       "status": "implemented",
@@ -1101,14 +1101,14 @@
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "writeInlineBinding/removeInlineBinding do no fs I/O at all (edits computed from doc.getText() and applied via WorkspaceEdit) — verified by code inspection, not a dedicated test."
+      "note": "writeInlineBinding/removeInlineBinding do no fs I/O at all (edits computed from doc.getText() and applied via WorkspaceEdit) \u2014 verified by code inspection, not a dedicated test."
     },
     "F10-NFR-03": {
       "status": "manual",
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "Edits are computed from doc.getText() and applied via WorkspaceEdit against the live document, so unsaved-but-open documents are handled the same as saved ones — verified by code inspection."
+      "note": "Edits are computed from doc.getText() and applied via WorkspaceEdit against the live document, so unsaved-but-open documents are handled the same as saved ones \u2014 verified by code inspection."
     },
     "F11-FR-01": {
       "status": "manual",
@@ -1263,7 +1263,7 @@
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "Browse catalog… item added to bindToCurrentFile when a catalog manager is wired in"
+      "note": "Browse catalog\u2026 item added to bindToCurrentFile when a catalog manager is wired in"
     },
     "F12-FR-02": {
       "status": "implemented",
@@ -1324,7 +1324,7 @@
         "src/SchemaBindingManager.ts",
         "src/SchemaCatalogManager.ts"
       ],
-      "note": "catalog URL flows through the standard bind/validate path → F07 401/403 handling"
+      "note": "catalog URL flows through the standard bind/validate path \u2192 F07 401/403 handling"
     },
     "F12-FR-10": {
       "status": "implemented",
@@ -1390,7 +1390,7 @@
         "src/schemaPointer.ts",
         "src/SchemaRefProvider.ts"
       ],
-      "note": "same-doc refs → locatePointerTarget returns the key span"
+      "note": "same-doc refs \u2192 locatePointerTarget returns the key span"
     },
     "F13-FR-05": {
       "status": "implemented",
@@ -1412,7 +1412,7 @@
         "src/schemaPointer.ts",
         "src/SchemaRefProvider.ts"
       ],
-      "note": "unresolvable pointer → undefined definition / explanatory hover"
+      "note": "unresolvable pointer \u2192 undefined definition / explanatory hover"
     },
     "F13-FR-08": {
       "status": "implemented",
@@ -1464,7 +1464,7 @@
       "impl": [
         "src/SchemaBundleCommand.ts"
       ],
-      "note": "mode QuickPick: Bundle (refs→$defs) / Dereference (inline)"
+      "note": "mode QuickPick: Bundle (refs\u2192$defs) / Dereference (inline)"
     },
     "F14-FR-03": {
       "status": "implemented",
@@ -1507,7 +1507,7 @@
         "src/schemaBundler.ts",
         "src/SchemaBundleCommand.ts"
       ],
-      "note": "unresolvable ref throws naming it; 401/403 → Configure Auth offer"
+      "note": "unresolvable ref throws naming it; 401/403 \u2192 Configure Auth offer"
     },
     "F14-FR-09": {
       "status": "manual",
@@ -1544,7 +1544,7 @@
       "impl": [
         "src/SchemaDiffCommand.ts"
       ],
-      "note": "baseline picker: Git HEAD / Workspace file… / Remote URL… (auth); order preserved"
+      "note": "baseline picker: Git HEAD / Workspace file\u2026 / Remote URL\u2026 (auth); order preserved"
     },
     "F15-FR-03": {
       "status": "implemented",
@@ -1565,7 +1565,7 @@
       "impl": [
         "src/schemaDiff.ts"
       ],
-      "note": "breaking rules: required+, type-, enum/const narrow, bound tighten, addlProps→false, allOf+"
+      "note": "breaking rules: required+, type-, enum/const narrow, bound tighten, addlProps\u2192false, allOf+"
     },
     "F15-FR-06": {
       "status": "implemented",
@@ -1579,14 +1579,14 @@
       "impl": [
         "src/schemaDiff.ts"
       ],
-      "note": "title/description/examples/default/$comment and unknown keywords → informational"
+      "note": "title/description/examples/default/$comment and unknown keywords \u2192 informational"
     },
     "F15-FR-08": {
       "status": "implemented",
       "impl": [
         "src/schemaDiff.ts"
       ],
-      "note": "unreasoned changes → unclassified, never dropped; comparator never throws"
+      "note": "unreasoned changes \u2192 unclassified, never dropped; comparator never throws"
     },
     "F15-FR-09": {
       "status": "implemented",
@@ -1594,7 +1594,7 @@
         "src/schemaDiff.ts",
         "src/SchemaDiffCommand.ts"
       ],
-      "note": "grouped text-first Markdown report (pointer path, old→new); read-only virtual doc"
+      "note": "grouped text-first Markdown report (pointer path, old\u2192new); read-only virtual doc"
     },
     "F15-FR-10": {
       "status": "implemented",
@@ -1609,7 +1609,7 @@
       "impl": [
         "src/SchemaDiffCommand.ts"
       ],
-      "note": "identical versions → \"No structural changes\" message, no report"
+      "note": "identical versions \u2192 \"No structural changes\" message, no report"
     },
     "F15-NFR-01": {
       "status": "implemented",
@@ -1638,14 +1638,14 @@
       "impl": [
         "src/extension.ts"
       ],
-      "note": "QuickPick JSON/YAML → new untitled editor of that language"
+      "note": "QuickPick JSON/YAML \u2192 new untitled editor of that language"
     },
     "F16-FR-03": {
       "status": "implemented",
       "impl": [
         "src/sampleDataGenerator.ts"
       ],
-      "note": "value priority const → examples[0] → default → enum[0]"
+      "note": "value priority const \u2192 examples[0] \u2192 default \u2192 enum[0]"
     },
     "F16-FR-04": {
       "status": "implemented",
@@ -1900,49 +1900,73 @@
       "note": "quicktype-core pinned exactly (no range); determinism (F18-FR-09) depends on it"
     },
     "F19-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/TomlIntellisenseProvider.ts",
+        "src/extension.ts"
+      ],
+      "note": "completion + hover providers for language toml; inactive without a loadable inline $schema"
     },
     "F19-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "local schemas from disk, remote from the F08 cache only; every failure path returns no results"
     },
     "F19-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "table headers parsed by smol-toml; existing keys from a full-document parse (cursor line blanked on failure)"
     },
     "F19-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "enum/const/boolean values serialised as TOML literals; oneOf/anyOf branches aggregated"
     },
     "F19-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "description as MarkdownString documentation; required keys sortText-first with a (required) detail"
     },
     "F19-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "caller-supplied resolver: local pointer, relative-to-schema file, cached remote; cycle- and depth-guarded"
     },
     "F19-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "key/title/type/description/enum/bounds markdown in the F13 hover style"
     },
     "F19-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts"
+      ],
+      "note": "pure text+offset module; all TOML parsing via smol-toml, only the incomplete cursor fragment uses a quote-aware scan"
     },
     "F19-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "schema load memoized per document uri+version; no network path exists in the providers (cache/disk reads only)"
     },
     "F20-FR-01": {
       "status": "planned",
@@ -2353,7 +2377,7 @@
       "impl": [
         "src/fallbackRenderer.ts"
       ],
-      "note": "required column uses textual Yes/—, not colour alone; unit-tested"
+      "note": "required column uses textual Yes/\u2014, not colour alone; unit-tested"
     },
     "S07-NFR-01": {
       "status": "implemented",
@@ -2486,7 +2510,7 @@
     "S08-SR-06": {
       "status": "planned",
       "impl": [],
-      "note": "harness supports it (executeCommand works against real fixtures); not yet written — scenarios so far only exercise bindToCurrentFile/validateFile"
+      "note": "harness supports it (executeCommand works against real fixtures); not yet written \u2014 scenarios so far only exercise bindToCurrentFile/validateFile"
     },
     "S08-SR-07": {
       "status": "planned",

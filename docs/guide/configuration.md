@@ -233,3 +233,15 @@ Schema bindings created via **Bind Schema…** are written to VS Code's standard
 
 Bindings can be edited manually in the relevant `settings.json` file. **TOML files use the inline scope exclusively** — VS Code has no built-in `toml.schemas` mechanism, so the picker offers only the inline option for `.toml` files.
 <!-- spec:F04,F10,F11 end -->
+
+<!-- spec:F19 start -->
+## TOML Schema IntelliSense
+
+While VS Code's own language servers provide schema-driven editing help for JSON and YAML, TOML has no schema-aware language server — so this extension fills the gap itself. In any `.toml` file with an inline `"$schema"` binding you get:
+
+- **Key completions** from the schema's properties, scoped to the current `[table]` / `[[array-of-tables]]` header and dotted-key path. Keys already present in the table are omitted; schema-`required` keys sort first and are marked `(required)`.
+- **Value completions** after `=` for `enum`/`const` alternatives and booleans, serialised as valid TOML (quoted strings, bare numbers).
+- **Hover documentation** on keys showing the schema's title, type, description, enum values, and numeric bounds.
+
+Schema `$ref`s are followed (local pointers, files next to the schema, cached remote schemas). Everything works offline: a remote schema is read from the local cache — run **JSON Schema: Cache Schema Locally** once to populate it — and no request is ever made while you type. Removing the `$schema` line turns the assistance off.
+<!-- spec:F19 end -->
