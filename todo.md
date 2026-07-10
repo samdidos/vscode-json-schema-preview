@@ -3,6 +3,37 @@
 Validated against the codebase on 2026-07-09. Notes below say what's actually
 true today vs. what needs rethinking before implementing.
 
+## Effort ranking (quick wins first)
+
+Ordered by implementation effort. **Note on this repo's workflow:** even a
+one-line *code* change needs a spec requirement first (constitution Article
+IV + the traceability gate), so "trivial code" isn't always "trivial task."
+The column below flags whether a spec amendment is needed, since that's often
+the real cost for small items. Pure docs/config/CI edits skip that step.
+
+| # | Task | Effort | Spec change needed? | Notes |
+|---|------|--------|---------------------|-------|
+| 6 | Delete `.eslintrc.json` | **Trivial** (~1 min) | No | `git rm` one dead file. Zero risk. The cleanest quick win. |
+| 3 | TOML on homepage + doc tags for F18/F19/F20 | **Trivial** (~15 min) | No | Docs-only markdown edits; makes `check:doc-traceability` warnings go away too. |
+| 10·1 | Add traceability checks to CI | **Trivial** (~10 min) | No | A few YAML lines in `ci.yml`. Closes a real enforcement gap; do before 10·2. |
+| 9·a | Set `Diagnostic.source` on validation diagnostics | **Small** (~30 min) | Tiny (F03 note) | One line + a test. Makes this extension's errors distinguishable from VS Code's built-in ones. |
+| 10·2 | Path-filter CI/CodeQL for docs-only PRs | **Small** (~1 hr) | No | Straightforward `paths-ignore`, but **verify branch-protection required-checks first** (may need a no-op companion workflow). |
+| 4 | Compact status bar items | **Small** (~1-2 hr) | Yes (F04/F07) | UI-only, two files, tooltips already carry the full text. Spec touch is the gating step. |
+| 5 | Config to force the JS fallback renderer | **Medium** (~half day) | Yes (F01/F09) | Renderer already exists + tested; work is the new setting + `package.json` contribution + gate in `PreviewWebPanel`. |
+| 9·b | Draft-aware Ajv (2019/2020 dialects) | **Medium** (~half day) | Yes (F03) | Two files, plus tests across drafts. Real correctness fix. |
+| — | S03-SR-13 + S08 test tails | **Medium** (~half day) | No (specs exist) | Additive E2E/timing assertions on existing harness; cheapest way to fully *close out* a spec. |
+| 19 | F19 — TOML IntelliSense | **Large** (~2-3 days) | No (spec exists) | Two new language providers; smallest of the three unbuilt features. |
+| 18 | F18 — Code generation | **Large** (~3-4 days) | No (spec done) | New dep (`quicktype-core`), command, codegen glue, snapshot tests. Spec already amended. |
+| 20 | F20 — Workspace validation | **Large** (~3-4 days) | No (spec exists) | Biggest surface area: discovery + aggregation + progress UI + diagnostics. |
+| 1 | Modernize website look | **Large + open-ended** | No | Effort unbounded until a design direction is picked; not a coding task yet. |
+| 2 | "Unclosed spec tags" | **None** (debunked) | — | Not a real bug; nothing to do. |
+| 7 | Branch-cleanup command | **None** (reference) | — | Informational; nothing to delete right now. |
+
+**Suggested first sprint of quick wins:** #6 → #3 → #10·1 → #9·a. All four
+are low-risk, mostly docs/config/CI, and only #9·a touches product code (one
+line). That knocks out the cruft, the doc gaps, and the CI enforcement hole
+before touching any feature work. Details for each item below.
+
 ## 1. Modernize the website look
 **Valid, but underspecified.** Site is stock VitePress (`docs/.vitepress/`)
 with a light custom theme (`theme/style.css`, `theme/index.ts`,
