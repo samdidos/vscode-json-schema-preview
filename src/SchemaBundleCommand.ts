@@ -89,8 +89,10 @@ export function bundleSchemaCommand(auth: SchemaAuthManager, cache: SchemaCache)
   };
 }
 
-/** Wrap a resolver so each fetched document reports progress and honours cancellation. */
-function trackProgress(
+/** Wrap a resolver so each fetched document reports progress and honours
+ *  cancellation. Shared with the F18 Generate Types command, which runs the
+ *  same F14 resolution step before code generation. */
+export function trackProgress(
   resolve: ReturnType<typeof makeResolver>,
   progress: vscode.Progress<{ message?: string }>,
   token: vscode.CancellationToken,

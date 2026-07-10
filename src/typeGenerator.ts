@@ -1,0 +1,182 @@
+// F18 — TypeScript type generation from a bundled (self-contained) JSON
+// Schema. Pure and VS Code-free: constraint annotation, declaration naming,
+// and the quicktype-core invocation live here. All external $ref resolution
+// and fetching happen *before* this module via F14's bundleSchema
+// (F18-FR-06); the JSONSchemaInput below is constructed without a schema
+// store, so the engine cannot fetch anything itself (F18-NFR-01).
+
+import { quicktype, InputData, JSONSchemaInput } from 'quicktype-core';
+import { isObject } from './schemaPointer';
+
+/** Validation keywords with no TypeScript type-level counterpart. Their
+ *  presence is surfaced as a TSDoc note instead of being silently dropped
+ *  (F18-FR-08). `format` is also stripped so quicktype emits the widest
+ *  correct type (`string`) rather than e.g. `Date` for `date-time`. */
+const UNREPRESENTED_KEYWORDS = [
+  'pattern', 'minLength', 'maxLength', 'format',
+  'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf',
+  'minItems', 'maxItems', 'uniqueItems', 'contains',
+  'minProperties', 'maxProperties', 'propertyNames', 'patternProperties',
+  'if', 'then', 'else', 'not',
+  'dependentRequired', 'dependentSchemas',
+  'unevaluatedProperties', 'unevaluatedItems',
+] as const;
+
+/** Keys whose values are plain data, not subschemas — never walked. */
+const SCHEMA_MAP_KEYWORDS = ['properties', '$defs', 'definitions'] as const;
+const SCHEMA_VALUE_KEYWORDS = [
+  'additionalProperties', 'additionalItems', 'items', 'contains',
+  'propertyNames', 'not', 'if', 'then', 'else',
+  'unevaluatedProperties', 'unevaluatedItems',
+] as const;
+const SCHEMA_LIST_KEYWORDS = ['allOf', 'anyOf', 'oneOf', 'prefixItems'] as const;
+
+/** Sanitise an arbitrary name into a valid PascalCase identifier (F18-FR-07). */
+export function sanitizeIdentifier(name: string): string {
+  const words = name.replace(/[^A-Za-z0-9_$]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+  const joined = words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+  const identifier = joined.replace(/^[0-9]+/, '');
+  return identifier ? identifier.charAt(0).toUpperCase() + identifier.slice(1) : 'Schema';
+}
+
+/** Render a constraint value compactly for a TSDoc note. */
+function fmtValue(v: unknown): string {
+  try {
+    const s = JSON.stringify(v);
+    return s === undefined ? String(v) : s.length > 60 ? `${s.slice(0, 57)}…` : s;
+  } catch {
+    return String(v);
+  }
+}
+
+/**
+ * Prepare a bundled schema for quicktype (mutates a deep clone, returns it):
+ *
+ * - `$defs`/`definitions` entries without a `title` get one from their key,
+ *   so the emitted declaration is named after the key (F18-FR-07).
+ * - Keywords with no type-level counterpart are recorded as a note appended
+ *   to the node's `description`, which quicktype emits as TSDoc — the
+ *   "comment naming the unrepresented constraint" of F18-FR-08. `format` is
+ *   removed afterwards so the widest correct type (`string`) is emitted.
+ * - Non-string `const`/`enum` members widen in the output, so they are noted
+ *   too (F18-FR-04).
+ * - 2020-12 `prefixItems` tuples are rewritten to the draft-07 array form
+ *   (`items: [...]`, rest schema moved to `additionalItems`) that quicktype
+ *   understands, and the tuple shape is noted (F18-FR-04).
+ *
+ * Only recognised schema positions are walked — data-carrying keywords
+ * (`enum`, `const`, `examples`, `default`) are never treated as schemas.
+ */
+export function annotateSchemaForCodegen(input: unknown): unknown {
+  const root = structuredClone(input);
+  walkSchema(root);
+  return root;
+}
+
+function walkSchema(node: unknown): void {
+  if (Array.isArray(node)) {
+    for (const item of node) { walkSchema(item); }
+    return;
+  }
+  if (!isObject(node)) { return; }
+  annotateNode(node);
+  for (const key of SCHEMA_MAP_KEYWORDS) {
+    const map = node[key];
+    if (!isObject(map)) { continue; }
+    for (const [entryKey, sub] of Object.entries(map)) {
+      if ((key === '$defs' || key === 'definitions') && isObject(sub) && typeof sub.title !== 'string') {
+        sub.title = entryKey; // F18-FR-07: name the declaration after the $defs key
+      }
+      walkSchema(sub);
+    }
+  }
+  const depSchemas = node.dependentSchemas;
+  if (isObject(depSchemas)) {
+    for (const sub of Object.values(depSchemas)) { walkSchema(sub); }
+  }
+  for (const key of SCHEMA_VALUE_KEYWORDS) {
+    if (key in node) { walkSchema(node[key]); }
+  }
+  for (const key of SCHEMA_LIST_KEYWORDS) {
+    const list = node[key];
+    if (Array.isArray(list)) { for (const sub of list) { walkSchema(sub); } }
+  }
+}
+
+function annotateNode(node: Record<string, unknown>): void {
+  const notes: string[] = [];
+
+  // 2020-12 tuple form → draft-07 tuple form quicktype understands; the
+  // element types then flow into the output as Array<union> (F18-FR-04).
+  if (Array.isArray(node.prefixItems)) {
+    notes.push(`tuple of ${node.prefixItems.length} element(s) (prefixItems)`);
+    if (node.items !== undefined && !Array.isArray(node.items)) {
+      node.additionalItems = node.items;
+    }
+    node.items = node.prefixItems;
+    delete node.prefixItems;
+  } else if (Array.isArray(node.items)) {
+    notes.push(`tuple of ${node.items.length} element(s) (items)`);
+  }
+
+  if ('const' in node && typeof node.const !== 'string') {
+    notes.push(`const: ${fmtValue(node.const)}`);
+  }
+  if (Array.isArray(node.enum) && node.enum.some(v => typeof v !== 'string')) {
+    notes.push(`enum: ${fmtValue(node.enum)}`);
+  }
+
+  for (const keyword of UNREPRESENTED_KEYWORDS) {
+    if (!(keyword in node)) { continue; }
+    const value = node[keyword];
+    notes.push(
+      value === undefined || isObject(value) || Array.isArray(value)
+        ? keyword
+        : `${keyword}: ${fmtValue(value)}`,
+    );
+  }
+  // `format` would otherwise make quicktype emit `Date` for `date-time`,
+  // which parsed JSON never contains — strip it after noting it.
+  delete node.format;
+
+  if (!notes.length) { return; }
+  const note = `Unrepresented in the generated type: ${notes.join(', ')}.`;
+  node.description = typeof node.description === 'string' && node.description
+    ? `${node.description}\n\n${note}`
+    : note;
+}
+
+/**
+ * Generate TypeScript declarations from a bundled, self-contained schema
+ * (F18-FR-02..09). Pure with respect to I/O (F18-NFR-02): schema in, text
+ * out — async only because quicktype's API is. The top-level declaration is
+ * named after the schema's `title`, else `fallbackName` (the file stem).
+ * Output is deterministic for identical input (F18-FR-09) — quicktype-core
+ * is pinned to an exact version to keep it that way (F18-NFR-03).
+ */
+export async function generateTypeScript(bundledSchema: unknown, fallbackName: string): Promise<string> {
+  const schema = annotateSchemaForCodegen(bundledSchema);
+  const title = isObject(bundledSchema) && typeof bundledSchema.title === 'string'
+    ? bundledSchema.title
+    : undefined;
+  const topLevelName = sanitizeIdentifier(title ?? fallbackName);
+
+  // No schema store → quicktype cannot resolve anything outside the document
+  // it is given; an external address in a $ref is a hard error (F18-NFR-01).
+  const schemaInput = new JSONSchemaInput(undefined);
+  await schemaInput.addSource({ name: topLevelName, schema: JSON.stringify(schema) });
+  const inputData = new InputData();
+  inputData.addInput(schemaInput);
+
+  const result = await quicktype({
+    inputData,
+    lang: 'typescript',
+    rendererOptions: {
+      'just-types': 'true',        // declarations only, no runtime converters
+      'prefer-unions': 'true',     // enum → union of literal types (F18-FR-04)
+      'nice-property-names': 'false', // keep property names exactly as in the schema
+    },
+    indentation: '  ',
+  });
+  return `${result.lines.join('\n')}\n`;
+}

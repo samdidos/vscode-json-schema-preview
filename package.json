@@ -96,6 +96,11 @@
         "icon": "$(beaker)"
       },
       {
+        "command": "jsonschema.generateTypes",
+        "title": "JSON Schema: Generate Types from This Schema",
+        "icon": "$(symbol-interface)"
+      },
+      {
         "command": "jsonschema.bundleSchema",
         "title": "JSON Schema: Bundle / Dereference Schema",
         "icon": "$(references)"
@@ -242,13 +247,18 @@
         },
         {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "command": "jsonschema.bundleSchema",
+          "command": "jsonschema.generateTypes",
           "group": "1_run@2"
         },
         {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "command": "jsonschema.diffSchema",
+          "command": "jsonschema.bundleSchema",
           "group": "1_run@3"
+        },
+        {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.diffSchema",
+          "group": "1_run@4"
         },
         {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
@@ -287,6 +297,10 @@
         },
         {
           "command": "jsonschema.generateSampleData",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.generateTypes",
           "when": "jsonschema.isJsonSchema"
         },
         {
@@ -388,9 +402,12 @@
     "@playwright/test": "^1.61.1",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/typescript-checker": "^9.6.1",
+    "@types/command-line-args": "^5.2.3",
     "@types/mocha": "^10.0.10",
     "@types/node": "^26.1.0",
+    "@types/readable-stream": "^4.0.24",
     "@types/sinon": "^21.0.1",
+    "@types/urijs": "^1.19.26",
     "@types/vscode": "1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.63.0",
@@ -415,6 +432,7 @@
     "ajv": "^8.20.0",
     "genson-js": "^0.0.8",
     "jsonc-parser": "^3.3.1",
+    "quicktype-core": "23.3.25",
     "smol-toml": "^1.7.0",
     "yaml": "^2.9.0"
   }

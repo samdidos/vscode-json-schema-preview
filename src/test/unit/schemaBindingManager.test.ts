@@ -441,6 +441,55 @@ suite('SchemaBindingManager — bindToCurrentFile()', () => {
     }
   });
 
+  test('[F16-FR-01] bind success notification offers Generate Sample, resolving the schema path', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
+      vscode.window.showInformationMessage.resolves('Generate Sample');
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      assert.ok(vscode.commands.executeCommand.calledWith('jsonschema.generateSampleData', schema));
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
+  test('[F18-FR-01] bind success notification offers Generate Types, resolving the schema path', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
+    const schema = path.join(tmp, 'schema.json');
+    fs.writeFileSync(schema, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
+    try {
+      vscode.window.activeTextEditor = { document: makeDoc('json', path.join(tmp, 'data.json')) };
+      vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: tmp } });
+      vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
+      vscode.workspace.asRelativePath.callsFake((u: any) => path.basename(typeof u === 'string' ? u : u.fsPath));
+      vscode.window.showQuickPick
+        .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.uri))
+        .onSecondCall().callsFake(async (items: any[]) => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder));
+      vscode.window.showInformationMessage.resolves('Generate Types');
+      const mgr = new SchemaBindingManager(makeContext());
+      await mgr.bindToCurrentFile();
+      // Both generate actions and Open Settings are offered on the notification
+      const call = vscode.window.showInformationMessage.getCalls()
+        .find((c: any) => typeof c.args[0] === 'string' && c.args[0].startsWith('Schema bound:'));
+      assert.ok(call, 'success notification shown');
+      assert.deepStrictEqual(call!.args.slice(1), ['Generate Sample', 'Generate Types', 'Open Settings']);
+      assert.ok(vscode.commands.executeCommand.calledWith('jsonschema.generateTypes', schema));
+    } finally {
+      fs.unlinkSync(schema);
+      fs.rmdirSync(tmp);
+    }
+  });
+
   test('opens workspace settings after removing JSON binding', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'jsb-'));
     const schema = path.join(tmp, 'schema.json');

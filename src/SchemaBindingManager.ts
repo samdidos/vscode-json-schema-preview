@@ -566,11 +566,23 @@ export class SchemaBindingManager {
     const scopeUri = target !== vscode.ConfigurationTarget.Global ? folder?.uri : undefined;
     await this.writeAddBinding(relFile, schemaRef, isYaml, scopeUri, target);
 
+    // The generate commands need the schema itself: resolve the stored ref
+    // (which may be `./relative` to the workspace folder) to an absolute
+    // path; URLs pass through unchanged (F16-FR-01, F18-FR-01).
+    const schemaAbs = /^https?:\/\//i.test(schemaRef)
+      ? schemaRef
+      : path.resolve(folder?.uri.fsPath ?? '', schemaRef);
     const action = await vscode.window.showInformationMessage(
-      `Schema bound: ${path.basename(schemaRef)} → ${path.basename(relFile)}`,
+      `Schema bound: ${path.basename(schemaRef)} → ${path.basename(relFile)}. Generate sample file?`,
+      'Generate Sample',
+      'Generate Types',
       'Open Settings'
     );
-    if (action === 'Open Settings') {
+    if (action === 'Generate Sample') {
+      await vscode.commands.executeCommand('jsonschema.generateSampleData', schemaAbs);
+    } else if (action === 'Generate Types') {
+      await vscode.commands.executeCommand('jsonschema.generateTypes', schemaAbs);
+    } else if (action === 'Open Settings') {
       await vscode.commands.executeCommand(
         target === vscode.ConfigurationTarget.Global
           ? 'workbench.action.openSettingsJson'
