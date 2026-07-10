@@ -382,6 +382,14 @@
       ],
       "note": "loadSchema parses a schema document by its source format (parseSchema -> languageForSchemaSource + parseSchemaText); unit-tested for YAML-format schema load and a non-parsing schema, and exercised end-to-end by the S08 YAML settings-scope suite"
     },
+    "F03-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/ajvFactory.ts",
+        "src/ValidationManager.ts"
+      ],
+      "note": "createAjv selects Ajv2020/Ajv2019/draft-07 Ajv by the schema's $schema; pure draftOf() and createAjv() unit-tested plus an end-to-end validateFile test proving a 2020-12 prefixItems keyword is enforced. sampleDataGenerator deliberately stays on the default dialect (strips $schema for a self-check, see F16)"
+    },
     "F04-FR-01": {
       "status": "implemented",
       "impl": [
