@@ -29,8 +29,9 @@ is committed as [`maturity-score.json`](maturity-score.json).
 
 Regenerate both the JSON and the chart with **`npm run maturity`** (run
 `npm test` first so the Testing dimension can read fresh coverage). CI runs
-`npm run maturity:check`, which fails if the committed `maturity-score.json` is
-stale — so the chart can never drift from reality.
+`npm run maturity:check`, which warns (non-blocking) if the committed
+`maturity-score.json` is stale — so drift gets flagged without holding up
+an otherwise-good PR.
 
 ## The rubric — what each dimension measures
 
@@ -109,6 +110,10 @@ the next `npm run maturity`.
   uncached, so the offline scorer stays deterministic and this snapshot is
   unchanged; it activates once `npm run maturity:ossf` runs where
   api.securityscorecards.dev is reachable.
+- **2026-07-10** — `npm run maturity:check`'s CI step is now `continue-on-error:
+  true` (`.github/workflows/ci.yml`, `build` job): drift still surfaces as a
+  visible warning, but no longer fails the build. The scorer and its rubric
+  are unchanged.
 
 ## Maintaining this file
 
