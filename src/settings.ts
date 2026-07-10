@@ -34,6 +34,20 @@ export function getRemoteFetchTimeoutMs(): number {
   return resolveTimeoutMs(cfg.get<number>('remoteFetchTimeout'), DEFAULT_REMOTE_FETCH_TIMEOUT_MS);
 }
 
+/** Preview rendering engine (F01-FR-27). */
+export type PreviewRenderer = 'auto' | 'builtin';
+
+/**
+ * Resolve the `jsonschema.preview.renderer` setting (F01-FR-27). `builtin`
+ * forces the dependency-free built-in renderer and skips Python entirely;
+ * anything else (including a missing or unrecognised value) defaults to
+ * `auto` — use `json-schema-for-humans` when available, fall back otherwise.
+ */
+export function getPreviewRenderer(): PreviewRenderer {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.preview');
+  return cfg.get<string>('renderer') === 'builtin' ? 'builtin' : 'auto';
+}
+
 /** Whether schema linting is enabled (F17-FR-03; default true). */
 export function getLintEnabled(): boolean {
   const cfg = vscode.workspace.getConfiguration('jsonschema.lint');

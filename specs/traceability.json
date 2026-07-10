@@ -192,6 +192,14 @@
       ],
       "note": "final throw includes pip command and venv alternative instructions; python.ts is subprocess-bound (coverage-excluded), verified manually"
     },
+    "F01-FR-27": {
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts",
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "jsonschema.preview.renderer setting; getPreviewRenderer() (auto|builtin, default auto) unit-tested in settings.test.ts; PreviewWebPanel.generateDocHTML short-circuits to the already-tested renderFallbackHTML when builtin, skipping the Python probe"
+    },
     "F01-NFR-01": {
       "status": "manual",
       "impl": [

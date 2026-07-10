@@ -8,6 +8,7 @@ import {
   getCatalogSources,
   getLintEnabled,
   getLintRuleSeverities,
+  getPreviewRenderer,
   SCHEMASTORE_CATALOG_URL,
   DEFAULT_RENDER_TIMEOUT_MS,
   DEFAULT_REMOTE_FETCH_TIMEOUT_MS,
@@ -101,6 +102,22 @@ suite('[F12-FR-03][F12-FR-04] getCatalogSources()', () => {
   test('appends configured private sources after SchemaStore', () => {
     setConfig('jsonschema.catalog', 'sources', ['https://corp/a.json', '  ', 5]);
     assert.deepStrictEqual(getCatalogSources(), [SCHEMASTORE_CATALOG_URL, 'https://corp/a.json']);
+  });
+});
+
+suite('[F01-FR-27] getPreviewRenderer()', () => {
+  setup(() => resetAll());
+
+  test('defaults to "auto" when unset', () => {
+    assert.strictEqual(getPreviewRenderer(), 'auto');
+  });
+  test('reads a "builtin" value', () => {
+    setConfig('jsonschema.preview', 'renderer', 'builtin');
+    assert.strictEqual(getPreviewRenderer(), 'builtin');
+  });
+  test('falls back to "auto" for an unrecognised value', () => {
+    setConfig('jsonschema.preview', 'renderer', 'python');
+    assert.strictEqual(getPreviewRenderer(), 'auto');
   });
 });
 
