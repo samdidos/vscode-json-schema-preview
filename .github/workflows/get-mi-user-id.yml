@@ -1,0 +1,28 @@
+name: Get managed identity Marketplace user ID
+
+# One-shot helper: runs as the managed identity and calls the Azure DevOps
+# profile API to discover the ID the Marketplace publisher Members page needs.
+# Delete this file once you've added the identity to the publisher.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # required for OIDC login
+  contents: read
+
+jobs:
+  get-id:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/login@a65d910e8af852a8061c627c456678983e180302 # v2.3.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Fetch DevOps profile for the managed identity
+        run: |
+          az rest \
+            --method get \
+            --url "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=5.0" \
+            --resource "499b84ac-1321-427f-aa17-267ca6975798"
