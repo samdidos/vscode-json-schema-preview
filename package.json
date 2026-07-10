@@ -144,6 +144,19 @@
           "minimum": 500,
           "markdownDescription": "Milliseconds to wait after the last keystroke before the live preview refreshes."
         },
+        "jsonschema.preview.renderer": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "builtin"
+          ],
+          "enumDescriptions": [
+            "Use json-schema-for-humans (Python) when available; fall back to the built-in renderer otherwise.",
+            "Always use the built-in dependency-free renderer; never invoke Python (no interpreter probe or install prompt)."
+          ],
+          "markdownDescription": "Which engine renders the schema preview. `auto` prefers the richer `json-schema-for-humans` (Python) output; `builtin` forces the extension's dependency-free renderer so no Python is required."
+        },
         "jsonschema.preview.renderTimeout": {
           "type": "number",
           "default": 30000,

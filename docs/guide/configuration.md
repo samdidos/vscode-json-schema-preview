@@ -58,6 +58,25 @@ Milliseconds to wait after the last keystroke before the live preview refreshes.
 ---
 
 <!-- spec:F01,S03 start -->
+## `jsonschema.preview.renderer`
+
+| Type | Default | Values |
+|------|---------|--------|
+| `string` | `"auto"` | `"auto"`, `"builtin"` |
+
+Which engine renders the schema preview:
+
+- **`auto`** — use the richer [`json-schema-for-humans`](https://github.com/coveooss/json-schema-for-humans) (Python) output when it is available, and fall back to the extension's built-in renderer otherwise.
+- **`builtin`** — always use the built-in, dependency-free renderer and never invoke Python. Choose this if you don't have (or don't want) a Python interpreter: the preview appears immediately with no interpreter probe or install prompt.
+
+```json
+{
+  "jsonschema.preview.renderer": "builtin"
+}
+```
+
+---
+
 ## `jsonschema.preview.renderTimeout`
 
 | Type | Default | Minimum |

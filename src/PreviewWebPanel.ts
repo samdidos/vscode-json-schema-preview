@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as YAML from 'yaml';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
-import { getRenderTimeoutMs } from './settings';
+import { getRenderTimeoutMs, getPreviewRenderer } from './settings';
 import { renderSchemaHtml, isToolingUnavailable } from './fallbackRenderer';
 import { isYaml, stripJsoncComments } from './languages';
 import { loadingPage, errorPage as renderErrorPage, sanitizeHtml, getNonce } from './webviewUtils';
@@ -227,6 +227,13 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
   if (!vscode.workspace.isTrusted) {
     throw new Error('Preview generation is disabled in untrusted workspaces.');
   }
+
+  // F01-FR-27: when the user forces the built-in renderer, skip Python entirely
+  // (no interpreter probe, no install prompt).
+  if (getPreviewRenderer() === 'builtin') {
+    return renderFallbackHTML(schemaPath, forUri);
+  }
+
   const python = await getPythonInterpreter();
 
   // If the interpreter or the Python package is unavailable, render the built-in

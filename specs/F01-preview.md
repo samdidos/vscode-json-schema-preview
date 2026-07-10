@@ -112,6 +112,14 @@ in a VS Code webview panel beside the editor. Rendering is delegated to the
 - **F01-FR-22** The fallback page MUST be self-contained (inline styles, **no**
   scripts, a static `default-src 'none'` CSP) and MUST HTML-escape every
   schema-derived string so schema content cannot inject markup.
+- **F01-FR-27** A `jsonschema.preview.renderer` setting MUST let the user
+  choose the preview engine: `"auto"` (default) uses `json-schema-for-humans`
+  when available and falls back to the built-in renderer otherwise (the
+  F01-FR-21 behaviour); `"builtin"` MUST always use the built-in renderer and
+  MUST NOT invoke Python at all — so users who don't have (or don't want)
+  Python get the built-in output directly, with no interpreter probe or
+  install prompt. The setting's value MUST resolve through a pure, testable
+  helper that defaults to `"auto"` for any missing or unrecognised value.
 
 ## Non-Functional Requirements
 
