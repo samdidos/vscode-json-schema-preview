@@ -13,16 +13,16 @@ the real cost for small items. Pure docs/config/CI edits skip that step.
 
 | # | Task | Effort | Spec change needed? | Notes |
 |---|------|--------|---------------------|-------|
-| 6 | Delete `.eslintrc.json` | **Trivial** (~1 min) | No | `git rm` one dead file. Zero risk. The cleanest quick win. |
-| 3 | TOML on homepage + doc tags for F18/F19/F20 | **Trivial** (~15 min) | No | Docs-only markdown edits; makes `check:doc-traceability` warnings go away too. |
-| 10·1 | Add traceability checks to CI | **Trivial** (~10 min) | No | A few YAML lines in `ci.yml`. Closes a real enforcement gap; do before 10·2. |
-| 9·a | Set `Diagnostic.source` on validation diagnostics | **Small** (~30 min) | Tiny (F03 note) | One line + a test. Makes this extension's errors distinguishable from VS Code's built-in ones. |
+| 6 | Delete `.eslintrc.json` | **Trivial** (~1 min) | No | ✅ **DONE** — dead file removed; lint (flat config) + knip still clean. |
+| 3 | TOML on homepage (`docs/index.md`) | **Trivial** (~15 min) | No | ✅ **DONE** — Validation/Binding/Inference cards now name TOML; `F11` tagged on the homepage. F18/F19/F20 doc tags intentionally **not** added (see note under #3 — they're unbuilt; the warning is correct). |
+| 10·1 | Add traceability checks to CI | **Trivial** (~10 min) | No | ✅ **DONE** — `check:traceability` + `check:doc-traceability` now run in `ci.yml`'s build job. |
+| 9·a | Set `Diagnostic.source` on validation diagnostics | **Small** (~30 min) | **No** (already specified!) | ✅ **DONE** — turned out F03-FR-08 *already* mandated `source: "JSON Schema"`; code just didn't comply. Fixed + test added. |
 | 10·2 | Path-filter CI/CodeQL for docs-only PRs | **Small** (~1 hr) | No | Straightforward `paths-ignore`, but **verify branch-protection required-checks first** (may need a no-op companion workflow). |
 | 4 | Compact status bar items | **Small** (~1-2 hr) | Yes (F04/F07) | UI-only, two files, tooltips already carry the full text. Spec touch is the gating step. |
 | 5 | Config to force the JS fallback renderer | **Medium** (~half day) | Yes (F01/F09) | Renderer already exists + tested; work is the new setting + `package.json` contribution + gate in `PreviewWebPanel`. |
 | 9·b | Draft-aware Ajv (2019/2020 dialects) | **Medium** (~half day) | Yes (F03) | Two files, plus tests across drafts. Real correctness fix. |
 | — | S03-SR-13 + S08 test tails | **Medium** (~half day) | No (specs exist) | Additive E2E/timing assertions on existing harness; cheapest way to fully *close out* a spec. |
-| 11 | Evaluate Snyk vs. Trivy | **Medium** (spike, ~1-2 days over 2 wks) | Likely (constitution note) | Not a build task — a time-boxed side-by-side eval. Vendor/agnosticity tension is the gating question, not code. |
+| 11 | Evaluate Snyk vs. Trivy | **Medium** (spike, ~1-2 days over 2 wks) | Likely (constitution note) if it *replaces* Trivy | 🟡 **STARTED** — weekly non-blocking `snyk.yml` added (schedule-only, no-ops until a `SNYK_TOKEN` secret is set). This is the side-by-side eval step; no constitution change yet since nothing is replaced. Add the token to actually run it. |
 | 19 | F19 — TOML IntelliSense | **Large** (~2-3 days) | No (spec exists) | Two new language providers; smallest of the three unbuilt features. |
 | 18 | F18 — Code generation | **Large** (~3-4 days) | No (spec done) | New dep (`quicktype-core`), command, codegen glue, snapshot tests. Spec already amended. |
 | 20 | F20 — Workspace validation | **Large** (~3-4 days) | No (spec exists) | Biggest surface area: discovery + aggregation + progress UI + diagnostics. |
@@ -77,6 +77,18 @@ a bug.
   homepage" — so this is a real coverage gap the tooling can't see.
   Fix: update the relevant `docs/index.md` feature card text (and add
   `<!-- spec:F11 -->` there) to mention TOML.
+
+**✅ Done (TOML part):** `docs/index.md`'s Instant Validation, Schema
+Binding, and Schema Inference cards now name TOML, and F11 is tagged on the
+homepage (`spec:F03,F11` / `spec:F04,F11` / `spec:F06,F11`).
+
+**Deliberately NOT done (F18/F19/F20 doc tags):** those three are *planned,
+unbuilt* features. Adding `<!-- spec:Fxx -->` tags for them would mean
+writing user-facing docs for capabilities that don't exist yet — documenting
+vaporware to silence a warning. The `check:doc-traceability` warning for
+them is **correct** and should stay until each feature actually ships (at
+which point its docs — and tag — get added as part of that feature's PR).
+The warning is non-blocking by design precisely for this case.
 
 ## 4. Compact status bar items
 **Valid, confirmed in code.**
