@@ -14,6 +14,9 @@
 //   - a tag referencing an id that does not exist (stale/mistyped)
 //   - an unbalanced start/end section tag, or a start/end pair whose id sets
 //     don't match
+//   - a tag documenting an unimplemented spec (S07-SR-09): a requirement id
+//     whose traceability.json status is planned/deferred, or a feature id
+//     whose matrix requirements are ALL planned/deferred
 // Warns (does not fail) on:
 //   - a feature spec with no documentation tag anywhere
 //
@@ -26,6 +29,12 @@ import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SPECS_DIR = join(ROOT, 'specs');
+const MATRIX_PATH = join(SPECS_DIR, 'traceability.json');
+
+// Matrix statuses that mean "this requirement has no implementation yet"
+// (S07-SR-09). Everything else — implemented, manual, untracked — counts as
+// existing and therefore documentable.
+const UNIMPLEMENTED_STATUSES = new Set(['planned', 'deferred']);
 
 // Required: every feature spec should be reachable from these (S07-SR-03).
 const REQUIRED_DOC_PATHS = [join(ROOT, 'README.md'), join(ROOT, 'docs')];
@@ -83,6 +92,27 @@ function featureOf(id) {
   return m ? m[1] : undefined;
 }
 
+// Read specs/traceability.json and derive implementedness (S07-SR-09):
+//   reqStatus      — requirement id -> declared status
+//   featureHasImpl — feature id -> true if at least one of its matrix
+//                    requirements is not planned/deferred
+// Ids absent from the matrix are not this checker's problem —
+// check:traceability owns spec ↔ matrix drift.
+function loadImplementedness() {
+  const reqStatus = new Map();
+  const featureHasImpl = new Map();
+  if (!existsSync(MATRIX_PATH)) return { reqStatus, featureHasImpl };
+  const matrix = JSON.parse(readFileSync(MATRIX_PATH, 'utf-8'));
+  for (const [id, entry] of Object.entries(matrix.requirements ?? {})) {
+    reqStatus.set(id, entry.status);
+    const feature = featureOf(id);
+    if (!feature) continue;
+    const implemented = !UNIMPLEMENTED_STATUSES.has(entry.status);
+    featureHasImpl.set(feature, (featureHasImpl.get(feature) ?? false) || implemented);
+  }
+  return { reqStatus, featureHasImpl };
+}
+
 function lineAt(text, index) {
   return text.slice(0, index).split('\n').length;
 }
@@ -100,7 +130,7 @@ function stripFencedCode(text) {
 
 /** Scan one file's tags: validates ids, pairs start/end sections, and records
  *  which features they document. Appends to `errors`/`documented` in place. */
-function scanFile(file, knownFeatureIds, knownReqIds, errors, documented) {
+function scanFile(file, knownFeatureIds, knownReqIds, impl, errors, documented) {
   const raw = readFileSync(file, 'utf-8');
   const text = stripFencedCode(raw);
   const rel = relative(ROOT, file);
@@ -115,6 +145,23 @@ function scanFile(file, knownFeatureIds, knownReqIds, errors, documented) {
     for (const id of idsRaw) {
       if (!knownFeatureIds.has(id) && !knownReqIds.has(id)) {
         errors.push(`${rel}:${line}: unknown spec id "${id}" in <!-- ${tagText} -->`);
+        continue;
+      }
+      // S07-SR-09: documentation must not describe unimplemented specs.
+      if (knownReqIds.has(id)) {
+        const status = impl.reqStatus.get(id);
+        if (status !== undefined && UNIMPLEMENTED_STATUSES.has(status)) {
+          errors.push(
+            `${rel}:${line}: "${id}" in <!-- ${tagText} --> is "${status}" in ` +
+            `specs/traceability.json — unimplemented requirements must not be documented`
+          );
+          continue;
+        }
+      } else if (impl.featureHasImpl.get(id) === false) {
+        errors.push(
+          `${rel}:${line}: "${id}" in <!-- ${tagText} --> has no implemented ` +
+          `requirement in specs/traceability.json — unimplemented features must not be documented`
+        );
         continue;
       }
       const feature = featureOf(id);
@@ -150,6 +197,7 @@ function scanFile(file, knownFeatureIds, knownReqIds, errors, documented) {
 
 const knownFeatureIds = collectFeatureIds();
 const knownReqIds = collectRequirementIds();
+const impl = loadImplementedness();
 const documented = new Set();
 const errors = [];
 
@@ -157,16 +205,22 @@ const requiredFiles = REQUIRED_DOC_PATHS.flatMap(collectMarkdownFiles);
 const optionalFiles = OPTIONAL_DOC_PATHS.flatMap(collectMarkdownFiles);
 
 for (const file of [...requiredFiles, ...optionalFiles]) {
-  scanFile(file, knownFeatureIds, knownReqIds, errors, documented);
+  scanFile(file, knownFeatureIds, knownReqIds, impl, errors, documented);
 }
 
 const allFeatures = [...knownFeatureIds].sort();
-const undocumented = allFeatures.filter(f => !documented.has(f));
+// Entirely unimplemented features are excluded from coverage and from the
+// undocumented warning: documenting them is an error (S07-SR-09), so nagging
+// about missing docs would be contradictory.
+const unimplemented = allFeatures.filter(f => impl.featureHasImpl.get(f) === false);
+const documentable = allFeatures.filter(f => !unimplemented.includes(f));
+const undocumented = documentable.filter(f => !documented.has(f));
 
 console.log('Documentation traceability');
 console.log('─'.repeat(48));
 console.log(`Feature specs         : ${allFeatures.length}`);
-console.log(`Documented            : ${allFeatures.length - undocumented.length} (${Math.round(((allFeatures.length - undocumented.length) / allFeatures.length) * 100)}%)`);
+console.log(`Documentable          : ${documentable.length} (${unimplemented.length} unimplemented, excluded)`);
+console.log(`Documented            : ${documentable.length - undocumented.length} (${Math.round(((documentable.length - undocumented.length) / documentable.length) * 100)}%)`);
 console.log(`Scanned files         : ${requiredFiles.length} required, ${optionalFiles.length} optional`);
 
 if (undocumented.length) {

@@ -55,9 +55,12 @@
   `<!-- spec:F03,F11 -->` for a line describing JSON/YAML/TOML support
   together) — don't split a single cohesive section into one tag per spec.
   `npm run check:doc-traceability` (part of `npm run verify`) fails on a
-  stale/mistyped id or an unbalanced start/end pair, and warns (without
-  failing) when a feature spec has no documentation tag anywhere. Full
-  convention: `specs/S07-documentation-traceability.md`.
+  stale/mistyped id, an unbalanced start/end pair, or a tag documenting an
+  unimplemented spec (a `planned`/`deferred` requirement, or a feature whose
+  matrix requirements are all `planned`/`deferred` — don't document features
+  that don't exist yet), and warns (without failing) when an implemented
+  feature spec has no documentation tag anywhere. Full convention:
+  `specs/S07-documentation-traceability.md`.
 <!-- spec:S07 end -->
 - Mutation testing (`mutation.yml`) and OpenSSF Scorecard / CodeQL run in CI
   (`scorecard.yml`, `codeql.yml`); SLSA build provenance for the `.vsix` is
