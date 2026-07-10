@@ -2486,6 +2486,13 @@
       ],
       "note": "check:doc-traceability wired into npm run verify (runs before test:coverage)"
     },
+    "S07-SR-09": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-doc-traceability.mjs"
+      ],
+      "note": "tag of a planned/deferred requirement, or of a feature whose matrix entries are all planned/deferred, -> error; such features excluded from the undocumented warning"
+    },
     "S08-NFR-01": {
       "status": "planned",
       "impl": [],

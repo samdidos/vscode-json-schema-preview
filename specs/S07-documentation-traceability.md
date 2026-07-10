@@ -95,6 +95,25 @@ Markdown, VitePress, and rendered HTML without affecting the reader.
   fires from the git pre-commit hook and CI, keeping the guarantee below any
   single agent or tool (AGENTS.md principle 3, "Guarantees live *below* the
   agent").
+- **S07-SR-09** The checker MUST **fail** (exit non-zero) when documentation
+  tags a spec that is not implemented — user-facing docs must not describe
+  features that do not exist yet. Implementedness is read from
+  `specs/traceability.json`: a requirement whose status is `planned` or
+  `deferred` is *unimplemented*; every other status (`implemented`, `manual`,
+  `untracked`) counts as existing. Concretely:
+  - a **requirement-id** tag (e.g. `<!-- spec:F18-FR-01 -->`) is an error when
+    that requirement's status is `planned` or `deferred`;
+  - a **feature-id** tag (e.g. `<!-- spec:F18 -->`) is an error when *every*
+    matrix requirement of that feature is `planned` or `deferred` (the feature
+    is entirely unimplemented) — a partially implemented feature MAY be
+    documented at the feature level;
+  - an identifier with no matrix entry is skipped by this rule —
+    `check:traceability` owns spec↔matrix drift.
+
+  An entirely unimplemented feature MUST also be excluded from the
+  undocumented-feature warning (S07-SR-07): documenting it would be an error
+  under this rule, so warning about the missing documentation would be
+  contradictory guidance.
 
 ## Non-Functional Requirements
 
@@ -131,6 +150,12 @@ Markdown, VitePress, and rendered HTML without affecting the reader.
    toward *both* F03 and F11's coverage, and a section tagged
    `<!-- spec:F04,F10,F11 start -->` … `<!-- spec:F04,F10,F11 end -->` is
    recognised as one matched, valid section for all three ids.
+7. Tagging a feature whose matrix requirements are all `planned` (e.g.
+   `<!-- spec:F18 -->` while F18 is unimplemented) fails the checker with a
+   message naming the id and file; the same tag passes once at least one F18
+   requirement is `implemented`/`manual`/`untracked`. A requirement-level tag
+   such as `<!-- spec:F18-FR-01 -->` fails while that requirement is `planned`
+   or `deferred`.
 
 ## Relation to Existing Specs
 
