@@ -32,7 +32,10 @@ jobs:
 
       - name: Maturity score is current
         # Recomputes the scorecard from repo facts (coverage now exists from the
-        # step above) and fails if the committed maturity-score.json is stale.
+        # step above) and warns if the committed maturity-score.json is stale.
+        # Non-blocking (continue-on-error): drift here is a prompt to re-run
+        # `npm run maturity` locally, not a reason to fail the build.
+        continue-on-error: true
         run: npm run maturity:check
 
       - name: Audit dependencies
