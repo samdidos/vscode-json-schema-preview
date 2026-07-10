@@ -122,6 +122,22 @@ The inverse of inference: generates a valid example instance from the active JSO
 
 ---
 
+<!-- spec:F18 start -->
+## JSON Schema: Generate Types from This Schema
+
+**ID:** `jsonschema.generateTypes`
+
+Generates **TypeScript** `interface`/`type` declarations from the active JSON Schema, opened in a new editor tab beside the schema — the compile-time counterpart of sample-data generation. `required` properties become mandatory members, `enum`s become unions of literal types, `description`s become TSDoc comments, and each `$defs` entry becomes a named declaration (recursive schemas self-reference and always terminate). Constraints that TypeScript's type system can't express (`pattern`, `minimum`, `if`/`then`, …) are noted in the generated doc-comments instead of being silently dropped.
+
+External `$ref`s are resolved with the same machinery as bundling — relative files from disk, remote refs preferring the local schema cache and using stored credentials — before any code is generated; output is deterministic, so regenerated files only change when the schema does. Also offered from the **Bind Schema…** success notification, right after binding a data file.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| ✅ (interface icon, schema files only) | ✅ |
+<!-- spec:F18 end -->
+
+---
+
 <!-- spec:F14 start -->
 ## JSON Schema: Bundle / Dereference Schema
 

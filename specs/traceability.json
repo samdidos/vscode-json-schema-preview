@@ -1628,9 +1628,10 @@
     "F16-FR-01": {
       "status": "implemented",
       "impl": [
-        "src/extension.ts"
+        "src/extension.ts",
+        "src/SchemaBindingManager.ts"
       ],
-      "note": "jsonschema.generateSampleData; gated on isJsonSchemaFile"
+      "note": "jsonschema.generateSampleData; gated on isJsonSchemaFile; also reachable from the bind-success notification, which passes the schema ref"
     },
     "F16-FR-02": {
       "status": "implemented",
@@ -1811,64 +1812,92 @@
       "note": "dedicated DiagnosticCollection source 'json-schema-lint'"
     },
     "F18-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/GenerateTypesCommand.ts",
+        "src/extension.ts",
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "command palette/editor-title when jsonschema.isJsonSchema; bind-success notification passes the schema ref as the command argument"
     },
     "F18-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/GenerateTypesCommand.ts"
+      ],
+      "note": "single-select language picker (TypeScript today); result opens as an untitled typescript editor"
     },
     "F18-FR-03": {
-      "status": "planned",
-      "impl": [],
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
       "note": ""
     },
     "F18-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
+      "note": "prefer-unions renderer option for literal unions; prefixItems rewritten to draft-07 tuple form with a note"
     },
     "F18-FR-05": {
-      "status": "planned",
-      "impl": [],
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
       "note": ""
     },
     "F18-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/GenerateTypesCommand.ts",
+        "src/typeGenerator.ts"
+      ],
+      "note": "F14 bundleSchema runs first; JSONSchemaInput has no schema store so the engine cannot resolve/fetch externally"
     },
     "F18-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
+      "note": "root name from title else file stem; untitled $defs entries get their key as title before quicktype names them"
     },
     "F18-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
+      "note": "unrepresented keywords appended to description, emitted as TSDoc; format stripped so date-time stays string"
     },
     "F18-FR-09": {
-      "status": "planned",
-      "impl": [],
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
       "note": ""
     },
     "F18-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/GenerateTypesCommand.ts",
+        "src/typeGenerator.ts"
+      ],
+      "note": "network only inside the F14 bundling step (cache-first, auth-aware); engine runs offline"
     },
     "F18-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
+      "note": "tests compile every snapshot with the in-repo TypeScript compiler under --strict"
     },
     "F18-NFR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": "pin quicktype-core to an exact version; determinism (F18-FR-09) depends on it"
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "quicktype-core pinned exactly (no range); determinism (F18-FR-09) depends on it"
     },
     "F19-FR-01": {
       "status": "planned",

@@ -24,6 +24,7 @@ suite('extension — activate()', () => {
     assert.ok(ids.includes('jsonschema.validateFile'));
     assert.ok(ids.includes('jsonschema.inferSchema'));
     assert.ok(ids.includes('jsonschema.generateSampleData'));
+    assert.ok(ids.includes('jsonschema.generateTypes'));
     assert.ok(ids.includes('jsonschema.bundleSchema'));
     assert.ok(ids.includes('jsonschema.diffSchema'));
     assert.ok(ids.includes('jsonschema.configureSchemaAuth'));
@@ -127,6 +128,12 @@ suite('extension — command handlers', () => {
         get:    () => Promise.resolve(undefined),
         store:  () => Promise.resolve(),
         delete: () => Promise.resolve(),
+      },
+      // SchemaCache reads its entry list from globalState (e.g. via the
+      // generateSampleData remote-source path).
+      globalState: {
+        get:    (_key: string, defaultValue?: unknown) => defaultValue,
+        update: () => Promise.resolve(),
       },
     };
     ext.activate(context);
@@ -258,6 +265,40 @@ suite('extension — command handlers', () => {
     vscode.window.showQuickPick.resolves(undefined);
     await handler('jsonschema.generateSampleData')();
     assert.ok(!vscode.workspace.openTextDocument.called);
+  });
+
+  test('[F16-FR-01] generateSampleData — a local schemaSource path works without an active editor', async () => {
+    const os = require('os');
+    const fsMod = require('fs');
+    const pathMod = require('path');
+    const dir = fsMod.mkdtempSync(pathMod.join(os.tmpdir(), 'jspreview-sample-'));
+    const schemaPath = pathMod.join(dir, 'schema.json');
+    fsMod.writeFileSync(schemaPath, JSON.stringify(
+      { type: 'object', required: ['name'], properties: { name: { type: 'string' } } }));
+    try {
+      vscode.window.activeTextEditor = undefined;
+      vscode.window.showQuickPick.resolves({ label: 'JSON', id: 'json' });
+      await handler('jsonschema.generateSampleData')(schemaPath);
+      assert.ok(vscode.workspace.openTextDocument.called);
+      assert.match(vscode.workspace.openTextDocument.lastCall.args[0].content, /"name": "string"/);
+    } finally {
+      fsMod.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('[F16-FR-01][F16-NFR-01] generateSampleData — an uncached remote schemaSource offers Cache Schema Locally, no network', async () => {
+    vscode.window.activeTextEditor = undefined;
+    vscode.window.showInformationMessage.resolves('Cache Schema Locally');
+    await handler('jsonschema.generateSampleData')('https://corp/schema.json');
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/not cached locally/));
+    assert.ok(vscode.commands.executeCommand.calledWith('jsonschema.cacheSchemaLocally', 'https://corp/schema.json'));
+    assert.ok(!vscode.workspace.openTextDocument.called);
+  });
+
+  test('[F16-FR-01] generateSampleData — an unreadable schemaSource path shows an error', async () => {
+    vscode.window.activeTextEditor = undefined;
+    await handler('jsonschema.generateSampleData')('/nonexistent-xyz/schema.json');
+    assert.ok(vscode.window.showErrorMessage.calledWithMatch(/Cannot read the schema file/));
   });
 
   test('[F16-FR-08] generateSampleData — unsatisfiable schema shows an error', async () => {
