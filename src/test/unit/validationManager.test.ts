@@ -255,6 +255,15 @@ suite('[F03-FR-06][F03-FR-07] validateCurrentFile() — validation outcomes', ()
     assert.match(diags[0].message, /\/name:/);
   });
 
+  test('[F03-FR-08] tags each diagnostic with source "JSON Schema"', async () => {
+    const doc = makeDoc('json', '{"$schema":"https://example.com/s.json","name":123}');
+    activate(doc);
+    const schema = { type: 'object', properties: { name: { type: 'string' } } };
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any)();
+    const diags = validationDiagnostics.set.firstCall.args[1];
+    assert.strictEqual(diags[0].source, 'JSON Schema');
+  });
+
   test('[F03-FR-09] clears prior diagnostics before re-validating', async () => {
     const doc = makeDoc('json', '{"$schema":"https://example.com/s.json","name":"Alice"}');
     activate(doc);

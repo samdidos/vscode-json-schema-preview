@@ -110,11 +110,16 @@ export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache
         for (const err of validate.errors ?? []) {
           const range = locateInDocument(doc, err.instancePath ?? '');
           const label = err.instancePath || '(root)';
-          diags.push(new vscode.Diagnostic(
+          const diagnostic = new vscode.Diagnostic(
             range,
             `${label}: ${err.message ?? 'validation error'}`,
             vscode.DiagnosticSeverity.Error
-          ));
+          );
+          // F03-FR-08: tag the source so these diagnostics are distinguishable
+          // in the Problems panel from VS Code's built-in JSON/YAML
+          // language-server validation.
+          diagnostic.source = 'JSON Schema';
+          diags.push(diagnostic);
         }
       }
     }
