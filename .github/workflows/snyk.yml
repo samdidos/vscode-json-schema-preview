@@ -1,0 +1,38 @@
+name: Snyk (weekly SCA)
+
+# Snyk Open Source dependency scan, run WEEKLY (and on demand) rather than on
+# every PR. This is an evaluation running side-by-side with the existing Trivy
+# fs scan + `npm audit` (see todo.md #11): it is deliberately kept off the
+# per-PR critical path while we compare signal quality and decide whether Snyk
+# earns replacing Trivy or isn't worth the vendor/token dependency.
+#
+# It needs a `SNYK_TOKEN` repository secret. Until that secret is set the scan
+# step is skipped (the `if:` guard below), so the workflow is safe to land now
+# and wire up the token later — a missing token no-ops instead of failing.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * 1' # Mondays, 05:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  snyk:
+    runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Snyk Open Source test
+        # No-op until the SNYK_TOKEN secret is configured (see header).
+        if: env.SNYK_TOKEN != ''
+        run: npx --yes snyk test --severity-threshold=high --all-projects
