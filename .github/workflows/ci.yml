@@ -24,6 +24,12 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Spec traceability (no spec/matrix/test drift)
+        run: npm run check:traceability
+
+      - name: Documentation traceability (no stale doc tags)
+        run: npm run check:doc-traceability
+
       - name: Build extension bundle
         run: npm run compile
 
