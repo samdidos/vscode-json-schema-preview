@@ -22,6 +22,7 @@ import { SchemaCache } from './SchemaCache';
 import { SchemaAuthCodeActionProvider } from './SchemaAuthCodeActionProvider';
 import { SchemaAuthStatusBar } from './SchemaAuthStatusBar';
 import { SchemaRefProvider } from './SchemaRefProvider';
+import { TomlIntellisenseProvider } from './TomlIntellisenseProvider';
 import { SchemaLintManager } from './SchemaLintManager';
 import { SchemaCatalogManager } from './SchemaCatalogManager';
 import { bundleSchemaCommand } from './SchemaBundleCommand';
@@ -136,6 +137,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   // ── $ref navigation & hover (F13) ─────────────────────────────────────────
   context.subscriptions.push(...SchemaRefProvider.register(schemaCache));
+
+  // ── TOML schema IntelliSense (F19) ─────────────────────────────────────────
+  context.subscriptions.push(...TomlIntellisenseProvider.register(schemaCache));
 
   // ── Schema linting (F17) ───────────────────────────────────────────────────
   new SchemaLintManager().register(context);

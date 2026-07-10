@@ -37,6 +37,13 @@ suite('extension — activate()', () => {
     assert.ok(context.subscriptions.length > 0);
   });
 
+  test('[F19-FR-01] registers the TOML completion and hover providers', () => {
+    ext.activate(context);
+    assert.ok(vscode.languages.registerCompletionItemProvider.calledWithMatch({ language: 'toml' }));
+    const hoverSelectors = vscode.languages.registerHoverProvider.args.map((a: any[]) => a[0]);
+    assert.ok(hoverSelectors.some((s: any) => s?.language === 'toml'));
+  });
+
   test('registers onDidChangeActiveTextEditor listener', () => {
     ext.activate(context);
     assert.ok(vscode.window.onDidChangeActiveTextEditor.called);
