@@ -86,6 +86,11 @@
         "icon": "$(pass)"
       },
       {
+        "command": "jsonschema.validateWorkspace",
+        "title": "JSON Schema: Validate Workspace",
+        "icon": "$(checklist)"
+      },
+      {
         "command": "jsonschema.inferSchema",
         "title": "JSON Schema: Generate Schema from This File",
         "icon": "$(wand)"
@@ -173,6 +178,12 @@
           "default": 30000,
           "minimum": 1000,
           "markdownDescription": "Milliseconds to wait for an outbound remote-schema HTTP request before it is aborted. Values below 1000 ms are clamped."
+        },
+        "jsonschema.workspaceValidation.maxFiles": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 1,
+          "markdownDescription": "Maximum number of files the **Validate Workspace** command scans. When the workspace has more matching files, the run is truncated and the report notes it."
         },
         "jsonschema.cache.autoRefresh": {
           "type": "string",
@@ -290,6 +301,10 @@
         {
           "command": "jsonschema.validateFile",
           "when": "!jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.validateWorkspace",
+          "when": "workspaceFolderCount > 0"
         },
         {
           "command": "jsonschema.inferSchema",

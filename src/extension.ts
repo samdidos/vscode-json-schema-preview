@@ -28,6 +28,7 @@ import { SchemaCatalogManager } from './SchemaCatalogManager';
 import { bundleSchemaCommand } from './SchemaBundleCommand';
 import { generateTypesCommand } from './GenerateTypesCommand';
 import { registerSchemaDiff } from './SchemaDiffCommand';
+import { registerWorkspaceValidation } from './WorkspaceValidateCommand';
 import { isYaml, isSupported } from './languages';
 import { getCacheAutoRefresh } from './settings';
 import { createSchema } from 'genson-js';
@@ -146,6 +147,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   // ── Schema diff (F15) ──────────────────────────────────────────────────────
   registerSchemaDiff(context, authManager);
+
+  // ── Workspace validation report (F20) ──────────────────────────────────────
+  registerWorkspaceValidation(context, authManager, schemaCache);
 
   // ── Commands ───────────────────────────────────────────────────────────────
   context.subscriptions.push(

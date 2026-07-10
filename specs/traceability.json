@@ -1969,59 +1969,89 @@
       "note": "schema load memoized per document uri+version; no network path exists in the providers (cache/disk reads only)"
     },
     "F20-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/extension.ts"
+      ],
+      "note": "command palette when workspaceFolderCount > 0; runs without an active editor"
     },
     "F20-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "findBoundSchemaPath (all scopes, per-resource) + inline $schema (meta-schema refs classify as schema files) + F17 lintable set"
     },
     "F20-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts",
+        "src/settings.ts",
+        "package.json"
+      ],
+      "note": "findFiles default excludes; 1 MiB size cap; jsonschema.workspaceValidation.maxFiles (default 2000) with truncation note"
     },
     "F20-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "4-worker pool, per-file try/catch isolation; F03 Ajv pipeline (draft-aware createAjv), F17 lintSchema with severity overrides"
     },
     "F20-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts"
+      ],
+      "note": "dedicated 'json-schema-workspace' DiagnosticCollection; binding failures on the inline $schema line or the folder settings.json line, data-file fallback"
     },
     "F20-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "cancellable withProgress with done/total; summary notification from summaryLine()"
     },
     "F20-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "Copy Report action writes renderMarkdownReport() (grouped by folder) to the clipboard"
     },
     "F20-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts"
+      ],
+      "note": "diagnostics.clear() at the start of every run"
     },
     "F20-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/workspaceValidation.ts"
+      ],
+      "note": "parsing, validation, location, aggregation, and report rendering are pure and unit-tested"
     },
     "F20-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts"
+      ],
+      "note": "schema loads memoized per resolved ref per run; remote schemas cache-first before any fetch"
     },
     "F20-NFR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts"
+      ],
+      "note": "untrusted: remote schemas cache-only (uncached fails the binding), notice in summary and report"
     },
     "S01-SR-01": {
       "status": "manual",
