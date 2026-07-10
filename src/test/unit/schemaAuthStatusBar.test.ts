@@ -64,7 +64,8 @@ suite('[F07-FR-10] SchemaAuthStatusBar — schema resolution', () => {
     vscode.window.activeTextEditor = { document: makeDoc('https://example.com/s.json') };
     new SchemaAuthStatusBar({ isConfigured: async () => false }, makeContext());
     await tick();
-    assert.strictEqual(statusBarItem.text, '$(unlock) example.com');
+    assert.strictEqual(statusBarItem.text, '$(unlock)');
+    assert.match(statusBarItem.tooltip as string, /example\.com/);
     assert.ok(statusBarItem.backgroundColor instanceof vscode.ThemeColor);
     assert.strictEqual((statusBarItem.backgroundColor as any).id, 'statusBarItem.warningBackground');
     const command = statusBarItem.command as { command: string; arguments?: unknown[] };
@@ -79,14 +80,16 @@ suite('[F07-FR-10] SchemaAuthStatusBar — schema resolution', () => {
     vscode.window.activeTextEditor = { document: makeDoc('https://inline.example.com/s.json') };
     new SchemaAuthStatusBar({ isConfigured: async () => false }, makeContext());
     await tick();
-    assert.strictEqual(statusBarItem.text, '$(unlock) bound.example.com');
+    assert.strictEqual(statusBarItem.text, '$(unlock)');
+    assert.match(statusBarItem.tooltip as string, /bound\.example\.com/);
   });
 
   test('shows $(lock) with no background override when the remote schema is configured', async () => {
     vscode.window.activeTextEditor = { document: makeDoc('https://example.com/s.json') };
     new SchemaAuthStatusBar({ isConfigured: async () => true }, makeContext());
     await tick();
-    assert.strictEqual(statusBarItem.text, '$(lock) example.com');
+    assert.strictEqual(statusBarItem.text, '$(lock)');
+    assert.match(statusBarItem.tooltip as string, /example\.com/);
     assert.strictEqual(statusBarItem.backgroundColor, undefined);
     assert.ok(statusBarItem.show.called);
   });
@@ -102,7 +105,7 @@ suite('[F07-FR-10] SchemaAuthStatusBar — refresh on events', () => {
     const cb = vscode.window.onDidChangeActiveTextEditor.firstCall.args[0];
     cb({ document: makeDoc('https://example.com/s.json') });
     await tick();
-    assert.strictEqual(statusBarItem.text, '$(unlock) example.com');
+    assert.strictEqual(statusBarItem.text, '$(unlock)');
   });
 
   test('re-evaluates the current document when the GitHub session changes', async () => {
@@ -110,12 +113,12 @@ suite('[F07-FR-10] SchemaAuthStatusBar — refresh on events', () => {
     vscode.window.activeTextEditor = { document: makeDoc('https://example.com/s.json') };
     new SchemaAuthStatusBar({ isConfigured: async () => configured }, makeContext());
     await tick();
-    assert.strictEqual(statusBarItem.text, '$(unlock) example.com');
+    assert.strictEqual(statusBarItem.text, '$(unlock)');
 
     configured = true; // simulate the user having just signed in
     const sessionCb = vscode.authentication.onDidChangeSessions.firstCall.args[0];
     sessionCb();
     await tick();
-    assert.strictEqual(statusBarItem.text, '$(lock) example.com');
+    assert.strictEqual(statusBarItem.text, '$(lock)');
   });
 });

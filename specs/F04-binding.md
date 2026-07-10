@@ -34,7 +34,11 @@ recognise them.
   file (JSON, JSONC, JSONL, YAML, YML) is the active editor.
 - **F04-FR-06** When a schema is bound the status bar item MUST display
   `$(check) Schema: <basename>` and a tooltip showing the full schema path and
-  a hint to click to change or remove.
+  a hint to click to change or remove. `<basename>` MUST be **middle-truncated
+  to a bounded length** (an ellipsis in the middle) when it would otherwise be
+  long, so the item cannot grow unbounded and push other status-bar items
+  off-screen; the **full, untruncated** name MUST remain visible in the
+  tooltip.
 - **F04-FR-07** When no schema is bound the status bar item MUST display
   `$(circle-slash) Schema: unbound` with a tooltip offering to bind one.
 - **F04-FR-08** Clicking the status bar item MUST execute `jsonschema.bindToCurrentFile`.
