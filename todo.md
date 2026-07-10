@@ -22,6 +22,7 @@ the real cost for small items. Pure docs/config/CI edits skip that step.
 | 5 | Config to force the JS fallback renderer | **Medium** (~half day) | Yes (F01/F09) | Renderer already exists + tested; work is the new setting + `package.json` contribution + gate in `PreviewWebPanel`. |
 | 9·b | Draft-aware Ajv (2019/2020 dialects) | **Medium** (~half day) | Yes (F03) | Two files, plus tests across drafts. Real correctness fix. |
 | — | S03-SR-13 + S08 test tails | **Medium** (~half day) | No (specs exist) | Additive E2E/timing assertions on existing harness; cheapest way to fully *close out* a spec. |
+| 11 | Evaluate Snyk vs. Trivy | **Medium** (spike, ~1-2 days over 2 wks) | Likely (constitution note) | Not a build task — a time-boxed side-by-side eval. Vendor/agnosticity tension is the gating question, not code. |
 | 19 | F19 — TOML IntelliSense | **Large** (~2-3 days) | No (spec exists) | Two new language providers; smallest of the three unbuilt features. |
 | 18 | F18 — Code generation | **Large** (~3-4 days) | No (spec done) | New dep (`quicktype-core`), command, codegen glue, snapshot tests. Spec already amended. |
 | 20 | F20 — Workspace validation | **Large** (~3-4 days) | No (spec exists) | Biggest surface area: discovery + aggregation + progress UI + diagnostics. |
