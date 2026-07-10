@@ -264,6 +264,22 @@ suite('[F03-FR-06][F03-FR-07] validateCurrentFile() — validation outcomes', ()
     assert.strictEqual(diags[0].source, 'JSON Schema');
   });
 
+  test('[F03-FR-15] enforces a 2020-12-only keyword (prefixItems) via the matching dialect', async () => {
+    // A draft-07 Ajv would silently ignore prefixItems and pass this data.
+    setConfig('json', 'schemas', [{ url: 'https://example.com/s.json', fileMatch: ['data.json'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    activate(makeDoc('json', '[123]', '/ws/data.json'));
+    const schema = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'array',
+      prefixItems: [{ type: 'string' }],
+      items: false,
+    };
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any)();
+    assert.ok(validationDiagnostics.set.calledWith((vscode.window.activeTextEditor as any).document.uri));
+    assert.ok(vscode.window.showErrorMessage.calledWithMatch(/validation error/));
+  });
+
   test('[F03-FR-09] clears prior diagnostics before re-validating', async () => {
     const doc = makeDoc('json', '{"$schema":"https://example.com/s.json","name":"Alice"}');
     activate(doc);

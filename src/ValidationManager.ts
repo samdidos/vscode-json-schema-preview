@@ -11,9 +11,7 @@ import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
 import { classifyFetchFailure, shouldFallbackToCache } from './reliability';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const Ajv = require('ajv').default as typeof import('ajv').default;
+import { createAjv } from './ajvFactory';
 
 export const validationDiagnostics =
   vscode.languages.createDiagnosticCollection('json-schema-validation');
@@ -93,7 +91,9 @@ export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache
       return;
     }
 
-    const ajv = new Ajv({ allErrors: true, strict: false });
+    // F03-FR-15: pick the AJV dialect matching the schema's declared $schema
+    // so newer-draft keywords are enforced, not silently ignored.
+    const ajv = createAjv(schema, { allErrors: true, strict: false });
     let validate: ReturnType<typeof ajv.compile>;
     try {
       validate = ajv.compile(schema as object);

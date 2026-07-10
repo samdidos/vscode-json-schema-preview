@@ -39,6 +39,18 @@ Errors are reported as VS Code diagnostics in the Problems panel.
   `SchemaBundleCommand`), which already resolve a schema document via
   `languageForSchemaSource` + `parseSchemaText`; loading a YAML-format schema
   MUST NOT fail with a JSON parse error.
+- **F03-FR-15** The validator MUST select the AJV dialect matching the
+  schema's declared `$schema`: a `$schema` naming JSON Schema **2020-12** MUST
+  use `Ajv2020`, one naming **2019-09** MUST use `Ajv2019`, and any other
+  value (draft-07/06/04) or an absent `$schema` MUST use the default draft-07
+  `Ajv`. This ensures draft-specific keywords — 2020-12's `prefixItems` and
+  `$dynamicRef`/`$dynamicAnchor`, and 2019-09/2020-12's `unevaluatedProperties`
+  /`unevaluatedItems` — are enforced rather than silently ignored under a
+  single draft-07 dialect (`strict: false` otherwise drops unknown keywords
+  without error). Draft selection MUST be a pure, unit-testable function of
+  the schema's `$schema` string. (This applies to on-demand
+  `jsonschema.validateFile`; F16's sample-data self-check deliberately strips
+  `$schema` and stays on the default dialect — see F16.)
 
 ### Diagnostics
 
