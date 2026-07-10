@@ -42,6 +42,13 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 The extension targets VS Code **≥ 1.96.0** on desktop (not virtual workspaces).
 It requires **Python 3** on the user's PATH with `json-schema-for-humans` installed.
 
+`package.json`'s `engines.vscode` and `@types/vscode` are pinned to this exact
+floor for backward compatibility — don't bump either casually (e.g. as a side
+effect of an unrelated `@types/vscode` dependency update). Raising this floor
+is a deliberate compatibility-policy decision: update this line first, then
+`package.json` to match, and re-verify `tsc --noEmit` still compiles cleanly
+against the older `@types/vscode` surface.
+
 ## Key Words
 
 The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**,
