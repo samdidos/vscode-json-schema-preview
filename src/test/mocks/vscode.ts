@@ -116,6 +116,7 @@ const _createQuickPick             = sinon.stub();
 const _showInputBox                = sinon.stub();
 const _showTextDocument            = sinon.stub();
 const _showOpenDialog              = sinon.stub();
+const _showSaveDialog              = sinon.stub();
 const _createWebviewPanel          = sinon.stub();
 const _withProgress                = sinon.stub();
 
@@ -161,7 +162,7 @@ const _allStubs: sinon.SinonStub[] = [
   statusBarItem.show, statusBarItem.hide, statusBarItem.dispose,
   _createStatusBarItem, _onDidChangeActiveTextEditor,
   _showInformationMessage, _showErrorMessage, _showWarningMessage,
-  _showQuickPick, _createQuickPick, _showInputBox, _showTextDocument, _showOpenDialog, _createWebviewPanel, _withProgress,
+  _showQuickPick, _createQuickPick, _showInputBox, _showTextDocument, _showOpenDialog, _showSaveDialog, _createWebviewPanel, _withProgress,
   _getWorkspaceFolder, _asRelativePath, _getConfiguration,
   _findFiles, _openTextDocument, _onDidChangeConfiguration, _onDidSaveTextDocument, _applyEdit,
   _onDidOpenTextDocument, _onDidChangeTextDocument, _onDidCloseTextDocument,
@@ -184,6 +185,7 @@ function applyDefaults() {
   _showInputBox.resolves(undefined);
   _showTextDocument.resolves(undefined);
   _showOpenDialog.resolves(undefined);
+  _showSaveDialog.resolves(undefined);
   _createWebviewPanel.returns({
     title: '',
     webview: { html: '', onDidReceiveMessage: sinon.stub().returns(_disposable) },
@@ -285,6 +287,7 @@ export const window = {
   showInputBox:                _showInputBox,
   showTextDocument:            _showTextDocument,
   showOpenDialog:              _showOpenDialog,
+  showSaveDialog:              _showSaveDialog,
   createWebviewPanel:          _createWebviewPanel,
   withProgress:                _withProgress,
   createOutputChannel:         sinon.stub().returns({

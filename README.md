@@ -5,7 +5,7 @@
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/samdidos.json-schema-preview?logo=visual-studio-code&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
 [![CI](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/ci.yml?label=CI&logo=github)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/docs.yml?label=docs&logo=github)](https://samdidos.github.io/vscode-json-schema-preview/)
-[![Coverage](https://img.shields.io/badge/coverage-88.2%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-88.3%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-0366d6?logo=dependabot)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/.github/dependabot.yml)
 [![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.96.0-blue?logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -42,7 +42,7 @@ Handles schemas behind authentication (GitHub private repos, Artifactory, any HT
 <!-- spec:F07,F08 -->
 - **Private schemas** — authenticate against GitHub, Artifactory, or any HTTPS endpoint, and cache schemas locally so IntelliSense works too.
 <!-- spec:F06,F16,F18 -->
-- **Generate** — infer a schema from existing data, generate valid sample data from a schema, or generate TypeScript types from a schema.
+- **Generate** — infer a schema from existing data, generate valid sample data from a schema, or generate typed code from a schema (TypeScript, Python, Go, Rust, Java, C#, and more).
 
 📖 **[Full documentation & feature list](https://samdidos.github.io/vscode-json-schema-preview/)** — visual editing, schema catalogs, `$ref` navigation, bundling, diffing, linting, and more.
 

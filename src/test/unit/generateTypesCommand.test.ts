@@ -6,6 +6,7 @@ import * as vscode from '../mocks/vscode';
 
 const { generateTypesCommand } = require('../../GenerateTypesCommand');
 const { AuthRequiredError } = require('../../SchemaAuthManager');
+const { TARGET_LANGUAGES } = require('../../typeGenerator');
 
 function fakeAuth(fetchText: (url: string) => Promise<string>) {
   return { fetchText } as any;
@@ -20,9 +21,13 @@ function activate(fsPath: string, text: string, languageId = 'json') {
   } as any;
 }
 
-function pickTypeScript() {
-  vscode.window.showQuickPick.callsFake(async (items: any[]) => items.find((i: any) => i.id === 'typescript'));
+/** Answers both wizard steps: `language` from the target picker, then the
+ *  destination picker (`untitled` by default — F18-FR-11's default path). */
+function pickLanguage(language = 'typescript', destination = 'untitled') {
+  vscode.window.showQuickPick.callsFake(async (items: any[]) =>
+    items.find((i: any) => i.id === language) ?? items.find((i: any) => i.id === destination));
 }
+const pickTypeScript = () => pickLanguage('typescript');
 
 let dir: string;
 setup(() => {
@@ -62,12 +67,27 @@ suite('[F18-FR-01] generateTypesCommand — gating', () => {
     assert.ok(!vscode.workspace.openTextDocument.called);
   });
 
-  test('[F18-FR-02] the picker offers TypeScript as a selectable target', async () => {
+  test('[F18-FR-02][F18-FR-10] the picker offers every supported target, TypeScript first', async () => {
     activate('/ws/schema.json', '{"$schema":"x","type":"object"}');
     vscode.window.showQuickPick.resolves(undefined);
     await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
     const items = vscode.window.showQuickPick.lastCall.args[0];
-    assert.ok(items.some((i: any) => i.id === 'typescript'));
+    assert.deepStrictEqual(
+      items.map((i: any) => i.id),
+      TARGET_LANGUAGES.map((t: any) => t.id),
+    );
+    assert.strictEqual(items[0].id, 'typescript');
+  });
+
+  test('[F18-FR-11] cancelling the destination picker generates nothing', async () => {
+    activate(path.join(dir, 'schema.json'), '{"$schema":"x","type":"object"}');
+    // Answer the language picker, cancel the destination picker.
+    vscode.window.showQuickPick
+      .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.id === 'typescript'))
+      .onSecondCall().resolves(undefined);
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+    assert.ok(!vscode.workspace.openTextDocument.called);
+    assert.ok(!vscode.window.withProgress.called, 'no generation runs for a cancelled wizard');
   });
 });
 
@@ -209,5 +229,86 @@ suite('[F18-FR-01] generateTypesCommand — schemaSource argument (bind-notifica
     vscode.window.activeTextEditor = undefined;
     await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())(path.join(dir, 'nope.json'));
     assert.ok(vscode.window.showErrorMessage.calledWithMatch(/Cannot read the schema file/));
+  });
+});
+
+suite('[F18-FR-10] generateTypesCommand — additional target languages', function () {
+  this.timeout(20000);
+
+  test('picking Python opens an untitled editor with python content', async () => {
+    activate(path.join(dir, 'app.schema.json'), JSON.stringify({
+      $schema: 'x', title: 'App', type: 'object',
+      properties: { name: { type: 'string' } }, additionalProperties: false,
+    }));
+    pickLanguage('python');
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+    const arg = vscode.workspace.openTextDocument.lastCall.args[0];
+    assert.strictEqual(arg.language, 'python');
+    assert.match(arg.content, /class App/);
+  });
+
+  test('[F18-FR-02] an unknown editor language id falls back to plain text', async () => {
+    activate(path.join(dir, 'app.schema.json'), JSON.stringify({
+      $schema: 'x', title: 'App', type: 'object',
+      properties: { name: { type: 'string' } }, additionalProperties: false,
+    }));
+    pickLanguage('kotlin');
+    // Simulate a VS Code without Kotlin support: unknown ids reject.
+    vscode.workspace.openTextDocument.callsFake(async (arg: any) => {
+      if (arg?.language === 'kotlin') { throw new Error('Unknown language id'); }
+      return { languageId: arg?.language };
+    });
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+    const languagesTried = vscode.workspace.openTextDocument.getCalls().map((c: any) => c.args[0]?.language);
+    assert.deepStrictEqual(languagesTried, ['kotlin', 'plaintext']);
+    assert.ok(vscode.window.showTextDocument.called);
+  });
+});
+
+suite('[F18-FR-11] generateTypesCommand — save to file', function () {
+  this.timeout(20000);
+
+  test('the save dialog defaults to <stem>.<ext> next to the schema; the file is written and opened', async () => {
+    activate(path.join(dir, 'server-config.json'), JSON.stringify({
+      $schema: 'x', type: 'object', properties: { host: { type: 'string' } }, additionalProperties: false,
+    }));
+    pickLanguage('typescript', 'file');
+    const savedPath = path.join(dir, 'chosen-name.ts');
+    vscode.window.showSaveDialog.resolves(vscode.Uri.file(savedPath));
+
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+
+    const dialogArgs = vscode.window.showSaveDialog.lastCall.args[0];
+    assert.strictEqual(dialogArgs.defaultUri.fsPath, path.join(dir, 'server-config.ts'));
+    const written = fs.readFileSync(savedPath, 'utf-8');
+    assert.match(written, /export interface ServerConfig\b/);
+    // The saved document (not an untitled one) is opened.
+    assert.strictEqual(vscode.workspace.openTextDocument.lastCall.args[0].fsPath, savedPath);
+    assert.ok(vscode.window.showTextDocument.called);
+  });
+
+  test('a remote schema defaults the dialog to the first workspace folder', async () => {
+    vscode.window.activeTextEditor = undefined;
+    (vscode.workspace as any).workspaceFolders = [{ uri: { fsPath: dir }, name: 'ws', index: 0 }];
+    pickLanguage('go', 'file');
+    vscode.window.showSaveDialog.resolves(undefined); // inspect the default only
+    const cache = fakeCache({
+      'https://corp/cfg.json': JSON.stringify({ title: 'Cfg', type: 'object', properties: { on: { type: 'boolean' } }, additionalProperties: false }),
+    });
+    await generateTypesCommand(fakeAuth(async () => '{}'), cache)('https://corp/cfg.json');
+    const dialogArgs = vscode.window.showSaveDialog.lastCall.args[0];
+    assert.strictEqual(dialogArgs.defaultUri.fsPath, path.join(dir, 'cfg.go'));
+  });
+
+  test('cancelling the save dialog falls back to an untitled editor (output is never lost)', async () => {
+    activate(path.join(dir, 'schema.json'), JSON.stringify({
+      $schema: 'x', title: 'Kept', type: 'object', properties: { a: { type: 'string' } }, additionalProperties: false,
+    }));
+    pickLanguage('typescript', 'file');
+    vscode.window.showSaveDialog.resolves(undefined);
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+    const arg = vscode.workspace.openTextDocument.lastCall.args[0];
+    assert.strictEqual(arg.language, 'typescript');
+    assert.match(arg.content, /export interface Kept\b/);
   });
 });
