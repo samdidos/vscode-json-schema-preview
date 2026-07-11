@@ -58,12 +58,13 @@ Install from the VS Code Marketplace, then open a file with a `$schema` field an
 
 ---
 
-<!-- spec:F07,F08 -->
+<!-- spec:F07,F08 start -->
 ## Private & Authenticated Schemas
 
 When a schema is behind authentication, VS Code's language server can't fetch it — it draws a red squiggle and IntelliSense goes dark. This extension authenticates on your behalf (GitHub OAuth, Bearer token, or Basic auth) and can cache the schema locally so the built-in language servers see it too.
 
 **[Authentication guide →](https://samdidos.github.io/vscode-json-schema-preview/guide/authentication)**
+<!-- spec:F07,F08 end -->
 
 ---
 
@@ -75,12 +76,13 @@ All features are reachable from the Command Palette, with matching editor toolba
 
 ---
 
-<!-- spec:F09 -->
+<!-- spec:F09 start -->
 ## Configuration
 
 All settings live under the `jsonschema.*` namespace (User, Workspace, or Folder scope). Drop a `.json-schema-preview-config.json` in your workspace root to customise the [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) renderer.
 
 **[Full settings reference →](https://samdidos.github.io/vscode-json-schema-preview/guide/configuration)**
+<!-- spec:F09 end -->
 
 ---
 
