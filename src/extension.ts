@@ -25,11 +25,11 @@ import { SchemaRefProvider } from './SchemaRefProvider';
 import { TomlIntellisenseProvider } from './TomlIntellisenseProvider';
 import { SchemaLintManager } from './SchemaLintManager';
 import { SchemaCatalogManager } from './SchemaCatalogManager';
-import { bundleSchemaCommand } from './SchemaBundleCommand';
+import { bundleSchemaCommand, computeTargetId } from './SchemaBundleCommand';
 import { generateTypesCommand } from './GenerateTypesCommand';
 import { registerSchemaDiff } from './SchemaDiffCommand';
 import { registerWorkspaceValidation } from './WorkspaceValidateCommand';
-import { isYaml, isSupported } from './languages';
+import { isYaml, isSupported, languageForSchemaSource } from './languages';
 import { getCacheAutoRefresh } from './settings';
 import { createSchema } from 'genson-js';
 
@@ -332,7 +332,6 @@ export function activate(context: vscode.ExtensionContext) {
       let schemaLang: string;
       let baseRef: string;
       if (typeof schemaSource === 'string') {
-        const { languageForSchemaSource } = await import('./languages');
         if (SchemaAuthManager.isRemoteUrl(schemaSource)) {
           const cached = schemaCache.readCached(schemaSource);
           if (cached === undefined) {
@@ -385,25 +384,23 @@ export function activate(context: vscode.ExtensionContext) {
       // Ref resolver: local pointers resolve within the root schema; relative
       // and cached-remote refs are read best-effort (F16-FR-06). Relative refs
       // resolve against `baseRef` — a directory on disk, or the schema's own
-      // URL (looked up in the cache) when the root schema is remote.
+      // URL when the root schema is remote — via the same target-id logic
+      // F14's bundler uses (computeTargetId), so remote/relative resolution
+      // behaves identically everywhere in the extension.
       const resolveRef = (ref: string): unknown => {
         const { uri, fragment } = parseRef(ref);
         const segments = parseJsonPointer(fragment);
         const kind = refKind(ref);
         if (kind === 'local') { return resolvePointer(root, segments); }
+        const targetId = kind === 'remote' ? (uri || ref) : computeTargetId(uri, baseRef);
         let text: string | undefined;
-        if (kind === 'remote') {
-          text = schemaCache.readCached(uri || ref);
-        } else if (SchemaAuthManager.isRemoteUrl(baseRef)) {
-          try { text = schemaCache.readCached(new URL(uri, baseRef).toString()); } catch { text = undefined; }
+        if (SchemaAuthManager.isRemoteUrl(targetId)) {
+          text = schemaCache.readCached(targetId);
         } else {
-          try {
-            text = fs.readFileSync(path.resolve(path.dirname(baseRef), uri), 'utf-8');
-          } catch { text = undefined; }
+          try { text = fs.readFileSync(targetId, 'utf-8'); } catch { text = undefined; }
         }
         if (text === undefined) { return undefined; }
-        const targetLang = uri.endsWith('.yaml') || uri.endsWith('.yml') ? 'yaml' : 'json';
-        return resolvePointer(parseSchemaText(text, targetLang), segments);
+        return resolvePointer(parseSchemaText(text, languageForSchemaSource(targetId)), segments);
       };
 
       const result = generateAndValidate(root, { resolveRef });

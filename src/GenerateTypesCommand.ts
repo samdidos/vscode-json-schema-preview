@@ -31,6 +31,14 @@ interface SchemaSource {
  */
 export function generateTypesCommand(auth: SchemaAuthManager, cache: SchemaCache) {
   return async (schemaSource?: string): Promise<void> => {
+    // S02: the F14 bundling step below reads workspace files and the
+    // network, so it must be blocked in untrusted workspaces — the same
+    // check bundleSchemaCommand makes before running that same step.
+    if (!vscode.workspace.isTrusted) {
+      vscode.window.showWarningMessage('Type generation reads workspace files and the network, which is disabled in untrusted workspaces.');
+      return;
+    }
+
     const source = typeof schemaSource === 'string'
       ? await loadSchemaSource(schemaSource, auth, cache)
       : loadActiveEditorSchema();
