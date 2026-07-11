@@ -13,6 +13,7 @@ import {
   parseDataText,
   validateInstances,
   lineOfMatch,
+  lineAt,
   summarize,
   summaryLine,
   renderMarkdownReport,
@@ -266,7 +267,11 @@ class WorkspaceRun {
       const settingsPath = folder ? path.join(folder.uri.fsPath, '.vscode', 'settings.json') : undefined;
       try {
         const settingsText = fs.readFileSync(settingsPath!, 'utf-8');
-        const line = lineOfMatch(settingsText, new RegExp(escapeRegex(schemaRef)));
+        // Plain literal search — schemaRef comes from workspace settings, so
+        // it must never be used to build a RegExp (see workspaceValidation.ts's
+        // locateKeyLine for why a hand-escaped string isn't a safe substitute).
+        const idx = settingsText.indexOf(schemaRef);
+        const line = idx === -1 ? undefined : lineAt(settingsText, idx);
         if (line !== undefined) {
           const diag = new vscode.Diagnostic(
             new vscode.Range(line, 0, line, Number.MAX_SAFE_INTEGER), message, vscode.DiagnosticSeverity.Error,
@@ -332,8 +337,4 @@ class WorkspaceRun {
       return { error: (e as Error).message };
     }
   }
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

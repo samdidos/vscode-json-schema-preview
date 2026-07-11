@@ -1883,7 +1883,7 @@
         "src/GenerateTypesCommand.ts",
         "src/typeGenerator.ts"
       ],
-      "note": "network only inside the F14 bundling step (cache-first, auth-aware); engine runs offline"
+      "note": "network only inside the F14 bundling step (cache-first, auth-aware); engine runs offline; blocked entirely in untrusted workspaces (S02), same guard as bundleSchemaCommand"
     },
     "F18-NFR-02": {
       "status": "implemented",

@@ -156,8 +156,10 @@ export function makeResolver(auth: SchemaAuthManager, cache: SchemaCache, rootFs
 /** The canonical id a `$ref`'s `uri` part resolves to against `base` (the
  *  referring document's absolute path or URL) — remote refs by themselves,
  *  relative refs resolved against a remote base as an absolute URL, and
- *  relative refs resolved against a local base as an absolute file path. */
-function computeTargetId(uri: string, base: string): string {
+ *  relative refs resolved against a local base as an absolute file path.
+ *  Exported: also reused by the F16 sample-data resolver and F19's TOML
+ *  IntelliSense provider, which resolve refs against a schema the same way. */
+export function computeTargetId(uri: string, base: string): string {
   if (SchemaAuthManager.isRemoteUrl(uri)) { return uri; }
   if (SchemaAuthManager.isRemoteUrl(base)) { return new URL(uri, base).toString(); }
   return path.resolve(path.dirname(base), uri);

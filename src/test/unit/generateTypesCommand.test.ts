@@ -47,6 +47,14 @@ suite('[F18-FR-01] generateTypesCommand — gating', () => {
     assert.ok(vscode.window.showErrorMessage.calledWith('Cannot parse the schema file.'));
   });
 
+  test('[S02] blocked in an untrusted workspace', async () => {
+    (vscode.workspace as any).isTrusted = false;
+    activate(path.join(dir, 'schema.json'), '{"$schema":"x","type":"object"}');
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+    assert.ok(vscode.window.showWarningMessage.called);
+    assert.ok(!vscode.window.showQuickPick.called);
+  });
+
   test('[F18-FR-02] cancelling the language picker does nothing', async () => {
     activate('/ws/schema.json', '{"$schema":"x","type":"object"}');
     vscode.window.showQuickPick.resolves(undefined);

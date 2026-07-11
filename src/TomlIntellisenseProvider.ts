@@ -6,7 +6,6 @@
 // path returns "no results" rather than any error UI.
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import * as path from 'path';
 import {
   tomlPositionContext,
   keyCompletionsAt,
@@ -18,6 +17,8 @@ import {
 import { extractInlineSchemaUrl } from './SchemaBindingManager';
 import { parseSchemaText, parseRef, refKind, parseJsonPointer, resolvePointer } from './schemaPointer';
 import { SchemaCache } from './SchemaCache';
+import { SchemaAuthManager } from './SchemaAuthManager';
+import { computeTargetId } from './SchemaBundleCommand';
 import { languageForSchemaSource } from './languages';
 
 /** A loaded schema plus its position-independent ref resolver. */
@@ -108,25 +109,23 @@ export class TomlIntellisenseProvider implements vscode.CompletionItemProvider, 
     const ref = extractInlineSchemaUrl(document);
     if (!ref) { return undefined; }
 
-    const baseDir = path.dirname(document.uri.fsPath);
-    const schemaPath = /^https?:\/\//i.test(ref) ? ref : path.resolve(baseDir, ref);
-    const text = this.readSchemaText(schemaPath);
+    const schemaPath = computeTargetId(ref, document.uri.fsPath);
+    const text = this.readCacheOrDisk(schemaPath);
     if (text === undefined) { return undefined; }
     const root = parseSchemaText(text, languageForSchemaSource(schemaPath));
     if (root === undefined) { return undefined; }
 
     // F19-FR-06: `$ref`s resolve with F13 semantics — local pointer within
     // the schema, relative file next to the schema, cached remote — with all
-    // reads best-effort and no network (F19-NFR-02).
+    // reads best-effort and no network (F19-NFR-02). computeTargetId is the
+    // same target-id logic F14's bundler and the F16 sample-data resolver use.
     const resolveRef: RefResolver = (r: string): unknown => {
       const { uri, fragment } = parseRef(r);
       const segments = parseJsonPointer(fragment);
       const kind = refKind(r);
       if (kind === 'local') { return resolvePointer(root, segments); }
-      const targetId = kind === 'remote' ? (uri || r) : this.resolveAgainst(schemaPath, uri);
-      const targetText = /^https?:\/\//i.test(targetId)
-        ? this.cache.readCached(targetId)
-        : this.readLocalFile(targetId);
+      const targetId = kind === 'remote' ? (uri || r) : computeTargetId(uri, schemaPath);
+      const targetText = this.readCacheOrDisk(targetId);
       if (targetText === undefined) { return undefined; }
       return resolvePointer(parseSchemaText(targetText, languageForSchemaSource(targetId)), segments);
     };
@@ -134,25 +133,14 @@ export class TomlIntellisenseProvider implements vscode.CompletionItemProvider, 
     return { root, resolveRef };
   }
 
-  /** Local schemas read from disk; remote schemas from the F08 cache only. */
-  private readSchemaText(schemaPath: string): string | undefined {
-    if (/^https?:\/\//i.test(schemaPath)) { return this.cache.readCached(schemaPath); }
-    return this.readLocalFile(schemaPath);
-  }
-
-  private readLocalFile(filePath: string): string | undefined {
+  /** Local schemas read from disk; remote schemas from the F08 cache only —
+   *  never a fetch (F19-FR-02, F19-NFR-02). */
+  private readCacheOrDisk(id: string): string | undefined {
+    if (SchemaAuthManager.isRemoteUrl(id)) { return this.cache.readCached(id); }
     try {
-      return fs.readFileSync(filePath, 'utf-8');
+      return fs.readFileSync(id, 'utf-8');
     } catch {
       return undefined;
     }
-  }
-
-  /** Resolve a relative ref against the schema's own location (file or URL). */
-  private resolveAgainst(base: string, rel: string): string {
-    if (/^https?:\/\//i.test(base)) {
-      try { return new URL(rel, base).toString(); } catch { return rel; }
-    }
-    return path.resolve(path.dirname(base), rel);
   }
 }

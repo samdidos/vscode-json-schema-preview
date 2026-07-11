@@ -101,21 +101,42 @@ export function locateInstancePath(text: string, instancePath: string): number |
   const parts = instancePath.split('/').filter(Boolean);
   for (let i = parts.length - 1; i >= 0; i--) {
     if (/^\d+$/.test(parts[i])) { continue; }
-    const line = lineOfMatch(text, new RegExp(`"?${escapeRegex(parts[i])}"?\\s*[:=]`));
+    const line = locateKeyLine(text, parts[i]);
     if (line !== undefined) { return line; }
   }
   return undefined;
 }
 
-/** 0-based line of the first regex match in `text`, if any. */
-export function lineOfMatch(text: string, pattern: RegExp): number | undefined {
-  const match = pattern.exec(text);
-  if (!match) { return undefined; }
-  return (text.slice(0, match.index).match(/\n/g) ?? []).length;
+/** 0-based line containing text offset `index`. */
+export function lineAt(text: string, index: number): number {
+  return (text.slice(0, index).match(/\n/g) ?? []).length;
 }
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** 0-based line of the first match of a *fixed* regex literal in `text`.
+ *  Only ever pass a static pattern here — never one built from data-file
+ *  content, which `locateKeyLine` below handles without a RegExp. */
+export function lineOfMatch(text: string, pattern: RegExp): number | undefined {
+  const match = pattern.exec(text);
+  return match ? lineAt(text, match.index) : undefined;
+}
+
+/**
+ * Best-effort 0-based line of a key token: `key` optionally double-quoted,
+ * followed by optional spaces/tabs and `:` (JSON/YAML) or `=` (TOML). A
+ * literal substring scan — `key` comes from the data file being validated,
+ * so it is never used to build a RegExp (a hand-escaped string is not a
+ * sanitizer a static analyzer can recognize as safe).
+ */
+function locateKeyLine(text: string, key: string): number | undefined {
+  if (!key) { return undefined; }
+  for (let i = 0; i + key.length <= text.length; i++) {
+    if (!text.startsWith(key, i)) { continue; }
+    let j = i + key.length;
+    if (text[j] === '"') { j++; }
+    while (text[j] === ' ' || text[j] === '\t') { j++; }
+    if (text[j] === ':' || text[j] === '=') { return lineAt(text, i); }
+  }
+  return undefined;
 }
 
 // ── Aggregation & report (F20-FR-06/07) ──────────────────────────────────────

@@ -155,5 +155,7 @@ expand what's offered in the picker.
 - **F14**: `bundleSchema` is reused directly as the pre-generation
   resolution step — the code-generation engine (`quicktype-core`) never
   performs its own external `$ref` resolution or fetching.
-- **S05**: no network beyond cache, no telemetry. **S02**: read-only with
-  respect to the workspace; safe in untrusted workspaces.
+- **S05**: no network beyond cache, no telemetry. **S02**: the bundling step
+  reads workspace files and the network, so `jsonschema.generateTypes` MUST
+  be blocked in untrusted workspaces, exactly like F14's own bundle/dereference
+  command (same rule, same reason: both run this step).
