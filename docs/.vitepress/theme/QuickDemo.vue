@@ -22,10 +22,19 @@
         <p class="demo-desc">{{ activeFeature.desc }}</p>
         <div class="demo-gif-wrap">
           <img
+            v-if="!failed.has(activeFeature.id)"
             :src="base + activeFeature.gif"
             :alt="activeFeature.title + ' demo'"
             loading="lazy"
+            @error="failed.add(activeFeature.id)"
           />
+          <!-- Graceful fallback: a demo whose GIF has not been regenerated yet
+               (GIFs are rebuilt on each release) shows a placeholder rather
+               than a broken image. -->
+          <div v-else class="demo-gif-pending">
+            <span class="demo-gif-pending-icon" aria-hidden="true">🎬</span>
+            <p>This demo GIF is regenerated with each release — check back after the next one.</p>
+          </div>
         </div>
       </div>
     </Transition>
@@ -33,9 +42,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 
 const base = '/vscode-json-schema-preview/'
+
+// GIFs that failed to load (e.g. not yet regenerated for a new feature) — the
+// display swaps to a placeholder instead of showing a broken image.
+const failed = reactive(new Set<string>())
 
 const features = [
   {
@@ -72,6 +85,13 @@ const features = [
     title: 'Schema Inference',
     gif: 'demo-inference.gif',
     desc: 'Run JSON Schema: Generate Schema from This File to infer a schema from existing data. Opens as a new tab ready to save.',
+  },
+  {
+    id: 'codegen',
+    icon: '🧬',
+    title: 'Generate Types',
+    gif: 'demo-codegen.gif',
+    desc: 'Run JSON Schema: Generate Types from This Schema to turn a schema into TypeScript interface / type declarations — enums become unions, descriptions become TSDoc — opened in a new editor beside the schema.',
   },
   {
     id: 'visual-editor',
@@ -176,6 +196,27 @@ const activeFeature = computed(() => features.find(f => f.id === active.value)!)
   width: 100%;
   height: auto;
   border-radius: 6px;
+}
+
+.demo-gif-pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 200px;
+  padding: 40px 24px;
+  text-align: center;
+  color: #9aa7b4;
+}
+
+.demo-gif-pending-icon { font-size: 34px; }
+
+.demo-gif-pending p {
+  margin: 0;
+  font-size: 13px;
+  max-width: 360px;
+  line-height: 1.5;
 }
 
 .demo-desc {

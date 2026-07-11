@@ -31,6 +31,7 @@ const DEMOS = [
   { name: 'visual-editor',    dir: 'visual-editor-mouse',   delay: 220, hold: 1_200 },
   { name: 'workspace-trust',  dir: 'workspace-trust-mouse', delay: 220, hold: 1_400 },
   { name: 'schema-auth',      dir: 'schema-auth-mouse',     delay: 220, hold: 1_200 },
+  { name: 'codegen',          dir: 'codegen-mouse',         delay: 220, hold: 1_400 },
 ];
 
 const { values: argv } = parseArgs({ options: { demo: { type: 'string' } }, strict: false });
