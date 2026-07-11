@@ -3,7 +3,6 @@
 // auth/cache-backed resolver as the bundle command, cancellable progress,
 // and an untitled-editor result. The source file is never modified.
 import * as vscode from 'vscode';
-import * as path from 'path';
 import * as fs from 'fs';
 import { bundleSchema } from './schemaBundler';
 import { parseSchemaText } from './schemaPointer';

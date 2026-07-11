@@ -143,9 +143,12 @@ class WorkspaceRun {
     const languageId = languageIdForPath(uri.fsPath);
     if (!languageId || !isSupported(languageId)) { return; }
 
-    const stat = await fs.promises.stat(uri.fsPath);
-    if (stat.size > MAX_FILE_BYTES) { this.skippedLarge++; return; }
-    const text = await fs.promises.readFile(uri.fsPath, 'utf-8');
+    // Read once and check the actual bytes read, rather than stat() then a
+    // separate readFile() — two calls race (the file can change in between);
+    // one read has nothing to race against.
+    const buffer = await fs.promises.readFile(uri.fsPath);
+    if (buffer.length > MAX_FILE_BYTES) { this.skippedLarge++; return; }
+    const text = buffer.toString('utf-8');
 
     // A light TextDocument stand-in: binding lookup and inline extraction
     // only touch uri, languageId, and getText (F20-FR-02, unopened files).
