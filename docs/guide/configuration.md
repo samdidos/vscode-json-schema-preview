@@ -112,6 +112,24 @@ Milliseconds to wait for any outbound remote-schema HTTP request — authenticat
 
 ---
 
+<!-- spec:F20 start -->
+## `jsonschema.workspaceValidation.maxFiles`
+
+| Type | Default | Minimum |
+|------|---------|---------|
+| `number` | `2000` | `1` |
+
+Maximum number of files the **JSON Schema: Validate Workspace** command scans in one run. When the workspace has more matching files than this, the run is truncated and the summary report notes it. Discovery already honours `files.exclude` / `search.exclude` and skips files over 1 MiB; this cap bounds the total regardless.
+
+```json
+{
+  "jsonschema.workspaceValidation.maxFiles": 5000
+}
+```
+<!-- spec:F20 end -->
+
+---
+
 <!-- spec:F08 start -->
 ## `jsonschema.cache.autoRefresh`
 

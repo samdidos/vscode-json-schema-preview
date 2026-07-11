@@ -45,17 +45,20 @@ The extension checks for the package on startup and shows a notification if it i
 <!-- spec:S02 start -->
 ## Workspace Trust
 
-The preview renders by calling a local Python tool, so it is **disabled in untrusted workspaces** (VS Code's Restricted Mode). The extension is declared as `untrustedWorkspaces: limited` in its manifest:
+The preview renders by calling a local Python tool, and a few other commands read workspace files or the network, so they are **disabled in untrusted workspaces** (VS Code's Restricted Mode). The extension is declared as `untrustedWorkspaces: limited` in its manifest:
 
 | Feature | Trusted | Untrusted |
 |---|---|---|
 | Preview / live update | ✅ | ❌ (warning shown) |
-| Validation | ✅ | ✅ |
-| Schema binding | ✅ | ✅ |
+| Validation (this file) | ✅ | ✅ |
+| Settings-based schema binding | ✅ | ✅ |
+| Inline `$schema` binding (writes the file) | ✅ | ❌ (warning shown) |
 | Schema inference | ✅ | ✅ |
 | Auth configuration | ✅ | ✅ |
+| Bundle / Dereference, Generate Types (read files + network) | ✅ | ❌ (warning shown) |
+| Validate Workspace | ✅ | ✅ — remote schemas served from the local cache only |
 
-If the preview command is run in an untrusted workspace a warning is displayed with a **Manage Workspace Trust** button.
+If a disabled command is run in an untrusted workspace a warning is displayed; for the preview it includes a **Manage Workspace Trust** button.
 <!-- spec:S02 end -->
 
 <!-- spec:F01 -->
