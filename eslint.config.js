@@ -18,6 +18,10 @@ module.exports = [
       'reports/**',
       'test-results/**',
       'playwright-report/**',
+      // docs/ is a separate VitePress project (own devDependencies, own build
+      // output/dep-cache under docs/node_modules and docs/.vitepress/{cache,dist},
+      // already .gitignore'd) — never meant to be linted by this config.
+      'docs/**',
     ],
   },
   {
