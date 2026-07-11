@@ -3,8 +3,10 @@ import * as ts from 'typescript';
 
 const {
   generateTypeScript,
+  generateCode,
   annotateSchemaForCodegen,
   sanitizeIdentifier,
+  TARGET_LANGUAGES,
 } = require('../../typeGenerator');
 
 /** Compile generated code with the in-repo TypeScript compiler under
@@ -445,4 +447,44 @@ suite('typeGenerator — annotateSchemaForCodegen internals', function () {
     const out: any = annotateSchemaForCodegen({ type: 'object', additionalProperties: false });
     assert.strictEqual(out.additionalProperties, false);
   });
+});
+
+suite('[F18-FR-10] typeGenerator — additional target languages', function () {
+  this.timeout(20000);
+
+  const schema = {
+    title: 'Person',
+    type: 'object',
+    required: ['id', 'name'],
+    properties: {
+      id: { type: 'integer', description: 'Unique id.' },
+      name: { type: 'string' },
+      role: { enum: ['admin', 'user'] },
+      address: { $ref: '#/$defs/address' },
+    },
+    additionalProperties: false,
+    $defs: {
+      address: { type: 'object', properties: { city: { type: 'string' } }, additionalProperties: false },
+    },
+  };
+
+  test('TypeScript is the first (default) target and generateTypeScript matches it', async () => {
+    assert.strictEqual(TARGET_LANGUAGES[0].id, 'typescript');
+    const viaWrapper = await generateTypeScript(schema, 'person');
+    const viaTable = await generateCode(structuredClone(schema), 'person', TARGET_LANGUAGES[0]);
+    assert.strictEqual(viaWrapper, viaTable);
+  });
+
+  // F18-FR-09/NFR-02 for every offered target: generation succeeds, names the
+  // title-derived declaration, and is byte-stable across runs. (No in-repo
+  // compilers exist for the non-TypeScript targets — see F18-NFR-02.)
+  for (const target of TARGET_LANGUAGES as any[]) {
+    test(`[F18-FR-09] ${target.label} output is non-empty, named, and byte-stable`, async () => {
+      const first = await generateCode(structuredClone(schema), 'person', target);
+      const second = await generateCode(structuredClone(schema), 'person', target);
+      assert.ok(first.trim().length > 0, 'output must not be empty');
+      assert.match(first, /Person/);
+      assert.strictEqual(first, second, 'output must be byte-identical across runs');
+    });
+  }
 });

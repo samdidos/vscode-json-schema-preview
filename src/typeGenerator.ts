@@ -5,7 +5,7 @@
 // (F18-FR-06); the JSONSchemaInput below is constructed without a schema
 // store, so the engine cannot fetch anything itself (F18-NFR-01).
 
-import { quicktype, InputData, JSONSchemaInput } from 'quicktype-core';
+import { quicktype, InputData, JSONSchemaInput, type LanguageName } from 'quicktype-core';
 import { isObject } from './schemaPointer';
 
 /** Validation keywords with no TypeScript type-level counterpart. Their
@@ -146,15 +146,72 @@ function annotateNode(node: Record<string, unknown>): void {
     : note;
 }
 
+/** A code-generation target offered by the language picker (F18-FR-02/10). */
+export interface TargetLanguage {
+  /** Stable identifier used by the picker and tests. */
+  id: string;
+  /** Human-readable label shown in the picker. */
+  label: string;
+  /** quicktype-core's name for the language backend. */
+  quicktypeLang: LanguageName;
+  /** VS Code language id for the untitled editor (best-effort — F18-FR-02). */
+  editorLanguageId: string;
+  /** File extension (no dot) used by the save-to-file default (F18-FR-11). */
+  extension: string;
+  /** Per-language renderer options, verified against quicktype-core 23.3.25. */
+  rendererOptions: Readonly<Record<string, string>>;
+}
+
 /**
- * Generate TypeScript declarations from a bundled, self-contained schema
- * (F18-FR-02..09). Pure with respect to I/O (F18-NFR-02): schema in, text
- * out — async only because quicktype's API is. The top-level declaration is
- * named after the schema's `title`, else `fallbackName` (the file stem).
- * Output is deterministic for identical input (F18-FR-09) — quicktype-core
- * is pinned to an exact version to keep it that way (F18-NFR-03).
+ * The supported targets (F18-FR-10), TypeScript first as the default.
+ * `just-types`-style options are passed wherever the backend supports them
+ * so output is declarations rather than serializer scaffolding; Rust and C#
+ * have no such option in this quicktype version and use backend defaults.
  */
-export async function generateTypeScript(bundledSchema: unknown, fallbackName: string): Promise<string> {
+export const TARGET_LANGUAGES: readonly TargetLanguage[] = [
+  {
+    id: 'typescript', label: 'TypeScript', quicktypeLang: 'typescript',
+    editorLanguageId: 'typescript', extension: 'ts',
+    rendererOptions: {
+      'just-types': 'true',        // declarations only, no runtime converters
+      'prefer-unions': 'true',     // enum → union of literal types (F18-FR-04)
+      'nice-property-names': 'false', // keep property names exactly as in the schema
+    },
+  },
+  { id: 'python', label: 'Python', quicktypeLang: 'python', editorLanguageId: 'python',
+    extension: 'py', rendererOptions: { 'just-types': 'true' } },
+  { id: 'go', label: 'Go', quicktypeLang: 'go', editorLanguageId: 'go',
+    extension: 'go', rendererOptions: { 'just-types': 'true' } },
+  { id: 'rust', label: 'Rust', quicktypeLang: 'rust', editorLanguageId: 'rust',
+    extension: 'rs', rendererOptions: {} },
+  { id: 'java', label: 'Java', quicktypeLang: 'java', editorLanguageId: 'java',
+    extension: 'java', rendererOptions: { 'just-types': 'true' } },
+  { id: 'csharp', label: 'C#', quicktypeLang: 'cs', editorLanguageId: 'csharp',
+    extension: 'cs', rendererOptions: {} },
+  { id: 'kotlin', label: 'Kotlin', quicktypeLang: 'kotlin', editorLanguageId: 'kotlin',
+    extension: 'kt', rendererOptions: { framework: 'just-types' } },
+  { id: 'swift', label: 'Swift', quicktypeLang: 'swift', editorLanguageId: 'swift',
+    extension: 'swift', rendererOptions: { 'just-types': 'true' } },
+  { id: 'dart', label: 'Dart', quicktypeLang: 'dart', editorLanguageId: 'dart',
+    extension: 'dart', rendererOptions: { 'just-types': 'true' } },
+  { id: 'cpp', label: 'C++', quicktypeLang: 'c++', editorLanguageId: 'cpp',
+    extension: 'hpp', rendererOptions: { 'just-types': 'true' } },
+];
+
+/**
+ * Generate typed declarations in `target`'s language from a bundled,
+ * self-contained schema (F18-FR-02..10). Pure with respect to I/O
+ * (F18-NFR-02): schema in, text out — async only because quicktype's API
+ * is. The top-level declaration is named after the schema's `title`, else
+ * `fallbackName` (the file stem). Output is deterministic per target for
+ * identical input (F18-FR-09) — quicktype-core is pinned to an exact
+ * version to keep it that way (F18-NFR-03).
+ */
+export async function generateCode(
+  bundledSchema: unknown,
+  fallbackName: string,
+  target: TargetLanguage,
+): Promise<string> {
   const schema = annotateSchemaForCodegen(bundledSchema);
   const title = isObject(bundledSchema) && typeof bundledSchema.title === 'string'
     ? bundledSchema.title
@@ -170,13 +227,14 @@ export async function generateTypeScript(bundledSchema: unknown, fallbackName: s
 
   const result = await quicktype({
     inputData,
-    lang: 'typescript',
-    rendererOptions: {
-      'just-types': 'true',        // declarations only, no runtime converters
-      'prefer-unions': 'true',     // enum → union of literal types (F18-FR-04)
-      'nice-property-names': 'false', // keep property names exactly as in the schema
-    },
+    lang: target.quicktypeLang,
+    rendererOptions: { ...target.rendererOptions },
     indentation: '  ',
   });
   return `${result.lines.join('\n')}\n`;
+}
+
+/** The TypeScript target (F18-FR-03..05/08 bind to this one). */
+export function generateTypeScript(bundledSchema: unknown, fallbackName: string): Promise<string> {
+  return generateCode(bundledSchema, fallbackName, TARGET_LANGUAGES[0]);
 }

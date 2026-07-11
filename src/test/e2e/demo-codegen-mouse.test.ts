@@ -30,9 +30,14 @@ test('demo-codegen-mouse: generate TypeScript types from a schema', () =>
     await capture('command-typed');
 
     await window.keyboard.press('Enter');
-    // Target-language picker — a single "TypeScript" item today; accept it.
+    // Target-language picker — TypeScript is the first/default item; accept it.
     await window.waitForTimeout(800);
     await capture('language-picker');
+    await window.keyboard.press('Enter');
+
+    // Destination picker — "Open in a new editor" is the default; accept it.
+    await window.waitForTimeout(800);
+    await capture('destination-picker');
     await window.keyboard.press('Enter');
 
     await window.waitForTimeout(5_000);

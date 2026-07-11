@@ -1825,7 +1825,7 @@
       "impl": [
         "src/GenerateTypesCommand.ts"
       ],
-      "note": "single-select language picker (TypeScript today); result opens as an untitled typescript editor"
+      "note": "single-select picker over TARGET_LANGUAGES (TypeScript default); untitled editor with matching language id, plaintext fallback for ids the running VS Code lacks"
     },
     "F18-FR-03": {
       "status": "implemented",
@@ -1876,6 +1876,21 @@
         "src/typeGenerator.ts"
       ],
       "note": ""
+    },
+    "F18-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts",
+        "src/GenerateTypesCommand.ts"
+      ],
+      "note": "TARGET_LANGUAGES table (10 targets) with per-backend renderer options verified against quicktype-core 23.3.25; byte-stability tested per target"
+    },
+    "F18-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/GenerateTypesCommand.ts"
+      ],
+      "note": "destination picker: untitled (default) or save dialog pre-filled with <stem>.<ext> next to the schema; cancelled dialog falls back to untitled"
     },
     "F18-NFR-01": {
       "status": "implemented",

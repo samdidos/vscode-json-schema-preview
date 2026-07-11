@@ -3,11 +3,13 @@
 ## Overview
 
 Generate typed source code from a JSON Schema — the compile-time counterpart
-of F16's runtime sample data. The first target language is **TypeScript**:
+of F16's runtime sample data. The primary target language is **TypeScript**:
 given a schema, produce `interface`/`type` declarations a developer can paste
-into their project so data validated by the schema is also typed in code.
-Generation is deterministic, in-process, and reuses the existing `$ref`
-resolution and cache infrastructure.
+into their project so data validated by the schema is also typed in code. A
+set of further quicktype-backed targets (Python, Go, Rust, Java, C#, Kotlin,
+Swift, Dart, C++ — F18-FR-10) is offered from the same picker. Generation is
+deterministic, in-process, and reuses the existing `$ref` resolution and
+cache infrastructure.
 
 Type emission is generated using **`quicktype-core`** (see Article II) rather
 than a hand-rolled emitter. It is fed a schema that has already been made
@@ -19,10 +21,10 @@ only ever follows local pointers within the single document it is given.
 (Bundling is used rather than full dereferencing deliberately: inlining every
 ref would duplicate shared `$defs` entries into structurally identical but
 separately named declarations, defeating F18-FR-06's named-declaration
-requirement.) quicktype-core also supports several other
-output languages internally; this spec still scopes the command to
-TypeScript only (see Out of Scope) — the engine choice does not by itself
-expand what's offered in the picker.
+requirement.) quicktype-core's other language backends power the additional
+targets in F18-FR-10; only the targets that spec names are offered — further
+languages remain a spec amendment, not an automatic consequence of the
+engine supporting them.
 
 ## User Stories
 
@@ -43,9 +45,12 @@ expand what's offered in the picker.
   `jsonschema.isJsonSchema` is `true` for the active editor, and MUST also be
   offered from the **Bind Schema…** success notification alongside F16's
   "Generate sample file?".
-- **F18-FR-02** The result MUST open in a new untitled editor with the target
-  language set (TypeScript initially; the picker design MUST allow adding
-  further languages without a breaking UX change).
+- **F18-FR-02** A single-select picker MUST offer the supported target
+  languages (TypeScript first/default, then the F18-FR-10 set); the result
+  opens in a new untitled editor with the matching editor language set
+  (falling back to plain text when the running VS Code does not know the
+  language id, e.g. Kotlin/Dart without their extensions installed), or is
+  written to a user-chosen file per F18-FR-11.
 
 ### Mapping Rules (TypeScript)
 
@@ -86,6 +91,30 @@ expand what's offered in the picker.
 - **F18-FR-09** Output MUST be deterministic: the same schema (and resolved
   refs) yields byte-identical output across runs and machines.
 
+### Additional Target Languages
+
+- **F18-FR-10** Besides TypeScript, the picker MUST offer these
+  quicktype-backed targets: **Python, Go, Rust, Java, C#, Kotlin, Swift,
+  Dart, and C++**. For these targets the keyword→type mapping is delegated
+  to quicktype's respective language backend — the TypeScript-specific
+  mapping rules (F18-FR-03..05 and F18-FR-08's exact comment form) bind only
+  the TypeScript target — while F18-FR-06 (pre-bundled input, no engine-side
+  resolution or fetching), F18-FR-07 (deterministic naming), and F18-FR-09
+  (byte-stable output) apply to **every** target. F18-FR-08's constraint
+  notes are carried in `description` before the engine runs, so they surface
+  in each language's own doc-comment idiom.
+
+### Output Destination
+
+- **F18-FR-11** After the language pick, the command MUST offer a
+  destination: a **new untitled editor** (the default) or an explicit file
+  chosen through the native save dialog, pre-filled with
+  `<schema-stem>.<target-extension>` next to the schema (first workspace
+  folder when the schema is remote). Saving writes the file and opens it;
+  cancelling the save dialog falls back to the untitled editor so generated
+  output is never silently lost. The command MUST NOT write anywhere the
+  user did not explicitly choose.
+
 ## Non-Functional Requirements
 
 - **F18-NFR-01** Generation MUST run in-process — no subprocess, no network
@@ -99,9 +128,11 @@ expand what's offered in the picker.
   generated text out, with no subprocess and no network call of its own (an
   async function returning a string/Promise\<string\> satisfies this; it
   need not be synchronous) — with unit tests per mapping rule above and
-  ≥ 80 % coverage on all axes (Article V); generated output snapshots MUST
-  be validated by compiling them with the in-repo TypeScript compiler in
-  tests.
+  ≥ 80 % coverage on all axes (Article V); generated TypeScript snapshots
+  MUST be validated by compiling them with the in-repo TypeScript compiler
+  in tests. For the F18-FR-10 targets no in-repo compilers exist: tests
+  MUST instead assert that generation succeeds and is byte-stable for every
+  offered target.
 - **F18-NFR-03** The `quicktype-core` dependency MUST be pinned to an exact
   version in `package.json` (no `^`/`~` range). Determinism (F18-FR-09)
   depends on this library's output not changing silently between installs;
@@ -110,13 +141,15 @@ expand what's offered in the picker.
 
 ## Out of Scope
 
-- Languages other than TypeScript (Go/Python/Java) — the picker is designed
-  for them, but each is a future spec amendment. `quicktype-core` (the
-  chosen engine) already supports several of these output languages
-  internally; that does not itself change scope — each additional language
-  still needs its own spec amendment before being offered in the picker.
-- Writing directly into the user's project (the untitled editor keeps the
-  user in control of destination and formatting).
+- Languages beyond the F18-FR-10 set (e.g. Ruby, Elm, Haskell, PHP) —
+  quicktype supports more backends than this spec offers; each further
+  language is a spec amendment, not an automatic consequence of engine
+  support. (History: the spec originally scoped to TypeScript only; the
+  F18-FR-10 set was added once the multi-language pipeline was verified
+  deterministic per target.)
+- Writing into the project without an explicit user-chosen destination —
+  output goes to an untitled editor by default, or to a file the user picks
+  in the save dialog (F18-FR-11); the extension never chooses a path itself.
 - Runtime validator code generation (Ajv standalone) — future work.
 
 ## Acceptance Criteria

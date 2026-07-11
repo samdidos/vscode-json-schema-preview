@@ -145,9 +145,11 @@ Discovery respects `files.exclude`/`search.exclude`, skips files over 1 MiB, and
 
 **ID:** `jsonschema.generateTypes`
 
-Generates **TypeScript** `interface`/`type` declarations from the active JSON Schema, opened in a new editor tab beside the schema — the compile-time counterpart of sample-data generation. `required` properties become mandatory members, `enum`s become unions of literal types, `description`s become TSDoc comments, and each `$defs` entry becomes a named declaration (recursive schemas self-reference and always terminate). Constraints that TypeScript's type system can't express (`pattern`, `minimum`, `if`/`then`, …) are noted in the generated doc-comments instead of being silently dropped.
+Generates typed declarations from the active JSON Schema — the compile-time counterpart of sample-data generation. A language picker offers **TypeScript** (the default) plus **Python, Go, Rust, Java, C#, Kotlin, Swift, Dart, and C++**, all emitted by the same deterministic engine. For TypeScript: `required` properties become mandatory members, `enum`s become unions of literal types, `description`s become TSDoc comments, and each `$defs` entry becomes a named declaration (recursive schemas self-reference and always terminate). Constraints no type system can express (`pattern`, `minimum`, `if`/`then`, …) are noted in each language's doc-comments instead of being silently dropped.
 
-External `$ref`s are resolved with the same machinery as bundling — relative files from disk, remote refs preferring the local schema cache and using stored credentials — before any code is generated; output is deterministic, so regenerated files only change when the schema does. Also offered from the **Bind Schema…** success notification, right after binding a data file.
+After the language pick, choose the destination: a **new untitled editor** (default), or **Save to a file…** — a native save dialog pre-filled with `<schema-name>.<ext>` next to the schema, which writes the file and opens it (cancelling the dialog falls back to the untitled editor, so generated output is never lost).
+
+External `$ref`s are resolved with the same machinery as bundling — relative files from disk, remote refs preferring the local schema cache and using stored credentials — before any code is generated; output is deterministic per language, so regenerated files only change when the schema does. Also offered from the **Bind Schema…** success notification, right after binding a data file.
 
 | Toolbar | Command Palette |
 |---------|----------------|

@@ -91,7 +91,7 @@ const features = [
     icon: '🧬',
     title: 'Generate Types',
     gif: 'demo-codegen.gif',
-    desc: 'Run JSON Schema: Generate Types from This Schema to turn a schema into TypeScript interface / type declarations — enums become unions, descriptions become TSDoc — opened in a new editor beside the schema.',
+    desc: 'Run JSON Schema: Generate Types from This Schema to turn a schema into typed code — TypeScript, Python, Go, Rust, Java, C#, and more. Pick the language and destination (new editor or a file you choose); enums become unions, descriptions become doc-comments.',
   },
   {
     id: 'visual-editor',
