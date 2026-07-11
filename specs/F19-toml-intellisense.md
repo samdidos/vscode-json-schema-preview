@@ -26,7 +26,10 @@ keys and enum values, and hover documentation, driven by the bound schema.
   for TOML documents, active only when the document has an inline `$schema`
   binding (F11-FR-15 extraction) that resolves to a loadable schema.
 - **F19-FR-02** Schema loading MUST reuse the existing resolution pipeline:
-  local paths, cached remote schemas (F08), and authenticated fetches (F07).
+  local paths from disk and remote schemas from the F08 cache. Remote
+  schemas reach that cache through the existing F07/F08 machinery (*Cache
+  Schema Locally*, authenticated fetches) — never from inside a
+  completion/hover request, which per F19-NFR-02 performs no network I/O.
   When the schema cannot be loaded the providers MUST return no results —
   never an error toast from a hover.
 

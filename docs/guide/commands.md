@@ -122,6 +122,40 @@ The inverse of inference: generates a valid example instance from the active JSO
 
 ---
 
+<!-- spec:F20 start -->
+## JSON Schema: Validate Workspace
+
+**ID:** `jsonschema.validateWorkspace`
+
+The "is my repo green?" button: one command that sweeps the whole workspace (all folders in a multi-root setup), validates every data file with a schema binding — settings-based at any scope, or an inline `$schema` — and lints every schema file with the F17 rule set. Findings land in the Problems panel on their real file locations, including files that aren't open; a binding whose schema can't be loaded gets a diagnostic pointing at the binding itself (the inline `$schema` line, or the settings-file line naming the schema). Each run replaces the previous run's diagnostics.
+
+The run shows cancellable progress and finishes with a summary — files checked, valid, with errors, schemas linted, bindings failed — plus a **Copy Report** action that puts a per-folder Markdown report on the clipboard, ready to paste into a PR comment.
+
+Discovery respects `files.exclude`/`search.exclude`, skips files over 1 MiB, and caps the scan at `jsonschema.workspaceValidation.maxFiles` (default 2000, noted in the report when hit). Remote schemas are read cache-first and fetched at most once per run; in an untrusted workspace they're served from the local cache only.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — | ✅ (when a workspace folder is open) |
+<!-- spec:F20 end -->
+
+---
+
+<!-- spec:F18 start -->
+## JSON Schema: Generate Types from This Schema
+
+**ID:** `jsonschema.generateTypes`
+
+Generates **TypeScript** `interface`/`type` declarations from the active JSON Schema, opened in a new editor tab beside the schema — the compile-time counterpart of sample-data generation. `required` properties become mandatory members, `enum`s become unions of literal types, `description`s become TSDoc comments, and each `$defs` entry becomes a named declaration (recursive schemas self-reference and always terminate). Constraints that TypeScript's type system can't express (`pattern`, `minimum`, `if`/`then`, …) are noted in the generated doc-comments instead of being silently dropped.
+
+External `$ref`s are resolved with the same machinery as bundling — relative files from disk, remote refs preferring the local schema cache and using stored credentials — before any code is generated; output is deterministic, so regenerated files only change when the schema does. Also offered from the **Bind Schema…** success notification, right after binding a data file.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| ✅ (interface icon, schema files only) | ✅ |
+<!-- spec:F18 end -->
+
+---
+
 <!-- spec:F14 start -->
 ## JSON Schema: Bundle / Dereference Schema
 

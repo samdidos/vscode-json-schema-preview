@@ -41,8 +41,8 @@ Handles schemas behind authentication (GitHub private repos, Artifactory, any HT
 - **Validate & bind** — bind a schema to a data file (or use its inline `$schema`) and catch errors in the Problems panel.
 <!-- spec:F07,F08 -->
 - **Private schemas** — authenticate against GitHub, Artifactory, or any HTTPS endpoint, and cache schemas locally so IntelliSense works too.
-<!-- spec:F06,F16 -->
-- **Generate** — infer a schema from existing data, or generate valid sample data from a schema.
+<!-- spec:F06,F16,F18 -->
+- **Generate** — infer a schema from existing data, generate valid sample data from a schema, or generate TypeScript types from a schema.
 
 📖 **[Full documentation & feature list](https://samdidos.github.io/vscode-json-schema-preview/)** — visual editing, schema catalogs, `$ref` navigation, bundling, diffing, linting, and more.
 

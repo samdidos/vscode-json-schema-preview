@@ -58,6 +58,16 @@ onUnmounted(() => {
 
 <template>
   <Layout>
+    <template #layout-top>
+      <!-- Decorative drifting-sparks background, home page only (style.css). -->
+      <!-- route.path includes the configured base, so compare the
+           source-relative path instead (stable regardless of base). -->
+      <div v-if="route.data.relativePath === 'index.md'" class="spark-field" aria-hidden="true">
+        <div class="spark-layer spark-layer--1" />
+        <div class="spark-layer spark-layer--2" />
+        <div class="spark-layer spark-layer--3" />
+      </div>
+    </template>
     <template #home-hero-after><ReleaseBadge /></template>
     <template #home-features-after><QuickDemo /></template>
   </Layout>

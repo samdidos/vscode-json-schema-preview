@@ -1628,9 +1628,10 @@
     "F16-FR-01": {
       "status": "implemented",
       "impl": [
-        "src/extension.ts"
+        "src/extension.ts",
+        "src/SchemaBindingManager.ts"
       ],
-      "note": "jsonschema.generateSampleData; gated on isJsonSchemaFile"
+      "note": "jsonschema.generateSampleData; gated on isJsonSchemaFile; also reachable from the bind-success notification, which passes the schema ref"
     },
     "F16-FR-02": {
       "status": "implemented",
@@ -1811,164 +1812,246 @@
       "note": "dedicated DiagnosticCollection source 'json-schema-lint'"
     },
     "F18-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/GenerateTypesCommand.ts",
+        "src/extension.ts",
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "command palette/editor-title when jsonschema.isJsonSchema; bind-success notification passes the schema ref as the command argument"
     },
     "F18-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/GenerateTypesCommand.ts"
+      ],
+      "note": "single-select language picker (TypeScript today); result opens as an untitled typescript editor"
     },
     "F18-FR-03": {
-      "status": "planned",
-      "impl": [],
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
       "note": ""
     },
     "F18-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
+      "note": "prefer-unions renderer option for literal unions; prefixItems rewritten to draft-07 tuple form with a note"
     },
     "F18-FR-05": {
-      "status": "planned",
-      "impl": [],
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
       "note": ""
     },
     "F18-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/GenerateTypesCommand.ts",
+        "src/typeGenerator.ts"
+      ],
+      "note": "F14 bundleSchema runs first; JSONSchemaInput has no schema store so the engine cannot resolve/fetch externally"
     },
     "F18-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
+      "note": "root name from title else file stem; untitled $defs entries get their key as title before quicktype names them"
     },
     "F18-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
+      "note": "unrepresented keywords appended to description, emitted as TSDoc; format stripped so date-time stays string"
     },
     "F18-FR-09": {
-      "status": "planned",
-      "impl": [],
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
       "note": ""
     },
     "F18-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/GenerateTypesCommand.ts",
+        "src/typeGenerator.ts"
+      ],
+      "note": "network only inside the F14 bundling step (cache-first, auth-aware); engine runs offline; blocked entirely in untrusted workspaces (S02), same guard as bundleSchemaCommand"
     },
     "F18-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
+      "note": "tests compile every snapshot with the in-repo TypeScript compiler under --strict"
     },
     "F18-NFR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": "pin quicktype-core to an exact version; determinism (F18-FR-09) depends on it"
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "quicktype-core pinned exactly (no range); determinism (F18-FR-09) depends on it"
     },
     "F19-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/TomlIntellisenseProvider.ts",
+        "src/extension.ts"
+      ],
+      "note": "completion + hover providers for language toml; inactive without a loadable inline $schema"
     },
     "F19-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "local schemas from disk, remote from the F08 cache only; every failure path returns no results"
     },
     "F19-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "table headers parsed by smol-toml; existing keys from a full-document parse (cursor line blanked on failure)"
     },
     "F19-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "enum/const/boolean values serialised as TOML literals; oneOf/anyOf branches aggregated"
     },
     "F19-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "description as MarkdownString documentation; required keys sortText-first with a (required) detail"
     },
     "F19-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "caller-supplied resolver: local pointer, relative-to-schema file, cached remote; cycle- and depth-guarded"
     },
     "F19-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts",
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "key/title/type/description/enum/bounds markdown in the F13 hover style"
     },
     "F19-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/tomlIntellisense.ts"
+      ],
+      "note": "pure text+offset module; all TOML parsing via smol-toml, only the incomplete cursor fragment uses a quote-aware scan"
     },
     "F19-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/TomlIntellisenseProvider.ts"
+      ],
+      "note": "schema load memoized per document uri+version; no network path exists in the providers (cache/disk reads only)"
     },
     "F20-FR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/extension.ts"
+      ],
+      "note": "command palette when workspaceFolderCount > 0; runs without an active editor"
     },
     "F20-FR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "findBoundSchemaPath (all scopes, per-resource) + inline $schema (meta-schema refs classify as schema files) + F17 lintable set"
     },
     "F20-FR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts",
+        "src/settings.ts",
+        "package.json"
+      ],
+      "note": "findFiles default excludes; 1 MiB size cap; jsonschema.workspaceValidation.maxFiles (default 2000) with truncation note"
     },
     "F20-FR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "4-worker pool, per-file try/catch isolation; F03 Ajv pipeline (draft-aware createAjv), F17 lintSchema with severity overrides"
     },
     "F20-FR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts"
+      ],
+      "note": "dedicated 'json-schema-workspace' DiagnosticCollection; binding failures on the inline $schema line or the folder settings.json line, data-file fallback"
     },
     "F20-FR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "cancellable withProgress with done/total; summary notification from summaryLine()"
     },
     "F20-FR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "Copy Report action writes renderMarkdownReport() (grouped by folder) to the clipboard"
     },
     "F20-FR-08": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts"
+      ],
+      "note": "diagnostics.clear() at the start of every run"
     },
     "F20-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/workspaceValidation.ts"
+      ],
+      "note": "parsing, validation, location, aggregation, and report rendering are pure and unit-tested"
     },
     "F20-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts"
+      ],
+      "note": "schema loads memoized per resolved ref per run; remote schemas cache-first before any fetch"
     },
     "F20-NFR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": ""
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts"
+      ],
+      "note": "untrusted: remote schemas cache-only (uncached fails the binding), notice in summary and report"
     },
     "S01-SR-01": {
       "status": "manual",

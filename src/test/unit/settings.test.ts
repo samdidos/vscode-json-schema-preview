@@ -9,6 +9,7 @@ import {
   getLintEnabled,
   getLintRuleSeverities,
   getPreviewRenderer,
+  getWorkspaceValidationMaxFiles,
   SCHEMASTORE_CATALOG_URL,
   DEFAULT_RENDER_TIMEOUT_MS,
   DEFAULT_REMOTE_FETCH_TIMEOUT_MS,
@@ -137,5 +138,24 @@ suite('[F17-FR-03] getLintEnabled() / getLintRuleSeverities()', () => {
   test('rule severities are read through', () => {
     setConfig('jsonschema.lint', 'rules', { 'no-duplicate-enum': 'off' });
     assert.deepStrictEqual(getLintRuleSeverities(), { 'no-duplicate-enum': 'off' });
+  });
+});
+
+suite('[F20-FR-03] getWorkspaceValidationMaxFiles()', () => {
+  setup(() => resetAll());
+  test('defaults to 2000 when unset', () => {
+    assert.strictEqual(getWorkspaceValidationMaxFiles(), 2000);
+  });
+  test('returns the configured integer value', () => {
+    setConfig('jsonschema.workspaceValidation', 'maxFiles', 50);
+    assert.strictEqual(getWorkspaceValidationMaxFiles(), 50);
+  });
+  test('floors fractional values and rejects non-positive/non-numeric ones', () => {
+    setConfig('jsonschema.workspaceValidation', 'maxFiles', 10.9);
+    assert.strictEqual(getWorkspaceValidationMaxFiles(), 10);
+    setConfig('jsonschema.workspaceValidation', 'maxFiles', 0);
+    assert.strictEqual(getWorkspaceValidationMaxFiles(), 2000);
+    setConfig('jsonschema.workspaceValidation', 'maxFiles', 'lots');
+    assert.strictEqual(getWorkspaceValidationMaxFiles(), 2000);
   });
 });

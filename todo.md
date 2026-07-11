@@ -23,9 +23,9 @@ the real cost for small items. Pure docs/config/CI edits skip that step.
 | 9·b | Draft-aware Ajv (2019/2020 dialects) | **Medium** (~half day) | Yes (F03) | ✅ **DONE** — new pure `ajvFactory.ts` picks Ajv2020/Ajv2019/draft-07 by `$schema`, wired into the validate command (F03-FR-15). `sampleDataGenerator` deliberately stays on the default dialect (strips `$schema`). Tested end-to-end (prefixItems now enforced). |
 | — | S03-SR-13 + S08 test tails | **Medium** (~half day) | No (specs exist) | Additive E2E/timing assertions on existing harness; cheapest way to fully *close out* a spec. |
 | 11 | Evaluate Snyk vs. Trivy | **Medium** (spike, ~1-2 days over 2 wks) | Likely (constitution note) if it *replaces* Trivy | 🟡 **STARTED** — weekly non-blocking `snyk.yml` added (schedule-only, no-ops until a `SNYK_TOKEN` secret is set). This is the side-by-side eval step; no constitution change yet since nothing is replaced. Add the token to actually run it. |
-| 19 | F19 — TOML IntelliSense | **Large** (~2-3 days) | No (spec exists) | Two new language providers; smallest of the three unbuilt features. |
-| 18 | F18 — Code generation | **Large** (~3-4 days) | No (spec done) | New dep (`quicktype-core`), command, codegen glue, snapshot tests. Spec already amended. |
-| 20 | F20 — Workspace validation | **Large** (~3-4 days) | No (spec exists) | Biggest surface area: discovery + aggregation + progress UI + diagnostics. |
+| 19 | F19 — TOML IntelliSense | **Large** (~2-3 days) | No (spec exists) | ✅ **DONE** — completion + hover providers for inline-`$schema`-bound `.toml` files: pure `tomlIntellisense.ts` (position→subschema mapping via smol-toml, key/value completions, F13-style hover) + thin `TomlIntellisenseProvider.ts` glue. Strictly offline in-request (local disk + F08 cache only; FR-02 wording clarified to match NFR-02). All 9 F19 reqs implemented + tagged. |
+| 18 | F18 — Code generation | **Large** (~3-4 days) | No (spec done) | ✅ **DONE** — `jsonschema.generateTypes`: pure `typeGenerator.ts` (quicktype-core, pinned exact) fed by F14's `bundleSchema`; bind-success notification now offers Generate Sample/Types. One spec refinement while implementing: pre-**bundle**, not pre-dereference — full inlining duplicates shared `$defs` into separately-named types (verified empirically), bundling keeps them as single named declarations. All 12 F18 reqs implemented + tagged; snapshots compiled under `tsc --strict` in tests. |
+| 20 | F20 — Workspace validation | **Large** (~3-4 days) | No (spec exists) | ✅ **DONE** — `jsonschema.validateWorkspace`: pure `workspaceValidation.ts` (classification, F03 Ajv validation, aggregation, Markdown report) + `WorkspaceValidateCommand.ts` glue (4-worker pool, cancellable progress, `json-schema-workspace` diagnostics, Copy Report → clipboard). Spec clarified: 1 MiB size cap fixed here (S03 defines none), meta-schema `$schema` refs classify as schema files. All 11 F20 reqs implemented + tagged. |
 | 1 | Modernize website look | **Large + open-ended** | No | ✅ **DONE** — polished VitePress: gradient hero + glow, hover lift on cards/buttons, subtle scroll-reveal (section sliding), all gated on `prefers-reduced-motion`. Verified in a real Chromium build (light/dark/reduced-motion). |
 | 2 | "Unclosed spec tags" | **None** (debunked) | — | Not a real bug; nothing to do. |
 | 7 | Branch-cleanup command | **None** (reference) | — | Informational; nothing to delete right now. |
@@ -232,9 +232,14 @@ tails on specs that are otherwise already implemented.
   determinism). Article II in `.specify/memory/constitution.md` now has a
   row for the dependency, and `specs/traceability.json` has the new
   `F18-NFR-03` entry (`planned`). `npm run check:traceability` and
-  `check:doc-traceability` both still pass. Still nothing implemented —
-  next step is actually adding `quicktype-core` to `package.json` and
-  writing the command.
+  `check:doc-traceability` both still pass.
+
+  **✅ Implemented (2026-07-10):** see the effort table (#18) — command,
+  generator, tests, and docs all landed. Note the pipeline uses F14's
+  `bundleSchema` rather than `dereferenceSchema` (spec amended accordingly):
+  quicktype does not structurally unify inlined duplicate copies, so full
+  dereferencing would have produced `HomeClass`/`WorkClass`-style duplicate
+  declarations instead of one named type per `$defs` entry.
 
 - **F19 — TOML Schema IntelliSense**
   (`specs/F19-toml-intellisense.md`, 9 planned reqs: 7 FR + 2 NFR)

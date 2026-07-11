@@ -22,11 +22,14 @@ import { SchemaCache } from './SchemaCache';
 import { SchemaAuthCodeActionProvider } from './SchemaAuthCodeActionProvider';
 import { SchemaAuthStatusBar } from './SchemaAuthStatusBar';
 import { SchemaRefProvider } from './SchemaRefProvider';
+import { TomlIntellisenseProvider } from './TomlIntellisenseProvider';
 import { SchemaLintManager } from './SchemaLintManager';
 import { SchemaCatalogManager } from './SchemaCatalogManager';
-import { bundleSchemaCommand } from './SchemaBundleCommand';
+import { bundleSchemaCommand, computeTargetId } from './SchemaBundleCommand';
+import { generateTypesCommand } from './GenerateTypesCommand';
 import { registerSchemaDiff } from './SchemaDiffCommand';
-import { isYaml, isSupported } from './languages';
+import { registerWorkspaceValidation } from './WorkspaceValidateCommand';
+import { isYaml, isSupported, languageForSchemaSource } from './languages';
 import { getCacheAutoRefresh } from './settings';
 import { createSchema } from 'genson-js';
 
@@ -136,11 +139,17 @@ export function activate(context: vscode.ExtensionContext) {
   // ── $ref navigation & hover (F13) ─────────────────────────────────────────
   context.subscriptions.push(...SchemaRefProvider.register(schemaCache));
 
+  // ── TOML schema IntelliSense (F19) ─────────────────────────────────────────
+  context.subscriptions.push(...TomlIntellisenseProvider.register(schemaCache));
+
   // ── Schema linting (F17) ───────────────────────────────────────────────────
   new SchemaLintManager().register(context);
 
   // ── Schema diff (F15) ──────────────────────────────────────────────────────
   registerSchemaDiff(context, authManager);
+
+  // ── Workspace validation report (F20) ──────────────────────────────────────
+  registerWorkspaceValidation(context, authManager, schemaCache);
 
   // ── Commands ───────────────────────────────────────────────────────────────
   context.subscriptions.push(
@@ -262,6 +271,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('jsonschema.bundleSchema', bundleSchemaCommand(authManager, schemaCache)),
 
+    // ── Generate TypeScript types from a schema (F18) ─────────────────────────
+    vscode.commands.registerCommand('jsonschema.generateTypes', generateTypesCommand(authManager, schemaCache)),
+
     vscode.commands.registerCommand('jsonschema.inferSchema', async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
@@ -307,18 +319,54 @@ export function activate(context: vscode.ExtensionContext) {
     }),
 
     // ── Generate a valid sample instance from a schema (F16) ─────────────────
-    vscode.commands.registerCommand('jsonschema.generateSampleData', async () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor || !isJsonSchemaFile(editor.document)) {
-        vscode.window.showInformationMessage('Open a JSON Schema file to generate sample data from it.');
-        return;
-      }
-      const doc = editor.document;
+    // The optional `schemaSource` (absolute path or URL) serves the Bind
+    // Schema… success-notification entry point (F16-FR-01), where the active
+    // editor is the data file rather than the schema. Remote sources are read
+    // from the local cache only (F16-NFR-01: no network beyond cached refs).
+    vscode.commands.registerCommand('jsonschema.generateSampleData', async (schemaSource?: string) => {
       const { parseSchemaText, parseRef, refKind, parseJsonPointer, resolvePointer } =
         await import('./schemaPointer');
       const { generateAndValidate } = await import('./sampleDataGenerator');
 
-      const root = parseSchemaText(doc.getText(), doc.languageId);
+      let schemaText: string;
+      let schemaLang: string;
+      let baseRef: string;
+      if (typeof schemaSource === 'string') {
+        if (SchemaAuthManager.isRemoteUrl(schemaSource)) {
+          const cached = schemaCache.readCached(schemaSource);
+          if (cached === undefined) {
+            const action = await vscode.window.showInformationMessage(
+              'The bound schema is remote and not cached locally. Cache it first to generate sample data.',
+              'Cache Schema Locally',
+            );
+            if (action === 'Cache Schema Locally') {
+              await vscode.commands.executeCommand('jsonschema.cacheSchemaLocally', schemaSource);
+            }
+            return;
+          }
+          schemaText = cached;
+        } else {
+          try {
+            schemaText = fs.readFileSync(schemaSource, 'utf-8');
+          } catch {
+            vscode.window.showErrorMessage(`Cannot read the schema file: ${schemaSource}`);
+            return;
+          }
+        }
+        schemaLang = languageForSchemaSource(schemaSource);
+        baseRef = schemaSource;
+      } else {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor || !isJsonSchemaFile(editor.document)) {
+          vscode.window.showInformationMessage('Open a JSON Schema file to generate sample data from it.');
+          return;
+        }
+        schemaText = editor.document.getText();
+        schemaLang = editor.document.languageId;
+        baseRef = editor.document.uri.fsPath;
+      }
+
+      const root = parseSchemaText(schemaText, schemaLang);
       if (root === undefined) {
         vscode.window.showErrorMessage('Cannot parse the schema file.');
         return;
@@ -334,23 +382,25 @@ export function activate(context: vscode.ExtensionContext) {
       if (!format) { return; }
 
       // Ref resolver: local pointers resolve within the root schema; relative
-      // and cached-remote refs are read best-effort (F16-FR-06).
+      // and cached-remote refs are read best-effort (F16-FR-06). Relative refs
+      // resolve against `baseRef` — a directory on disk, or the schema's own
+      // URL when the root schema is remote — via the same target-id logic
+      // F14's bundler uses (computeTargetId), so remote/relative resolution
+      // behaves identically everywhere in the extension.
       const resolveRef = (ref: string): unknown => {
         const { uri, fragment } = parseRef(ref);
         const segments = parseJsonPointer(fragment);
         const kind = refKind(ref);
         if (kind === 'local') { return resolvePointer(root, segments); }
+        const targetId = kind === 'remote' ? (uri || ref) : computeTargetId(uri, baseRef);
         let text: string | undefined;
-        if (kind === 'remote') {
-          text = schemaCache.readCached(uri || ref);
+        if (SchemaAuthManager.isRemoteUrl(targetId)) {
+          text = schemaCache.readCached(targetId);
         } else {
-          try {
-            text = fs.readFileSync(path.resolve(path.dirname(doc.uri.fsPath), uri), 'utf-8');
-          } catch { text = undefined; }
+          try { text = fs.readFileSync(targetId, 'utf-8'); } catch { text = undefined; }
         }
         if (text === undefined) { return undefined; }
-        const targetLang = uri.endsWith('.yaml') || uri.endsWith('.yml') ? 'yaml' : 'json';
-        return resolvePointer(parseSchemaText(text, targetLang), segments);
+        return resolvePointer(parseSchemaText(text, languageForSchemaSource(targetId)), segments);
       };
 
       const result = generateAndValidate(root, { resolveRef });
