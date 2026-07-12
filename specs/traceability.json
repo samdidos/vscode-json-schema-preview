@@ -2591,6 +2591,15 @@
       ],
       "note": "diff detection uses plain git diff/grep, no third-party path-filter action"
     },
+    "S09-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/ci-detect-source-changes.sh",
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml"
+      ],
+      "note": "single script shared by both changes jobs instead of duplicated inline shell"
+    },
     "S09-SR-01": {
       "status": "implemented",
       "impl": [

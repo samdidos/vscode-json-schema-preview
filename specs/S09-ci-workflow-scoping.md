@@ -60,6 +60,11 @@ drift on the PRs most likely to introduce it.
   path-filtering action), consistent with this project's preference for
   standards over added vendor tooling (`AGENTS.md`, "Agnosticity &
   standardization").
+- **S09-NFR-02** The path set and diff logic MUST be defined exactly once, in
+  `scripts/ci-detect-source-changes.sh`, and referenced identically by every
+  `changes` job (`ci.yml`, `codeql.yml`) rather than duplicated inline in
+  workflow YAML — a second workflow needing the same scoping calls the same
+  script instead of copying the pattern.
 
 ## Out of Scope
 
@@ -81,6 +86,9 @@ drift on the PRs most likely to introduce it.
    `check:traceability` and `check:doc-traceability`.
 4. The Monday 03:27 UTC `codeql.yml` schedule run always performs a full
    analysis.
+5. `ci.yml` and `codeql.yml` each invoke `scripts/ci-detect-source-changes.sh`
+   rather than defining the path pattern inline; changing the pattern is a
+   one-file edit.
 
 ## Relation to Existing Specs
 
