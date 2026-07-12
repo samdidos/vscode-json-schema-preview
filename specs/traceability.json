@@ -2582,6 +2582,44 @@
         ".github/workflows/ci.yml"
       ],
       "note": "integration job matrix runs on ubuntu-latest (via xvfb-run) and windows-latest"
+    },
+    "S09-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml"
+      ],
+      "note": "diff detection uses plain git diff/grep, no third-party path-filter action"
+    },
+    "S09-SR-01": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml"
+      ],
+      "note": "traceability job runs unconditionally on every push/PR"
+    },
+    "S09-SR-02": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml"
+      ],
+      "note": "build/security/knip/integration/analyze jobs gated by the changes job output"
+    },
+    "S09-SR-03": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml"
+      ],
+      "note": "job-level if: conditions, not workflow-level paths/paths-ignore triggers"
+    },
+    "S09-SR-04": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/codeql.yml"
+      ],
+      "note": "analyze's if: always() && (schedule || changes) keeps the weekly cron unconditional"
     }
   }
 }

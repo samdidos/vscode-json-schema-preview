@@ -36,6 +36,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S06-accessibility.md](S06-accessibility.md) | Accessibility (keyboard, screen-reader, contrast) |
 | [S07-documentation-traceability.md](S07-documentation-traceability.md) | Documentation ↔ spec traceability (`spec:` tags) |
 | [S08-e2e-testing.md](S08-e2e-testing.md) | End-to-end testing in a real VS Code instance |
+| [S09-ci-workflow-scoping.md](S09-ci-workflow-scoping.md) | Path-scoped CI jobs (`ci.yml`, `codeql.yml`) |
 
 ## Scope
 
