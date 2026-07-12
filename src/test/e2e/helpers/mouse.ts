@@ -151,6 +151,46 @@ export function clickStatusBarItem(
   return clickSelector(window, capture, `.statusbar-item:has-text("${text}")`, label);
 }
 
+/**
+ * Clicks a command that lives in the editor-title "..." (More Actions) overflow
+ * menu instead of the always-visible navigation group — e.g. Generate Types,
+ * which VS Code places in the `1_run` group. Opens the overflow, waits for the
+ * dropdown, then clicks the matching menu entry by its visible text, so the
+ * whole flow stays mouse-driven instead of falling back to the Command Palette.
+ */
+export async function clickEditorOverflowAction(
+  window: Page,
+  capture: CaptureFunction,
+  itemText: string,
+  label: string,
+): Promise<void> {
+  const moreSel =
+    '.editor-actions .action-item a.action-label[aria-label*="More Actions"], ' +
+    '.editor-actions .action-item a.action-label.codicon-toolbar-more';
+  await clickSelector(window, capture, moreSel, `${label}-overflow`);
+  await window.waitForSelector('.monaco-menu', { state: 'visible', timeout: 10_000 });
+  await capture(`${label}-menu-open`);
+  await clickSelector(
+    window,
+    capture,
+    `.monaco-menu .action-item .action-label:has-text("${itemText}")`,
+    label,
+  );
+}
+
+/**
+ * Dismisses an open quick-input widget (schema/language/etc. picker) by
+ * clicking back into the editor, the way a person who changes their mind
+ * would — rather than pressing Escape.
+ */
+export async function dismissByClickingEditor(
+  window: Page,
+  capture: CaptureFunction,
+  label = 'dismiss',
+): Promise<void> {
+  await clickSelector(window, capture, '.monaco-editor .view-lines', label);
+}
+
 /** Types text one character at a time, capturing frames as it goes. */
 export async function typeSlowly(
   window: Page,

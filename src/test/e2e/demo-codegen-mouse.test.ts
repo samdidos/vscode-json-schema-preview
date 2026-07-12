@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
-import { installCursor, openFileVisible } from './helpers/mouse';
+import { installCursor, openFileVisible, clickEditorOverflowAction, clickSelector } from './helpers/mouse';
 
 /**
  * Mouse-flavoured twin of demo-codegen — the frames this one captures are what
@@ -8,11 +8,10 @@ import { installCursor, openFileVisible } from './helpers/mouse';
  *
  * Unlike the validate/infer mouse demos, Generate Types is NOT triggered from
  * an editor-title icon: its action lives in the `1_run` overflow group (the
- * "⋯" More Actions menu), not the always-visible navigation group, so clicking
- * it directly is unreliable. This demo therefore drives the command from the
- * Command Palette, which is deterministic regardless of overflow, while still
- * showing the animated cursor and character-by-character typing for continuity
- * with the other demo GIFs.
+ * "⋯" More Actions menu), not the always-visible navigation group. This demo
+ * clicks the "⋯" button and picks the entry from the dropdown, then clicks the
+ * first row in each follow-up quick-pick (language, destination) instead of
+ * blindly pressing Enter — so the whole flow stays mouse-driven.
  */
 test('demo-codegen-mouse: generate TypeScript types from a schema', () =>
   runDemo('codegen-mouse', async (window, capture) => {
@@ -21,24 +20,24 @@ test('demo-codegen-mouse: generate TypeScript types from a schema', () =>
 
     await openFileVisible(window, capture, 'person.schema.json');
 
-    await window.keyboard.press('Control+Shift+p');
-    await window.waitForSelector('.quick-input-widget', { state: 'visible' });
-    await capture('command-palette');
+    await clickEditorOverflowAction(
+      window,
+      capture,
+      'Generate Types from This Schema',
+      'generate-types',
+    );
 
-    await window.keyboard.type('JSON Schema: Generate Types from This Schema', { delay: 40 });
-    await window.waitForTimeout(600);
-    await capture('command-typed');
-
-    await window.keyboard.press('Enter');
-    // Target-language picker — TypeScript is the first/default item; accept it.
-    await window.waitForTimeout(800);
+    // Target-language picker — TypeScript is the first/default item; click it.
+    await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
+    await window.waitForTimeout(500);
     await capture('language-picker');
-    await window.keyboard.press('Enter');
+    await clickSelector(window, capture, '.quick-input-list .monaco-list-row', 'language-pick');
 
-    // Destination picker — "Open in a new editor" is the default; accept it.
-    await window.waitForTimeout(800);
+    // Destination picker — "Open in a new editor" is the default; click it.
+    await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
+    await window.waitForTimeout(500);
     await capture('destination-picker');
-    await window.keyboard.press('Enter');
+    await clickSelector(window, capture, '.quick-input-list .monaco-list-row', 'destination-pick');
 
     await window.waitForTimeout(5_000);
     await capture('generated-types');

@@ -26,11 +26,9 @@ test('demo-live-update-mouse: open preview via icon, then live-edit the schema',
     await clickSelector(window, capture, '.tab[aria-label*="bookshelf.schema.yaml"]', 'schema-tab');
     await window.waitForTimeout(500);
 
-    // Jump to the title line and append text with visible typing.
-    await window.keyboard.press('Control+g');
-    await window.waitForTimeout(300);
-    await window.keyboard.type('2', { delay: 60 });
-    await window.keyboard.press('Enter');
+    // Click directly on the "title: Bookshelf" line (visible without scrolling)
+    // to place the cursor there, then move to end-of-line and append text.
+    await clickSelector(window, capture, '.view-line:has-text("title: Bookshelf")', 'title-line');
     await window.keyboard.press('End');
     await typeSlowly(window, capture, ' (Updated)', 'edit-title');
     await capture('schema-being-edited');
