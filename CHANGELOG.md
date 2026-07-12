@@ -2,6 +2,34 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.6.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.5.1...v0.6.0) (2026-07-12)
+
+
+### Features
+
+* **codegen:** folder destination for multi-file targets (Java) ([b3bf647](https://github.com/samdidos/vscode-json-schema-preview/commit/b3bf6478b758c5643b6e5670c72fe1983e27ca8e))
+* **codegen:** generate TypeScript types from a schema (F18) ([bbd4d24](https://github.com/samdidos/vscode-json-schema-preview/commit/bbd4d24b7a3017a91b550957a0eb2005b8bad388))
+* **codegen:** multi-language targets and a save-to-file destination (F18-FR-10/11) ([4c45760](https://github.com/samdidos/vscode-json-schema-preview/commit/4c457607562bbe395ce30b01f7b96edf9984b8b8))
+* **docs:** add a Generate Types (F18) demo GIF pipeline + website tab ([e0c4275](https://github.com/samdidos/vscode-json-schema-preview/commit/e0c4275704dccbd9cae2560868aae7260569468c))
+* **docs:** modernize the website with a gradient hero, hover effects, and scroll reveal ([33d34da](https://github.com/samdidos/vscode-json-schema-preview/commit/33d34daae69655ecfc88071412fe3a4f68709e18))
+* **docs:** replace hero logo hover animation with a drifting starfield ([512436e](https://github.com/samdidos/vscode-json-schema-preview/commit/512436e5573785930eb07ee5fc62e831c6c679f0))
+* **preview:** add jsonschema.preview.renderer to force the built-in renderer (F01-FR-27) ([c9e222a](https://github.com/samdidos/vscode-json-schema-preview/commit/c9e222aa41cad34d9268932a258a203970663d62))
+* **status-bar:** keep binding and auth status items compact (F04-FR-06, F07-FR-10) ([161fd1f](https://github.com/samdidos/vscode-json-schema-preview/commit/161fd1fb273c5137ed073648b0ec650d0cdc2e14))
+* **toml:** schema-driven IntelliSense for bound TOML files (F19) ([554b03e](https://github.com/samdidos/vscode-json-schema-preview/commit/554b03e970b2efeb0788ba64838f8eaf1d02197d))
+* **traceability:** fail doc check when docs tag unimplemented specs (S07-SR-09) ([b07b0f3](https://github.com/samdidos/vscode-json-schema-preview/commit/b07b0f304fb82f3ce31efc33da9c1cd8edb1c5b9))
+* **workspace:** whole-workspace validation report command (F20) ([35cc51f](https://github.com/samdidos/vscode-json-schema-preview/commit/35cc51f7d4baa4216745978c3b1f0cbe30b3dd91))
+
+
+### Bug Fixes
+
+* **e2e:** locate auth status-bar item by codicon, not host text ([4b26fbe](https://github.com/samdidos/vscode-json-schema-preview/commit/4b26fbee92a3aac5269d29f9b9bd9ed75af67941))
+* **security:** anchor host assertions in schemaAuthStatusBar tests ([5ad05ab](https://github.com/samdidos/vscode-json-schema-preview/commit/5ad05abbc3e2c73714fb70a9e738e44a5152a768))
+* **security:** assert exact tooltip text instead of substring/regex match ([2abed0c](https://github.com/samdidos/vscode-json-schema-preview/commit/2abed0c43130e6f6d7c9ca182a240c9b58460f5d))
+* **security:** eliminate a file-system TOCTOU race and a dead import ([7f61f7e](https://github.com/samdidos/vscode-json-schema-preview/commit/7f61f7e74c78a693ca0e919de6c65a3b583a16a2))
+* **security:** remove RegExp built from data-file content; dedupe ref resolution ([8a9502e](https://github.com/samdidos/vscode-json-schema-preview/commit/8a9502eb0428d5d5389dcf2d7e20530b8c104885))
+* **validation:** select AJV dialect by the schema's declared draft (F03-FR-15) ([a9f3dc8](https://github.com/samdidos/vscode-json-schema-preview/commit/a9f3dc8c136abfb480b43b165f35bd3af74a89cb))
+* **validation:** tag diagnostics with source "JSON Schema" (F03-FR-08) ([a980c8a](https://github.com/samdidos/vscode-json-schema-preview/commit/a980c8af6e742a37173b76ee40066ea43c901c75))
+
 ## [0.5.1](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.5.0...v0.5.1) (2026-07-08)
 
 
