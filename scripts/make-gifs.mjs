@@ -32,6 +32,11 @@ const DEMOS = [
   { name: 'workspace-trust',  dir: 'workspace-trust-mouse', delay: 220, hold: 1_400 },
   { name: 'schema-auth',      dir: 'schema-auth-mouse',     delay: 220, hold: 1_200 },
   { name: 'codegen',          dir: 'codegen-mouse',         delay: 220, hold: 1_400 },
+  { name: 'sample-data',      dir: 'sample-data-mouse',     delay: 220, hold: 1_400 },
+  { name: 'bundling',         dir: 'bundling-mouse',        delay: 220, hold: 1_400 },
+  { name: 'ref-navigation',   dir: 'ref-navigation-mouse',  delay: 220, hold: 1_200 },
+  { name: 'schema-linting',   dir: 'schema-linting-mouse',  delay: 220, hold: 1_400 },
+  { name: 'workspace-validation', dir: 'workspace-validation-mouse', delay: 220, hold: 1_400 },
 ];
 
 const { values: argv } = parseArgs({ options: { demo: { type: 'string' } }, strict: false });
