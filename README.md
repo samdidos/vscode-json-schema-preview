@@ -101,4 +101,4 @@ All settings live under the `jsonschema.*` namespace (User, Workspace, or Folder
 
 ## Credits
 
-Rendering powered by [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans).
+Rendering powered by [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans). Code generation powered by [quicktype-core](https://github.com/glideapps/quicktype) (Apache License 2.0).
