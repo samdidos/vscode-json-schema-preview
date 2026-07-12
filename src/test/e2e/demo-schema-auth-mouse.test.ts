@@ -1,7 +1,7 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
 import { seedWorkspaceFile } from './helpers/launch';
-import { installCursor, openFileVisible, clickSelector } from './helpers/mouse';
+import { installCursor, openFileVisible, clickSelector, dismissByClickingEditor } from './helpers/mouse';
 
 const AUTH_HOST = 'schemas.acme.dev';
 
@@ -61,10 +61,10 @@ test('demo-schema-auth-mouse: click the status-bar lock indicator to configure a
     await window.waitForTimeout(2_000);
     await capture('auth-config-prompt');
 
-    // Dismiss — we're capturing the UI shape, not running a real auth flow.
-    await window.keyboard.press('Escape');
+    // Dismiss by clicking back into the file — we're capturing the UI shape,
+    // not running a real auth flow, and this is how a person would back out.
+    await dismissByClickingEditor(window, capture, 'auth-dismissed');
     await window.waitForTimeout(500);
-    await capture('auth-dismissed');
 
     await window.waitForTimeout(700);
     await capture('schema-auth-hold');
