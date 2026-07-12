@@ -17,7 +17,7 @@ the real cost for small items. Pure docs/config/CI edits skip that step.
 | 3 | TOML on homepage (`docs/index.md`) | **Trivial** (~15 min) | No | ✅ **DONE** — Validation/Binding/Inference cards now name TOML; `F11` tagged on the homepage. F18/F19/F20 doc tags intentionally **not** added (see note under #3 — they're unbuilt; the warning is correct). |
 | 10·1 | Add traceability checks to CI | **Trivial** (~10 min) | No | ✅ **DONE** — `check:traceability` + `check:doc-traceability` now run in `ci.yml`'s build job. |
 | 9·a | Set `Diagnostic.source` on validation diagnostics | **Small** (~30 min) | **No** (already specified!) | ✅ **DONE** — turned out F03-FR-08 *already* mandated `source: "JSON Schema"`; code just didn't comply. Fixed + test added. |
-| 10·2 | Path-filter CI/CodeQL for docs-only PRs | **Small** (~1 hr) | No | Straightforward `paths-ignore`, but **verify branch-protection required-checks first** (may need a no-op companion workflow). |
+| 10·2 | Path-filter CI/CodeQL for docs-only PRs | **Small** (~1 hr) | No | ✅ **DONE** — new `specs/S09-ci-workflow-scoping.md`. Used job-level `if:` gates fed by a shared `changes` job, not `on.paths`/`paths-ignore`, so every job still triggers and reports (skipped/passing) — sidesteps the "required check never starts, shows Expected — Waiting" branch-protection gotcha entirely, no need to check branch-protection config first. `check:traceability`/`check:doc-traceability` moved to their own always-on `traceability` job. |
 | 4 | Compact status bar items | **Small** (~1-2 hr) | Yes (F04/F07) | ✅ **DONE** — binding label middle-truncates long names (new `statusBarFormat.ts`); auth item is now icon-only with host in tooltip. F04-FR-06/F07-FR-10 amended + tested. |
 | 5 | Config to force the JS fallback renderer | **Medium** (~half day) | Yes (F01) | ✅ **DONE** — `jsonschema.preview.renderer: auto\|builtin` (F01-FR-27); `builtin` skips Python entirely. Pure `getPreviewRenderer()` tested; documented in the config guide. |
 | 9·b | Draft-aware Ajv (2019/2020 dialects) | **Medium** (~half day) | Yes (F03) | ✅ **DONE** — new pure `ajvFactory.ts` picks Ajv2020/Ajv2019/draft-07 by `$schema`, wired into the validate command (F03-FR-15). `sampleDataGenerator` deliberately stays on the default dialect (strips `$schema`). Tested end-to-end (prefixItems now enforced). |
@@ -381,6 +381,24 @@ merging — GitHub's known gotcha with path-filtered required checks. Needs a
 companion no-op workflow (triggered on the inverse path set, immediately
 reporting success under the same check name) if that's the case here —
 worth confirming the branch protection config first.
+
+**✅ Done (both parts).** Part 1 landed first: `check:traceability` and
+`check:doc-traceability` now run in `ci.yml`, in their own `traceability` job
+(see `specs/S07-documentation-traceability.md`'s S07-SR-08 guarantee). Part 2
+turned the caveat above into the actual design instead of a risk to verify
+away: rather than a workflow-level `paths`/`paths-ignore` trigger (which
+*would* hit the "Expected — Waiting" problem if `CI`/`CodeQL` are required
+checks), the new `changes` job in `ci.yml` and `codeql.yml` computes a
+`src`/no-`src` diff via plain `git diff` (no third-party path-filter action),
+and `build`/`security`/`knip`/`integration`/`analyze` gate on that output
+with a job-level `if:`. The workflow itself still triggers on every push/PR
+either way — only the individual jobs skip — so a skipped job reports a
+(passing) conclusion instead of never starting, sidestepping the gotcha
+entirely without needing to check branch-protection config first. `traceability`
+stays unconditional so it still fires on the docs/spec-only PRs that most need
+it (matching the "don't do part 2 before part 1" ordering above). Specified
+in `specs/S09-ci-workflow-scoping.md`; `check:traceability` and
+`check:doc-traceability` both pass.
 
 ## 11. Evaluate Snyk (instead of, or in addition to, Aqua Trivy)
 **Idea to evaluate — real trade-offs both ways.** Current state: the
