@@ -1,9 +1,15 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
 import { seedWorkspaceFile } from './helpers/launch';
-import { installCursor, openFileVisible, clickStatusBarItem } from './helpers/mouse';
+import { installCursor, openFileVisible, clickSelector } from './helpers/mouse';
 
 const AUTH_HOST = 'schemas.acme.dev';
+
+// F07-FR-10 keeps the auth status-bar item icon-only ($(unlock)/$(lock)) with
+// the host in the tooltip, so the item must be located by its codicon, not by
+// visible text.
+const AUTH_ITEM_SELECTOR =
+  '.statusbar-item:has(.codicon-unlock), .statusbar-item:has(.codicon-lock)';
 
 /**
  * Mouse-driven twin of demo-schema-auth: opens a data file that references a
@@ -35,21 +41,23 @@ test('demo-schema-auth-mouse: click the status-bar lock indicator to configure a
     // update() is async, so the text can take longer than a short fixed delay to
     // render under CI load.
     try {
-      await window.waitForSelector(`.statusbar-item:has-text("${AUTH_HOST}")`, {
+      await window.waitForSelector(AUTH_ITEM_SELECTOR, {
         state: 'visible',
         timeout: 20_000,
       });
     } catch (e) {
       // Diagnostic aid: if this still times out, log what the status bar
       // actually contains instead of leaving a bare timeout in the CI log.
-      const items = await window.$$eval('.statusbar-item', els => els.map(el => el.textContent));
+      const items = await window.$$eval('.statusbar-item', els =>
+        els.map(el => `${el.textContent}|${el.querySelector('.codicon')?.className ?? ''}`)
+      );
       console.error('Status bar items at timeout:', JSON.stringify(items));
       throw e;
     }
     await capture('auth-status-bar');
 
     // Click the unlock indicator to launch the auth configuration flow.
-    await clickStatusBarItem(window, capture, AUTH_HOST, 'auth-statusbar');
+    await clickSelector(window, capture, AUTH_ITEM_SELECTOR, 'auth-statusbar');
     await window.waitForTimeout(2_000);
     await capture('auth-config-prompt');
 
