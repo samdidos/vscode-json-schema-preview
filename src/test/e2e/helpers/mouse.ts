@@ -127,6 +127,36 @@ export async function clickSelector(
 }
 
 /**
+ * Ctrl-clicks a locator's centre with the animated pointer — the standard VS
+ * Code gesture for "go to definition" (e.g. jumping from a `$ref` to its
+ * target schema), so a real person exercising F13 would click this way rather
+ * than reach for a menu.
+ */
+export async function ctrlClickSelector(
+  window: Page,
+  capture: CaptureFunction,
+  selector: string,
+  label: string,
+): Promise<void> {
+  const el = window.locator(selector).first();
+  await el.waitFor({ state: 'visible', timeout: 15_000 });
+  const box = await el.boundingBox();
+  if (!box) { throw new Error(`No bounding box for selector: ${selector}`); }
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await glide(window, capture, x, y, `move-${label}`);
+  await window.keyboard.down('Control');
+  await setCursor(window, x, y, true);
+  await capture(`${label}-press`);
+  await window.mouse.down();
+  await window.waitForTimeout(70);
+  await window.mouse.up();
+  await window.keyboard.up('Control');
+  await setCursor(window, x, y, false);
+  await capture(`${label}-release`);
+}
+
+/**
  * Clicks an editor-title action (the clickable icons at the top-right of the
  * editor) identified by a substring of its aria-label / command title.
  */

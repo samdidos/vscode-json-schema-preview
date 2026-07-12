@@ -114,6 +114,41 @@ const features = [
     gif: 'demo-workspace-trust.gif',
     desc: 'In Restricted Mode the Python-based preview is disabled with a clear warning, while validation, binding, and inference keep working.',
   },
+  {
+    id: 'sample-data',
+    icon: '🎲',
+    title: 'Sample Data',
+    gif: 'demo-sample-data.gif',
+    desc: 'Run JSON Schema: Generate Sample Data from This Schema to produce a valid JSON or YAML instance straight from a schema — handy for fixtures and examples.',
+  },
+  {
+    id: 'bundling',
+    icon: '📦',
+    title: 'Schema Bundling',
+    gif: 'demo-bundling.gif',
+    desc: 'Run JSON Schema: Bundle / Dereference Schema to flatten external $refs into $defs (round-trippable) or inline them entirely — one portable file, ready to publish.',
+  },
+  {
+    id: 'ref-navigation',
+    icon: '🧭',
+    title: '$ref Navigation',
+    gif: 'demo-ref-navigation.gif',
+    desc: 'Ctrl-click (or Go to Definition) on any $ref to jump straight to the schema it points at — local, relative, or a cached remote schema.',
+  },
+  {
+    id: 'schema-linting',
+    icon: '💡',
+    title: 'Schema Linting',
+    gif: 'demo-schema-linting.gif',
+    desc: 'Schema-quality hints (missing $schema, $id, descriptions) show up as diagnostics with one-click quick fixes via the lightbulb.',
+  },
+  {
+    id: 'workspace-validation',
+    icon: '🗂️',
+    title: 'Validate Workspace',
+    gif: 'demo-workspace-validation.gif',
+    desc: 'Run JSON Schema: Validate Workspace to check every bound file across every folder in one pass, with a Markdown report you can copy out.',
+  },
 ]
 
 const active = ref(features[0].id)
