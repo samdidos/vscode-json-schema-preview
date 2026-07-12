@@ -14,7 +14,12 @@ import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
 import { makeResolver, trackProgress } from './SchemaBundleCommand';
-import { generateCode, TARGET_LANGUAGES, type TargetLanguage } from './typeGenerator';
+import {
+  generateCodeFiles,
+  concatenateGeneratedFiles,
+  TARGET_LANGUAGES,
+  type TargetLanguage,
+} from './typeGenerator';
 
 interface SchemaSource {
   root: unknown;
@@ -67,14 +72,14 @@ export function generateTypesCommand(auth: SchemaAuthManager, cache: SchemaCache
     // F18-FR-06/NFR-01: make the schema self-contained via F14 *before* the
     // engine sees it — this is the only step that may touch disk or network.
     const resolve = makeResolver(auth, cache, source.baseId);
-    let code: string | undefined;
+    let files: Map<string, string> | undefined;
     let failure: unknown;
     await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: 'Generating types…', cancellable: true },
       async (progress, token) => {
         try {
           const { schema } = await bundleSchema(source.root, trackProgress(resolve, progress, token));
-          code = await generateCode(schema, source.stem, target);
+          files = await generateCodeFiles(schema, source.stem, target);
         } catch (e) {
           failure = e;
         }
@@ -91,15 +96,19 @@ export function generateTypesCommand(auth: SchemaAuthManager, cache: SchemaCache
       }
       return;
     }
-    if (code === undefined) { return; }
+    if (files === undefined) { return; }
 
     if (destination.id === 'file') {
-      const saved = await saveGeneratedFile(code, source, target);
+      // F18-FR-10/11: Java emits one file per class, so its destination is a
+      // folder written file-by-file; every other target saves a single file.
+      const saved = files.size > 1
+        ? await saveGeneratedFolder(files, source, target)
+        : await saveGeneratedFile(concatenateGeneratedFiles(files, target), source, target);
       if (saved) { return; }
-      // Save dialog cancelled — fall back to an untitled editor so the
-      // generated output is never silently lost (F18-FR-11).
+      // Dialog cancelled or overwrite declined — fall back to an untitled
+      // editor so the generated output is never silently lost (F18-FR-11).
     }
-    await openUntitled(code, target);
+    await openUntitled(concatenateGeneratedFiles(files, target), target);
   };
 }
 
@@ -117,17 +126,23 @@ async function openUntitled(code: string, target: TargetLanguage): Promise<void>
   await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
 }
 
-/** F18-FR-11: native save dialog pre-filled with `<stem>.<ext>` next to the
- *  schema (first workspace folder for remote schemas); writes and opens the
- *  file. Returns false when the user cancels the dialog. */
+/** The directory the destination dialogs default to: next to the schema, or
+ *  the first workspace folder when the schema is remote (F18-FR-11). */
+function defaultDirFor(source: SchemaSource): string | undefined {
+  return SchemaAuthManager.isRemoteUrl(source.baseId)
+    ? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+    : path.dirname(source.baseId);
+}
+
+/** F18-FR-11 (single-file targets): native save dialog pre-filled with
+ *  `<stem>.<ext>` in the default directory; writes and opens the file.
+ *  Returns false when the user cancels the dialog. */
 async function saveGeneratedFile(
   code: string,
   source: SchemaSource,
   target: TargetLanguage,
 ): Promise<boolean> {
-  const defaultDir = SchemaAuthManager.isRemoteUrl(source.baseId)
-    ? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
-    : path.dirname(source.baseId);
+  const defaultDir = defaultDirFor(source);
   const uri = await vscode.window.showSaveDialog({
     defaultUri: defaultDir
       ? vscode.Uri.file(path.join(defaultDir, `${source.stem}.${target.extension}`))
@@ -138,6 +153,52 @@ async function saveGeneratedFile(
   await fs.promises.writeFile(uri.fsPath, code, 'utf-8');
   const doc = await vscode.workspace.openTextDocument(uri);
   await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
+  return true;
+}
+
+/** F18-FR-11 (multi-file targets, i.e. Java): native directory picker;
+ *  writes every emitted file under its engine-given name — never
+ *  overwriting existing files without an explicit confirmation — and opens
+ *  the top-level file (quicktype lists it first). Returns false when the
+ *  user cancels the dialog or declines the overwrite. */
+async function saveGeneratedFolder(
+  files: Map<string, string>,
+  source: SchemaSource,
+  target: TargetLanguage,
+): Promise<boolean> {
+  const defaultDir = defaultDirFor(source);
+  const picked = await vscode.window.showOpenDialog({
+    canSelectFiles: false,
+    canSelectFolders: true,
+    canSelectMany: false,
+    openLabel: `Save ${files.size} ${target.label} files here`,
+    defaultUri: defaultDir ? vscode.Uri.file(defaultDir) : undefined,
+  });
+  const folder = picked?.[0]?.fsPath;
+  if (!folder) { return false; }
+
+  // Overwrite guard (F18-FR-11) — a courtesy confirmation for the user's
+  // benefit, not a security boundary (the write below is user-approved
+  // either way, so a racing file appearing in between is not a concern).
+  const existing = [...files.keys()].filter(name => fs.existsSync(path.join(folder, name)));
+  if (existing.length > 0) {
+    const choice = await vscode.window.showWarningMessage(
+      `${existing.length} of the ${files.size} generated file(s) already exist in ${folder}: ${existing.join(', ')}. Overwrite?`,
+      'Overwrite',
+      'Cancel',
+    );
+    if (choice !== 'Overwrite') { return false; }
+  }
+
+  for (const [name, content] of files) {
+    await fs.promises.writeFile(path.join(folder, name), content, 'utf-8');
+  }
+  const mainName = files.keys().next().value;
+  if (mainName !== undefined) {
+    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path.join(folder, mainName)));
+    await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
+  }
+  vscode.window.showInformationMessage(`Wrote ${files.size} files to ${folder}.`);
   return true;
 }
 

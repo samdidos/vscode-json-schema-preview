@@ -5,7 +5,7 @@
 // (F18-FR-06); the JSONSchemaInput below is constructed without a schema
 // store, so the engine cannot fetch anything itself (F18-NFR-01).
 
-import { quicktype, InputData, JSONSchemaInput, type LanguageName } from 'quicktype-core';
+import { quicktypeMultiFile, InputData, JSONSchemaInput, type LanguageName } from 'quicktype-core';
 import { isObject } from './schemaPointer';
 
 /** Validation keywords with no TypeScript type-level counterpart. Their
@@ -158,6 +158,8 @@ export interface TargetLanguage {
   editorLanguageId: string;
   /** File extension (no dot) used by the save-to-file default (F18-FR-11). */
   extension: string;
+  /** Line-comment prefix, for the multi-file banner separators (F18-FR-11). */
+  lineComment: string;
   /** Per-language renderer options, verified against quicktype-core 23.3.25. */
   rendererOptions: Readonly<Record<string, string>>;
 }
@@ -171,7 +173,7 @@ export interface TargetLanguage {
 export const TARGET_LANGUAGES: readonly TargetLanguage[] = [
   {
     id: 'typescript', label: 'TypeScript', quicktypeLang: 'typescript',
-    editorLanguageId: 'typescript', extension: 'ts',
+    editorLanguageId: 'typescript', extension: 'ts', lineComment: '//',
     rendererOptions: {
       'just-types': 'true',        // declarations only, no runtime converters
       'prefer-unions': 'true',     // enum → union of literal types (F18-FR-04)
@@ -179,39 +181,41 @@ export const TARGET_LANGUAGES: readonly TargetLanguage[] = [
     },
   },
   { id: 'python', label: 'Python', quicktypeLang: 'python', editorLanguageId: 'python',
-    extension: 'py', rendererOptions: { 'just-types': 'true' } },
+    extension: 'py', lineComment: '#', rendererOptions: { 'just-types': 'true' } },
   { id: 'go', label: 'Go', quicktypeLang: 'go', editorLanguageId: 'go',
-    extension: 'go', rendererOptions: { 'just-types': 'true' } },
+    extension: 'go', lineComment: '//', rendererOptions: { 'just-types': 'true' } },
   { id: 'rust', label: 'Rust', quicktypeLang: 'rust', editorLanguageId: 'rust',
-    extension: 'rs', rendererOptions: {} },
+    extension: 'rs', lineComment: '//', rendererOptions: {} },
   { id: 'java', label: 'Java', quicktypeLang: 'java', editorLanguageId: 'java',
-    extension: 'java', rendererOptions: { 'just-types': 'true' } },
+    extension: 'java', lineComment: '//', rendererOptions: { 'just-types': 'true' } },
   { id: 'csharp', label: 'C#', quicktypeLang: 'cs', editorLanguageId: 'csharp',
-    extension: 'cs', rendererOptions: {} },
+    extension: 'cs', lineComment: '//', rendererOptions: {} },
   { id: 'kotlin', label: 'Kotlin', quicktypeLang: 'kotlin', editorLanguageId: 'kotlin',
-    extension: 'kt', rendererOptions: { framework: 'just-types' } },
+    extension: 'kt', lineComment: '//', rendererOptions: { framework: 'just-types' } },
   { id: 'swift', label: 'Swift', quicktypeLang: 'swift', editorLanguageId: 'swift',
-    extension: 'swift', rendererOptions: { 'just-types': 'true' } },
+    extension: 'swift', lineComment: '//', rendererOptions: { 'just-types': 'true' } },
   { id: 'dart', label: 'Dart', quicktypeLang: 'dart', editorLanguageId: 'dart',
-    extension: 'dart', rendererOptions: { 'just-types': 'true' } },
+    extension: 'dart', lineComment: '//', rendererOptions: { 'just-types': 'true' } },
   { id: 'cpp', label: 'C++', quicktypeLang: 'c++', editorLanguageId: 'cpp',
-    extension: 'hpp', rendererOptions: { 'just-types': 'true' } },
+    extension: 'hpp', lineComment: '//', rendererOptions: { 'just-types': 'true' } },
 ];
 
 /**
  * Generate typed declarations in `target`'s language from a bundled,
- * self-contained schema (F18-FR-02..10). Pure with respect to I/O
- * (F18-NFR-02): schema in, text out — async only because quicktype's API
- * is. The top-level declaration is named after the schema's `title`, else
- * `fallbackName` (the file stem). Output is deterministic per target for
- * identical input (F18-FR-09) — quicktype-core is pinned to an exact
- * version to keep it that way (F18-NFR-03).
+ * self-contained schema (F18-FR-02..10), as the engine's per-file map:
+ * single-entry for most targets, one entry per class for Java (F18-FR-10),
+ * keyed by the engine-given filename (the top-level file first). Pure with
+ * respect to I/O (F18-NFR-02): schema in, text out — async only because
+ * quicktype's API is. The top-level declaration is named after the schema's
+ * `title`, else `fallbackName` (the file stem). Output is deterministic per
+ * target for identical input (F18-FR-09) — quicktype-core is pinned to an
+ * exact version to keep it that way (F18-NFR-03).
  */
-export async function generateCode(
+export async function generateCodeFiles(
   bundledSchema: unknown,
   fallbackName: string,
   target: TargetLanguage,
-): Promise<string> {
+): Promise<Map<string, string>> {
   const schema = annotateSchemaForCodegen(bundledSchema);
   const title = isObject(bundledSchema) && typeof bundledSchema.title === 'string'
     ? bundledSchema.title
@@ -225,13 +229,36 @@ export async function generateCode(
   const inputData = new InputData();
   inputData.addInput(schemaInput);
 
-  const result = await quicktype({
+  const result = await quicktypeMultiFile({
     inputData,
     lang: target.quicktypeLang,
     rendererOptions: { ...target.rendererOptions },
     indentation: '  ',
   });
-  return `${result.lines.join('\n')}\n`;
+  return new Map([...result].map(([name, rendered]) => [name, `${rendered.lines.join('\n')}\n`]));
+}
+
+/**
+ * Join a `generateCodeFiles` result into one string: a single file is
+ * returned as-is; a multi-file result gets a per-file banner comment
+ * (`// <name>`) between the files — the untitled-editor *preview* form of
+ * F18-FR-11 (multiple public Java classes cannot compile from one file;
+ * the folder destination writes them separately).
+ */
+export function concatenateGeneratedFiles(files: Map<string, string>, target: TargetLanguage): string {
+  if (files.size === 1) { return files.values().next().value ?? ''; }
+  return [...files]
+    .map(([name, content]) => `${target.lineComment} ${name}\n\n${content}`)
+    .join('\n');
+}
+
+/** Single-string form of `generateCodeFiles` (banner-joined when multi-file). */
+export async function generateCode(
+  bundledSchema: unknown,
+  fallbackName: string,
+  target: TargetLanguage,
+): Promise<string> {
+  return concatenateGeneratedFiles(await generateCodeFiles(bundledSchema, fallbackName, target), target);
 }
 
 /** The TypeScript target (F18-FR-03..05/08 bind to this one). */

@@ -4,6 +4,8 @@ import * as ts from 'typescript';
 const {
   generateTypeScript,
   generateCode,
+  generateCodeFiles,
+  concatenateGeneratedFiles,
   annotateSchemaForCodegen,
   sanitizeIdentifier,
   TARGET_LANGUAGES,
@@ -487,4 +489,58 @@ suite('[F18-FR-10] typeGenerator — additional target languages', function () {
       assert.strictEqual(first, second, 'output must be byte-identical across runs');
     });
   }
+});
+
+suite('[F18-FR-10][F18-FR-11] typeGenerator — multi-file output (Java)', function () {
+  this.timeout(20000);
+
+  const schema = {
+    title: 'Person',
+    type: 'object',
+    properties: {
+      id: { type: 'integer' },
+      address: { $ref: '#/$defs/address' },
+    },
+    additionalProperties: false,
+    $defs: {
+      address: { type: 'object', properties: { city: { type: 'string' } }, additionalProperties: false },
+    },
+  };
+  const java = TARGET_LANGUAGES.find((t: any) => t.id === 'java');
+
+  test('Java emits one file per class, top-level file first', async () => {
+    const files: Map<string, string> = await generateCodeFiles(schema, 'person', java);
+    assert.ok(files.size > 1, `expected multiple files, got ${files.size}`);
+    const names = [...files.keys()];
+    assert.ok(names.every(n => n.endsWith('.java')), `engine-given filenames: ${names}`);
+    assert.strictEqual(names[0], 'Person.java', 'the top-level file comes first');
+    assert.match(files.get('Person.java')!, /class Person/);
+    assert.match(files.get('Address.java')!, /class Address/);
+  });
+
+  test('every other offered target emits a single file', async () => {
+    for (const target of TARGET_LANGUAGES as any[]) {
+      if (target.id === 'java') { continue; }
+      const files: Map<string, string> = await generateCodeFiles(structuredClone(schema), 'person', target);
+      assert.strictEqual(files.size, 1, `${target.label} should emit one file`);
+    }
+  });
+
+  test('concatenateGeneratedFiles: single file is returned as-is, multi-file gets banners', () => {
+    const single = new Map([['stdout', 'only-content\n']]);
+    assert.strictEqual(concatenateGeneratedFiles(single, java), 'only-content\n');
+
+    const multi = new Map([['A.java', 'class A {}\n'], ['B.java', 'class B {}\n']]);
+    const joined = concatenateGeneratedFiles(multi, java);
+    assert.match(joined, /^\/\/ A\.java\n\nclass A \{\}\n/);
+    assert.match(joined, /\/\/ B\.java\n\nclass B \{\}\n/);
+  });
+
+  test('generateCode for Java is the banner-joined preview containing every class', async () => {
+    const preview = await generateCode(structuredClone(schema), 'person', java);
+    assert.match(preview, /\/\/ Person\.java/);
+    assert.match(preview, /\/\/ Address\.java/);
+    assert.match(preview, /class Person/);
+    assert.match(preview, /class Address/);
+  });
 });

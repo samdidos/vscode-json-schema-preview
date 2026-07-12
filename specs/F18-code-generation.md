@@ -102,18 +102,30 @@ engine supporting them.
   resolution or fetching), F18-FR-07 (deterministic naming), and F18-FR-09
   (byte-stable output) apply to **every** target. F18-FR-08's constraint
   notes are carried in `description` before the engine runs, so they surface
-  in each language's own doc-comment idiom.
+  in each language's own doc-comment idiom. Targets MAY emit **multiple
+  source files** — Java does (one compilation unit per class, a language
+  rule); every other offered target emits a single file — and the command
+  MUST handle both shapes per F18-FR-11.
 
 ### Output Destination
 
 - **F18-FR-11** After the language pick, the command MUST offer a
-  destination: a **new untitled editor** (the default) or an explicit file
-  chosen through the native save dialog, pre-filled with
+  destination: a **new untitled editor** (the default) or an explicit
+  location on disk. For single-file targets the location is a file chosen
+  through the native save dialog, pre-filled with
   `<schema-stem>.<target-extension>` next to the schema (first workspace
-  folder when the schema is remote). Saving writes the file and opens it;
-  cancelling the save dialog falls back to the untitled editor so generated
-  output is never silently lost. The command MUST NOT write anywhere the
-  user did not explicitly choose.
+  folder when the schema is remote); saving writes the file and opens it.
+  For **multi-file** targets (F18-FR-10, currently Java) the location is a
+  **folder** chosen through the native directory picker: each emitted file
+  is written into it under its engine-given name, files that already exist
+  MUST NOT be overwritten without an explicit confirmation, and the
+  top-level file is opened. The untitled-editor path presents multi-file
+  output as one document with a per-file banner comment (`// <name>`)
+  separating the files — a preview, since e.g. multiple public Java classes
+  cannot compile from one file. Cancelling the dialog (or declining the
+  overwrite) falls back to the untitled editor so generated output is never
+  silently lost. The command MUST NOT write anywhere the user did not
+  explicitly choose.
 
 ## Non-Functional Requirements
 

@@ -312,3 +312,89 @@ suite('[F18-FR-11] generateTypesCommand — save to file', function () {
     assert.match(arg.content, /export interface Kept\b/);
   });
 });
+
+suite('[F18-FR-11] generateTypesCommand — multi-file (Java) folder save', function () {
+  this.timeout(20000);
+
+  const personSchema = () => JSON.stringify({
+    $schema: 'x', title: 'Person', type: 'object',
+    properties: {
+      name: { type: 'string' },
+      address: {
+        title: 'Address', type: 'object',
+        properties: { city: { type: 'string' } }, additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
+  });
+
+  test('Java saves into a user-picked folder and opens the top-level file', async () => {
+    activate(path.join(dir, 'person.schema.json'), personSchema());
+    pickLanguage('java', 'file');
+    const folder = fs.mkdtempSync(path.join(dir, 'out-'));
+    vscode.window.showOpenDialog.resolves([vscode.Uri.file(folder)]);
+
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+
+    const dialogArgs = vscode.window.showOpenDialog.lastCall.args[0];
+    assert.strictEqual(dialogArgs.canSelectFolders, true);
+    assert.strictEqual(dialogArgs.canSelectFiles, false);
+    assert.strictEqual(dialogArgs.defaultUri.fsPath, dir);
+
+    const written = fs.readdirSync(folder).sort();
+    assert.ok(written.length > 1, `expected multiple Java files, got ${written.join(', ')}`);
+    assert.ok(written.includes('Person.java'));
+    assert.ok(written.includes('Address.java'));
+    assert.match(fs.readFileSync(path.join(folder, 'Person.java'), 'utf-8'), /class Person\b/);
+    // No overwrite prompt for a clean folder; the top-level file is opened.
+    assert.ok(!vscode.window.showWarningMessage.called);
+    assert.strictEqual(vscode.workspace.openTextDocument.lastCall.args[0].fsPath, path.join(folder, 'Person.java'));
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/Wrote \d+ files to/));
+  });
+
+  test('an existing file prompts before overwriting; declining writes nothing and falls back to untitled', async () => {
+    activate(path.join(dir, 'person.schema.json'), personSchema());
+    pickLanguage('java', 'file');
+    const folder = fs.mkdtempSync(path.join(dir, 'out-'));
+    fs.writeFileSync(path.join(folder, 'Person.java'), 'PRE-EXISTING');
+    vscode.window.showOpenDialog.resolves([vscode.Uri.file(folder)]);
+    vscode.window.showWarningMessage.resolves(undefined); // decline
+
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+
+    assert.ok(vscode.window.showWarningMessage.calledWithMatch(/already exist.*Overwrite\?/));
+    assert.strictEqual(fs.readFileSync(path.join(folder, 'Person.java'), 'utf-8'), 'PRE-EXISTING');
+    assert.strictEqual(fs.readdirSync(folder).length, 1, 'no other file is written on decline');
+    // Fallback: the banner-joined preview opens untitled instead.
+    const arg = vscode.workspace.openTextDocument.lastCall.args[0];
+    assert.match(arg.content, /\/\/ Person\.java/);
+    assert.match(arg.content, /\/\/ Address\.java/);
+  });
+
+  test('confirming the overwrite writes every file', async () => {
+    activate(path.join(dir, 'person.schema.json'), personSchema());
+    pickLanguage('java', 'file');
+    const folder = fs.mkdtempSync(path.join(dir, 'out-'));
+    fs.writeFileSync(path.join(folder, 'Person.java'), 'PRE-EXISTING');
+    vscode.window.showOpenDialog.resolves([vscode.Uri.file(folder)]);
+    vscode.window.showWarningMessage.resolves('Overwrite');
+
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+
+    assert.match(fs.readFileSync(path.join(folder, 'Person.java'), 'utf-8'), /class Person\b/);
+    assert.ok(fs.readdirSync(folder).length > 1);
+  });
+
+  test('the untitled destination presents Java as one banner-separated preview', async () => {
+    activate(path.join(dir, 'person.schema.json'), personSchema());
+    pickLanguage('java'); // untitled default
+    await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
+    const arg = vscode.workspace.openTextDocument.lastCall.args[0];
+    assert.strictEqual(arg.language, 'java');
+    assert.match(arg.content, /\/\/ Person\.java/);
+    assert.match(arg.content, /\/\/ Address\.java/);
+    assert.match(arg.content, /class Person\b/);
+    assert.match(arg.content, /class Address\b/);
+    assert.ok(!vscode.window.showOpenDialog.called);
+  });
+});
