@@ -1883,14 +1883,14 @@
         "src/typeGenerator.ts",
         "src/GenerateTypesCommand.ts"
       ],
-      "note": "TARGET_LANGUAGES table (10 targets) with per-backend renderer options verified against quicktype-core 23.3.25; byte-stability tested per target"
+      "note": "TARGET_LANGUAGES table (10 targets) with per-backend renderer options verified against quicktype-core 23.3.25; byte-stability tested per target; quicktypeMultiFile handles multi-file emitters (Java: one file per class), all other targets emit a single file"
     },
     "F18-FR-11": {
       "status": "implemented",
       "impl": [
         "src/GenerateTypesCommand.ts"
       ],
-      "note": "destination picker: untitled (default) or save dialog pre-filled with <stem>.<ext> next to the schema; cancelled dialog falls back to untitled"
+      "note": "destination picker: untitled (default) or on-disk; single-file targets use a save dialog pre-filled with <stem>.<ext>, multi-file targets (Java) use a directory picker with an overwrite confirmation and open the top-level file; untitled shows multi-file output banner-joined; cancel/decline falls back to untitled"
     },
     "F18-NFR-01": {
       "status": "implemented",
