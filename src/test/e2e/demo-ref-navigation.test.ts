@@ -46,12 +46,17 @@ test('demo-ref-navigation: go to definition on a $ref jumps to its target schema
     await openFile(window, 'contact.schema.json');
     await capture('schema-file-open');
 
-    // Line 9 is `      "$ref": "./address.schema.json"`.
+    // Line 9 is `      "$ref": "./address.schema.json"`. End lands the cursor
+    // right after the closing quote — outside the $ref string's own offset
+    // range (go-to-definition's offset check excludes that exact boundary,
+    // see findRefInJsonTree/findNodeAtOffset) — so step one character back
+    // in from there to land inside the string.
     await window.keyboard.press('Control+g');
     await window.waitForTimeout(300);
     await window.keyboard.type('9', { delay: 60 });
     await window.keyboard.press('Enter');
     await window.keyboard.press('End');
+    await window.keyboard.press('Left');
     await capture('cursor-on-ref');
 
     await window.keyboard.press('F12');

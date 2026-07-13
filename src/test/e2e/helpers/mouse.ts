@@ -131,6 +131,15 @@ export async function clickSelector(
  * Code gesture for "go to definition" (e.g. jumping from a `$ref` to its
  * target schema), so a real person exercising F13 would click this way rather
  * than reach for a menu.
+ *
+ * Picks the *last* DOM match rather than the first: a `:has-text()` selector
+ * matches every ancestor of the actual text too (e.g. Monaco's `.view-line`
+ * wrapper as well as the specific `mtk*` token span inside it), and document
+ * order lists ancestors before descendants, so `.last()` is the innermost,
+ * tightest-fitting match — precise enough that go-to-definition's offset
+ * check (which excludes the exact end of the target string, see
+ * findRefInJsonTree/findNodeAtOffset) reliably lands inside the token instead
+ * of merely somewhere on the line.
  */
 export async function ctrlClickSelector(
   window: Page,
@@ -138,7 +147,7 @@ export async function ctrlClickSelector(
   selector: string,
   label: string,
 ): Promise<void> {
-  const el = window.locator(selector).first();
+  const el = window.locator(selector).last();
   await el.waitFor({ state: 'visible', timeout: 15_000 });
   const box = await el.boundingBox();
   if (!box) { throw new Error(`No bounding box for selector: ${selector}`); }
