@@ -2,6 +2,20 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.7.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.6.0...v0.7.0) (2026-07-13)
+
+
+### Features
+
+* **docs:** add demo-GIF pipelines for 5 previously-uncovered features ([f9d3bba](https://github.com/samdidos/vscode-json-schema-preview/commit/f9d3bba3703ecff8348170755dc6ab753c665fb3))
+
+
+### Bug Fixes
+
+* **e2e:** allowlist new demo fixture schemas in showcase/schemas/.gitignore ([f1b4a10](https://github.com/samdidos/vscode-json-schema-preview/commit/f1b4a1010c65db137d0aece8d4f131cd6de0b894))
+* **e2e:** land ref-navigation go-to-definition inside the $ref string's range ([203662c](https://github.com/samdidos/vscode-json-schema-preview/commit/203662ca8bd493fc84689adc3d72622ef23370b9))
+* **e2e:** use ArrowLeft, not Left, for the ref-navigation cursor nudge ([5175665](https://github.com/samdidos/vscode-json-schema-preview/commit/5175665ba15957544dd50fa492148305d478bbca))
+
 ## [0.6.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.5.1...v0.6.0) (2026-07-12)
 
 
