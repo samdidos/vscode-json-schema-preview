@@ -6,7 +6,55 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    name: Detect source-relevant changes
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Diff against base
+        id: filter
+        # Path set + diff logic live in scripts/ci-detect-source-changes.sh
+        # (S09-SR-02/S09-NFR-02) so ci.yml and codeql.yml share exactly one
+        # definition instead of duplicating the pattern. This job always runs
+        # (no path filter on the workflow trigger itself) and only gates work
+        # via job-level `if:` on its output — a workflow-level `paths-ignore`
+        # would instead make the whole workflow (and any required status
+        # check depending on it) never start on a docs-only PR, which GitHub
+        # then shows as permanently "Expected — Waiting" rather than passing
+        # (S09-SR-03).
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: bash scripts/ci-detect-source-changes.sh
+
+  traceability:
+    name: Spec & doc traceability
+    runs-on: ubuntu-latest
+    # Deliberately unconditional (S09-SR-01): these are the checks most likely
+    # to matter on exactly the PRs the `changes` filter above would otherwise
+    # skip (spec/traceability.json/docs-only edits), and they're cheap plain-
+    # Node scripts with no npm install needed.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+
+      - name: Spec traceability (no spec/matrix/test drift)
+        run: npm run check:traceability
+
+      - name: Documentation traceability (no stale doc tags)
+        run: npm run check:doc-traceability
+
   build:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -23,12 +71,6 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
-
-      - name: Spec traceability (no spec/matrix/test drift)
-        run: npm run check:traceability
-
-      - name: Documentation traceability (no stale doc tags)
-        run: npm run check:doc-traceability
 
       - name: Build extension bundle
         run: npm run compile
@@ -48,6 +90,8 @@ jobs:
         run: npm audit --audit-level=high
 
   security:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -61,6 +105,8 @@ jobs:
           exit-code: '1'
 
   knip:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     runs-on: ubuntu-latest
     # The backlog was cleared (see d364f60); this now gates merges like any
     # other check instead of only reporting.
@@ -79,6 +125,8 @@ jobs:
 
   integration:
     name: Integration tests (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     runs-on: ${{ matrix.os }}
     # S08 — real VS Code via @vscode/test-electron, per S08-SR-08/09. Runs
     # non-blocking (continue-on-error) while flakiness is measured; promote to

@@ -33,7 +33,12 @@
     PreToolUse hook on `git commit`) which calls `git hook run pre-commit` —
     a vendor-neutral git command, so the check logic isn't duplicated per tool.
     This is a *convenience* layer; CI and the git hook are the real guarantee.
-  - CI (`.github/workflows/ci.yml`).
+  - CI (`.github/workflows/ci.yml`), split across two jobs: `traceability`
+    (the `check:traceability`/`check:doc-traceability` steps, always on) and
+    `build` (lint/tsc/compile/coverage/audit). `build`, `security`, `knip`,
+    `integration`, and `codeql.yml`'s `analyze` job only run when the diff
+    touches source-relevant paths (`src/**`, config files, workflows) — see
+    `specs/S09-ci-workflow-scoping.md`. <!-- spec:S09 -->
 - **`.husky/commit-msg`** runs commitlint (Conventional Commits) so release-please
   can derive the changelog. Bypass intentionally with `git commit --no-verify`.
 - **Spec-driven workflow**: every code change must trace to an RFC-2119

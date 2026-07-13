@@ -12,8 +12,35 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    # Skipped on the weekly schedule run (no diff to gate — that run always
+    # does a full scan); analyze's `if:` below handles the schedule case
+    # separately so this job being skipped doesn't skip analyze too.
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Diff against base
+        id: filter
+        # Shares scripts/ci-detect-source-changes.sh with ci.yml's `changes`
+        # job (S09-SR-02/S09-NFR-02) — one definition of the path set.
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: bash scripts/ci-detect-source-changes.sh
+
   analyze:
     name: Analyze (javascript-typescript)
+    needs: changes
+    # `always()` so a skipped `changes` job (the schedule case) doesn't skip
+    # this job too — analyze runs when scheduled, or when changes found a
+    # source-relevant diff.
+    if: always() && (github.event_name == 'schedule' || needs.changes.outputs.src == 'true')
     runs-on: ubuntu-latest
     permissions:
       security-events: write
