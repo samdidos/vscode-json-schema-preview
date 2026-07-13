@@ -56,7 +56,7 @@ test('demo-ref-navigation: go to definition on a $ref jumps to its target schema
     await window.keyboard.type('9', { delay: 60 });
     await window.keyboard.press('Enter');
     await window.keyboard.press('End');
-    await window.keyboard.press('Left');
+    await window.keyboard.press('ArrowLeft');
     await capture('cursor-on-ref');
 
     await window.keyboard.press('F12');
