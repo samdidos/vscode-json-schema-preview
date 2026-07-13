@@ -45,10 +45,13 @@ test('demo-ref-navigation-mouse: ctrl-click a $ref to jump to its target schema'
 
     await openFileVisible(window, capture, 'contact.schema.json');
 
+    // Target the specific token span rendering the ref text, not the whole
+    // line — go-to-definition needs the click to land inside the $ref
+    // string's own character range.
     await ctrlClickSelector(
       window,
       capture,
-      '.view-line:has-text("address.schema.json")',
+      '.view-line span:has-text("address.schema.json")',
       'goto-address',
     );
 
