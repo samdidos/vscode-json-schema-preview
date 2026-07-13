@@ -2,3 +2,6 @@
 !.gitignore
 !person.schema.json
 !bookshelf.schema.yaml
+!address.schema.json
+!contact.schema.json
+!incomplete.schema.json
