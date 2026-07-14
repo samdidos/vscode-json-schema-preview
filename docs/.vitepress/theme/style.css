@@ -100,13 +100,17 @@
 }
 
 /* ── Home-page animated background: drifting sparks/stars ─────────────────
-   Pure CSS, no canvas/JS: three parallax layers of tiny radial-gradient dots
-   tiled via `background-repeat`, each drifting one exact tile-length so the
-   loop is seamless. Coordinates are a fixed, deterministically-generated
-   scatter (not re-randomised per load) — decorative, so a stable pattern is
-   fine. Fixed behind all content (z-index -1), never intercepts clicks.
-   Animation only runs under `prefers-reduced-motion: no-preference`; the
-   dots themselves stay visible (static) either way — only the drift stops. */
+   Pure CSS, no canvas: three layers of tiny radial-gradient dots tiled via
+   `background-repeat`, each drifting one exact tile-length so the loop is
+   seamless. Coordinates are a fixed, deterministically-generated scatter
+   (not re-randomised per load) — decorative, so a stable pattern is fine.
+   Fixed behind all content (z-index -1), never intercepts clicks.
+   Drift animation and mouse/scroll parallax (below) only run under
+   `prefers-reduced-motion: no-preference`; the dots themselves stay visible
+   (static) either way — only the motion stops. Parallax is driven by
+   `--spark-mx`/`--spark-my`/`--spark-scroll` custom properties written by
+   Layout.vue's pointermove/scroll listeners (rAF-throttled), one write per
+   frame shared by all three layers. */
 .spark-field {
   position: fixed;
   inset: 0;
@@ -187,11 +191,34 @@
 .dark .spark-layer--3 { opacity: .7; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .spark-layer--1 { animation: spark-drift-1 90s linear infinite; }
-  .spark-layer--2 { animation: spark-drift-2 140s linear infinite; }
-  .spark-layer--3 { animation: spark-drift-3 200s linear infinite reverse; }
+  .spark-layer--1 { animation: spark-drift-1 30s linear infinite; }
+  .spark-layer--2 { animation: spark-drift-2 46s linear infinite; }
+  .spark-layer--3 { animation: spark-drift-3 68s linear infinite reverse; }
 }
 
 @keyframes spark-drift-1 { from { background-position: 0 0; } to { background-position: 260px 260px; } }
 @keyframes spark-drift-2 { from { background-position: 0 0; } to { background-position: -340px 340px; } }
 @keyframes spark-drift-3 { from { background-position: 0 0; } to { background-position: 200px -200px; } }
+
+/* ── Home-page background: mouse/scroll parallax ───────────────────────────
+   Each layer offsets by the shared pointer position, scaled by its own
+   depth (`--parallax-x`/`--parallax-y`) so nearer/brighter layers swing
+   further than the faint background layer. Scroll adds a slow vertical
+   drift too (`--parallax-scroll`), so the field keeps responding as the
+   page scrolls even with the pointer still. `transition` smooths each
+   per-frame CSS-variable write into a fluid follow instead of a snap. */
+@media (prefers-reduced-motion: no-preference) {
+  .spark-layer {
+    transform: translate3d(
+      calc(var(--spark-mx, 0) * var(--parallax-x, 0px)),
+      calc(var(--spark-my, 0) * var(--parallax-y, 0px) - var(--spark-scroll, 0) * var(--parallax-scroll, 0) * 1px),
+      0
+    );
+    transition: transform .5s cubic-bezier(.16, 1, .3, 1);
+    will-change: transform;
+  }
+
+  .spark-layer--1 { --parallax-x: 28px; --parallax-y: 20px; --parallax-scroll: 0.05; }
+  .spark-layer--2 { --parallax-x: 16px; --parallax-y: 12px; --parallax-scroll: 0.03; }
+  .spark-layer--3 { --parallax-x: 8px; --parallax-y: 6px; --parallax-scroll: 0.015; }
+}
