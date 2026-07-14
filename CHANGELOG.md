@@ -2,6 +2,20 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.8.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.7.0...v0.8.0) (2026-07-14)
+
+
+### Features
+
+* **docs:** make homepage star background faster and interactive ([8b8d020](https://github.com/samdidos/vscode-json-schema-preview/commit/8b8d0201c13bd8f91a7b56cf49e72e6a7e2fd9e5))
+
+
+### Bug Fixes
+
+* **deps:** pin fast-uri to 3.1.3 to close a High-severity Snyk finding ([08f4abf](https://github.com/samdidos/vscode-json-schema-preview/commit/08f4abf9bd09ba0233782e0f7f31e44d8e16e7f4))
+* **F01-FR-02:** match $schema hostname exactly, not a substring ([e39da2d](https://github.com/samdidos/vscode-json-schema-preview/commit/e39da2d31463b64fd8213bfa77549801314a514e))
+* **F01-FR-02:** require $schema to reference a meta-schema, not just exist ([def0908](https://github.com/samdidos/vscode-json-schema-preview/commit/def090874e61bf612a455560fcb495e7b9a46403))
+
 ## [0.7.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.6.0...v0.7.0) (2026-07-13)
 
 
