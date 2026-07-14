@@ -12,11 +12,13 @@ import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
 import { classifyFetchFailure, shouldFallbackToCache } from './reliability';
 import { createAjv } from './ajvFactory';
+import { buildFixes } from './validationFix';
+import type { ValidationFixProvider } from './ValidationFixProvider';
 
 export const validationDiagnostics =
   vscode.languages.createDiagnosticCollection('json-schema-validation');
 
-export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache) {
+export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache, fixes?: ValidationFixProvider) {
   return async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -104,10 +106,16 @@ export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache
 
     validationDiagnostics.delete(doc.uri);
     const diags: vscode.Diagnostic[] = [];
+    // F21: collect quick fixes for the single-item JSON/JSONC case only, where a
+    // data pointer maps unambiguously to one node and `modify` can edit it.
+    const fixable = items.length === 1 && (doc.languageId === 'json' || doc.languageId === 'jsonc');
+    let collectedFixes: ReturnType<typeof buildFixes> = [];
 
     for (const data of items) {
       if (!validate(data)) {
-        for (const err of validate.errors ?? []) {
+        const errors = validate.errors ?? [];
+        if (fixable) { collectedFixes = buildFixes(errors, schema, data); }
+        for (const err of errors) {
           const range = locateInDocument(doc, err.instancePath ?? '');
           const label = err.instancePath || '(root)';
           const diagnostic = new vscode.Diagnostic(
@@ -125,11 +133,14 @@ export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache
     }
 
     if (diags.length === 0) {
+      fixes?.record(doc.uri, []); // F21-FR-09: clear stale fixes on a clean run
       vscode.window.showInformationMessage(
         `✓ ${path.basename(doc.uri.fsPath)} is valid against ${path.basename(schemaPath)}.`
       );
       return;
     }
+
+    fixes?.record(doc.uri, collectedFixes);
 
     validationDiagnostics.set(doc.uri, diags);
     vscode.window.showErrorMessage(
