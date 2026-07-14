@@ -48,15 +48,23 @@ test('demo-quickfix: apply a validation quick fix from the diagnostics', () => {
     await window.waitForTimeout(3_000);
     await capture('validation-errors');
 
-    // Position the cursor on the invalid enum value with Find (Ctrl+F) rather
-    // than clicking a specific DOM text run inside Monaco's rendered spans —
-    // entirely keyboard-driven, fitting this command-palette (no mouse)
-    // variant, and far more robust than a text-content selector click.
-    await window.keyboard.press('Control+f');
-    await window.waitForSelector('.find-widget', { state: 'visible', timeout: 10_000 });
-    await window.keyboard.type('payed', { delay: 40 });
-    await window.waitForTimeout(500);
-    await window.keyboard.press('Escape'); // close Find; cursor stays at the match
+    // Position the cursor on the invalid enum value. Click into the editor
+    // first — Ctrl+F is scoped to `editorFocus` in VS Code's default
+    // keybindings and is a silent no-op if focus is still wherever the
+    // command palette left it — then use Find (Ctrl+F) rather than clicking a
+    // specific DOM text run, which is more robust to how Monaco happens to
+    // split text into rendered spans. Falls back to a direct text click if
+    // Find doesn't open for any reason.
+    await window.click('.monaco-editor .view-lines');
+    try {
+      await window.keyboard.press('Control+f');
+      await window.waitForSelector('.find-widget', { state: 'visible', timeout: 5_000 });
+      await window.keyboard.type('payed', { delay: 40 });
+      await window.waitForTimeout(500);
+      await window.keyboard.press('Escape'); // close Find; cursor stays at the match
+    } catch {
+      await window.click('.view-line:has-text("payed")');
+    }
     await window.waitForTimeout(300);
 
     await window.keyboard.press('Control+.');
