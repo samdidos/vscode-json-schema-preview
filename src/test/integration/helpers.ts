@@ -80,8 +80,27 @@ export function readJsonFile(fsPath: string): any {
   return JSON.parse(fs.readFileSync(fsPath, 'utf-8'));
 }
 
-export function writeFile(fsPath: string, content: string): void {
-  fs.writeFileSync(fsPath, content, 'utf-8');
+/**
+ * Writes `content` to `fsPath`, retrying on Windows's transient EBUSY/EPERM
+ * ("resource busy or locked") — seen in CI when a settings.json this same test
+ * just had VS Code write/read is rewritten immediately in a setup/teardown
+ * hook, before the OS/AV scanner has released its handle. Real (non-transient)
+ * errors, and the error on the final attempt, still throw. Every writeFile()
+ * call in this suite runs from a synchronous mocha hook, so the retry sleeps
+ * synchronously via Atomics.wait rather than threading a Promise through 14
+ * call sites for what is otherwise a one-line helper.
+ */
+export function writeFile(fsPath: string, content: string, attempts = 5): void {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      fs.writeFileSync(fsPath, content, 'utf-8');
+      return;
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException).code;
+      if (attempt === attempts || (code !== 'EBUSY' && code !== 'EPERM')) { throw e; }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50 * attempt);
+    }
+  }
 }
 
 /** Closes every open editor tab so each test starts from a clean editor state. */
