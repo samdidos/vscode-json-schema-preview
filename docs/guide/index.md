@@ -20,7 +20,7 @@ Or search for **"JSON Schema Preview"** in the Extensions panel (<kbd>Ctrl</kbd>
 <!-- spec:F01 start -->
 ## Opening a Preview
 
-1. Open any `.json` or `.yaml` file whose root object contains a `$schema` key.
+1. Open any `.json` or `.yaml` file whose root object has a `$schema` key referencing the JSON Schema meta-schema (e.g. `"http://json-schema.org/draft-07/schema#"`) — this is what marks the file as a schema itself, as opposed to a data file whose own `$schema` merely points *at* one (see [Schema Binding](/guide/commands#json-schema-bind-schema)).
 2. The editor toolbar shows three icons: **Edit**, **Preview**, and **Configure**.
 3. Click the **Preview** icon or run **JSON Schema: Preview** from the Command Palette.
 

@@ -25,6 +25,21 @@ suite('[F01-FR-02] isJsonSchemaFile()', () => {
     assert.strictEqual(isJsonSchemaFile(doc), false);
   });
 
+  test('returns false for a data file whose $schema points at a schema path (inline binding)', () => {
+    const doc = { languageId: 'json', getText: () => '{"$schema":"./schemas/person.schema.json","name":"Alice"}' };
+    assert.strictEqual(isJsonSchemaFile(doc), false);
+  });
+
+  test('returns false for a data file whose $schema is a remote non-meta-schema URL', () => {
+    const doc = { languageId: 'json', getText: () => '{"$schema":"https://vega.github.io/schema/vega-lite/v5.json"}' };
+    assert.strictEqual(isJsonSchemaFile(doc), false);
+  });
+
+  test('returns true for a schema using an unversioned json-schema.org $schema', () => {
+    const doc = { languageId: 'json', getText: () => '{"$schema":"http://json-schema.org/schema#","type":"object"}' };
+    assert.strictEqual(isJsonSchemaFile(doc), true);
+  });
+
   test('returns true for YAML with $schema on first line', () => {
     const doc = { languageId: 'yaml', getText: () => '$schema: http://json-schema.org/draft-07/schema#\ntitle: test' };
     assert.strictEqual(isJsonSchemaFile(doc), true);
@@ -38,6 +53,16 @@ suite('[F01-FR-02] isJsonSchemaFile()', () => {
   test('returns false for YAML without $schema', () => {
     const doc = { languageId: 'yaml', getText: () => 'title: no schema\ntype: object' };
     assert.strictEqual(isJsonSchemaFile(doc), false);
+  });
+
+  test('returns false for YAML whose $schema points at a schema path (inline binding)', () => {
+    const doc = { languageId: 'yaml', getText: () => '$schema: ./schemas/person.schema.json\nname: Alice' };
+    assert.strictEqual(isJsonSchemaFile(doc), false);
+  });
+
+  test('returns true for YAML with a quoted json-schema.org $schema value', () => {
+    const doc = { languageId: 'yaml', getText: () => '$schema: "http://json-schema.org/draft-07/schema#"\ntitle: test' };
+    assert.strictEqual(isJsonSchemaFile(doc), true);
   });
 
   test('returns true for yml languageId', () => {

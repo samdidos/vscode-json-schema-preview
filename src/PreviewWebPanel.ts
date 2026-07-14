@@ -24,6 +24,17 @@ export function previewJsonSchema(context: vscode.ExtensionContext) {
   };
 }
 
+// F01-FR-02 — a `$schema` key alone isn't enough: a data file bound via
+// inline `$schema` (F10) also carries that key, pointing *at* a schema
+// rather than declaring itself to be one. Only a value referencing the
+// JSON Schema meta-schema (hosted at json-schema.org for every draft:
+// draft-04 through 2020-12) means "this document is itself a schema".
+const JSON_SCHEMA_META_HOST = 'json-schema.org';
+
+function isJsonSchemaMetaRef(value: unknown): boolean {
+  return typeof value === 'string' && value.includes(JSON_SCHEMA_META_HOST);
+}
+
 export function isJsonSchemaFile(document?: vscode.TextDocument) {
   if (!document) {
     return false;
@@ -34,13 +45,14 @@ export function isJsonSchemaFile(document?: vscode.TextDocument) {
         ? stripJsoncComments(document.getText())
         : document.getText();
       const json = JSON.parse(text);
-      return !!json.$schema;
+      return isJsonSchemaMetaRef(json?.$schema);
     } catch {
       return false;
     }
   }
   if (isYaml(document.languageId)) {
-    return document.getText().match(/^\$schema:/m) !== null;
+    const match = document.getText().match(/^\$schema:\s*(.+)$/m);
+    return match !== null && isJsonSchemaMetaRef(match[1].trim().replace(/^["']|["']$/g, ''));
   }
   // jsonl files are always data, never schemas
   return false;

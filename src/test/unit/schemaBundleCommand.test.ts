@@ -40,13 +40,13 @@ suite('[F14-FR-01] bundleSchemaCommand — gating', () => {
 
   test('[S02] blocked in an untrusted workspace', async () => {
     (vscode.workspace as any).isTrusted = false;
-    activate(path.join(dir, 'root.json'), '{"$schema":"x"}');
+    activate(path.join(dir, 'root.json'), '{"$schema":"http://json-schema.org/draft-07/schema#"}');
     await bundleSchemaCommand(fakeAuth(async () => '{}'), fakeCache())();
     assert.ok(vscode.window.showWarningMessage.called);
   });
 
   test('[F14-FR-02] cancelling the mode picker does nothing', async () => {
-    activate(path.join(dir, 'root.json'), '{"$schema":"x","type":"object"}');
+    activate(path.join(dir, 'root.json'), '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object"}');
     vscode.window.showQuickPick.resolves(undefined);
     await bundleSchemaCommand(fakeAuth(async () => '{}'), fakeCache())();
     assert.ok(!vscode.workspace.openTextDocument.called);
@@ -75,7 +75,7 @@ suite('[F14-FR-03][F14-FR-05] bundleSchemaCommand — bundle', () => {
   test('fetches an external document referenced by more than one $ref only once', async () => {
     const rootPath = path.join(dir, 'root.json');
     activate(rootPath, JSON.stringify({
-      $schema: 'x',
+      $schema: 'http://json-schema.org/draft-07/schema#',
       properties: {
         a: { $ref: 'https://corp/shared.json#/$defs/id' },
         b: { $ref: 'https://corp/shared.json#/$defs/id' },
@@ -95,7 +95,7 @@ suite('[F14-FR-03][F14-FR-05] bundleSchemaCommand — bundle', () => {
 
   test('[F14-FR-08] an unresolvable ref shows an error and opens nothing', async () => {
     const rootPath = path.join(dir, 'root.json');
-    activate(rootPath, JSON.stringify({ $schema: 'x', properties: { a: { $ref: 'missing.json' } } }));
+    activate(rootPath, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', properties: { a: { $ref: 'missing.json' } } }));
     pickMode('bundle');
     await bundleSchemaCommand(fakeAuth(async () => { throw new Error('x'); }), fakeCache())();
     assert.ok(vscode.window.showErrorMessage.calledWithMatch(/Bundling failed/));
@@ -104,7 +104,7 @@ suite('[F14-FR-03][F14-FR-05] bundleSchemaCommand — bundle', () => {
 
   test('[F14-FR-08] a 401 on a remote ref offers Configure Auth', async () => {
     const rootPath = path.join(dir, 'root.json');
-    activate(rootPath, JSON.stringify({ $schema: 'x', properties: { a: { $ref: 'https://corp/s.json' } } }));
+    activate(rootPath, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', properties: { a: { $ref: 'https://corp/s.json' } } }));
     pickMode('bundle');
     vscode.window.showErrorMessage.resolves(undefined);
     const auth = fakeAuth(async () => { throw new AuthRequiredError('https://corp/s.json', 401); });
@@ -114,7 +114,7 @@ suite('[F14-FR-03][F14-FR-05] bundleSchemaCommand — bundle', () => {
 
   test('[F14-FR-04] prefers the local cache over the network for a remote ref', async () => {
     const rootPath = path.join(dir, 'root.json');
-    activate(rootPath, JSON.stringify({ $schema: 'x', properties: { a: { $ref: 'https://corp/s.json#/$defs/id' } } }));
+    activate(rootPath, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', properties: { a: { $ref: 'https://corp/s.json#/$defs/id' } } }));
     pickMode('bundle');
     const cache = fakeCache({ 'https://corp/s.json': JSON.stringify({ $defs: { id: { type: 'string' } } }) });
     let fetched = false;
@@ -131,7 +131,7 @@ suite('[F14-FR-03][F14-FR-05] bundleSchemaCommand — bundle', () => {
   // ever exercised by schemaBundler's own direct unit tests.
   test("[F14-FR-05] derives the $defs key from the referenced schema's own $id, not the URL filename", async () => {
     const rootPath = path.join(dir, 'root.json');
-    activate(rootPath, JSON.stringify({ $schema: 'x', properties: { a: { $ref: 'https://corp/weird-file-name.json#/$defs/id' } } }));
+    activate(rootPath, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', properties: { a: { $ref: 'https://corp/weird-file-name.json#/$defs/id' } } }));
     pickMode('bundle');
     const cache = fakeCache({
       'https://corp/weird-file-name.json': JSON.stringify({ $id: 'person', $defs: { id: { type: 'string' } } }),
@@ -146,7 +146,7 @@ suite('[F14-FR-03][F14-FR-05] bundleSchemaCommand — bundle', () => {
 suite('[F14-FR-03] bundleSchemaCommand — dereference', () => {
   test('dereferences internal refs inline', async () => {
     const rootPath = path.join(dir, 'root.json');
-    activate(rootPath, JSON.stringify({ $schema: 'x', $defs: { id: { type: 'string' } }, properties: { a: { $ref: '#/$defs/id' } } }));
+    activate(rootPath, JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', $defs: { id: { type: 'string' } }, properties: { a: { $ref: '#/$defs/id' } } }));
     pickMode('dereference');
     await bundleSchemaCommand(fakeAuth(async () => '{}'), fakeCache())();
     const out = JSON.parse(vscode.workspace.openTextDocument.lastCall.args[0].content);
@@ -155,7 +155,7 @@ suite('[F14-FR-03] bundleSchemaCommand — dereference', () => {
 
   test('produces YAML output for a YAML schema input', async () => {
     const rootPath = path.join(dir, 'root.yaml');
-    activate(rootPath, '$schema: x\n$defs:\n  id:\n    type: string\nproperties:\n  a:\n    $ref: "#/$defs/id"\n', 'yaml');
+    activate(rootPath, '$schema: http://json-schema.org/draft-07/schema#\n$defs:\n  id:\n    type: string\nproperties:\n  a:\n    $ref: "#/$defs/id"\n', 'yaml');
     pickMode('dereference');
     await bundleSchemaCommand(fakeAuth(async () => '{}'), fakeCache())();
     const arg = vscode.workspace.openTextDocument.lastCall.args[0];

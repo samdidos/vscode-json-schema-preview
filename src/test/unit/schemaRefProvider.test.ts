@@ -39,7 +39,7 @@ suite('[F13-FR-01] SchemaRefProvider.register()', () => {
 
 suite('[F13-FR-04] provideDefinition() — same document', () => {
   const text = JSON.stringify(
-    { $schema: 'x', $defs: { address: { type: 'object' } }, use: { $ref: '#/$defs/address' } },
+    { $schema: 'http://json-schema.org/draft-07/schema#', $defs: { address: { type: 'object' } }, use: { $ref: '#/$defs/address' } },
     null, 2,
   );
 
@@ -69,7 +69,7 @@ suite('[F13-FR-04] provideDefinition() — same document', () => {
   });
 
   test('[F13-FR-07] returns undefined for an unresolvable local pointer', () => {
-    const bad = JSON.stringify({ $schema: 'x', use: { $ref: '#/$defs/missing' } }, null, 2);
+    const bad = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', use: { $ref: '#/$defs/missing' } }, null, 2);
     const provider = new SchemaRefProvider(fakeCache());
     const doc = makeDoc(bad);
     assert.strictEqual(provider.provideDefinition(doc, posAt(bad.indexOf('#/$defs/missing') + 2)), undefined);
@@ -85,7 +85,7 @@ suite('[F13-FR-05] provideDefinition() — relative file', () => {
     const commonPath = path.join(dir, 'common.json');
     fs.writeFileSync(commonPath, JSON.stringify({ $defs: { id: { type: 'string' } } }, null, 2), 'utf-8');
     const mainPath = path.join(dir, 'main.json');
-    const text = JSON.stringify({ $schema: 'x', use: { $ref: './common.json#/$defs/id' } }, null, 2);
+    const text = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', use: { $ref: './common.json#/$defs/id' } }, null, 2);
 
     const provider = new SchemaRefProvider(fakeCache());
     const doc = makeDoc(text, 'json', mainPath);
@@ -95,7 +95,7 @@ suite('[F13-FR-05] provideDefinition() — relative file', () => {
   });
 
   test('returns undefined when the relative file is missing', () => {
-    const text = JSON.stringify({ $schema: 'x', use: { $ref: './nope.json#/$defs/id' } }, null, 2);
+    const text = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', use: { $ref: './nope.json#/$defs/id' } }, null, 2);
     const provider = new SchemaRefProvider(fakeCache());
     const doc = makeDoc(text, 'json', '/ws/main.json');
     assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('./nope.json') + 3)), undefined);
@@ -106,7 +106,7 @@ suite('[F13-FR-06] provideDefinition() — remote ref', () => {
   test('uses the cached copy when present', () => {
     const url = 'https://example.com/s.json';
     const cached = JSON.stringify({ $defs: { id: { type: 'string' } } }, null, 2);
-    const text = JSON.stringify({ $schema: 'x', use: { $ref: `${url}#/$defs/id` } }, null, 2);
+    const text = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', use: { $ref: `${url}#/$defs/id` } }, null, 2);
     const provider = new SchemaRefProvider(fakeCache({ [url]: cached }));
     const doc = makeDoc(text);
     const loc = provider.provideDefinition(doc, posAt(text.indexOf(url) + 5));
@@ -116,7 +116,7 @@ suite('[F13-FR-06] provideDefinition() — remote ref', () => {
   test('[F13-FR-06] offers to cache when the remote ref is uncached', () => {
     vscode.window.showInformationMessage.resolves(undefined);
     const url = 'https://example.com/s.json';
-    const text = JSON.stringify({ $schema: 'x', use: { $ref: `${url}#/$defs/id` } }, null, 2);
+    const text = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', use: { $ref: `${url}#/$defs/id` } }, null, 2);
     const provider = new SchemaRefProvider(fakeCache());
     const doc = makeDoc(text);
     const loc = provider.provideDefinition(doc, posAt(text.indexOf(url) + 5));
@@ -131,7 +131,7 @@ suite('[F13-FR-06] provideDefinition() — remote ref', () => {
   test('[F13-FR-06] resolves a pointer in a cached remote schema authored as YAML', () => {
     const url = 'https://example.com/s.yaml';
     const cached = 'defs:\n  id:\n    type: string\n';
-    const text = JSON.stringify({ $schema: 'x', use: { $ref: `${url}#/defs/id` } }, null, 2);
+    const text = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', use: { $ref: `${url}#/defs/id` } }, null, 2);
     const provider = new SchemaRefProvider(fakeCache({ [url]: cached }));
     const doc = makeDoc(text);
     const loc = provider.provideDefinition(doc, posAt(text.indexOf(url) + 5));
@@ -141,7 +141,7 @@ suite('[F13-FR-06] provideDefinition() — remote ref', () => {
 
 suite('[F13-FR-08] provideHover()', () => {
   const text = JSON.stringify(
-    { $schema: 'x', $defs: { address: { title: 'Address', type: 'object', properties: { city: {} } } }, use: { $ref: '#/$defs/address' } },
+    { $schema: 'http://json-schema.org/draft-07/schema#', $defs: { address: { title: 'Address', type: 'object', properties: { city: {} } } }, use: { $ref: '#/$defs/address' } },
     null, 2,
   );
 
@@ -156,7 +156,7 @@ suite('[F13-FR-08] provideHover()', () => {
 
   test('[F13-FR-10] a hover on an uncached remote ref states it is not cached', () => {
     const url = 'https://example.com/s.json';
-    const t = JSON.stringify({ $schema: 'x', use: { $ref: `${url}#/x` } }, null, 2);
+    const t = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', use: { $ref: `${url}#/x` } }, null, 2);
     const provider = new SchemaRefProvider(fakeCache());
     const doc = makeDoc(t);
     const hover = provider.provideHover(doc, posAt(t.indexOf(url) + 5));
@@ -165,7 +165,7 @@ suite('[F13-FR-08] provideHover()', () => {
   });
 
   test('[F13-FR-07] a hover on an unresolvable pointer explains it', () => {
-    const t = JSON.stringify({ $schema: 'x', use: { $ref: '#/$defs/missing' } }, null, 2);
+    const t = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', use: { $ref: '#/$defs/missing' } }, null, 2);
     const provider = new SchemaRefProvider(fakeCache());
     const doc = makeDoc(t);
     const hover = provider.provideHover(doc, posAt(t.indexOf('#/$defs/missing') + 2));
@@ -188,7 +188,7 @@ suite('[F13-FR-08] provideHover()', () => {
 suite('SchemaRefProvider — parse caching [F13-NFR]', () => {
   test('does not re-parse the document on a second hover/definition call for an unchanged version', () => {
     const text = JSON.stringify(
-      { $schema: 'x', $defs: { address: { title: 'Address', type: 'object' } }, use: { $ref: '#/$defs/address' } },
+      { $schema: 'http://json-schema.org/draft-07/schema#', $defs: { address: { title: 'Address', type: 'object' } }, use: { $ref: '#/$defs/address' } },
     );
     let getTextCalls = 0;
     const doc: any = makeDoc(text);
@@ -214,7 +214,7 @@ suite('SchemaRefProvider — parse caching [F13-NFR]', () => {
 
   test('does not return a stale result after the document changes version', () => {
     const provider = new SchemaRefProvider(fakeCache());
-    const textV1 = JSON.stringify({ $schema: 'x', $defs: { a: { type: 'string' } }, use: { $ref: '#/$defs/a' } });
+    const textV1 = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', $defs: { a: { type: 'string' } }, use: { $ref: '#/$defs/a' } });
     const doc: any = makeDoc(textV1, 'json', '/ws/schema.json', 1);
     const posV1 = posAt(textV1.indexOf('#/$defs/a') + 2);
     const loc1 = provider.provideDefinition(doc, posV1);
@@ -222,7 +222,7 @@ suite('SchemaRefProvider — parse caching [F13-NFR]', () => {
 
     // Same uri, new version, no $ref anywhere — if the cache incorrectly kept
     // serving v1's parsed AST, this offset would still resolve against it.
-    const textV2 = JSON.stringify({ $schema: 'x', note: 'no ref in this version' });
+    const textV2 = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', note: 'no ref in this version' });
     doc.getText = () => textV2;
     doc.version = 2;
     const stale = provider.provideDefinition(doc, posV1);

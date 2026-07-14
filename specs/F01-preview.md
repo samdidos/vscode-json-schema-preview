@@ -20,8 +20,13 @@ in a VS Code webview panel beside the editor. Rendering is delegated to the
 - **F01-FR-01** The extension MUST activate on files with `languageId` in
   `json`, `jsonc`, `yaml`, `yml`, or `jsonl`.
 - **F01-FR-02** A file SHALL be considered a JSON Schema file if its parsed root
-  object contains a `$schema` key (JSON/JSONC) or the first line matching
-  `^\$schema:` is present (YAML).
+  object contains a `$schema` key (JSON/JSONC) or a line matching `^\$schema:`
+  is present (YAML), **and** that key's value is a string referencing a JSON
+  Schema meta-schema (containing the host `json-schema.org`, covering every
+  draft from draft-04 through 2020-12). A `$schema` value that does not
+  reference a meta-schema — e.g. a data file bound to a schema via its own
+  inline `$schema` field (F10), which points *at* a schema file rather than
+  declaring itself to be one — MUST NOT be considered a JSON Schema file.
 - **F01-FR-03** When a schema file is the active editor the VS Code context key
   `jsonschema.isJsonSchema` MUST be set to `true`; it MUST be set to `false`
   for all other files.
@@ -133,9 +138,15 @@ in a VS Code webview panel beside the editor. Rendering is delegated to the
 
 ## Acceptance Criteria
 
-1. Opening a `.json` file with `"$schema": "…"` and running **JSON Schema: Preview**
-   shows a populated documentation panel within the timeout period.
+1. Opening a `.json` file with `"$schema": "http://json-schema.org/draft-07/schema#"`
+   and running **JSON Schema: Preview** shows a populated documentation panel
+   within the timeout period.
 2. Saving the schema file causes the preview to refresh automatically.
 3. The Download button produces a file whose content matches what the Python tool
    generated.
 4. Clicking an `http://…` link inside the preview opens a browser tab.
+5. A data file whose own `"$schema"` value points at a schema path (e.g.
+   `"$schema": "./schemas/person.schema.json"`, written by inline binding —
+   F10) is NOT treated as a JSON Schema file: `jsonschema.isJsonSchema` stays
+   `false`, the Preview/Edit/Configure toolbar icons don't appear, and
+   Validate/Infer icons show instead.
