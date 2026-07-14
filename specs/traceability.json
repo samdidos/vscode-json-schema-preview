@@ -21,7 +21,7 @@
       "impl": [
         "src/PreviewWebPanel.ts"
       ],
-      "note": "isJsonSchemaFile() unit-tested"
+      "note": "isJsonSchemaFile() requires the $schema value's URL hostname to be exactly json-schema.org (parsed via the URL constructor, not a substring/includes check — CodeQL js/incomplete-url-substring-sanitization), so an inline-bound data file (F10) isn't misclassified as a schema; unit-tested"
     },
     "F01-FR-03": {
       "status": "manual",

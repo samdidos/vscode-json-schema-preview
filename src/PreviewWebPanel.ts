@@ -24,6 +24,27 @@ export function previewJsonSchema(context: vscode.ExtensionContext) {
   };
 }
 
+// F01-FR-02 — a `$schema` key alone isn't enough: a data file bound via
+// inline `$schema` (F10) also carries that key, pointing *at* a schema
+// rather than declaring itself to be one. Only a value referencing the
+// JSON Schema meta-schema (hosted at json-schema.org for every draft:
+// draft-04 through 2020-12) means "this document is itself a schema".
+// The hostname is checked via URL parsing rather than a substring test —
+// `.includes('json-schema.org')` would also match an attacker-controlled
+// host like `json-schema.org.evil.com` or `evil.com/?x=json-schema.org`.
+const JSON_SCHEMA_META_HOST = 'json-schema.org';
+
+function isJsonSchemaMetaRef(value: unknown): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  try {
+    return new URL(value).hostname === JSON_SCHEMA_META_HOST;
+  } catch {
+    return false;
+  }
+}
+
 export function isJsonSchemaFile(document?: vscode.TextDocument) {
   if (!document) {
     return false;
@@ -34,13 +55,14 @@ export function isJsonSchemaFile(document?: vscode.TextDocument) {
         ? stripJsoncComments(document.getText())
         : document.getText();
       const json = JSON.parse(text);
-      return !!json.$schema;
+      return isJsonSchemaMetaRef(json?.$schema);
     } catch {
       return false;
     }
   }
   if (isYaml(document.languageId)) {
-    return document.getText().match(/^\$schema:/m) !== null;
+    const match = document.getText().match(/^\$schema:\s*(.+)$/m);
+    return match !== null && isJsonSchemaMetaRef(match[1].trim().replace(/^["']|["']$/g, ''));
   }
   // jsonl files are always data, never schemas
   return false;

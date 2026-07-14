@@ -170,6 +170,8 @@ Additional schema-catalog URLs in the SchemaStore catalog format (`{ "schemas": 
   "jsonschema.catalog.sources": ["https://internal.example.com/schema-catalog.json"]
 }
 ```
+
+The **Browse catalog…** picker (opened from [Bind Schema…](/guide/commands#json-schema-bind-schema)) is filterable by schema name and description, and shows the source catalog and URL as each entry's detail. Entries whose `fileMatch` glob matches the file you're binding are ranked first, under a "Suggested for this file" separator. Fetched catalogs are cached for 24 hours in global storage — reopening the picker within that window never hits the network — and if a refetch fails and a cached copy exists, the picker falls back to it and marks the title as offline/stale rather than failing outright.
 <!-- spec:F12 end -->
 
 ---
@@ -250,6 +252,8 @@ Schema bindings created via **Bind Schema…** are written to VS Code's standard
 | Inline (`$schema` field) | The data file itself | Portable to other editors and tools |
 
 Bindings can be edited manually in the relevant `settings.json` file. **TOML files use the inline scope exclusively** — VS Code has no built-in `toml.schemas` mechanism, so the picker offers only the inline option for `.toml` files.
+
+For a fresh inline binding on a **YAML** file, the extension picks the notation automatically: if the [Red Hat YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) is installed it writes a `# yaml-language-server: $schema=...` comment directive, otherwise a plain `$schema:` key. If the file already has either form, that existing form is always updated in place — the extension never switches a file from one notation to the other.
 <!-- spec:F04,F10,F11 end -->
 
 <!-- spec:F19 start -->
