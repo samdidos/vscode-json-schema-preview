@@ -19,15 +19,12 @@ export default defineConfig({
     siteTitle: 'JSON Schema Preview',
 
     // Top nav is high-level destinations only; the individual guide pages live
-    // in the left sidebar (below) so the two never duplicate each other.
+    // in the left sidebar (below) so the two never duplicate each other. GitHub
+    // is reachable via the social icon (socialLinks) rather than a second nav
+    // link to the same place.
     nav: [
       { text: 'Guide', link: '/guide/', activeMatch: '/guide/' },
       { text: 'Blog', link: '/blog/', activeMatch: '/blog/' },
-      {
-        text: 'GitHub',
-        link: 'https://github.com/samdidos/vscode-json-schema-preview',
-        target: '_blank',
-      },
     ],
 
     // Path-scoped sidebars: the guide sidebar lists every guide page with names
