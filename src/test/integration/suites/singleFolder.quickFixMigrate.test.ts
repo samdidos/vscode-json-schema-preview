@@ -98,7 +98,6 @@ suite('[F22-FR-10] Draft migration — real command round-trip', () => {
 
   test('[F22-FR-11] migrating to 2020-12 opens a document with $defs and a rewritten $ref', async () => {
     await openDocument(MIGRATE_SCHEMA);
-    const before = vscode.window.activeTextEditor?.document.uri.fsPath;
 
     const { errors } = await withQuickPick(
       items => items.find((i: any) => i.id === '2020-12'),
@@ -108,16 +107,21 @@ suite('[F22-FR-10] Draft migration — real command round-trip', () => {
     );
     assert.deepStrictEqual(errors, [], `migrate reported errors: ${JSON.stringify(errors)}`);
 
-    // The migrated result is shown in a new active editor (beside the source).
-    const active = vscode.window.activeTextEditor?.document;
-    assert.ok(active, 'a migrated document should be active');
-    assert.notStrictEqual(active!.uri.fsPath, before, 'the original file must not be modified in place');
-    const migrated = JSON.parse(active!.getText());
+    // The migrated result is opened in a NEW untitled document beside the
+    // source. Locate it via workspace.textDocuments rather than
+    // activeTextEditor: after showTextDocument resolves, the active-editor
+    // update can lag on some platforms (observed on Windows CI), so relying on
+    // focus is racy — the open untitled document is deterministic.
+    const migratedDoc = vscode.workspace.textDocuments.find(
+      d => d.isUntitled && d.getText().includes('#/$defs/Id'),
+    );
+    assert.ok(migratedDoc, 'a migrated untitled document containing the rewritten $ref should be open');
+    const migrated = JSON.parse(migratedDoc!.getText());
     assert.strictEqual(migrated.$schema, 'https://json-schema.org/draft/2020-12/schema');
     assert.ok(migrated.$defs && !migrated.definitions, 'definitions should have become $defs');
     assert.strictEqual(migrated.properties.id.$ref, '#/$defs/Id', 'the local $ref should be rewritten');
 
-    // The source file on disk is untouched.
+    // The source file on disk is untouched (migration never edits in place).
     const onDisk = JSON.parse(fs.readFileSync(MIGRATE_SCHEMA, 'utf-8'));
     assert.ok(onDisk.definitions && !onDisk.$defs, 'the source schema file must be unchanged');
   });
