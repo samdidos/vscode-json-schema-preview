@@ -7,7 +7,7 @@ import { isObject } from './schemaPointer';
 
 export type TargetDraft = '2020-12' | '2019-09' | 'draft-07';
 
-export interface MigrationChange {
+interface MigrationChange {
   /** JSON-Pointer-ish path to the change site (`''` = root). */
   path: string;
   change: string;
