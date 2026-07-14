@@ -97,7 +97,10 @@ function setMetaSchema(obj: Record<string, unknown>, path: string, ctx: Ctx): Re
   const want = META_SCHEMA[ctx.target];
   if (obj.$schema !== want) {
     record(ctx, path, `$schema set to ${ctx.target}`);
-    return { $schema: want, ...obj };
+    // Drop any existing $schema before re-adding it first, so an old value
+    // doesn't override `want` via the spread (it would if `...obj` ran last).
+    const { $schema: _old, ...rest } = obj;
+    return { $schema: want, ...rest };
   }
   return obj;
 }

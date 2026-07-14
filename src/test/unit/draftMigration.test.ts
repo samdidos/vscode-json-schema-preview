@@ -21,6 +21,20 @@ suite('[F22-FR-02][F22-NFR-02] migrateSchema() — $schema meta-schema', () => {
     assert.strictEqual(to({}, 'draft-07').$schema, META_07);
   });
 
+  test('overrides an existing $schema declaring a different draft', () => {
+    // Regression: setMetaSchema spread the source object AFTER `$schema: want`,
+    // so an existing (older) $schema silently overrode the target draft.
+    const out = to({ $schema: META_07, type: 'object' }, '2020-12');
+    assert.strictEqual(out.$schema, META_2020);
+    const back = to({ $schema: META_2020 }, 'draft-07');
+    assert.strictEqual(back.$schema, META_07);
+  });
+
+  test('keeps $schema as the first key after overriding it', () => {
+    const out = to({ $schema: META_07, title: 'X' }, '2020-12');
+    assert.strictEqual(Object.keys(out)[0], '$schema');
+  });
+
   test('does not mutate the input', () => {
     const input = { definitions: { X: {} } };
     migrateSchema(input, '2020-12');
