@@ -40,6 +40,16 @@ suite('[F01-FR-02] isJsonSchemaFile()', () => {
     assert.strictEqual(isJsonSchemaFile(doc), true);
   });
 
+  test('returns false for a $schema whose host merely contains json-schema.org as a substring (lookalike domain)', () => {
+    const doc = { languageId: 'json', getText: () => '{"$schema":"https://json-schema.org.evil.com/draft-07/schema#"}' };
+    assert.strictEqual(isJsonSchemaFile(doc), false);
+  });
+
+  test('returns false for a $schema where json-schema.org only appears in the path/query, not the host', () => {
+    const doc = { languageId: 'json', getText: () => '{"$schema":"https://evil.com/?x=json-schema.org"}' };
+    assert.strictEqual(isJsonSchemaFile(doc), false);
+  });
+
   test('returns true for YAML with $schema on first line', () => {
     const doc = { languageId: 'yaml', getText: () => '$schema: http://json-schema.org/draft-07/schema#\ntitle: test' };
     assert.strictEqual(isJsonSchemaFile(doc), true);
