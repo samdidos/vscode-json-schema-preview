@@ -61,6 +61,29 @@ export class SchemaCatalogManager {
   }
 
   /**
+   * All catalog entries currently in the cache, across every enabled source —
+   * synchronous and network-free (F04-FR-15 status-bar path). Empty when nothing
+   * has been fetched yet; `warm()` populates it in the background.
+   */
+  getCachedEntries(): CatalogEntry[] {
+    const out: CatalogEntry[] = [];
+    for (const source of getCatalogSources()) {
+      const cached = this.readCache(source);
+      if (cached) { for (const e of cached.entries) { out.push({ ...e, source }); } }
+    }
+    return out;
+  }
+
+  /**
+   * Populate the catalog cache in the background (F04-FR-15), honouring the same
+   * 24 h TTL and config gate as the picker. Never throws; a failed fetch with no
+   * cache simply leaves the cache empty. Does nothing when no source is enabled.
+   */
+  async warm(): Promise<void> {
+    await Promise.allSettled(getCatalogSources().map(source => this.fetchCatalog(source)));
+  }
+
+  /**
    * Load and rank catalog entries from every enabled source. Never throws — a
    * source that fails and has no cache contributes a warning instead (F12-FR-06).
    * Sources are fetched concurrently (independent network calls) rather than

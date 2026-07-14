@@ -232,6 +232,9 @@ function applyDefaults() {
   _onDidChangeSessions.returns(_disposable);
   _getSession.resolves(undefined);
   _getExtension.returns(undefined);
+  // `extensions` is declared later in the module; this reset also runs once at
+  // load time (before that declaration is initialised), so guard the access.
+  if (typeof extensions !== 'undefined') { extensions.all = []; }
   _clipboardWriteText.resolves(undefined);
   _registerCommand.returns(_disposable);
   _executeCommand.resolves(undefined);
@@ -325,6 +328,9 @@ export const commands = {
 
 export const extensions = {
   getExtension: _getExtension,
+  // Installed extensions, read by native-schema detection (F04-FR-15). Tests
+  // assign their own fixtures; reset to empty in resetAll().
+  all: [] as any[],
 };
 
 export const env = {

@@ -39,9 +39,25 @@ recognise them.
   long, so the item cannot grow unbounded and push other status-bar items
   off-screen; the **full, untruncated** name MUST remain visible in the
   tooltip.
-- **F04-FR-07** When no schema is bound the status bar item MUST display
-  `$(circle-slash) Schema: unbound` with a tooltip offering to bind one.
+- **F04-FR-07** When no schema is bound **and no native schema is detected
+  (F04-FR-15)** the status bar item MUST display `$(circle-slash) Schema:
+  unbound` with a tooltip offering to bind one.
 - **F04-FR-08** Clicking the status bar item MUST execute `jsonschema.bindToCurrentFile`.
+- **F04-FR-15** When the file has no explicit binding (neither inline `$schema`
+  nor a settings binding) but matches a schema that VS Code resolves natively —
+  an installed extension's `contributes.jsonValidation` `fileMatch`, or a
+  SchemaStore/user-catalog entry (F12) when the catalog is enabled — the status
+  bar item MUST reflect that resolved schema with an informational **auto** state
+  (`$(check) Schema: <name> (auto)`) instead of `$(circle-slash) unbound`, so the
+  bar stays coherent with the validation VS Code already provides. The tooltip
+  MUST explain the schema is provided automatically and that JSON Schema
+  Preview's own features still use an explicit binding (the click target is
+  unchanged, F04-FR-08). Detection MUST be synchronous in the status-bar refresh
+  path (extension contributions are in-memory; the catalog is read from its
+  existing cache); the catalog MAY be warmed once per session in the background,
+  reusing F12's fetch under its existing `jsonschema.catalog` config gate — it
+  introduces no new network category beyond the catalog fetch F12 already makes.
+  An explicit binding (F04-FR-06) always takes precedence over the auto state.
 
 ### Context and Explorer Menus
 

@@ -4,6 +4,18 @@ import * as fs from 'fs';
 import { modify, parseTree, Edit as JsoncEdit, FormattingOptions } from 'jsonc-parser';
 import { isSupported, isYaml, isToml, stripJsoncComments } from './languages';
 import { truncateMiddle } from './statusBarFormat';
+import type { CatalogEntry } from './schemaCatalog';
+import {
+  jsonValidationSources, catalogSources, matchNativeSchema, nativeSchemaLabel,
+  type NativeSchemaSource,
+} from './nativeSchema';
+
+/** The slice of SchemaCatalogManager the binding manager depends on. */
+interface CatalogPort {
+  browse(fileName: string): Promise<string | undefined>;
+  getCachedEntries?(): CatalogEntry[];
+  warm?(): Promise<void>;
+}
 
 /** Sentinel scope value for an inline `$schema` binding (F10) — distinct from
  * `vscode.ConfigurationTarget`'s numeric values so it can flow through the
@@ -37,11 +49,12 @@ interface TempBindingRecord {
 export class SchemaBindingManager {
   private readonly statusBar: vscode.StatusBarItem;
   private readonly ctx: vscode.ExtensionContext;
-  private readonly catalog?: { browse(fileName: string): Promise<string | undefined> };
+  private readonly catalog?: CatalogPort;
+  private catalogWarmStarted = false;
 
   constructor(
     context: vscode.ExtensionContext,
-    catalog?: { browse(fileName: string): Promise<string | undefined> },
+    catalog?: CatalogPort,
   ) {
     this.ctx = context;
     this.catalog = catalog;
@@ -118,10 +131,54 @@ export class SchemaBindingManager {
       this.statusBar.text = `$(check) Schema: ${truncateMiddle(path.basename(settingsBinding))}`;
       this.statusBar.tooltip = `Schema bound: ${settingsBinding}\nClick to change or remove`;
     } else {
-      this.statusBar.text = `$(circle-slash) Schema: unbound`;
-      this.statusBar.tooltip = 'No JSON Schema bound to this file\nClick to bind one';
+      // No explicit binding — but VS Code may resolve a schema natively
+      // (F04-FR-15). Reflect that instead of a misleading "unbound".
+      const native = this.detectNativeSchema(doc);
+      if (native) {
+        const label = truncateMiddle(nativeSchemaLabel(native));
+        const via = native.origin === 'catalog' ? 'the schema catalog' : 'an installed extension';
+        this.statusBar.text = `$(check) Schema: ${label} (auto)`;
+        this.statusBar.tooltip =
+          `Schema resolved automatically by VS Code (via ${via}):\n${native.url}\n\n` +
+          `JSON Schema Preview's own features (preview, validate, sample data) use an ` +
+          `explicit binding — click to add one.`;
+      } else {
+        this.statusBar.text = `$(circle-slash) Schema: unbound`;
+        this.statusBar.tooltip = 'No JSON Schema bound to this file\nClick to bind one';
+      }
     }
     this.statusBar.show();
+  }
+
+  /**
+   * Find a schema VS Code resolves natively for `doc` (F04-FR-15): an installed
+   * extension's `jsonValidation` (in-memory) or a cached catalog entry. Kicks off
+   * a one-time background catalog warm so a SchemaStore-only association (e.g. a
+   * commitlint config) can light up on a later refresh. Returns undefined on any
+   * error so a detection failure never breaks the status bar.
+   */
+  private detectNativeSchema(doc: vscode.TextDocument) {
+    try {
+      const fileName = vscode.workspace.asRelativePath(doc.uri, false);
+      const sources: NativeSchemaSource[] = [
+        ...jsonValidationSources(vscode.extensions.all),
+        ...(this.catalog?.getCachedEntries ? catalogSources(this.catalog.getCachedEntries()) : []),
+      ];
+      this.warmCatalogOnce();
+      return matchNativeSchema(fileName, sources);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Populate the catalog cache once per session, then refresh so a newly-cached
+   *  match can appear. No-op when the catalog port can't warm. */
+  private warmCatalogOnce(): void {
+    if (this.catalogWarmStarted || !this.catalog?.warm) { return; }
+    this.catalogWarmStarted = true;
+    void this.catalog.warm()
+      .then(() => this.refresh(vscode.window.activeTextEditor?.document))
+      .catch(() => { /* warming is best-effort */ });
   }
 
   // ---------------------------------------------------------------------------

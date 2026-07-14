@@ -71,6 +71,8 @@ Shows a Quick Pick list of all schema files in the workspace and binds the selec
 
 Also available via **right-click** in the editor and the **Explorer** context menu.
 
+When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. Clicking still lets you add your own binding to enable JSON Schema Preview's features on that file.
+
 | Toolbar | Command Palette | Context Menu |
 |---------|----------------|---|
 | — | ✅ | ✅ |

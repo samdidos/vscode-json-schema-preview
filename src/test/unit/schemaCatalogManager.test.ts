@@ -190,3 +190,40 @@ suite('[F12-NFR-01] SchemaCatalogManager.browse()', () => {
     await p;
   });
 });
+
+// ─── Cached-entry access & background warm (F04-FR-15) ───────────────────────
+
+suite('[F04-FR-15] SchemaCatalogManager.getCachedEntries() / warm()', () => {
+  test('getCachedEntries returns cached entries for enabled sources, network-free', () => {
+    const ctx = makeContext({
+      'jsonschema.catalogCache': {
+        [STORE]: { fetchedAt: Date.now(), entries: [{ name: 'commitlint', url: 'u', fileMatch: ['.commitlintrc.json'] }] },
+      },
+    });
+    const mgr = new SchemaCatalogManager(ctx, { fetchText: async () => { throw new Error('no network'); } } as any);
+    const entries = mgr.getCachedEntries();
+    assert.strictEqual(entries.length, 1);
+    assert.strictEqual(entries[0].name, 'commitlint');
+    assert.strictEqual(entries[0].source, STORE);
+  });
+
+  test('getCachedEntries is empty when nothing has been fetched', () => {
+    const mgr = new SchemaCatalogManager(makeContext(), { fetchText: async () => '{}' } as any);
+    assert.deepStrictEqual(mgr.getCachedEntries(), []);
+  });
+
+  test('warm() populates the cache so getCachedEntries returns entries', async () => {
+    const mgr = new SchemaCatalogManager(makeContext(), { fetchText: async () => catalogJson('package') } as any);
+    assert.deepStrictEqual(mgr.getCachedEntries(), []);
+    await mgr.warm();
+    const entries = mgr.getCachedEntries();
+    assert.strictEqual(entries.length, 1);
+    assert.strictEqual(entries[0].name, 'package');
+  });
+
+  test('warm() never throws when a source fails and nothing is cached', async () => {
+    const mgr = new SchemaCatalogManager(makeContext(), { fetchText: async () => { throw new Error('offline'); } } as any);
+    await mgr.warm(); // must resolve, not reject
+    assert.deepStrictEqual(mgr.getCachedEntries(), []);
+  });
+});
