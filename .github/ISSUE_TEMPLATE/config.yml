@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/samdidos/vscode-json-schema-preview/discussions
+    about: Ask a question, share an idea, or discuss usage — no bug or feature yet.
+  - name: Security vulnerability
+    url: https://github.com/samdidos/vscode-json-schema-preview/blob/main/SECURITY.md
+    about: Please report security issues privately per the security policy, not as a public issue.

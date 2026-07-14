@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a new capability or an improvement.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! This project is **spec-driven**
+        ([specs/README.md](https://github.com/samdidos/vscode-json-schema-preview/blob/main/specs/README.md)):
+        accepted features become an RFC-2119 requirement before they're built,
+        so the clearer the behaviour you describe, the easier it is to specify.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The user need or friction behind the request — not the solution yet.
+      placeholder: When I work with … I have to … because the extension doesn't …
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: What should the extension do? Describe it as observable behaviour (a command, a diagnostic, a panel), which is how it would be specified.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing commands, other extensions, or workarounds you've tried.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this isn't a duplicate.
+          required: true

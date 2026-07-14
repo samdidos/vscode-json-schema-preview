@@ -1,0 +1,68 @@
+name: Bug report
+description: Something in the extension isn't working as expected.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please search
+        [existing issues](https://github.com/samdidos/vscode-json-schema-preview/issues)
+        first — a quick check saves everyone time.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected instead.
+      placeholder: When I run "JSON Schema: …", I expected … but got …
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps. A tiny schema/data snippet that triggers it is ideal.
+      placeholder: |
+        1. Open this schema: …
+        2. Run command / click …
+        3. See error …
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      description: See the Extensions panel, or run "JSON Schema Preview" there.
+      placeholder: e.g. 0.8.0
+    validations:
+      required: true
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      description: Help → About (or Code → About Visual Studio Code).
+      placeholder: e.g. 1.96.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other (note it below)
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output / logs
+      description: |
+        Output from the "JSON Schema Preview" output channel (View → Output →
+        pick it from the dropdown), or any error notifications. This is
+        automatically formatted as code, so no backticks needed.
+      render: shell
+    validations:
+      required: false
