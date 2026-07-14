@@ -394,3 +394,41 @@ suite('validateCurrentFile() — schema path resolution', () => {
     assert.ok(vscode.window.showInformationMessage.calledWithMatch(/is valid against s\.json/));
   });
 });
+
+// ── Quick-fix recording (F21) ──────────────────────────────────────────────────
+
+suite('[F21-FR-09] validateCurrentFile() — records quick fixes', () => {
+  function recorder() {
+    const calls: { fixes: any[] }[] = [];
+    return { calls, record: (_uri: any, fixes: any[]) => calls.push({ fixes }) };
+  }
+
+  test('[F21-FR-07] records fixes for the errors on an invalid JSON document', async () => {
+    const doc = makeDoc('json', '{"$schema":"https://example.com/s.json"}');
+    activate(doc);
+    const schema = { type: 'object', required: ['name'], properties: { name: { type: 'string' } } };
+    const fixes = recorder();
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any, undefined, fixes as any)();
+    assert.strictEqual(fixes.calls.length, 1);
+    assert.ok(fixes.calls[0].fixes.some((f: any) => f.kind === 'add-required'));
+  });
+
+  test('records an empty list (clearing) when the document is valid', async () => {
+    const doc = makeDoc('json', '{"$schema":"https://example.com/s.json","name":"Alice"}');
+    activate(doc);
+    const schema = { type: 'object', properties: { name: { type: 'string' } } };
+    const fixes = recorder();
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any, undefined, fixes as any)();
+    assert.strictEqual(fixes.calls.length, 1);
+    assert.deepStrictEqual(fixes.calls[0].fixes, []);
+  });
+
+  test('does not record fixes for a YAML document (out of scope)', async () => {
+    activate(makeDoc('yaml', '$schema: https://example.com/s.json\n'));
+    const schema = { type: 'object', required: ['name'], properties: { name: { type: 'string' } } };
+    const fixes = recorder();
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any, undefined, fixes as any)();
+    // Invalid → records, but the list must be empty since YAML edits are unsupported.
+    assert.ok(fixes.calls.every(c => c.fixes.length === 0));
+  });
+});

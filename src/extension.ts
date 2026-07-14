@@ -17,6 +17,8 @@ import {
   extractInlineSchemaUrl,
 } from './SchemaBindingManager';
 import { validateCurrentFile, validationDiagnostics } from './ValidationManager';
+import { ValidationFixProvider } from './ValidationFixProvider';
+import { migrateDraftCommand } from './DraftMigrationCommand';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { SchemaAuthCodeActionProvider } from './SchemaAuthCodeActionProvider';
@@ -41,6 +43,10 @@ export function activate(context: vscode.ExtensionContext) {
   // ── Auth infrastructure (created first; other components depend on these) ──
   const authManager = new SchemaAuthManager(context);
   const schemaCache = new SchemaCache(context, authManager);
+
+  // ── Validation quick-fix provider (F21) — records fixes from each validation
+  //    run and surfaces them as code actions on the validation diagnostics. ──
+  const validationFixProvider = new ValidationFixProvider();
 
   function setJsonSchemaPreviewContext(document: vscode.TextDocument) {
     const isJsonSchema = isJsonSchemaFile(document);
@@ -134,6 +140,16 @@ export function activate(context: vscode.ExtensionContext) {
       new SchemaAuthCodeActionProvider(authManager, schemaCache),
       { providedCodeActionKinds: SchemaAuthCodeActionProvider.providedCodeActionKinds },
     ),
+    // ── Validation quick fixes (F21): lightbulb on validation diagnostics ──────
+    vscode.languages.registerCodeActionsProvider(
+      [{ language: 'json' }, { language: 'jsonc' }],
+      validationFixProvider,
+      { providedCodeActionKinds: ValidationFixProvider.providedCodeActionKinds },
+    ),
+    // Fixes are computed for a specific text version; drop them once the text
+    // moves on or the document closes (F21-FR-09).
+    vscode.workspace.onDidChangeTextDocument(e => validationFixProvider.clear(e.document.uri)),
+    vscode.workspace.onDidCloseTextDocument(d => validationFixProvider.clear(d.uri)),
   );
 
   // ── $ref navigation & hover (F13) ─────────────────────────────────────────
@@ -163,7 +179,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('jsonschema.configure',          () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.openConfig',         () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.bindToCurrentFile',  (uri?: vscode.Uri) => bindingManager.bindToCurrentFile(uri)),
-    vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager, schemaCache)),
+    vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager, schemaCache, validationFixProvider)),
+
+    // ── Migrate a schema between drafts (F22) ─────────────────────────────────
+    vscode.commands.registerCommand('jsonschema.migrateDraft', migrateDraftCommand()),
 
     // ── Option 2: configure auth (entry point from status bar, code action, errors) ──
     vscode.commands.registerCommand('jsonschema.configureSchemaAuth', async (url?: string) => {

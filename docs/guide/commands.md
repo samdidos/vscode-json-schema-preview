@@ -92,6 +92,13 @@ If the file already has an inline `$schema` field the bound schema is inferred f
 | ✅ (checkmark icon, data files only) | ✅ |
 <!-- spec:F03 end -->
 
+<!-- spec:F21 start -->
+### Quick fixes for validation errors
+
+For JSON and JSONC files, the validation errors above carry a **lightbulb** (💡) offering a one-click repair when the fix is unambiguous: insert a **missing required property** with a type-appropriate placeholder, **remove an unexpected property**, replace a value that is outside an `enum`/`const` with an allowed one, or **coerce a mistyped scalar** (e.g. `"5"` → `5`) when the conversion is lossless. Only safe, mechanical fixes are offered — errors whose correct value can't be known (a `pattern`, a numeric bound, a `format`) have no quick fix. Fixes are computed against the file's current text, so they stay correct after edits and a fix whose target you've already removed simply disappears.
+<!-- spec:F21 end -->
+
+
 ---
 
 <!-- spec:F06,F11 start -->
@@ -188,6 +195,20 @@ Compares the active schema against a baseline — Git HEAD, another workspace fi
 |---------|----------------|
 | ✅ (diff icon, schema files only) | ✅ |
 <!-- spec:F15 end -->
+
+---
+
+<!-- spec:F22 start -->
+## JSON Schema: Migrate to Draft…
+
+**ID:** `jsonschema.migrateDraft`
+
+Rewrites the active schema between drafts — **draft-07**, **2019-09**, and **2020-12** — applying the well-known keyword changes and reporting exactly how many it made. Upgrading modernises `id` → `$id`, boolean `exclusiveMinimum`/`exclusiveMaximum` → their numeric form, `definitions` → `$defs` (with local `$ref`s rewritten to match), tuple `items` → `prefixItems` (and `additionalItems` → `items`), and splits `dependencies` into `dependentRequired`/`dependentSchemas`; downgrading reverses each of these. The transform recurses through every subschema and, like the diff command, leaves anything it cannot safely convert untouched rather than guessing. The result opens in a new editor beside the source — JSON for JSON sources, YAML for YAML — so the original file is never modified; a schema that already conforms reports "nothing to migrate".
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| ✅ (swap icon, schema files only) | ✅ |
+<!-- spec:F22 end -->
 
 ---
 

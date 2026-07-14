@@ -28,6 +28,8 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [F18-code-generation.md](F18-code-generation.md) | Code generation (schema → TypeScript types) |
 | [F19-toml-intellisense.md](F19-toml-intellisense.md) | TOML schema IntelliSense (completions & hover) |
 | [F20-workspace-validation.md](F20-workspace-validation.md) | Workspace-wide validation report |
+| [F21-validation-quickfix.md](F21-validation-quickfix.md) | Quick fixes for data-validation errors |
+| [F22-draft-migration.md](F22-draft-migration.md) | Schema draft migration (07 ↔ 2019-09 ↔ 2020-12) |
 | [S01-security.md](S01-security.md) | Webview security (CSP, nonces, sanitisation) |
 | [S02-workspace-trust.md](S02-workspace-trust.md) | Workspace Trust integration |
 | [S03-performance.md](S03-performance.md) | Performance and resource management |
