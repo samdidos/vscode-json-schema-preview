@@ -104,7 +104,10 @@ jobs:
       - name: Run E2E tests (capture screenshot frames)
         env:
           DISPLAY: ':99.0'
-        run: npx playwright test --config playwright.e2e.config.ts
+        # Only the mouse demos feed GIFs (make-gifs.mjs consumes the *-mouse
+        # frame dirs); the non-mouse twins run as CI UI-smoke instead
+        # (ci.yml e2e-smoke, S08-SR-11), so don't run them here.
+        run: npx playwright test --config playwright.e2e.config.ts --grep mouse
 
       # Failure screenshots and error context — without these a demo timeout is
       # just an opaque TimeoutError in the log.

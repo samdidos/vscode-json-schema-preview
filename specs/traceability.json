@@ -2774,6 +2774,22 @@
       ],
       "note": "integration job matrix runs on ubuntu-latest (via xvfb-run) and windows-latest"
     },
+    "S08-SR-10": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml",
+        "src/test/e2e"
+      ],
+      "note": "e2e-smoke job runs non-mouse Playwright demos non-blocking (crash/timeout detection), source-gated like integration"
+    },
+    "S08-SR-11": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/refresh-gifs.yml"
+      ],
+      "note": "smoke uses --grep-invert mouse; refresh-gifs uses --grep mouse; each variant runs in exactly one place"
+    },
     "S09-NFR-01": {
       "status": "implemented",
       "impl": [

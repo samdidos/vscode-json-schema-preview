@@ -68,6 +68,30 @@ the mock necessarily lies.
   F04-FR-13/F10-FR-05, TOML string escaping) are platform bugs the unit
   suite cannot catch on Linux alone.
 
+### UI smoke (Playwright demo scripts)
+
+The `src/test/e2e/` Playwright scripts capture screenshot frames for the demo
+GIFs and contain no assertions, so historically they ran only in the
+GIF-refresh workflow. They come in two variants per feature: a **mouse** twin
+(`demo-<x>-mouse`, animated cursor — the frames the GIF pipeline consumes) and a
+**command-palette** twin (`demo-<x>`, no mouse — whose frames the GIF pipeline
+does **not** consume). The command-palette twins are otherwise wasted effort,
+yet they exercise the real feature flow through the actual VS Code UI, so they
+have value as a lightweight UI **smoke** signal the assertion-based integration
+suite (API-level) does not provide.
+
+- **S08-SR-10** The command-palette (non-mouse) demo scripts MUST run in CI as a
+  UI-smoke job (Playwright launching real VS Code, headless via xvfb), passing
+  when each demo flow completes without throwing or timing out — i.e. crash /
+  broken-selector detection, not pixel assertions. It MUST start **non-blocking**
+  (`continue-on-error`) like the integration job (S08-SR-08) while flakiness is
+  measured, and be gated by the same source-change filter (S09).
+- **S08-SR-11** The mouse demo scripts MUST NOT run in the smoke job, and the
+  GIF-refresh workflow MUST run **only** the mouse scripts (the non-mouse frames
+  it never consumes) — so each Playwright variant runs in exactly one place:
+  mouse → GIFs, non-mouse → CI smoke. The split is by test-title grep on
+  `mouse`, which every mouse test title contains and no non-mouse title does.
+
 ### Harness notes (implementation)
 
 - The `toml` language id and the `yaml.schemas` configuration key are not
@@ -100,8 +124,9 @@ the mock necessarily lies.
 
 ## Out of Scope
 
-- UI pixel/screenshot assertions (the demo-GIF Playwright scripts remain a
-  separate, non-test pipeline).
+- UI **pixel/screenshot** assertions. The mouse demo scripts remain a
+  screenshot-only pipeline; the non-mouse twins are promoted to a *crash-level*
+  smoke signal only (S08-SR-10), not visual assertions.
 - Marketplace-install/packaging tests beyond loading the compiled extension.
 - Replacing unit tests — pure-logic coverage stays in the mocked suite.
 

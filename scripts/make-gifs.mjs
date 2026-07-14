@@ -37,6 +37,8 @@ const DEMOS = [
   { name: 'ref-navigation',   dir: 'ref-navigation-mouse',  delay: 220, hold: 1_200 },
   { name: 'schema-linting',   dir: 'schema-linting-mouse',  delay: 220, hold: 1_400 },
   { name: 'workspace-validation', dir: 'workspace-validation-mouse', delay: 220, hold: 1_400 },
+  { name: 'quick-fix',        dir: 'quick-fix-mouse',       delay: 220, hold: 1_400 },
+  { name: 'draft-migration',  dir: 'draft-migration-mouse', delay: 220, hold: 1_400 },
 ];
 
 const { values: argv } = parseArgs({ options: { demo: { type: 'string' } }, strict: false });
