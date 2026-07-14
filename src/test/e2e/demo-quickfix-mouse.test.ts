@@ -7,6 +7,9 @@ import { installCursor, openFileVisible, clickEditorAction, clickSelector } from
 // that violates both — so validation surfaces two mechanically-fixable errors
 // (F21): a bad enum value and an unexpected property. The data file binds to the
 // schema via an inline relative `$schema` (resolved from the workspace root).
+// The data file's basename ("purchase.json") deliberately shares no
+// characters-in-order with the schema's ("order.schema.json") so Quick Open's
+// fuzzy filter can never treat them as ambiguous candidates.
 const ORDER_SCHEMA = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Order",
@@ -37,13 +40,13 @@ const ORDER_DATA = `{
  */
 test('demo-quickfix-mouse: apply a validation quick fix from the lightbulb', () => {
   seedWorkspaceFile('schemas/order.schema.json', ORDER_SCHEMA);
-  seedWorkspaceFile('data/order.json', ORDER_DATA);
+  seedWorkspaceFile('data/purchase.json', ORDER_DATA);
 
   return runDemo('quick-fix-mouse', async (window, capture) => {
     await installCursor(window);
     await capture('workspace');
 
-    await openFileVisible(window, capture, 'order.json');
+    await openFileVisible(window, capture, 'purchase.json');
 
     // Validate via the editor-title icon (shown for non-schema data files);
     // this sets the diagnostics and records the quick fixes.

@@ -14,9 +14,22 @@ async function quickOpen(
   await window.waitForTimeout(settleMs);
 }
 
-/** Opens a file by name using VS Code's Quick Open (Ctrl+P). */
-export const openFile = (window: Page, filename: string): Promise<void> =>
-  quickOpen(window, 'Control+p', filename, 1_500);
+/**
+ * Opens a file by name using VS Code's Quick Open (Ctrl+P). Waits for an actual
+ * result row before confirming, rather than a fixed delay: the file-search index
+ * for a freshly-seeded workspace can still be building when the query is typed
+ * (mirrors the same wait `openFileVisible` in mouse.ts already needs), and a
+ * blind Enter on an empty list is a silent no-op that leaves the wrong file (or
+ * none) open, failing confusingly much later downstream.
+ */
+export async function openFile(window: Page, filename: string): Promise<void> {
+  await window.keyboard.press('Control+p');
+  await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
+  await window.keyboard.type(filename, { delay: 40 });
+  await window.waitForSelector('.quick-input-list .monaco-list-row', { state: 'visible', timeout: 10_000 });
+  await window.keyboard.press('Enter');
+  await window.waitForTimeout(1_500);
+}
 
 /** Opens the Command Palette, types a command, and confirms with Enter. */
 export const runCommand = (window: Page, command: string): Promise<void> =>
