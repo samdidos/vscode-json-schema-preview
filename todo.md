@@ -3,6 +3,13 @@
 Validated against the codebase on 2026-07-09. Notes below say what's actually
 true today vs. what needs rethinking before implementing.
 
+**Status as of 2026-07-14: everything in this file is done except #11**
+(Snyk evaluation — still genuinely 🟡 started; needs a human to add a
+`SNYK_TOKEN` repo secret and a couple of weeks of side-by-side data before the
+replace-vs-keep-Trivy decision can be made, so it can't be closed out from a
+coding session). Once #11 is resolved one way or the other, this file can be
+deleted.
+
 ## Effort ranking (quick wins first)
 
 Ordered by implementation effort. **Note on this repo's workflow:** even a
@@ -21,7 +28,7 @@ the real cost for small items. Pure docs/config/CI edits skip that step.
 | 4 | Compact status bar items | **Small** (~1-2 hr) | Yes (F04/F07) | ✅ **DONE** — binding label middle-truncates long names (new `statusBarFormat.ts`); auth item is now icon-only with host in tooltip. F04-FR-06/F07-FR-10 amended + tested. |
 | 5 | Config to force the JS fallback renderer | **Medium** (~half day) | Yes (F01) | ✅ **DONE** — `jsonschema.preview.renderer: auto\|builtin` (F01-FR-27); `builtin` skips Python entirely. Pure `getPreviewRenderer()` tested; documented in the config guide. |
 | 9·b | Draft-aware Ajv (2019/2020 dialects) | **Medium** (~half day) | Yes (F03) | ✅ **DONE** — new pure `ajvFactory.ts` picks Ajv2020/Ajv2019/draft-07 by `$schema`, wired into the validate command (F03-FR-15). `sampleDataGenerator` deliberately stays on the default dialect (strips `$schema`). Tested end-to-end (prefixItems now enforced). |
-| — | S03-SR-13 + S08 test tails | **Medium** (~half day) | No (specs exist) | Additive E2E/timing assertions on existing harness; cheapest way to fully *close out* a spec. |
+| — | S03-SR-13 + S08 test tails | **Medium** (~half day) | No (specs exist) | ✅ **DONE** — new `singleFolder.commandSmoke.test.ts` (S08-SR-06, one test per contributed command), `singleFolder.previewPerf.test.ts` (S03-SR-13/S08-SR-07, p95 budget measured and asserted), `singleFolder.remoteSchema.test.ts` + `startFixtureHttpServer` helper (S08-NFR-02, offline remote-schema scenario); S08-NFR-01 promoted from real CI run timings (no new code). `specs/traceability.json` now has **zero `planned` requirements**. |
 | 11 | Evaluate Snyk vs. Trivy | **Medium** (spike, ~1-2 days over 2 wks) | Likely (constitution note) if it *replaces* Trivy | 🟡 **STARTED** — weekly non-blocking `snyk.yml` added (schedule-only, no-ops until a `SNYK_TOKEN` secret is set). This is the side-by-side eval step; no constitution change yet since nothing is replaced. Add the token to actually run it. |
 | 19 | F19 — TOML IntelliSense | **Large** (~2-3 days) | No (spec exists) | ✅ **DONE** — completion + hover providers for inline-`$schema`-bound `.toml` files: pure `tomlIntellisense.ts` (position→subschema mapping via smol-toml, key/value completions, F13-style hover) + thin `TomlIntellisenseProvider.ts` glue. Strictly offline in-request (local disk + F08 cache only; FR-02 wording clarified to match NFR-02). All 9 F19 reqs implemented + tagged. |
 | 18 | F18 — Code generation | **Large** (~3-4 days) | No (spec done) | ✅ **DONE** — `jsonschema.generateTypes`: pure `typeGenerator.ts` (quicktype-core, pinned exact) fed by F14's `bundleSchema`; bind-success notification now offers Generate Sample/Types. One spec refinement while implementing: pre-**bundle**, not pre-dereference — full inlining duplicates shared `$defs` into separately-named types (verified empirically), bundling keeps them as single named declarations. All 12 F18 reqs implemented + tagged; snapshots compiled under `tsc --strict` in tests. |
@@ -259,24 +266,42 @@ tails on specs that are otherwise already implemented.
   progress UI + diagnostics), likely the biggest lift of the three.
 
 ### Small tails on already-implemented specs
-- **S03-SR-13** (`specs/S03-performance.md`) — one soft NFR: preview
-  generation should complete within 2s p95 for typical schemas. Per its own
-  note ("measure via E2E timing before promoting"), this just needs an E2E
-  timing assertion, not new product code — cheap, and a natural pairing
-  with the next item.
-- **S08 — E2E testing gaps** (`specs/S08-e2e-testing.md`), 4 planned reqs:
-  `SR-06` (one smoke test per user-facing command), `SR-07` (assert
-  S03-SR-13's p95 budget in E2E — same work as above), `NFR-01` (job should
-  finish under 10 min), `NFR-02` (E2E suite must not hit the network). The
-  E2E harness itself already exists and runs in CI
-  (per `AGENTS.md`'s "Integration tests" section) — this is filling
-  remaining coverage/perf assertions in it, not standing up new
-  infrastructure. Cheapest way to close out fully-planned status on a spec.
+- **S03-SR-13** (`specs/S03-performance.md`) — ✅ **DONE** — new
+  `singleFolder.previewPerf.test.ts` calls `openJsonSchema` directly (the
+  `jsonschema.preview` command handler fires it without awaiting, so timing
+  the command dispatch itself would only measure microtask overhead) 20
+  times against the fixture schema with the renderer forced to `builtin`
+  (F01-FR-27) — deterministic and offline, unlike the optional Python path,
+  which has its own separate budget (S03-SR-11) and can `pip install` on a
+  cold machine. Asserts p95 ≤ 2000ms and logs the measured samples.
+- **S08 — E2E testing gaps** (`specs/S08-e2e-testing.md`) — ✅ **DONE**, all
+  4 planned reqs:
+  - `SR-06` — new `singleFolder.commandSmoke.test.ts`, one test per
+    `package.json#contributes.commands` entry (16 commands). Most exercise a
+    real success path against the fixtures; a few intentionally stop at the
+    nearest *safe* branch instead of their full success path — commands
+    whose real success needs the network (`cacheSchemaLocally`,
+    `refreshSchemaCache`'s download branch) or an unstubbed native dialog
+    with no scriptable default (`preview`'s `showOpenDialog` fallback,
+    `diffSchema`'s Workspace-file/Remote-URL baseline options) — documented
+    in the suite's file-level comment.
+  - `SR-07` — the same `previewPerf.test.ts` run above; asserts and logs the
+    p95 number per SR-07's "measured … and reported."
+  - `NFR-01` — not new code: pulled real durations from recent `ci.yml`
+    "Integration tests" runs (GitHub Actions run 29279453959/29280433507,
+    2026-07-13) — ~47–52s on `ubuntu-latest`, ~1m37s–1m50s on
+    `windows-latest` including the VS Code download, comfortably under the
+    10-minute budget. Recorded as the promotion evidence in
+    `specs/traceability.json`.
+  - `NFR-02` — new `startFixtureHttpServer` helper (`helpers.ts`, loopback
+    HTTP server on a random port) plus `singleFolder.remoteSchema.test.ts`,
+    which runs `jsonschema.cacheSchemaLocally` against it end to end
+    (download → redirect binding → validate) — the E2E suite's first actual
+    remote-schema scenario, proven to never touch the real network.
 
-**For a decision:** S03-SR-13 + S08 together are the cheapest way to fully
-close out specs (small, additive, no new UI). Of the three new features,
-F19 (TOML IntelliSense) has the smallest surface area; F18 and F20 are
-comparably sized and both add a new top-level command.
+**All of §8 is now done** (both the three whole new features — F18/F19/F20,
+see the effort table — and the S03-SR-13 + S08 tails above): `specs/traceability.json`
+has zero `planned` requirements left as of this pass.
 
 ## 9. Validation bug report — anyOf (array | object) shows the wrong branch's error
 Investigated the "I entered an object but got an error saying it should be
