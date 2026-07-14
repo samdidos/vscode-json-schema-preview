@@ -9,8 +9,7 @@ None of that can be broken by a docs-only or spec-only change, yet every PR —
 including one that only edits `specs/traceability.json` or a `docs/**` page —
 paid for all of it. Meanwhile the one check that *does* matter for exactly
 that kind of PR, requirement/documentation traceability drift, ran nowhere in
-CI at all (see `todo.md` item 10's investigation) — the opposite of what was
-needed.
+CI at all — the opposite of what was needed.
 
 This spec scopes the expensive jobs to diffs that could plausibly break them,
 while keeping the cheap traceability checks unconditional so they still catch
