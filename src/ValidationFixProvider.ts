@@ -3,7 +3,7 @@
 // QuickFix code actions on the validation diagnostics. All fix *logic* lives in
 // the pure `validationFix` module; this class is thin glue.
 import * as vscode from 'vscode';
-import { type ValidationFix, computeFixEdits } from './validationFix';
+import { type ValidationFix, computeFixEdits, fixTargetPointer } from './validationFix';
 
 const VALIDATION_SOURCE = 'JSON Schema';
 
@@ -26,7 +26,7 @@ export class ValidationFixProvider implements vscode.CodeActionProvider {
 
   provideCodeActions(
     document: vscode.TextDocument,
-    range: vscode.Range | vscode.Selection,
+    _range: vscode.Range | vscode.Selection,
     context: vscode.CodeActionContext,
   ): vscode.CodeAction[] {
     const fixes = this.byUri.get(document.uri.toString());
@@ -36,19 +36,20 @@ export class ValidationFixProvider implements vscode.CodeActionProvider {
     const diagnostics = context.diagnostics.filter(d => d.source === VALIDATION_SOURCE);
     if (!diagnostics.length) { return []; }
 
-    const text = document.getText();
-    const from = document.offsetAt(range.start);
-    const to = document.offsetAt(range.end);
+    // F21-FR-08: offer a fix only when the error it addresses is among the
+    // diagnostics at the cursor. Matching by the error's instance path (carried
+    // on the diagnostic `code`) — rather than geometric range overlap — is
+    // robust to the diagnostic sitting on a property key while the fix rewrites
+    // the value on the same line.
+    const diagnosticPaths = new Set(diagnostics.map(d => String(d.code ?? '')));
 
+    const text = document.getText();
     const actions: vscode.CodeAction[] = [];
     for (const fix of fixes) {
+      if (!diagnosticPaths.has(fixTargetPointer(fix))) { continue; }
+
       const edits = computeFixEdits(text, fix);
       if (!edits.length) { continue; } // stale / target gone (F21-FR-06)
-
-      // F21-FR-08: only offer a fix whose edit span overlaps the request range.
-      const spanStart = Math.min(...edits.map(e => e.offset));
-      const spanEnd = Math.max(...edits.map(e => e.offset + e.length));
-      if (spanEnd < from || spanStart > to) { continue; }
 
       const action = new vscode.CodeAction(fix.title, vscode.CodeActionKind.QuickFix);
       const edit = new vscode.WorkspaceEdit();
