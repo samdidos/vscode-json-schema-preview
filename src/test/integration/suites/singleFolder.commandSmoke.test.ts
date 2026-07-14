@@ -172,6 +172,19 @@ suite('[S08-SR-06] Command smoke tests — one per contributed command', () => {
     assertNoErrors(errors, 'jsonschema.diffSchema');
   });
 
+  test('[S08-SR-06] jsonschema.migrateDraft migrates the fixture schema to another draft', async () => {
+    await openDocument(schemaUri().fsPath);
+    // The fixture schema is draft-07; migrating to 2020-12 changes $schema and
+    // opens the result in a new editor — a real, offline run of the handler.
+    const { errors } = await withQuickPick(
+      items => items.find((i: any) => i.id === '2020-12'),
+      () => withCapturedMessages(
+        () => vscode.commands.executeCommand('jsonschema.migrateDraft') as Promise<void>,
+      ),
+    );
+    assertNoErrors(errors, 'jsonschema.migrateDraft');
+  });
+
   test('[S08-SR-06] jsonschema.lint.insertSchemaDeclaration inserts a $schema declaration into the fixture data file', async () => {
     await openDocument(DATA_JSON_PATH);
     const { errors } = await withQuickPick(

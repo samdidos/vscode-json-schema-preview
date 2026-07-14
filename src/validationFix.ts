@@ -18,7 +18,7 @@ export interface AjvErrorLike {
   message?: string;
 }
 
-export type FixKind =
+type FixKind =
   | 'add-required'
   | 'remove-additional'
   | 'set-enum'
