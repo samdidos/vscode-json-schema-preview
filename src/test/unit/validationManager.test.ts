@@ -395,6 +395,20 @@ suite('validateCurrentFile() — schema path resolution', () => {
   });
 });
 
+// ── Workspace trust (S02) ──────────────────────────────────────────────────────
+
+suite('[S02-SR-07] validateCurrentFile() — permitted in untrusted workspaces', () => {
+  test('validation runs and reports results with the workspace untrusted', async () => {
+    (vscode.workspace as any).isTrusted = false; // Restricted Mode
+    const doc = makeDoc('json', '{"$schema":"https://example.com/s.json","name":"Alice"}');
+    activate(doc);
+    const schema = { type: 'object', properties: { name: { type: 'string' } } };
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any)();
+    // AJV validation needs no Python subprocess, so trust must not gate it.
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/is valid against s\.json/));
+  });
+});
+
 // ── Quick-fix recording (F21) ──────────────────────────────────────────────────
 
 suite('[F21-FR-09] validateCurrentFile() — records quick fixes', () => {

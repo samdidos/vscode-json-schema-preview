@@ -65,7 +65,15 @@ suite('extension — activate()', () => {
     assert.ok(vscode.workspace.onDidChangeTextDocument.called);
   });
 
-  test('setContext called for active editor on startup — JSON schema file', () => {
+  test('[S03-SR-09] creates a dedicated "JSON Schema Preview" LogOutputChannel', () => {
+    ext.activate(context);
+    assert.ok(
+      vscode.window.createOutputChannel.calledWith('JSON Schema Preview', { log: true }),
+      'expected a LogOutputChannel named "JSON Schema Preview"',
+    );
+  });
+
+  test('[F01-FR-03] setContext called for active editor on startup — JSON schema file', () => {
     const doc = {
       languageId: 'json',
       getText: () => JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }),
@@ -78,7 +86,7 @@ suite('extension — activate()', () => {
     );
   });
 
-  test('setContext called for active editor on startup — non-schema file', () => {
+  test('[F01-FR-03] setContext called for active editor on startup — non-schema file', () => {
     const doc = {
       languageId: 'json',
       getText: () => JSON.stringify({ title: 'plain data' }),
