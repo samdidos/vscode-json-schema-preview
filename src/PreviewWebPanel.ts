@@ -29,10 +29,20 @@ export function previewJsonSchema(context: vscode.ExtensionContext) {
 // rather than declaring itself to be one. Only a value referencing the
 // JSON Schema meta-schema (hosted at json-schema.org for every draft:
 // draft-04 through 2020-12) means "this document is itself a schema".
+// The hostname is checked via URL parsing rather than a substring test —
+// `.includes('json-schema.org')` would also match an attacker-controlled
+// host like `json-schema.org.evil.com` or `evil.com/?x=json-schema.org`.
 const JSON_SCHEMA_META_HOST = 'json-schema.org';
 
 function isJsonSchemaMetaRef(value: unknown): boolean {
-  return typeof value === 'string' && value.includes(JSON_SCHEMA_META_HOST);
+  if (typeof value !== 'string') {
+    return false;
+  }
+  try {
+    return new URL(value).hostname === JSON_SCHEMA_META_HOST;
+  } catch {
+    return false;
+  }
 }
 
 export function isJsonSchemaFile(document?: vscode.TextDocument) {

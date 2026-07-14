@@ -21,12 +21,16 @@ in a VS Code webview panel beside the editor. Rendering is delegated to the
   `json`, `jsonc`, `yaml`, `yml`, or `jsonl`.
 - **F01-FR-02** A file SHALL be considered a JSON Schema file if its parsed root
   object contains a `$schema` key (JSON/JSONC) or a line matching `^\$schema:`
-  is present (YAML), **and** that key's value is a string referencing a JSON
-  Schema meta-schema (containing the host `json-schema.org`, covering every
-  draft from draft-04 through 2020-12). A `$schema` value that does not
-  reference a meta-schema — e.g. a data file bound to a schema via its own
-  inline `$schema` field (F10), which points *at* a schema file rather than
-  declaring itself to be one — MUST NOT be considered a JSON Schema file.
+  is present (YAML), **and** that key's value is a URL string whose hostname is
+  exactly `json-schema.org` (the meta-schema host for every draft from
+  draft-04 through 2020-12) — determined by parsing the value as a URL and
+  comparing its hostname, not by a substring/`includes` check, which would
+  also match an unrelated or attacker-controlled host such as
+  `json-schema.org.evil.com` or `evil.com/?x=json-schema.org`. A `$schema`
+  value that does not resolve to that hostname — e.g. a data file bound to a
+  schema via its own inline `$schema` field (F10), which points *at* a schema
+  file rather than declaring itself to be one — MUST NOT be considered a JSON
+  Schema file.
 - **F01-FR-03** When a schema file is the active editor the VS Code context key
   `jsonschema.isJsonSchema` MUST be set to `true`; it MUST be set to `false`
   for all other files.
