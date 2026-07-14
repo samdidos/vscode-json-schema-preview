@@ -168,7 +168,7 @@ Flattens a multi-file schema into one self-contained document, opened in a new e
 - **Bundle** — external refs are pulled into `$defs` and rewritten to local pointers (round-trippable).
 - **Dereference** — refs are replaced inline by their targets (maximally portable); cyclic references are detected and kept as `$defs` refs so expansion always terminates.
 
-Remote refs resolve using stored credentials and prefer an existing local cache entry over the network.
+Remote refs resolve using stored credentials and prefer an existing local cache entry over the network. Resolution runs under cancellable progress showing which document is currently being fetched. The root schema's `$schema`/`$id` are always preserved; any nested `$id` that would change resolution semantics after inlining is stripped and called out in the completion message. To bound memory on very large schema trees, the operation aborts with a clear error past a cap of 100 external documents.
 
 | Toolbar | Command Palette |
 |---------|----------------|
