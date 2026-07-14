@@ -9,15 +9,20 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/vscode-json-schema-preview/logo.svg' }],
   ],
 
+  // Draft blog posts live under docs/blog/drafts/ and must not be published
+  // until they're ready — exclude them from the build so they never render as
+  // a reachable page.
+  srcExclude: ['**/drafts/**'],
+
   themeConfig: {
     logo: '/logo.svg',
     siteTitle: 'JSON Schema Preview',
 
+    // Top nav is high-level destinations only; the individual guide pages live
+    // in the left sidebar (below) so the two never duplicate each other.
     nav: [
-      { text: 'Guide', link: '/guide/' },
-      { text: 'Commands', link: '/guide/commands' },
-      { text: 'Authentication', link: '/guide/authentication' },
-      { text: 'Configuration', link: '/guide/configuration' },
+      { text: 'Guide', link: '/guide/', activeMatch: '/guide/' },
+      { text: 'Blog', link: '/blog/', activeMatch: '/blog/' },
       {
         text: 'GitHub',
         link: 'https://github.com/samdidos/vscode-json-schema-preview',
@@ -25,30 +30,38 @@ export default defineConfig({
       },
     ],
 
-    sidebar: [
-      {
-        text: 'Getting Started',
-        items: [
-          { text: 'Introduction', link: '/guide/' },
-          { text: 'Commands', link: '/guide/commands' },
-        ],
-      },
-      {
-        text: 'Guides',
-        items: [
-          { text: 'Private & Authenticated Schemas', link: '/guide/authentication' },
-          { text: 'Configuration', link: '/guide/configuration' },
-        ],
-      },
-    ],
+    // Path-scoped sidebars: the guide sidebar lists every guide page with names
+    // matching their titles; the blog gets its own. No entry restates a nav
+    // label with a different name.
+    sidebar: {
+      '/guide/': [
+        {
+          text: 'Guide',
+          items: [
+            { text: 'Introduction', link: '/guide/' },
+            { text: 'Commands', link: '/guide/commands' },
+            { text: 'Authentication', link: '/guide/authentication' },
+            { text: 'Configuration', link: '/guide/configuration' },
+          ],
+        },
+      ],
+      '/blog/': [
+        {
+          text: 'Blog',
+          items: [
+            { text: 'All posts', link: '/blog/' },
+          ],
+        },
+      ],
+    },
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/samdidos/vscode-json-schema-preview' },
     ],
 
     footer: {
-      message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2024-present Samuel Cardinal',
+      message: 'Released under the <a href="https://github.com/samdidos/vscode-json-schema-preview/blob/main/LICENSE.md">MIT License</a>.',
+      copyright: 'Copyright © 2026-present Samuel Cardinal',
     },
 
     search: { provider: 'local' },
