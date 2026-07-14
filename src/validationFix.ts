@@ -230,3 +230,31 @@ export function computeFixEdits(text: string, fix: ValidationFix, formatting: Fo
 export function applyFix(text: string, fix: ValidationFix, formatting: FormattingOptions = DEFAULT_FORMATTING): string {
   return applyEdits(text, computeFixEdits(text, fix, formatting));
 }
+
+/** Escape a JSON Pointer reference token (RFC 6901), so the pointer this module
+ *  builds matches the `instancePath` Ajv reports for the same node. */
+function escapePointerToken(token: string): string {
+  return token.replace(/~/g, '~0').replace(/\//g, '~1');
+}
+
+/** Build the Ajv-style `instancePath` string for pointer `segments`
+ *  (`[]` → `/`, the root). */
+export function pointerOf(segments: (string | number)[]): string {
+  return segments.length ? '/' + segments.map(s => escapePointerToken(String(s))).join('/') : '/';
+}
+
+/**
+ * The `instancePath` of the *error* a fix addresses — i.e. the diagnostic it
+ * belongs to. `add-required`/`remove-additional` edit a child keyed by the last
+ * path segment, so their error sits on the *parent* object; the value edits
+ * (`set-enum`/`set-const`/`coerce-type`) sit on the node itself. Used to match a
+ * fix to the validation diagnostics present at the cursor (F21-FR-08), which is
+ * robust to the diagnostic range sitting on a key while the edit rewrites the
+ * value.
+ */
+export function fixTargetPointer(fix: ValidationFix): string {
+  const segments = fix.kind === 'add-required' || fix.kind === 'remove-additional'
+    ? fix.path.slice(0, -1)
+    : fix.path;
+  return pointerOf(segments);
+}

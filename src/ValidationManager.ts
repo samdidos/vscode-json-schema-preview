@@ -127,6 +127,9 @@ export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache
           // in the Problems panel from VS Code's built-in JSON/YAML
           // language-server validation.
           diagnostic.source = 'JSON Schema';
+          // F21-FR-08: carry the error's instance path so the quick-fix provider
+          // can match a fix to the diagnostics present at the cursor (`/` = root).
+          diagnostic.code = err.instancePath || '/';
           diags.push(diagnostic);
         }
       }

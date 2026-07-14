@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import {
-  buildFixes, applyFix, computeFixEdits, type AjvErrorLike, type ValidationFix,
+  buildFixes, applyFix, computeFixEdits, pointerOf, fixTargetPointer,
+  type AjvErrorLike, type ValidationFix,
 } from '../../validationFix';
 
 /** Shorthand for an Ajv-style error object. */
@@ -152,6 +153,24 @@ suite('[F21-FR-01] buildFixes() — unsupported keywords', () => {
     for (const kw of ['pattern', 'minLength', 'format', 'minimum', 'uniqueItems']) {
       assert.deepStrictEqual(buildFixes([err(kw, '/x', {})], {}, { x: 1 }), []);
     }
+  });
+});
+
+suite('[F21-FR-08] pointerOf() / fixTargetPointer() — diagnostic matching', () => {
+  test('pointerOf builds an Ajv-style instance path ([] = root)', () => {
+    assert.strictEqual(pointerOf([]), '/');
+    assert.strictEqual(pointerOf(['status']), '/status');
+    assert.strictEqual(pointerOf(['items', 0]), '/items/0');
+    assert.strictEqual(pointerOf(['a/b', 'c~d']), '/a~1b/c~0d'); // RFC 6901 escaping
+  });
+
+  test('value fixes target their own node; add/remove target the parent object', () => {
+    const enumFix = only(buildFixes([err('enum', '/status', { allowedValues: ['open'] })], {}, { status: 'x' }));
+    assert.strictEqual(fixTargetPointer(enumFix), '/status');
+    const addFix = only(buildFixes([err('required', '', { missingProperty: 'name' })], {}, {}));
+    assert.strictEqual(fixTargetPointer(addFix), '/'); // parent of the inserted child = root
+    const removeFix = only(buildFixes([err('additionalProperties', '/user', { additionalProperty: 'extra' })], {}, { user: { extra: 1 } }));
+    assert.strictEqual(fixTargetPointer(removeFix), '/user');
   });
 });
 

@@ -64,9 +64,11 @@ mechanical fix MUST NOT offer one" (F17-FR-12).
   with the F03 validation diagnostics (`source: "JSON Schema"`), so the
   lightbulb appears on exactly those diagnostics and each action clears its
   diagnostic when applied.
-- **F21-FR-08** Only fixes whose edit span intersects the requested range MUST
-  be offered, so an unrelated error elsewhere in the file does not surface its
-  fix at the cursor.
+- **F21-FR-08** A fix MUST be offered only when the error it addresses is among
+  the validation diagnostics in context — matched by the error's instance path
+  (carried on the diagnostic), not by geometric range overlap — so an unrelated
+  error elsewhere does not surface its fix at the cursor, while a value-editing
+  fix still appears when its diagnostic sits on the property key.
 - **F21-FR-09** Recorded fixes MUST be cleared when the document changes or
   closes, and replaced wholesale on each re-validation, so the lightbulb never
   offers a fix derived from a superseded validation run.
