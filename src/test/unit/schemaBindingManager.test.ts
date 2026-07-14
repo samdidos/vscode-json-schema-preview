@@ -1115,3 +1115,74 @@ suite('SchemaBindingManager — refresh() inline precedence', () => {
     assert.ok(!statusBarItem.tooltip?.includes('Note:'));
   });
 });
+
+// ─── Native schema detection in the status bar (F04-FR-15) ───────────────────
+
+suite('[F04-FR-15] SchemaBindingManager — native schema detection', () => {
+  setup(() => vscode.resetAll());
+
+  /** Construct the manager with `doc` active so the constructor's refresh runs. */
+  function withActive(doc: any, catalog?: any) {
+    vscode.window.activeTextEditor = { document: doc };
+    return new SchemaBindingManager(makeContext(), catalog);
+  }
+
+  const commitlintCatalog = {
+    browse: async () => undefined,
+    getCachedEntries: () => [{
+      name: 'commitlint',
+      url: 'https://json.schemastore.org/commitlintrc.json',
+      fileMatch: ['**/.commitlintrc.json'],
+    }],
+    warm: async () => { /* already cached */ },
+  };
+
+  test('shows an "auto" state for a SchemaStore-catalog match instead of unbound', () => {
+    vscode.workspace.asRelativePath.callsFake(() => '.commitlintrc.json');
+    withActive(makeDoc('json', '/ws/.commitlintrc.json'), commitlintCatalog);
+    assert.match(statusBarItem.text, /Schema: commitlint \(auto\)/);
+    assert.ok(!statusBarItem.text.includes('unbound'));
+    assert.match(String(statusBarItem.tooltip), /resolved automatically/i);
+  });
+
+  test('shows an "auto" state for an extension jsonValidation match', () => {
+    vscode.extensions.all = [{ packageJSON: { contributes: { jsonValidation: [
+      { fileMatch: 'package.json', url: 'https://x/package.json' },
+    ] } } }];
+    vscode.workspace.asRelativePath.callsFake(() => 'package.json');
+    withActive(makeDoc('json', '/ws/package.json'));
+    assert.match(statusBarItem.text, /Schema: package\.json \(auto\)/);
+  });
+
+  test('[F04-FR-07] still shows "unbound" when nothing matches', () => {
+    vscode.workspace.asRelativePath.callsFake(() => 'random-data.json');
+    withActive(makeDoc('json', '/ws/random-data.json'), commitlintCatalog);
+    assert.match(statusBarItem.text, /Schema: unbound/);
+  });
+
+  test('an explicit settings binding takes precedence over an auto match', () => {
+    setConfig('json', 'schemas', [{ url: '/ws/s.json', fileMatch: ['data.json'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    const catalog = {
+      browse: async () => undefined,
+      getCachedEntries: () => [{ name: 'x', url: 'u', fileMatch: ['data.json'] }],
+      warm: async () => {},
+    };
+    withActive(makeDoc('json', '/ws/data.json'), catalog);
+    assert.ok(statusBarItem.text.includes('s.json'));
+    assert.ok(!statusBarItem.text.includes('auto'));
+  });
+
+  test('warms the catalog once, then refreshes so a later match can appear', async () => {
+    let warmCalls = 0;
+    const catalog = {
+      browse: async () => undefined,
+      getCachedEntries: () => [],
+      warm: async () => { warmCalls++; },
+    };
+    vscode.workspace.asRelativePath.callsFake(() => '.commitlintrc.json');
+    withActive(makeDoc('json', '/ws/.commitlintrc.json'), catalog);
+    await new Promise(r => setImmediate(r));
+    assert.strictEqual(warmCalls, 1, 'catalog must be warmed exactly once per session');
+  });
+});

@@ -2835,6 +2835,15 @@
         ".github/workflows/codeql.yml"
       ],
       "note": "analyze's if: always() && (schedule || changes) keeps the weekly cron unconditional"
+    },
+    "F04-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/nativeSchema.ts",
+        "src/SchemaBindingManager.ts",
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "status bar shows an auto state when VS Code resolves a schema natively (jsonValidation or SchemaStore catalog) instead of unbound"
     }
   }
 }
