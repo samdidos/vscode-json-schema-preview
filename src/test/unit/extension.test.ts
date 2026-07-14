@@ -238,7 +238,7 @@ suite('extension — command handlers', () => {
   test('[F16-FR-02] generateSampleData — JSON output opens an untitled document', async () => {
     const doc = {
       languageId: 'json',
-      getText: () => JSON.stringify({ $schema: 'x', type: 'object', required: ['name'], properties: { name: { type: 'string' } } }),
+      getText: () => JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', required: ['name'], properties: { name: { type: 'string' } } }),
       uri: { fsPath: '/ws/schema.json' },
     };
     vscode.window.activeTextEditor = { document: doc };
@@ -253,7 +253,7 @@ suite('extension — command handlers', () => {
   test('[F16-FR-02] generateSampleData — YAML output uses yaml language', async () => {
     const doc = {
       languageId: 'json',
-      getText: () => JSON.stringify({ $schema: 'x', type: 'object', properties: { n: { type: 'number' } }, required: ['n'] }),
+      getText: () => JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', properties: { n: { type: 'number' } }, required: ['n'] }),
       uri: { fsPath: '/ws/schema.json' },
     };
     vscode.window.activeTextEditor = { document: doc };
@@ -266,7 +266,7 @@ suite('extension — command handlers', () => {
   test('generateSampleData — cancelling the format picker does nothing', async () => {
     const doc = {
       languageId: 'json',
-      getText: () => JSON.stringify({ $schema: 'x', type: 'string' }),
+      getText: () => JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'string' }),
       uri: { fsPath: '/ws/schema.json' },
     };
     vscode.window.activeTextEditor = { document: doc };
@@ -312,7 +312,7 @@ suite('extension — command handlers', () => {
   test('[F16-FR-08] generateSampleData — unsatisfiable schema shows an error', async () => {
     const doc = {
       languageId: 'json',
-      getText: () => JSON.stringify({ $schema: 'x', type: 'string', minLength: 5, maxLength: 2 }),
+      getText: () => JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'string', minLength: 5, maxLength: 2 }),
       uri: { fsPath: '/ws/schema.json' },
     };
     vscode.window.activeTextEditor = { document: doc };

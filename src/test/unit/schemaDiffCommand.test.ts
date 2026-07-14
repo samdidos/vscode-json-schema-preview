@@ -66,9 +66,9 @@ suite('[F15-FR-01] diffSchema — gating & registration', () => {
 
 suite('[F15-FR-02][F15-FR-03] diffSchema — baselines', () => {
   test('offers Git HEAD when a committed version exists and reports breaking changes', async () => {
-    stubGit(JSON.stringify({ $schema: 'x', type: 'object', required: ['a'] }));
+    stubGit(JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', required: ['a'] }));
     const { handler } = register();
-    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'x', type: 'object', required: ['a', 'b'] }));
+    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', required: ['a', 'b'] }));
     let offered: any[] = [];
     vscode.window.showQuickPick.callsFake(async (items: any[]) => { offered = items; return items.find((i: any) => i.id === 'head'); });
     vscode.window.showInformationMessage.resolves(undefined);
@@ -80,7 +80,7 @@ suite('[F15-FR-02][F15-FR-03] diffSchema — baselines', () => {
   test('[F15-FR-03] hides Git HEAD when no repository/committed version', async () => {
     stubGit(undefined);
     const { handler } = register();
-    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'x' }));
+    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
     let offered: any[] = [];
     vscode.window.showQuickPick.callsFake(async (items: any[]) => { offered = items; return undefined; });
     await handler();
@@ -90,9 +90,9 @@ suite('[F15-FR-02][F15-FR-03] diffSchema — baselines', () => {
   });
 
   test('[F15-FR-11] identical schemas report no structural changes', async () => {
-    stubGit(JSON.stringify({ $schema: 'x', type: 'object' }));
+    stubGit(JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'object' }));
     const { handler } = register();
-    activate(path.join(dir, 's.json'), JSON.stringify({ type: 'object', $schema: 'x' }));
+    activate(path.join(dir, 's.json'), JSON.stringify({ type: 'object', $schema: 'http://json-schema.org/draft-07/schema#' }));
     vscode.window.showQuickPick.callsFake(async (items: any[]) => items.find((i: any) => i.id === 'head'));
     await handler();
     assert.ok(vscode.window.showInformationMessage.calledWithMatch(/No structural changes/));
@@ -103,7 +103,7 @@ suite('[F15-FR-02][F15-FR-03] diffSchema — baselines', () => {
     fs.writeFileSync(basePath, JSON.stringify({ type: 'object', properties: { a: {} } }));
     stubGit(undefined);
     const { handler } = register();
-    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'x', type: 'object', properties: { a: {}, b: {} } }));
+    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', properties: { a: {}, b: {} } }));
     vscode.window.showQuickPick.callsFake(async (items: any[]) => items.find((i: any) => i.id === 'file'));
     vscode.window.showOpenDialog.resolves([{ fsPath: basePath }]);
     vscode.window.showInformationMessage.resolves(undefined);
@@ -115,7 +115,7 @@ suite('[F15-FR-02][F15-FR-03] diffSchema — baselines', () => {
     stubGit(undefined);
     const auth = fakeAuth(async () => { throw new AuthRequiredError('https://corp/s.json', 401); });
     const { handler } = register(auth);
-    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'x' }));
+    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }));
     vscode.window.showQuickPick.callsFake(async (items: any[]) => items.find((i: any) => i.id === 'url'));
     vscode.window.showInputBox.resolves('https://corp/s.json');
     vscode.window.showErrorMessage.resolves(undefined);
@@ -126,9 +126,9 @@ suite('[F15-FR-02][F15-FR-03] diffSchema — baselines', () => {
 
 suite('[F15-FR-09] diffSchema — report', () => {
   test('the "Open report" button opens a read-only virtual document with the report', async () => {
-    stubGit(JSON.stringify({ $schema: 'x', required: ['a'] }));
+    stubGit(JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', required: ['a'] }));
     const { handler, provider } = register();
-    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'x', required: ['a', 'b'] }));
+    activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', required: ['a', 'b'] }));
     vscode.window.showQuickPick.callsFake(async (items: any[]) => items.find((i: any) => i.id === 'head'));
     vscode.window.showInformationMessage.resolves('Open report');
     await handler();

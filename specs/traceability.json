@@ -21,7 +21,7 @@
       "impl": [
         "src/PreviewWebPanel.ts"
       ],
-      "note": "isJsonSchemaFile() unit-tested"
+      "note": "isJsonSchemaFile() requires the $schema value to reference the json-schema.org meta-schema, not merely be present, so an inline-bound data file (F10) isn't misclassified as a schema; unit-tested"
     },
     "F01-FR-03": {
       "status": "manual",

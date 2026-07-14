@@ -54,21 +54,21 @@ suite('[F18-FR-01] generateTypesCommand — gating', () => {
 
   test('[S02] blocked in an untrusted workspace', async () => {
     (vscode.workspace as any).isTrusted = false;
-    activate(path.join(dir, 'schema.json'), '{"$schema":"x","type":"object"}');
+    activate(path.join(dir, 'schema.json'), '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object"}');
     await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
     assert.ok(vscode.window.showWarningMessage.called);
     assert.ok(!vscode.window.showQuickPick.called);
   });
 
   test('[F18-FR-02] cancelling the language picker does nothing', async () => {
-    activate('/ws/schema.json', '{"$schema":"x","type":"object"}');
+    activate('/ws/schema.json', '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object"}');
     vscode.window.showQuickPick.resolves(undefined);
     await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
     assert.ok(!vscode.workspace.openTextDocument.called);
   });
 
   test('[F18-FR-02][F18-FR-10] the picker offers every supported target, TypeScript first', async () => {
-    activate('/ws/schema.json', '{"$schema":"x","type":"object"}');
+    activate('/ws/schema.json', '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object"}');
     vscode.window.showQuickPick.resolves(undefined);
     await generateTypesCommand(fakeAuth(async () => '{}'), fakeCache())();
     const items = vscode.window.showQuickPick.lastCall.args[0];
@@ -80,7 +80,7 @@ suite('[F18-FR-01] generateTypesCommand — gating', () => {
   });
 
   test('[F18-FR-11] cancelling the destination picker generates nothing', async () => {
-    activate(path.join(dir, 'schema.json'), '{"$schema":"x","type":"object"}');
+    activate(path.join(dir, 'schema.json'), '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object"}');
     // Answer the language picker, cancel the destination picker.
     vscode.window.showQuickPick
       .onFirstCall().callsFake(async (items: any[]) => items.find((i: any) => i.id === 'typescript'))
@@ -116,7 +116,7 @@ suite('[F18-FR-02] generateTypesCommand — output', () => {
       type: 'object', required: ['city'], properties: { city: { type: 'string' } }, additionalProperties: false,
     }));
     activate(path.join(dir, 'root.json'), JSON.stringify({
-      $schema: 'x',
+      $schema: 'http://json-schema.org/draft-07/schema#',
       type: 'object',
       properties: { home: { $ref: 'address.json' }, work: { $ref: 'address.json' } },
       additionalProperties: false,
@@ -131,7 +131,7 @@ suite('[F18-FR-02] generateTypesCommand — output', () => {
 
   test('[F18-NFR-01] a remote $ref is served from the schema cache, not the network', async () => {
     activate(path.join(dir, 'root.json'), JSON.stringify({
-      $schema: 'x',
+      $schema: 'http://json-schema.org/draft-07/schema#',
       type: 'object',
       properties: { shared: { $ref: 'https://corp/shared.json' } },
       additionalProperties: false,
@@ -148,7 +148,7 @@ suite('[F18-FR-02] generateTypesCommand — output', () => {
 
   test('[F18-FR-06] a 401 on a remote ref offers Configure Auth', async () => {
     activate(path.join(dir, 'root.json'), JSON.stringify({
-      $schema: 'x', properties: { a: { $ref: 'https://corp/s.json' } },
+      $schema: 'http://json-schema.org/draft-07/schema#', properties: { a: { $ref: 'https://corp/s.json' } },
     }));
     pickTypeScript();
     vscode.window.showErrorMessage.resolves(undefined);
@@ -160,7 +160,7 @@ suite('[F18-FR-02] generateTypesCommand — output', () => {
 
   test('an unresolvable ref shows an error and opens nothing', async () => {
     activate(path.join(dir, 'root.json'), JSON.stringify({
-      $schema: 'x', properties: { a: { $ref: 'missing.json' } },
+      $schema: 'http://json-schema.org/draft-07/schema#', properties: { a: { $ref: 'missing.json' } },
     }));
     pickTypeScript();
     await generateTypesCommand(fakeAuth(async () => { throw new Error('x'); }), fakeCache())();
@@ -170,7 +170,7 @@ suite('[F18-FR-02] generateTypesCommand — output', () => {
 
   test('cancellation is silent', async () => {
     activate(path.join(dir, 'root.json'), JSON.stringify({
-      $schema: 'x', properties: { a: { $ref: 'other.json' } },
+      $schema: 'http://json-schema.org/draft-07/schema#', properties: { a: { $ref: 'other.json' } },
     }));
     fs.writeFileSync(path.join(dir, 'other.json'), '{}');
     pickTypeScript();
@@ -237,7 +237,7 @@ suite('[F18-FR-10] generateTypesCommand — additional target languages', functi
 
   test('picking Python opens an untitled editor with python content', async () => {
     activate(path.join(dir, 'app.schema.json'), JSON.stringify({
-      $schema: 'x', title: 'App', type: 'object',
+      $schema: 'http://json-schema.org/draft-07/schema#', title: 'App', type: 'object',
       properties: { name: { type: 'string' } }, additionalProperties: false,
     }));
     pickLanguage('python');
@@ -249,7 +249,7 @@ suite('[F18-FR-10] generateTypesCommand — additional target languages', functi
 
   test('[F18-FR-02] an unknown editor language id falls back to plain text', async () => {
     activate(path.join(dir, 'app.schema.json'), JSON.stringify({
-      $schema: 'x', title: 'App', type: 'object',
+      $schema: 'http://json-schema.org/draft-07/schema#', title: 'App', type: 'object',
       properties: { name: { type: 'string' } }, additionalProperties: false,
     }));
     pickLanguage('kotlin');
@@ -270,7 +270,7 @@ suite('[F18-FR-11] generateTypesCommand — save to file', function () {
 
   test('the save dialog defaults to <stem>.<ext> next to the schema; the file is written and opened', async () => {
     activate(path.join(dir, 'server-config.json'), JSON.stringify({
-      $schema: 'x', type: 'object', properties: { host: { type: 'string' } }, additionalProperties: false,
+      $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', properties: { host: { type: 'string' } }, additionalProperties: false,
     }));
     pickLanguage('typescript', 'file');
     const savedPath = path.join(dir, 'chosen-name.ts');
@@ -302,7 +302,7 @@ suite('[F18-FR-11] generateTypesCommand — save to file', function () {
 
   test('cancelling the save dialog falls back to an untitled editor (output is never lost)', async () => {
     activate(path.join(dir, 'schema.json'), JSON.stringify({
-      $schema: 'x', title: 'Kept', type: 'object', properties: { a: { type: 'string' } }, additionalProperties: false,
+      $schema: 'http://json-schema.org/draft-07/schema#', title: 'Kept', type: 'object', properties: { a: { type: 'string' } }, additionalProperties: false,
     }));
     pickLanguage('typescript', 'file');
     vscode.window.showSaveDialog.resolves(undefined);
@@ -317,7 +317,7 @@ suite('[F18-FR-11] generateTypesCommand — multi-file (Java) folder save', func
   this.timeout(20000);
 
   const personSchema = () => JSON.stringify({
-    $schema: 'x', title: 'Person', type: 'object',
+    $schema: 'http://json-schema.org/draft-07/schema#', title: 'Person', type: 'object',
     properties: {
       name: { type: 'string' },
       address: {
