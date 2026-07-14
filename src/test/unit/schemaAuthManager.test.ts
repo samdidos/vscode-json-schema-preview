@@ -78,6 +78,18 @@ suite('[F07-FR-08] SchemaAuthManager.getAuthHeaders()', () => {
     assert.deepStrictEqual(headers, { Authorization: 'Basic dXNlcjpwYXNz' });
   });
 
+  test('[F07-FR-07][S05-SR-03] one credential keyed by host covers every path under that host, and no other host', async () => {
+    const ctx = makeContext();
+    // A single credential, stored once under the host key…
+    ctx._store['schemaauth:example.com'] = JSON.stringify({ type: 'bearer', value: 'tok' });
+    const auth = new SchemaAuthManager(ctx as any);
+    // …applies to two different paths under the same host…
+    assert.deepStrictEqual(await auth.getAuthHeaders('https://example.com/a/one.json'), { Authorization: 'Bearer tok' });
+    assert.deepStrictEqual(await auth.getAuthHeaders('https://example.com/b/two.json'), { Authorization: 'Bearer tok' });
+    // …but not to a different host.
+    assert.deepStrictEqual(await auth.getAuthHeaders('https://other.com/one.json'), {});
+  });
+
   test('returns {} when no credential is stored for the host', async () => {
     const auth = new SchemaAuthManager(makeContext() as any);
     const headers = await auth.getAuthHeaders('https://example.com/schema.json');
@@ -136,7 +148,7 @@ suite('[S03-SR-03][S03-SR-12] SchemaAuthManager.fetchText()', () => {
     );
   });
 
-  test('[S03-SR-14] throws a "Timed out" error when the request is aborted', async () => {
+  test('[S03-SR-14][F08-FR-13] throws a "Timed out" error when the request is aborted', async () => {
     fetchStub.callsFake((_url: string, opts: { signal: AbortSignal }) => new Promise((_resolve, reject) => {
       opts.signal.addEventListener('abort', () => {
         const err = new Error('This operation was aborted');

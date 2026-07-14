@@ -9,12 +9,11 @@
   },
   "requirements": {
     "F01-FR-01": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
-        "src/extension.ts",
         "package.json"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "activationEvents include onLanguage json/jsonc/yaml/yml/jsonl (manifest.test.ts)"
     },
     "F01-FR-02": {
       "status": "implemented",
@@ -24,11 +23,12 @@
       "note": "isJsonSchemaFile() requires the $schema value's URL hostname to be exactly json-schema.org (parsed via the URL constructor, not a substring/includes check — CodeQL js/incomplete-url-substring-sanitization), so an inline-bound data file (F10) isn't misclassified as a schema; unit-tested"
     },
     "F01-FR-03": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
-        "src/extension.ts"
+        "src/extension.ts",
+        "src/PreviewWebPanel.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "setContext jsonschema.isJsonSchema true/false (extension.test.ts)"
     },
     "F01-FR-04": {
       "status": "manual",
@@ -66,11 +66,11 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F01-FR-09": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "package.json"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "editor/title preview icon gated on jsonschema.isJsonSchema"
     },
     "F01-FR-10": {
       "status": "implemented",
@@ -456,18 +456,18 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F04-FR-09": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "package.json"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "editor/context Bind Schema for data langs, !isJsonSchema"
     },
     "F04-FR-10": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "package.json"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "explorer/context Bind Schema for .json/.jsonc/.jsonl/.yaml/.yml"
     },
     "F04-FR-11": {
       "status": "manual",
@@ -561,18 +561,18 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F06-FR-01": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "package.json"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "inferSchema in commandPalette"
     },
     "F06-FR-02": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "package.json"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "inferSchema editor/title icon, !isJsonSchema"
     },
     "F06-FR-03": {
       "status": "implemented",
@@ -687,11 +687,11 @@
       "note": "unit-tested via the vscode mock (2026-07 coverage expansion)"
     },
     "F07-FR-07": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "credentials keyed by host cover all paths under it"
     },
     "F07-FR-08": {
       "status": "implemented",
@@ -834,11 +834,11 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "F08-FR-13": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "fetchText enforces an AbortSignal timeout (schemaAuthManager.test.ts)"
     },
     "F08-FR-14": {
       "status": "implemented",
@@ -1111,11 +1111,11 @@
       "note": "Edits are computed from doc.getText() and applied via WorkspaceEdit against the live document, so unsaved-but-open documents are handled the same as saved ones — verified by code inspection."
     },
     "F11-FR-01": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "package.json"
       ],
-      "note": "onLanguage:toml activation event"
+      "note": "onLanguage:toml activation"
     },
     "F11-FR-02": {
       "status": "implemented",
@@ -1139,12 +1139,11 @@
       "note": "parseToml via smol-toml; throws on invalid"
     },
     "F11-FR-05": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
-        "package.json",
-        ".specify/memory/constitution.md"
+        "package.json"
       ],
-      "note": "smol-toml production dependency (BSD-3-Clause, no transitive deps)"
+      "note": "smol-toml production dependency"
     },
     "F11-FR-06": {
       "status": "implemented",
@@ -1224,18 +1223,18 @@
       "note": "computeTomlSchemaRemoveEdit restricts removal to tomlRootTableText()"
     },
     "F11-FR-18": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "package.json"
       ],
-      "note": "validate/infer/bind menus + explorer extname extended with toml"
+      "note": "data-file menus include resourceLangId == toml"
     },
     "F11-FR-19": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "package.json"
       ],
-      "note": "preview/edit/configure remain gated on jsonschema.isJsonSchema (false for TOML)"
+      "note": "preview/edit/configure require isJsonSchema, never target toml"
     },
     "F11-NFR-01": {
       "status": "implemented",
@@ -2326,18 +2325,18 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-01": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
-        "src/PreviewWebPanel.ts"
+        "package.json"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "capabilities.untrustedWorkspaces = limited, preview-disabled description"
     },
     "S02-SR-02": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
-        "src/PreviewWebPanel.ts"
+        "package.json"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "capabilities.virtualWorkspaces = false"
     },
     "S02-SR-03": {
       "status": "manual",
@@ -2368,11 +2367,11 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S02-SR-07": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
-        "src/PreviewWebPanel.ts"
+        "src/ValidationManager.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "validation runs with workspace.isTrusted=false (no Python)"
     },
     "S02-SR-08": {
       "status": "manual",
@@ -2453,11 +2452,11 @@
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
     "S03-SR-09": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/extension.ts"
       ],
-      "note": "VS Code API-bound; verified by manual / E2E testing"
+      "note": "createOutputChannel(\"JSON Schema Preview\", {log:true})"
     },
     "S03-SR-10": {
       "status": "manual",
@@ -2547,11 +2546,11 @@
       "note": "negative requirement - all egress goes through user-configured schema URLs"
     },
     "S05-SR-03": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
         "src/SchemaAuthManager.ts"
       ],
-      "note": "credentials scoped to their stored host (F07)"
+      "note": "credentials attached only to their own host; not returned for a different origin"
     },
     "S06-SR-01": {
       "status": "manual",
