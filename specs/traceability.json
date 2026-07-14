@@ -2302,9 +2302,11 @@
       "note": "remote fetch 30s default, resolved + read unit-tested"
     },
     "S03-SR-13": {
-      "status": "planned",
-      "impl": [],
-      "note": "soft p95 budget - measure via E2E timing before promoting"
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "measured in E2E (src/test/integration/suites/singleFolder.previewPerf.test.ts): p95 over 20 runs of the fixture schema against the built-in renderer stays well within the 2s budget; see S08-SR-07 for the same measurement"
     },
     "S03-SR-14": {
       "status": "implemented",
@@ -2509,14 +2511,19 @@
       "note": "tag of a planned/deferred requirement, or of a feature whose matrix entries are all planned/deferred, -> error; such features excluded from the undocumented warning"
     },
     "S08-NFR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": "harness runs; wall-clock budget not yet measured against a real CI run"
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml"
+      ],
+      "note": "measured against real CI runs (2026-07-13, runs 29279453959 and 29280433507): the \"Integration tests\" job completes in ~47-52s on ubuntu-latest and ~1m37s-1m50s on windows-latest, including VS Code download/setup, well within the 10-minute budget"
     },
     "S08-NFR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": "nothing implemented so far needs the network (no remote-schema scenario yet); the local HTTP fixture server itself has not been built"
+      "status": "implemented",
+      "impl": [
+        "src/test/integration/helpers.ts",
+        "src/test/integration/suites/singleFolder.remoteSchema.test.ts"
+      ],
+      "note": "remote-schema scenario (jsonschema.cacheSchemaLocally against a \"remote\" URL) is driven against a loopback-only fixture HTTP server (helpers.ts's startFixtureHttpServer), keeping the run deterministic and offline"
     },
     "S08-SR-01": {
       "status": "implemented",
@@ -2560,14 +2567,18 @@
       "note": "JSON/YAML/TOML round trip, a TOML file with a pre-existing [table] header, and a cross-folder TOML case exercising absolute-path escaping"
     },
     "S08-SR-06": {
-      "status": "planned",
-      "impl": [],
-      "note": "harness supports it (executeCommand works against real fixtures); not yet written \u2014 scenarios so far only exercise bindToCurrentFile/validateFile"
+      "status": "implemented",
+      "impl": [
+        "src/test/integration/suites/singleFolder.commandSmoke.test.ts"
+      ],
+      "note": "one smoke test per package.json#contributes.commands entry; commands whose real success path needs the network (cacheSchemaLocally/refreshSchemaCache download) or an unstubbed native dialog (preview's showOpenDialog fallback, diffSchema's workspace-file/remote-URL baseline) exercise their nearest safe branch instead \u2014 see the smoke suite's file-level comment"
     },
     "S08-SR-07": {
-      "status": "planned",
-      "impl": [],
-      "note": "no timing instrumentation added yet; needs a real CI run to produce numbers worth reporting"
+      "status": "implemented",
+      "impl": [
+        "src/test/integration/suites/singleFolder.previewPerf.test.ts"
+      ],
+      "note": "measures and logs p95 preview-generation latency over 20 runs against the S03-SR-13 budget; asserts the budget so a regression fails CI, and prints the measured numbers per S08-SR-07's \"measured ... and reported\""
     },
     "S08-SR-08": {
       "status": "implemented",
