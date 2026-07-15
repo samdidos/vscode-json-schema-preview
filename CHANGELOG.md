@@ -2,6 +2,23 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.9.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.8.0...v0.9.0) (2026-07-15)
+
+
+### Features
+
+* add validation quick-fixes (F21) and draft migration (F22) ([2f8a89d](https://github.com/samdidos/vscode-json-schema-preview/commit/2f8a89d1dc078051c4732ecb8a6fa146e890b6cb))
+* **F04:** reflect natively-resolved schemas in the binding status bar ([88c55f9](https://github.com/samdidos/vscode-json-schema-preview/commit/88c55f98b96b1aa51589058d92a73178e24e0857))
+
+
+### Bug Fixes
+
+* **ci:** editor focus before Find in demo-quickfix; retry Windows file locks ([27adae4](https://github.com/samdidos/vscode-json-schema-preview/commit/27adae412e6b84e939af7979d6e94ff3a9aedba2))
+* **e2e:** drive demo-quickfix's cursor entirely via keyboard, not DOM text ([a713702](https://github.com/samdidos/vscode-json-schema-preview/commit/a7137026872cc349e63a1caebe38a52986909fe9))
+* **e2e:** stop demo-quickfix racing Quick Open's file-search index ([b99cb79](https://github.com/samdidos/vscode-json-schema-preview/commit/b99cb79e2a581ea9a0f496d964d4418ee9622dff))
+* **F21:** match quick fixes to diagnostics by instance path ([8bbf0be](https://github.com/samdidos/vscode-json-schema-preview/commit/8bbf0be8638b10797be513c440c435b3cf053235))
+* **F22:** override an existing $schema when migrating drafts ([5ac2b0b](https://github.com/samdidos/vscode-json-schema-preview/commit/5ac2b0bc50b22f0a1d33b4291c0bc4095a39ee8a))
+
 ## [0.8.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.7.0...v0.8.0) (2026-07-14)
 
 
