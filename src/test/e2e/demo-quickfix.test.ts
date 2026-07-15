@@ -48,24 +48,21 @@ test('demo-quickfix: apply a validation quick fix from the diagnostics', () => {
     await window.waitForTimeout(3_000);
     await capture('validation-errors');
 
-    // Position the cursor on the invalid enum value. Click into the editor
-    // first — Ctrl+F is scoped to `editorFocus` in VS Code's default
-    // keybindings and is a silent no-op if focus is still wherever the
-    // command palette left it — then use Find (Ctrl+F) rather than clicking a
-    // specific DOM text run, which is more robust to how Monaco happens to
-    // split text into rendered spans. Falls back to a direct text click if
-    // Find doesn't open for any reason.
-    await window.click('.monaco-editor .view-lines');
-    try {
-      await window.keyboard.press('Control+f');
-      await window.waitForSelector('.find-widget', { state: 'visible', timeout: 5_000 });
-      await window.keyboard.type('payed', { delay: 40 });
-      await window.waitForTimeout(500);
-      await window.keyboard.press('Escape'); // close Find; cursor stays at the match
-    } catch {
-      await window.click('.view-line:has-text("payed")');
-    }
-    await window.waitForTimeout(300);
+    // Running the command via the Command Palette can leave keyboard focus
+    // somewhere other than the editor (a notification, the palette's prior
+    // target) — reclaim it deterministically by clicking the file's own tab
+    // (a small, reliably-rendered element, unlike the full content pane) —
+    // then position the cursor with pure keyboard navigation. No DOM
+    // text-matching against Monaco's rendered spans and no Find widget,
+    // mirroring demo-schema-linting.test.ts's proven Ctrl+Home-based pattern:
+    // the file's fixed, test-authored content makes the target line's
+    // position exactly known (line 3, "status": "payed").
+    await window.click(`.tab[aria-label*="purchase.json"]`);
+    await window.keyboard.press('Control+Home');
+    await window.keyboard.press('ArrowDown'); // line 2: $schema
+    await window.keyboard.press('ArrowDown'); // line 3: "status": "payed"
+    for (let i = 0; i < 5; i++) { await window.keyboard.press('ArrowRight'); } // inside "status"
+    await capture('cursor-positioned');
 
     await window.keyboard.press('Control+.');
     await window.waitForSelector('.action-widget .monaco-list-row', { state: 'visible', timeout: 10_000 });

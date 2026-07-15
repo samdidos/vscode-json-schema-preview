@@ -17,10 +17,11 @@ async function quickOpen(
 /**
  * Opens a file by name using VS Code's Quick Open (Ctrl+P). Waits for an actual
  * result row before confirming, rather than a fixed delay: the file-search index
- * for a freshly-seeded workspace can still be building when the query is typed
- * (mirrors the same wait `openFileVisible` in mouse.ts already needs), and a
- * blind Enter on an empty list is a silent no-op that leaves the wrong file (or
- * none) open, failing confusingly much later downstream.
+ * for a freshly-seeded workspace can still be building when the query is typed,
+ * and a blind Enter on an empty list is a silent no-op that leaves the wrong
+ * file (or none) open, failing confusingly much later downstream. Then confirms
+ * the file actually became an open tab — mirroring `openFileVisible`'s same
+ * postcondition check in mouse.ts — instead of trusting a fixed settle delay.
  */
 export async function openFile(window: Page, filename: string): Promise<void> {
   await window.keyboard.press('Control+p');
@@ -28,7 +29,8 @@ export async function openFile(window: Page, filename: string): Promise<void> {
   await window.keyboard.type(filename, { delay: 40 });
   await window.waitForSelector('.quick-input-list .monaco-list-row', { state: 'visible', timeout: 10_000 });
   await window.keyboard.press('Enter');
-  await window.waitForTimeout(1_500);
+  await window.waitForSelector(`.tab[aria-label*="${filename}"]`, { state: 'visible', timeout: 15_000 });
+  await window.waitForTimeout(300);
 }
 
 /** Opens the Command Palette, types a command, and confirms with Enter. */
