@@ -262,18 +262,20 @@ export async function openFileVisible(
   await typeSlowly(window, capture, filename, `${label}-typing`);
   // Quick Open's fuzzy filter runs asynchronously (it depends on the workspace
   // file-search index), so on a freshly created workspace the result list can
-  // still be empty immediately after typing. Wait for an actual row rather than
-  // a fixed delay — pressing Enter on an empty list is a silent no-op that
-  // leaves no editor open, which then fails confusingly much later downstream.
-  await window.waitForSelector('.quick-input-list .monaco-list-row', {
-    state: 'visible',
-    timeout: 10_000,
-  });
+  // still be building after typing. Wait for the *file itself* to appear (not
+  // just any row) so a stale/partial list can't leave the wrong entry selected
+  // when Enter fires; a short settle lets ranking finalise.
+  await window.waitForSelector(
+    `.quick-input-list .monaco-list-row:has-text("${filename}")`,
+    { state: 'visible', timeout: 10_000 },
+  );
+  await window.waitForTimeout(400);
   await capture(`${label}-typed`);
   await window.keyboard.press('Enter');
-  // Confirm the file actually became an open tab instead of trusting a fixed
-  // delay — this is the real condition every subsequent step depends on.
-  await window.waitForSelector(`.tab[aria-label*="${filename}"]`, {
+  // Confirm an editor actually rendered — the condition every subsequent step
+  // depends on — via editor content, not the tab's `aria-label` (unreliable for
+  // files opened from subfolders).
+  await window.waitForSelector('.monaco-editor .view-lines', {
     state: 'visible',
     timeout: 15_000,
   });

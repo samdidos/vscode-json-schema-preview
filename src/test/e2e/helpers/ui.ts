@@ -15,21 +15,28 @@ async function quickOpen(
 }
 
 /**
- * Opens a file by name using VS Code's Quick Open (Ctrl+P). Waits for an actual
- * result row before confirming, rather than a fixed delay: the file-search index
- * for a freshly-seeded workspace can still be building when the query is typed,
- * and a blind Enter on an empty list is a silent no-op that leaves the wrong
- * file (or none) open, failing confusingly much later downstream. Then confirms
- * the file actually became an open tab — mirroring `openFileVisible`'s same
- * postcondition check in mouse.ts — instead of trusting a fixed settle delay.
+ * Opens a file by name using VS Code's Quick Open (Ctrl+P). Robust to a
+ * freshly-seeded workspace whose file-search index is still building:
+ *  - waits for the *file itself* to appear as a result row (not just any row),
+ *    so a stale/partial list can't leave the wrong entry selected when Enter
+ *    fires — a blind Enter on the wrong row silently opens the wrong file (or
+ *    none), failing confusingly much later downstream;
+ *  - a short settle lets ranking finalise so the match is the top result;
+ *  - confirms an editor actually rendered afterwards via the editor content
+ *    (`.view-lines`), NOT the tab's `aria-label`, which proved unreliable for
+ *    files opened from subfolders.
  */
 export async function openFile(window: Page, filename: string): Promise<void> {
   await window.keyboard.press('Control+p');
   await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
   await window.keyboard.type(filename, { delay: 40 });
-  await window.waitForSelector('.quick-input-list .monaco-list-row', { state: 'visible', timeout: 10_000 });
+  await window.waitForSelector(
+    `.quick-input-list .monaco-list-row:has-text("${filename}")`,
+    { state: 'visible', timeout: 10_000 },
+  );
+  await window.waitForTimeout(400);
   await window.keyboard.press('Enter');
-  await window.waitForSelector(`.tab[aria-label*="${filename}"]`, { state: 'visible', timeout: 15_000 });
+  await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
   await window.waitForTimeout(300);
 }
 
