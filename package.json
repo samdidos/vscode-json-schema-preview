@@ -439,7 +439,7 @@
     "@types/sinon": "^21.0.1",
     "@types/urijs": "^1.19.26",
     "@types/vscode": "1.96.0",
-    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/eslint-plugin": "^8.64.0",
     "@typescript-eslint/parser": "^8.63.0",
     "@vscode/test-electron": "^3.0.0",
     "@vscode/vsce": "^3.9.2",
