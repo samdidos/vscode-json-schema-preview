@@ -48,20 +48,15 @@ test('demo-quickfix: apply a validation quick fix from the diagnostics', () => {
     await window.waitForTimeout(3_000);
     await capture('validation-errors');
 
-    // Running the command via the Command Palette can leave keyboard focus
-    // somewhere other than the editor (a notification, the palette's prior
-    // target) — reclaim it deterministically by clicking the file's own tab
-    // (a small, reliably-rendered element, unlike the full content pane) —
-    // then position the cursor with pure keyboard navigation. No DOM
-    // text-matching against Monaco's rendered spans and no Find widget,
-    // mirroring demo-schema-linting.test.ts's proven Ctrl+Home-based pattern:
-    // the file's fixed, test-authored content makes the target line's
-    // position exactly known (line 3, "status": "payed").
-    await window.click(`.tab[aria-label*="purchase.json"]`);
-    await window.keyboard.press('Control+Home');
-    await window.keyboard.press('ArrowDown'); // line 2: $schema
-    await window.keyboard.press('ArrowDown'); // line 3: "status": "payed"
-    for (let i = 0; i < 5; i++) { await window.keyboard.press('ArrowRight'); } // inside "status"
+    // Land the cursor exactly on a validation diagnostic. Running Validate via
+    // the Command Palette can leave focus off the editor, so click into the
+    // editor content to focus it, then press F8 (Go to Next Problem) — this
+    // jumps the cursor precisely onto the first marker no matter where it sits,
+    // far more robust than counting lines/columns or matching Monaco's rendered
+    // text spans.
+    await window.click('.monaco-editor .view-lines');
+    await window.keyboard.press('F8');
+    await window.waitForTimeout(500);
     await capture('cursor-positioned');
 
     await window.keyboard.press('Control+.');
