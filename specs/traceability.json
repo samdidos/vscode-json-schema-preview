@@ -2776,18 +2776,17 @@
     "S08-SR-10": {
       "status": "implemented",
       "impl": [
-        ".github/workflows/ci.yml",
+        ".github/workflows/refresh-gifs.yml",
         "src/test/e2e"
       ],
-      "note": "e2e-smoke job runs non-mouse Playwright demos non-blocking (crash/timeout detection), source-gated like integration"
+      "note": "e2e-smoke job (parallel to refresh-gifs, both needs: find-pr) runs non-mouse Playwright demos non-blocking at release time — moved off ci.yml per the 2026-07 History note (PR contention caused spurious timeouts)"
     },
     "S08-SR-11": {
       "status": "implemented",
       "impl": [
-        ".github/workflows/ci.yml",
         ".github/workflows/refresh-gifs.yml"
       ],
-      "note": "smoke uses --grep-invert mouse; refresh-gifs uses --grep mouse; each variant runs in exactly one place"
+      "note": "e2e-smoke uses --grep-invert mouse; refresh-gifs job uses --grep mouse; each variant runs in exactly one place, both jobs now live in refresh-gifs.yml"
     },
     "S09-NFR-01": {
       "status": "implemented",

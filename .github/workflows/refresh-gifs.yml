@@ -157,3 +157,64 @@ jobs:
             -f context="Demo GIFs" \
             -f description="Demo GIFs failed to regenerate — see the workflow run for details" \
             -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  e2e-smoke:
+    name: E2E UI smoke (Playwright, command-palette demos)
+    needs: find-pr
+    # Sibling of refresh-gifs (both need only find-pr, not each other) so the
+    # two run concurrently instead of one lengthening the other's critical path.
+    if: needs.find-pr.outputs.branch != ''
+    runs-on: ubuntu-latest
+    # S08-SR-10/11 — the command-palette (non-mouse) demo scripts run the real
+    # feature flows through the actual VS Code UI. No assertions: this is
+    # crash / broken-selector detection, so it passes when every demo completes
+    # without throwing or timing out. Previously ran in ci.yml on every PR/push,
+    # but the ~6-minute run was contending for shared runner capacity alongside
+    # a dozen other PR jobs, which manifested as spurious Quick-Open-search
+    # timeouts rather than real failures. Moved to the same release cadence as
+    # the GIF refresh it shares fixtures with — non-blocking (continue-on-error)
+    # while flakiness is measured, same policy as the integration job
+    # (S08-SR-08). The mouse twins are excluded here (`--grep-invert mouse`) —
+    # they run only in the refresh-gifs job above.
+    continue-on-error: true
+
+    env:
+      TARGET_BRANCH: ${{ needs.find-pr.outputs.branch }}
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # The preview demo renders with json-schema-for-humans when present
+      # (otherwise it falls back to the built-in renderer); install it so the
+      # smoke run matches the GIF-refresh environment.
+      - name: Install Python renderer
+        run: pip3 install json-schema-for-humans
+
+      - name: Build extension bundle
+        run: npm run compile
+
+      - name: Start virtual display
+        run: /usr/bin/Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+
+      - name: Run command-palette demo flows (no mouse twins)
+        env:
+          DISPLAY: ':99.0'
+        run: npx playwright test --config playwright.e2e.config.ts --grep-invert mouse
+
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-smoke-failure-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7

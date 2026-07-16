@@ -80,17 +80,21 @@ yet they exercise the real feature flow through the actual VS Code UI, so they
 have value as a lightweight UI **smoke** signal the assertion-based integration
 suite (API-level) does not provide.
 
-- **S08-SR-10** The command-palette (non-mouse) demo scripts MUST run in CI as a
+- **S08-SR-10** The command-palette (non-mouse) demo scripts MUST run as a
   UI-smoke job (Playwright launching real VS Code, headless via xvfb), passing
   when each demo flow completes without throwing or timing out — i.e. crash /
-  broken-selector detection, not pixel assertions. It MUST start **non-blocking**
-  (`continue-on-error`) like the integration job (S08-SR-08) while flakiness is
-  measured, and be gated by the same source-change filter (S09).
+  broken-selector detection, not pixel assertions. It runs at **release time**
+  (the GIF-refresh workflow, `on: workflow_run` after Release Please), not on
+  every PR/push — see the History note on why — as a job parallel to (not
+  dependent on) the GIF-refresh job, so neither lengthens the other's critical
+  path. It MUST start **non-blocking** (`continue-on-error`) like the
+  integration job (S08-SR-08) while flakiness is measured.
 - **S08-SR-11** The mouse demo scripts MUST NOT run in the smoke job, and the
-  GIF-refresh workflow MUST run **only** the mouse scripts (the non-mouse frames
-  it never consumes) — so each Playwright variant runs in exactly one place:
-  mouse → GIFs, non-mouse → CI smoke. The split is by test-title grep on
-  `mouse`, which every mouse test title contains and no non-mouse title does.
+  GIF-refresh workflow's `refresh-gifs` job MUST run **only** the mouse scripts
+  (the non-mouse frames it never consumes) — so each Playwright variant runs in
+  exactly one place: mouse → GIFs, non-mouse → smoke. The split is by
+  test-title grep on `mouse`, which every mouse test title contains and no
+  non-mouse title does.
 
 ### Harness notes (implementation)
 
@@ -138,8 +142,9 @@ suite (API-level) does not provide.
    from `findBoundSchemaPath`'s `getConfiguration`) fails at least one
    S08-SR-04 test.
 3. `npm run check:traceability` counts `[ID]` tags found in E2E test titles.
-4. CI shows the E2E job on PRs; its History note records when it became a
-   required check.
+4. CI shows the E2E integration job (S08-SR-08) on PRs; its History note
+   records when it became a required check. The UI-smoke job (S08-SR-10) shows
+   on the "Refresh Demo GIFs" workflow run instead, per the History note below.
 
 ## Relation to Existing Specs
 
@@ -147,3 +152,13 @@ suite (API-level) does not provide.
   **S03** budgets; complements Article V unit coverage — `manual`-status
   requirements throughout the matrix become promotable once an E2E test tags
   them.
+
+## History
+
+- **2026-07** — S08-SR-10's UI-smoke job moved from `ci.yml` (every PR/push) to
+  `refresh-gifs.yml` (release time, parallel to the GIF-refresh job it shares
+  fixtures with). Running on every PR meant it contended for shared runner
+  capacity alongside a dozen other concurrent jobs, which manifested as
+  Quick-Open search-index timeouts under load — not real product bugs — and
+  made the per-PR CI run noticeably slower for a job that gates nothing. The
+  integration job (S08-SR-08/09) is unaffected and still runs on every PR.
