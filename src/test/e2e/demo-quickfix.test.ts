@@ -1,12 +1,10 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
 import { seedWorkspaceFile } from './helpers/launch';
-import { openFile, runCommand } from './helpers/ui';
+import { runCommand } from './helpers/ui';
 
 // A closed schema (enum + no additional properties) and a data file that
-// violates both. The data file's basename ("purchase.json") deliberately
-// shares no characters-in-order with the schema's ("order.schema.json") so
-// Quick Open's fuzzy filter can never treat them as ambiguous candidates.
+// violates both.
 const ORDER_SCHEMA = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Order",
@@ -28,20 +26,28 @@ const ORDER_DATA = `{
 }
 `;
 
+const DATA_REL_PATH = 'data/purchase.json';
+
 /**
  * Command-palette twin of demo-quickfix-mouse (no animated cursor). Runs the
  * validate command, then opens the quick-fix menu with Ctrl+. and applies a fix.
  * This variant is the CI UI-smoke signal (S08-SR-10); its frames are not used
  * for GIFs.
+ *
+ * The data file opens via VS Code's own launch args (see runDemo's
+ * `openFiles`) rather than driving Quick Open (Ctrl+P): this file was one of
+ * two demos whose Quick Open row-wait reproducibly timed out on real CI
+ * runs, on independent runner VMs — a real, repeatable issue with Quick
+ * Open's async file-search for this fixture, not environmental flakiness.
+ * The schema only needs to exist on disk for validation to resolve it, not
+ * to be open.
  */
 test('demo-quickfix: apply a validation quick fix from the diagnostics', () => {
   seedWorkspaceFile('schemas/order.schema.json', ORDER_SCHEMA);
-  seedWorkspaceFile('data/purchase.json', ORDER_DATA);
+  seedWorkspaceFile(DATA_REL_PATH, ORDER_DATA);
 
   return runDemo('quick-fix', async (window, capture) => {
-    await capture('workspace');
-
-    await openFile(window, 'purchase.json');
+    await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
     await capture('data-open');
 
     await runCommand(window, 'JSON Schema: Validate This File');
@@ -66,5 +72,5 @@ test('demo-quickfix: apply a validation quick fix from the diagnostics', () => {
     await window.keyboard.press('Enter'); // apply the first offered fix
     await window.waitForTimeout(1_500);
     await capture('fixed');
-  });
+  }, true, [DATA_REL_PATH]);
 });
