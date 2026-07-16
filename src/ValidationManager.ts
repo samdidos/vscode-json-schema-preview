@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './SchemaBindingManager';
+import type { NativeSchemaMatch } from './nativeSchema';
 import * as YAML from 'yaml';
 import { isYaml, isToml, isSupported, stripJsoncComments, parseJsonl, parseToml, languageForSchemaSource } from './languages';
 import { parseSchemaText } from './schemaPointer';
@@ -18,7 +19,16 @@ import type { ValidationFixProvider } from './ValidationFixProvider';
 export const validationDiagnostics =
   vscode.languages.createDiagnosticCollection('json-schema-validation');
 
-export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache, fixes?: ValidationFixProvider) {
+/** Detects a schema VS Code resolves natively for a document (F04-FR-15), so the
+ *  validator can fall back to it — supplied by the binding manager. */
+export type DetectNativeSchema = (doc: vscode.TextDocument) => NativeSchemaMatch | undefined;
+
+export function validateCurrentFile(
+  auth: SchemaAuthManager,
+  cache?: SchemaCache,
+  fixes?: ValidationFixProvider,
+  detectNative?: DetectNativeSchema,
+) {
   return async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -32,8 +42,14 @@ export function validateCurrentFile(auth: SchemaAuthManager, cache?: SchemaCache
       return;
     }
 
-    // External binding takes precedence; fall back to the file's own $schema field.
-    const schemaPath = findBoundSchemaPath(doc) ?? extractInlineSchemaUrl(doc);
+    // External binding takes precedence; fall back to the file's own $schema
+    // field, then to a schema VS Code resolves natively for this file
+    // (F03-FR-16 / F04-FR-15) — an auto-bound file is schema-backed, so
+    // validation must use that schema rather than report "no schema bound".
+    const schemaPath =
+      findBoundSchemaPath(doc) ??
+      extractInlineSchemaUrl(doc) ??
+      detectNative?.(doc)?.url;
     if (!schemaPath) {
       const action = await vscode.window.showWarningMessage(
         `No schema bound to ${path.basename(doc.uri.fsPath)}. Bind one first.`,

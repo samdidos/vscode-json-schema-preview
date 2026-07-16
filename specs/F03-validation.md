@@ -22,6 +22,13 @@ Errors are reported as VS Code diagnostics in the Problems panel.
   the bound schema via the workspace's `json.schemas` / `yaml.schemas` settings.
 - **F03-FR-03** Remote schema URLs MUST be fetched using stored authentication
   credentials when available (see F07).
+- **F03-FR-16** When the file has neither an inline `$schema` (F03-FR-01) nor a
+  settings binding (F03-FR-02) but VS Code resolves a schema for it **natively**
+  (an installed extension's `contributes.jsonValidation`, or a SchemaStore/user
+  catalog entry — the same auto state the status bar shows per F04-FR-15), the
+  validator MUST use that natively-resolved schema URL rather than report
+  "No schema bound". The file is already schema-backed, so validation MUST
+  recognise the auto binding and validate against it.
 
 ### Validation Execution
 

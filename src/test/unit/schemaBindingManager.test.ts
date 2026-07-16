@@ -221,13 +221,16 @@ suite('SchemaBindingManager — refresh via editor change', () => {
     assert.ok(statusBarItem.text.includes('myschema.json'));
   });
 
-  test('[F04-FR-06] middle-truncates a long schema basename in the label but not the tooltip', () => {
+  test('[F04-FR-06] start-truncates a long schema basename in the label but not the tooltip', () => {
     const longName = 'a-really-long-schema-name-that-exceeds-the-limit.schema.json';
     setConfig('json', 'schemas', [{ url: `./${longName}`, fileMatch: ['data.json'] }]);
     vscode.workspace.asRelativePath.callsFake(() => 'data.json');
     triggerEditorChange({ document: makeDoc('json') });
     assert.ok(statusBarItem.text.includes('…'), 'label should be truncated with an ellipsis');
     assert.ok(!statusBarItem.text.includes(longName), 'label should not contain the full name');
+    // The beginning is elided but the legible end (extension) is kept.
+    assert.ok(statusBarItem.text.includes('.schema.json'), 'label should keep the end/extension');
+    assert.ok(!statusBarItem.text.includes('a-really-long'), 'label should drop the beginning');
     assert.ok((statusBarItem.tooltip as string).includes(longName), 'tooltip should keep the full name');
   });
 
@@ -1184,5 +1187,62 @@ suite('[F04-FR-15] SchemaBindingManager — native schema detection', () => {
     withActive(makeDoc('json', '/ws/.commitlintrc.json'), catalog);
     await new Promise(r => setImmediate(r));
     assert.strictEqual(warmCalls, 1, 'catalog must be warmed exactly once per session');
+  });
+
+  test('[F03-FR-16] detectNativeSchema() is public and returns the matched schema URL', () => {
+    vscode.workspace.asRelativePath.callsFake(() => '.commitlintrc.json');
+    const mgr = withActive(makeDoc('json', '/ws/.commitlintrc.json'), commitlintCatalog);
+    const match = mgr.detectNativeSchema(makeDoc('json', '/ws/.commitlintrc.json'));
+    assert.ok(match, 'a native match should be returned');
+    assert.strictEqual(match!.url, 'https://json.schemastore.org/commitlintrc.json');
+  });
+});
+
+// ─── hasSchemaBinding context key (F06-FR-02) ────────────────────────────────
+
+suite('[F06-FR-02] SchemaBindingManager — hasSchemaBinding context key', () => {
+  setup(() => vscode.resetAll());
+
+  function withActive(doc: any, catalog?: any) {
+    vscode.window.activeTextEditor = { document: doc };
+    return new SchemaBindingManager(makeContext(), catalog);
+  }
+
+  const lastHasBinding = () => {
+    const calls = vscode.commands.executeCommand.getCalls()
+      .filter((c: any) => c.args[0] === 'setContext' && c.args[1] === 'jsonschema.hasSchemaBinding');
+    return calls.length ? calls[calls.length - 1].args[2] : undefined;
+  };
+
+  test('is true when a settings binding exists', () => {
+    setConfig('json', 'schemas', [{ url: './myschema.json', fileMatch: ['data.json'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    withActive(makeDoc('json', '/ws/data.json'));
+    assert.strictEqual(lastHasBinding(), true);
+  });
+
+  test('is true when a schema is resolved natively (auto binding)', () => {
+    vscode.workspace.asRelativePath.callsFake(() => '.commitlintrc.json');
+    withActive(makeDoc('json', '/ws/.commitlintrc.json'), {
+      browse: async () => undefined,
+      getCachedEntries: () => [{
+        name: 'commitlint',
+        url: 'https://json.schemastore.org/commitlintrc.json',
+        fileMatch: ['**/.commitlintrc.json'],
+      }],
+      warm: async () => {},
+    });
+    assert.strictEqual(lastHasBinding(), true);
+  });
+
+  test('is false when nothing is bound', () => {
+    vscode.workspace.asRelativePath.callsFake(() => 'random-data.json');
+    withActive(makeDoc('json', '/ws/random-data.json'));
+    assert.strictEqual(lastHasBinding(), false);
+  });
+
+  test('is false for an unsupported / non-data file', () => {
+    withActive(makeDoc('plaintext', '/ws/notes.txt'));
+    assert.strictEqual(lastHasBinding(), false);
   });
 });

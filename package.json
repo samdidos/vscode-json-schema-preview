@@ -287,7 +287,7 @@
           "group": "navigation@4"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema && !jsonschema.hasSchemaBinding",
           "command": "jsonschema.inferSchema",
           "group": "navigation@5"
         }

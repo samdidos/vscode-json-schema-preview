@@ -4,19 +4,18 @@
 // tooltip; only the visible label is shortened.
 
 /** Default maximum visible length for a truncated schema basename. */
-export const MAX_LABEL = 28;
+export const MAX_LABEL = 20;
 
 /**
- * Middle-truncate `text` to at most `max` characters, inserting a single
- * ellipsis so both the start and end stay legible (e.g. a long
- * `my-service.request.schema.json` keeps its extension). Returns `text`
- * unchanged when it already fits.
+ * Start-truncate `text` to at most `max` characters, eliding the *beginning*
+ * with a single leading ellipsis so the **end** stays legible (e.g. a long
+ * `my-service.request.schema.json` keeps its `…request.schema.json` tail — the
+ * distinguishing part and the extension). Returns `text` unchanged when it
+ * already fits.
  */
-export function truncateMiddle(text: string, max: number = MAX_LABEL): string {
+export function truncateStart(text: string, max: number = MAX_LABEL): string {
   if (text.length <= max) { return text; }
-  if (max <= 1) { return text.slice(0, Math.max(0, max)); }
+  if (max <= 1) { return text.slice(text.length - Math.max(0, max)); }
   const keep = max - 1; // one char reserved for the ellipsis
-  const head = Math.ceil(keep / 2);
-  const tail = keep - head;
-  return text.slice(0, head) + '…' + (tail > 0 ? text.slice(text.length - tail) : '');
+  return '…' + text.slice(text.length - keep);
 }
