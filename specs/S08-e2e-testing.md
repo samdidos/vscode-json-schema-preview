@@ -158,7 +158,18 @@ suite (API-level) does not provide.
 - **2026-07** — S08-SR-10's UI-smoke job moved from `ci.yml` (every PR/push) to
   `refresh-gifs.yml` (release time, parallel to the GIF-refresh job it shares
   fixtures with). Running on every PR meant it contended for shared runner
-  capacity alongside a dozen other concurrent jobs, which manifested as
-  Quick-Open search-index timeouts under load — not real product bugs — and
-  made the per-PR CI run noticeably slower for a job that gates nothing. The
-  integration job (S08-SR-08/09) is unaffected and still runs on every PR.
+  capacity alongside a dozen other concurrent jobs, and made the per-PR CI run
+  noticeably slower for a job that gates nothing. The integration job
+  (S08-SR-08/09) is unaffected and still runs on every PR.
+- **2026-07** — Two demos (`demo-migrate`/`demo-migrate-mouse`,
+  `demo-quickfix`/`demo-quickfix-mouse`) reproducibly timed out opening their
+  seeded fixture via Quick Open (`Ctrl+P`), on independent runner VMs across
+  multiple runs — a real, repeatable issue with Quick Open's async
+  file-search for those specific fixtures, not the runner-contention
+  flakiness the previous entry blamed it on (that diagnosis was wrong: two
+  isolated VMs hitting the identical failure rules out shared-resource
+  contention as the cause). Fixed by opening the seeded file via VS Code's own
+  CLI launch arguments (`runDemo`'s `openFiles` parameter) instead of driving
+  Quick Open at all — sidesteps the flaky code path entirely rather than
+  tuning it further. The other 12 demos, whose Quick Open opens are reliable,
+  are unchanged.

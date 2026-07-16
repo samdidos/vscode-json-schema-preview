@@ -96,14 +96,20 @@ function getExecutable(): Promise<string> {
   return executablePromise;
 }
 
-async function launch(extraArgs: string[]): Promise<VSCodeInstance> {
+async function launch(extraArgs: string[], openRelPaths: string[] = []): Promise<VSCodeInstance> {
   const executablePath = await getExecutable();
   const { userDataDir, workspaceDir } = prepareSessionDirs();
+  // Files to open pre-launch, resolved against this launch's own workspaceDir
+  // (only known once prepareSessionDirs() has run). VS Code's CLI opens a
+  // trailing file path as an active editor tab in the same window as the
+  // preceding folder argument.
+  const openPaths = openRelPaths.map(p => path.join(workspaceDir, p));
   const args = [
     ...BASE_ARGS,
     ...extraArgs,
     `--user-data-dir=${userDataDir}`,
     workspaceDir,
+    ...openPaths,
   ];
   // Strip ELECTRON_RUN_AS_NODE so the binary launches as the VS Code GUI,
   // not as a plain Node.js process (which prevents the CDP handshake).
@@ -154,13 +160,19 @@ async function launch(extraArgs: string[]): Promise<VSCodeInstance> {
   return { app, window };
 }
 
-/** Launches VS Code with the workspace pre-trusted (the normal demo path). */
-export const launchVSCode = (): Promise<VSCodeInstance> =>
-  launch(['--disable-workspace-trust']);
+/**
+ * Launches VS Code with the workspace pre-trusted (the normal demo path).
+ * `openRelPaths` (workspace-relative) are opened as active editor tabs at
+ * startup via CLI args — the reliable alternative to driving Quick Open
+ * (Ctrl+P) for a file whose search-index visibility a demo can't otherwise
+ * depend on.
+ */
+export const launchVSCode = (openRelPaths: string[] = []): Promise<VSCodeInstance> =>
+  launch(['--disable-workspace-trust'], openRelPaths);
 
 /**
  * Launches VS Code WITHOUT pre-trusting the workspace so that workspace-trust
  * prompts and restricted-mode behaviour are observable.
  */
-export const launchVSCodeUntrusted = (): Promise<VSCodeInstance> =>
-  launch([]); // intentionally omits --disable-workspace-trust
+export const launchVSCodeUntrusted = (openRelPaths: string[] = []): Promise<VSCodeInstance> =>
+  launch([], openRelPaths); // intentionally omits --disable-workspace-trust

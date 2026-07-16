@@ -1,15 +1,12 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
 import { seedWorkspaceFile } from './helpers/launch';
-import { installCursor, openFileVisible, clickEditorAction, clickSelector } from './helpers/mouse';
+import { installCursor, clickEditorAction, clickSelector } from './helpers/mouse';
 
 // A closed schema with an enum + a forbidden extra property, and a data file
 // that violates both — so validation surfaces two mechanically-fixable errors
 // (F21): a bad enum value and an unexpected property. The data file binds to the
 // schema via an inline relative `$schema` (resolved from the workspace root).
-// The data file's basename ("purchase.json") deliberately shares no
-// characters-in-order with the schema's ("order.schema.json") so Quick Open's
-// fuzzy filter can never treat them as ambiguous candidates.
 const ORDER_SCHEMA = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Order",
@@ -31,22 +28,32 @@ const ORDER_DATA = `{
 }
 `;
 
+const DATA_REL_PATH = 'data/purchase.json';
+
 /**
  * Mouse-driven demo of F21 validation quick fixes: validate an invalid data
  * file, then click the lightbulb on the bad enum value and pick the allowed
  * value to repair the document live. Falls back to the Ctrl+. quick-fix
  * shortcut if the lightbulb icon's DOM shape has shifted across VS Code
  * releases (same defensive pattern as demo-schema-linting-mouse).
+ *
+ * The data file opens via VS Code's own launch args (see runDemo's
+ * `openFiles`) rather than driving Quick Open (Ctrl+P): this file was one of
+ * two demos whose Quick Open row-wait reproducibly timed out on real CI
+ * runs, on independent runner VMs — a real, repeatable issue with Quick
+ * Open's async file-search for this fixture, not environmental flakiness.
+ * This doesn't lose any mouse-specific GIF content: opening was already
+ * keyboard-driven (Ctrl+P + typing) in this variant too — the mouse-driven
+ * moments are the lightbulb/menu clicks below, which are unaffected.
  */
 test('demo-quickfix-mouse: apply a validation quick fix from the lightbulb', () => {
   seedWorkspaceFile('schemas/order.schema.json', ORDER_SCHEMA);
-  seedWorkspaceFile('data/purchase.json', ORDER_DATA);
+  seedWorkspaceFile(DATA_REL_PATH, ORDER_DATA);
 
   return runDemo('quick-fix-mouse', async (window, capture) => {
     await installCursor(window);
+    await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
     await capture('workspace');
-
-    await openFileVisible(window, capture, 'purchase.json');
 
     // Validate via the editor-title icon (shown for non-schema data files);
     // this sets the diagnostics and records the quick fixes.
@@ -77,5 +84,5 @@ test('demo-quickfix-mouse: apply a validation quick fix from the lightbulb', () 
 
     await window.waitForTimeout(800);
     await capture('fixed-hold');
-  });
+  }, true, [DATA_REL_PATH]);
 });
