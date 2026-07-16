@@ -264,11 +264,16 @@ export async function openFileVisible(
   // file-search index), so on a freshly created workspace the result list can
   // still be building after typing. Wait for the *file itself* to appear (not
   // just any row) so a stale/partial list can't leave the wrong entry selected
-  // when Enter fires; a short settle lets ranking finalise.
-  await window.waitForSelector(
-    `.quick-input-list .monaco-list-row:has-text("${filename}")`,
-    { state: 'visible', timeout: 10_000 },
-  );
+  // when Enter fires. On a loaded CI runner the index can take longer than one
+  // generous wait to warm up, so retry the query once rather than fail outright.
+  const rowSelector = `.quick-input-list .monaco-list-row:has-text("${filename}")`;
+  try {
+    await window.waitForSelector(rowSelector, { state: 'visible', timeout: 20_000 });
+  } catch {
+    await window.keyboard.press('Control+a');
+    await typeSlowly(window, capture, filename, `${label}-typing-retry`);
+    await window.waitForSelector(rowSelector, { state: 'visible', timeout: 20_000 });
+  }
   await window.waitForTimeout(400);
   await capture(`${label}-typed`);
   await window.keyboard.press('Enter');
