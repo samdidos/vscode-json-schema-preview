@@ -447,7 +447,7 @@
     "canvas": "^3.2.3",
     "copy-webpack-plugin": "^14.0.0",
     "eslint": "^10.6.0",
-    "fast-check": "^4.8.0",
+    "fast-check": "^4.9.0",
     "gif-encoder-2": "^1.0.5",
     "husky": "^9.1.7",
     "knip": "^6.25.0",
