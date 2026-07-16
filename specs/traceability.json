@@ -398,6 +398,15 @@
       ],
       "note": "createAjv selects Ajv2020/Ajv2019/draft-07 Ajv by the schema's $schema; pure draftOf() and createAjv() unit-tested plus an end-to-end validateFile test proving a 2020-12 prefixItems keyword is enforced. sampleDataGenerator deliberately stays on the default dialect (strips $schema for a self-check, see F16)"
     },
+    "F03-FR-16": {
+      "status": "implemented",
+      "impl": [
+        "src/ValidationManager.ts",
+        "src/SchemaBindingManager.ts",
+        "src/extension.ts"
+      ],
+      "note": "validateCurrentFile falls back to bindingManager.detectNativeSchema(doc).url (F04-FR-15) when there is no inline/settings binding, so auto-bound files validate instead of reporting 'no schema bound' (unit-tested)"
+    },
     "F04-FR-01": {
       "status": "implemented",
       "impl": [
@@ -439,7 +448,7 @@
         "src/SchemaBindingManager.ts",
         "src/statusBarFormat.ts"
       ],
-      "note": "bound display; long basenames middle-truncated via truncateMiddle (statusBarFormat.ts), full name kept in the tooltip — unit-tested (pure helper + status-bar label/tooltip)"
+      "note": "bound display; long basenames start-truncated (~20 chars, keeping the end/extension) via truncateStart (statusBarFormat.ts), full name kept in the tooltip — unit-tested (pure helper + status-bar label/tooltip)"
     },
     "F04-FR-07": {
       "status": "implemented",
@@ -570,9 +579,10 @@
     "F06-FR-02": {
       "status": "implemented",
       "impl": [
-        "package.json"
+        "package.json",
+        "src/SchemaBindingManager.ts"
       ],
-      "note": "inferSchema editor/title icon, !isJsonSchema"
+      "note": "inferSchema editor/title icon, gated on !isJsonSchema && !hasSchemaBinding; hasSchemaBinding context key set in SchemaBindingManager.refresh()"
     },
     "F06-FR-03": {
       "status": "implemented",

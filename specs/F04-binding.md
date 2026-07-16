@@ -34,11 +34,12 @@ recognise them.
   file (JSON, JSONC, JSONL, YAML, YML) is the active editor.
 - **F04-FR-06** When a schema is bound the status bar item MUST display
   `$(check) Schema: <basename>` and a tooltip showing the full schema path and
-  a hint to click to change or remove. `<basename>` MUST be **middle-truncated
-  to a bounded length** (an ellipsis in the middle) when it would otherwise be
-  long, so the item cannot grow unbounded and push other status-bar items
-  off-screen; the **full, untruncated** name MUST remain visible in the
-  tooltip.
+  a hint to click to change or remove. `<basename>` MUST be **start-truncated
+  to a bounded length of ~20 characters** (a single leading ellipsis eliding
+  the *beginning*, keeping the legible **end** — the distinguishing part and
+  the file extension) when it would otherwise be long, so the item cannot grow
+  unbounded and push other status-bar items off-screen; the **full,
+  untruncated** name MUST remain visible in the tooltip.
 - **F04-FR-07** When no schema is bound **and no native schema is detected
   (F04-FR-15)** the status bar item MUST display `$(circle-slash) Schema:
   unbound` with a tooltip offering to bind one.

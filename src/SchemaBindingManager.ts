@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { modify, parseTree, Edit as JsoncEdit, FormattingOptions } from 'jsonc-parser';
 import { isSupported, isYaml, isToml, stripJsoncComments } from './languages';
-import { truncateMiddle } from './statusBarFormat';
+import { truncateStart } from './statusBarFormat';
 import type { CatalogEntry } from './schemaCatalog';
 import {
   jsonValidationSources, catalogSources, matchNativeSchema, nativeSchemaLabel,
@@ -114,40 +114,51 @@ export class SchemaBindingManager {
 
   private refresh(doc?: vscode.TextDocument) {
     if (!doc || !isSupported(doc.languageId)) {
+      this.setHasSchemaBinding(false);
       this.statusBar.hide();
       return;
     }
     // An inline $schema field takes precedence over any settings-based binding (F10-FR-15).
     const inline = extractInlineSchemaUrl(doc);
     const settingsBinding = findBoundSchemaPath(doc);
+    // A schema resolved natively by VS Code (F04-FR-15) counts as "bound" for
+    // the purpose of hiding schema-generation affordances — there is already a
+    // schema for this file, so offering to generate one makes no sense (F06-FR-02).
+    const native = (!inline && !settingsBinding) ? this.detectNativeSchema(doc) : undefined;
+    this.setHasSchemaBinding(Boolean(inline || settingsBinding || native));
     if (inline) {
-      this.statusBar.text = `$(file-symlink-file) Schema: ${truncateMiddle(path.basename(inline))}`;
+      this.statusBar.text = `$(file-symlink-file) Schema: ${truncateStart(path.basename(inline))}`;
       this.statusBar.tooltip = settingsBinding
         ? `Inline $schema in this file: ${inline}\n` +
           `Note: a settings binding also exists (${settingsBinding}) but is overridden by the inline value\n` +
           `Click to change or remove`
         : `Inline $schema in this file: ${inline}\nClick to change or remove`;
     } else if (settingsBinding) {
-      this.statusBar.text = `$(check) Schema: ${truncateMiddle(path.basename(settingsBinding))}`;
+      this.statusBar.text = `$(check) Schema: ${truncateStart(path.basename(settingsBinding))}`;
       this.statusBar.tooltip = `Schema bound: ${settingsBinding}\nClick to change or remove`;
-    } else {
-      // No explicit binding — but VS Code may resolve a schema natively
+    } else if (native) {
+      // No explicit binding — but VS Code resolves a schema natively
       // (F04-FR-15). Reflect that instead of a misleading "unbound".
-      const native = this.detectNativeSchema(doc);
-      if (native) {
-        const label = truncateMiddle(nativeSchemaLabel(native));
-        const via = native.origin === 'catalog' ? 'the schema catalog' : 'an installed extension';
-        this.statusBar.text = `$(check) Schema: ${label} (auto)`;
-        this.statusBar.tooltip =
-          `Schema resolved automatically by VS Code (via ${via}):\n${native.url}\n\n` +
-          `JSON Schema Preview's own features (preview, validate, sample data) use an ` +
-          `explicit binding — click to add one.`;
-      } else {
-        this.statusBar.text = `$(circle-slash) Schema: unbound`;
-        this.statusBar.tooltip = 'No JSON Schema bound to this file\nClick to bind one';
-      }
+      const label = truncateStart(nativeSchemaLabel(native));
+      const via = native.origin === 'catalog' ? 'the schema catalog' : 'an installed extension';
+      this.statusBar.text = `$(check) Schema: ${label} (auto)`;
+      this.statusBar.tooltip =
+        `Schema resolved automatically by VS Code (via ${via}):\n${native.url}\n\n` +
+        `JSON Schema Preview's own features (preview, validate, sample data) use this ` +
+        `schema automatically — click to set an explicit binding instead.`;
+    } else {
+      this.statusBar.text = `$(circle-slash) Schema: unbound`;
+      this.statusBar.tooltip = 'No JSON Schema bound to this file\nClick to bind one';
     }
     this.statusBar.show();
+  }
+
+  /** Publish whether the active file has any resolvable schema — inline,
+   *  settings, or native/auto (F04-FR-15) — so menus can hide the
+   *  "Generate Schema from This File" affordance when one already exists
+   *  (F06-FR-02). */
+  private setHasSchemaBinding(value: boolean): void {
+    vscode.commands.executeCommand('setContext', 'jsonschema.hasSchemaBinding', value);
   }
 
   /**
@@ -157,7 +168,7 @@ export class SchemaBindingManager {
    * commitlint config) can light up on a later refresh. Returns undefined on any
    * error so a detection failure never breaks the status bar.
    */
-  private detectNativeSchema(doc: vscode.TextDocument) {
+  detectNativeSchema(doc: vscode.TextDocument) {
     try {
       const fileName = vscode.workspace.asRelativePath(doc.uri, false);
       const sources: NativeSchemaSource[] = [

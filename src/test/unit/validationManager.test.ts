@@ -395,6 +395,54 @@ suite('validateCurrentFile() — schema path resolution', () => {
   });
 });
 
+// ── Native (auto) binding fallback (F03-FR-16 / F04-FR-15) ──────────────────────
+
+suite('[F03-FR-16] validateCurrentFile() — auto-bound (native) schema', () => {
+  test('validates against a natively-resolved schema when nothing is explicitly bound', async () => {
+    // No inline $schema, no settings binding — but VS Code resolves one natively.
+    const doc = makeDoc('json', '{"name":"Alice"}', '/ws/.commitlintrc.json');
+    activate(doc);
+    const schema = { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] };
+    const detectNative = () => ({ url: 'https://example.com/commitlint.json', origin: 'catalog' as const });
+    await validateCurrentFile(
+      fakeAuth(async () => JSON.stringify(schema)) as any,
+      undefined,
+      undefined,
+      detectNative,
+    )();
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/is valid against commitlint\.json/));
+    assert.ok(!vscode.window.showWarningMessage.calledWithMatch(/No schema bound/));
+  });
+
+  test('still reports "no schema bound" when there is neither a binding nor a native match', async () => {
+    const doc = makeDoc('json', '{"name":"Alice"}');
+    activate(doc);
+    vscode.window.showWarningMessage.resolves(undefined);
+    const detectNative = () => undefined;
+    await validateCurrentFile(
+      fakeAuth(async () => '{}') as any,
+      undefined,
+      undefined,
+      detectNative,
+    )();
+    assert.ok(vscode.window.showWarningMessage.calledWithMatch(/No schema bound to data\.json/));
+  });
+
+  test('an explicit inline $schema takes precedence over a native match', async () => {
+    const doc = makeDoc('json', '{"$schema":"https://example.com/inline.json","name":"Alice"}');
+    activate(doc);
+    const schema = { type: 'object', properties: { name: { type: 'string' } } };
+    const detectNative = () => ({ url: 'https://example.com/native.json', origin: 'catalog' as const });
+    await validateCurrentFile(
+      fakeAuth(async () => JSON.stringify(schema)) as any,
+      undefined,
+      undefined,
+      detectNative,
+    )();
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/is valid against inline\.json/));
+  });
+});
+
 // ── Workspace trust (S02) ──────────────────────────────────────────────────────
 
 suite('[S02-SR-07] validateCurrentFile() — permitted in untrusted workspaces', () => {

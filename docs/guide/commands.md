@@ -71,7 +71,7 @@ Shows a Quick Pick list of all schema files in the workspace and binds the selec
 
 Also available via **right-click** in the editor and the **Explorer** context menu.
 
-When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. Clicking still lets you add your own binding to enable JSON Schema Preview's features on that file.
+When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. **Validate This File** uses that auto-resolved schema as well, and because the file already has a schema the **Generate Schema from This File** wand is hidden for it. Clicking still lets you set your own explicit binding.
 
 | Toolbar | Command Palette | Context Menu |
 |---------|----------------|---|
@@ -87,7 +87,7 @@ When a file has no explicit binding but VS Code already resolves a schema for it
 
 Validates the active JSON, YAML, or TOML file against its bound schema (see [Bind Schema…](#json-schema-bind-schema)) using AJV. Errors appear in the **Problems** panel with precise line/column locations.
 
-If the file already has an inline `$schema` field the bound schema is inferred from it — no explicit binding needed.
+If the file already has an inline `$schema` field the bound schema is inferred from it — no explicit binding needed. If it has no binding at all but VS Code resolves a schema for it natively (the **(auto)** state shown in the status bar — see [Bind Schema…](#json-schema-bind-schema)), validation uses that schema too, rather than reporting "no schema bound".
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -110,9 +110,11 @@ For JSON and JSONC files, the validation errors above carry a **lightbulb** (�
 
 Infers a JSON Schema from the active JSON, JSONC, JSONL, YAML, or TOML data file using `genson-js`. Opens the generated schema in a new editor tab beside the original. A great starting point for adopting schema-first workflows.
 
+The wand appears only for data files that don't already have a schema. When the file has an inline `$schema`, a settings binding, or a natively-resolved **(auto)** schema, the toolbar icon is hidden — there is already a schema for it, so generating one from scratch would make little sense.
+
 | Toolbar | Command Palette |
 |---------|----------------|
-| ✅ (wand icon, data files only) | ✅ |
+| ✅ (wand icon, data files without a schema) | ✅ |
 <!-- spec:F06,F11 end -->
 
 ---

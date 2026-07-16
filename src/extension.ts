@@ -179,7 +179,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('jsonschema.configure',          () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.openConfig',         () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.bindToCurrentFile',  (uri?: vscode.Uri) => bindingManager.bindToCurrentFile(uri)),
-    vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager, schemaCache, validationFixProvider)),
+    vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager, schemaCache, validationFixProvider, doc => bindingManager.detectNativeSchema(doc))),
 
     // ── Migrate a schema between drafts (F22) ─────────────────────────────────
     vscode.commands.registerCommand('jsonschema.migrateDraft', migrateDraftCommand()),
