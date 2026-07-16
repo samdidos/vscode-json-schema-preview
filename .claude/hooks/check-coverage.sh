@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# PostToolUse hook: re-run coverage after any TypeScript source file is edited.
+# PostToolUse hook: lint + type-check after any TypeScript source file is
+# edited. Deliberately fast (no test run) since this fires on every edit —
+# the full coverage gate still runs at commit time via pre-commit-gate.sh
+# (git pre-commit hook -> npm run verify), so nothing is unenforced, just
+# deferred to a lower-frequency trigger.
 # Exit 2 → Claude sees the output as a blocking warning and must address it.
 # Exit 0 → all good, continue silently.
 
@@ -28,17 +32,15 @@ fi
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
-echo "→ Coverage check triggered by: $FILE_PATH" >&2
+echo "→ Lint/type-check triggered by: $FILE_PATH" >&2
 
-# Run the full coverage gate
-if npm run test:coverage --silent 2>&1; then
-    echo "✓ Coverage thresholds met." >&2
-    python3 .claude/hooks/sync_badges.py || true
+# Fast checks only — full coverage runs at commit time instead.
+if npm run lint --silent 2>&1 && npx tsc --noEmit 2>&1; then
+    echo "✓ Lint and type-check passed." >&2
     exit 0
 else
     echo "" >&2
-    echo "✗ Coverage check FAILED after editing $FILE_PATH" >&2
-    echo "  Run 'npm run test:coverage' for details." >&2
-    echo "  Fix coverage or ask the user to explicitly approve skipping it." >&2
+    echo "✗ Lint/type-check FAILED after editing $FILE_PATH" >&2
+    echo "  Run 'npm run lint' / 'npx tsc --noEmit' for details." >&2
     exit 2
 fi

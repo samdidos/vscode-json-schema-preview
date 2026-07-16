@@ -2,8 +2,14 @@
 """Sync static shields.io badges in README.md from live project data.
 
 Called by:
-  check-coverage.sh   — after a successful test run (updates coverage badge)
-  update-readme-badges.sh — after package.json edits (engine/node/license badges)
+  update-readme-badges.sh — after package.json edits (engine/node/license badges;
+    also refreshes the coverage badge from whatever coverage/coverage-summary.json
+    is on disk, if present)
+
+The coverage badge is only as fresh as the last `npm run test:coverage` run
+(e.g. via `npm run verify` at commit time) — nothing runs coverage on every
+source edit anymore, so run it manually first if you need an up-to-date badge
+outside of a commit.
 """
 import json, re, sys, urllib.parse
 from pathlib import Path
