@@ -382,6 +382,8 @@
     "check:traceability": "node scripts/check-traceability.mjs",
     "check:doc-traceability": "node scripts/check-doc-traceability.mjs",
     "trace:init": "node scripts/check-traceability.mjs --init",
+    "codegen:traceability": "tsc -p tsconfig.codegen.json && node scripts/generate-traceability-types.mjs",
+    "codegen:traceability:check": "tsc -p tsconfig.codegen.json && node scripts/generate-traceability-types.mjs --check",
     "verify": "npm run lint && tsc --noEmit && npm run check:traceability && npm run check:doc-traceability && npm run test:coverage",
     "test": "tsc -p tsconfig.test.json && c8 mocha --ui tdd --require ./out/test/mocks/setup.js 'out/test/unit/**/*.test.js'",
     "test:coverage": "npm test && node scripts/check-coverage.js",

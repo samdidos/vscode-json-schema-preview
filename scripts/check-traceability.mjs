@@ -109,11 +109,17 @@ function saveMatrix(matrix, specReqs) {
     sorted[id] = { status: e.status, impl: e.impl ?? [], note: e.note ?? '' };
   }
   const out = {
+    // Inline binding to the matrix's JSON Schema (S11): kept first here so a
+    // rewrite via `--init` preserves it rather than dropping it.
+    $schema: './traceability.schema.json',
     $comment:
       'Requirement traceability matrix. Keys are requirement IDs defined in ' +
       'specs/*.md. status is one of: ' + Object.keys(STATUSES).join(', ') + '. ' +
       'impl lists source files; test coverage is auto-discovered from [ID] ' +
-      'tags in src/test. Run `npm run check:traceability` to validate.',
+      'tags in src/test. Run `npm run check:traceability` to validate. Shape is ' +
+      'enforced by traceability.schema.json; TS types in ' +
+      'docs/.vitepress/traceability.types.ts are generated from it via ' +
+      '`npm run codegen:traceability` (S11).',
     statuses: STATUSES,
     requirements: sorted,
   };

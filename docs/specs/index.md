@@ -34,6 +34,15 @@ record of what is built, planned, or deferred:
 
 <SpecStatusTable />
 
+<!-- spec:S11 -->
+The matrix has its own JSON Schema at `specs/traceability.schema.json`: the
+file binds to it inline via `$schema` (the same convention the extension uses
+for data files), a test validates it against that schema, and the TypeScript
+types this docs site uses to read the matrix are **generated from the schema
+by the extension's own code-generation feature** — run
+`npm run codegen:traceability` to regenerate them. In other words, the project
+validates and types its own source of truth with the tools it ships.
+
 ## Test tags
 
 Unit and E2E tests declare which requirement they cover by putting its ID in

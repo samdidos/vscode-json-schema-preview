@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/samdidos/vscode-json-schema-preview/blob/main/specs/traceability.schema.json",
+  "title": "TraceabilityMatrix",
+  "description": "Requirement traceability matrix for the JSON Schema Preview extension. Maps every requirement ID (defined in the specs directory) to its implementation status and the source files realising it.",
+  "type": "object",
+  "required": ["statuses", "requirements"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Inline binding to this schema (F10 convention)."
+    },
+    "$comment": {
+      "type": "string",
+      "description": "Human note about the file's purpose; ignored by tooling."
+    },
+    "statuses": {
+      "title": "StatusDescriptions",
+      "description": "Map of status name to its human-readable meaning.",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "requirements": {
+      "title": "RequirementMap",
+      "description": "Map of requirement ID (e.g. F10-FR-04) to its traceability entry.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/requirement" }
+    }
+  },
+  "$defs": {
+    "requirement": {
+      "title": "Requirement",
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "title": "Status",
+          "description": "Implementation status of the requirement.",
+          "enum": ["untracked", "planned", "implemented", "manual", "deferred"]
+        },
+        "impl": {
+          "description": "Source files implementing this requirement (repo-relative paths).",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "note": {
+          "type": "string",
+          "description": "Free-text clarification for this entry."
+        }
+      }
+    }
+  }
+}

@@ -6,10 +6,13 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineLoader } from 'vitepress'
 import { SPECS_DIR, listSpecFiles } from './specsSource'
+// Types generated from specs/traceability.schema.json by the project's own F18
+// generator (S11) — the matrix shape is never re-declared by hand here.
+import type { TraceabilityMatrix, Status } from './traceability.types'
 
 export interface SpecRequirement {
   id: string
-  status: string
+  status: Status
   impl: string[]
   note?: string
 }
@@ -41,10 +44,7 @@ export default defineLoader({
   load(): SpecsData {
     const matrix = JSON.parse(
       readFileSync(resolve(SPECS_DIR, 'traceability.json'), 'utf-8'),
-    ) as {
-      statuses: Record<string, string>
-      requirements: Record<string, { status: string; impl?: string[]; note?: string }>
-    }
+    ) as TraceabilityMatrix
 
     // Group matrix requirements by their spec prefix (F01, S07, …).
     const bySpec = new Map<string, SpecRequirement[]>()
