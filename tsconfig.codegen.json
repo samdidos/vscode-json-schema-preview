@@ -1,0 +1,9 @@
+{
+  "$comment": "Emits the F18 generator (src/typeGenerator.ts) and its import graph to out/ so scripts/generate-traceability-types.mjs can invoke the exact module the extension ships (S11-NFR-01). Narrowed to that entry point; tsc pulls in its dependencies automatically.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "out",
+    "noEmit": false
+  },
+  "include": ["src/typeGenerator.ts"]
+}

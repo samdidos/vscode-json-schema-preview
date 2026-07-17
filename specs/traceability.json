@@ -1,5 +1,6 @@
 {
-  "$comment": "Requirement traceability matrix. Keys are requirement IDs defined in specs/*.md. status is one of: untracked, planned, implemented, manual, deferred. impl lists source files; test coverage is auto-discovered from [ID] tags in src/test. Run `npm run check:traceability` to validate.",
+  "$schema": "./traceability.schema.json",
+  "$comment": "Requirement traceability matrix. Keys are requirement IDs defined in specs/*.md. status is one of: untracked, planned, implemented, manual, deferred. impl lists source files; test coverage is auto-discovered from [ID] tags in src/test. Run `npm run check:traceability` to validate. Shape is enforced by traceability.schema.json; TS types in docs/.vitepress/traceability.types.ts are generated from it via `npm run codegen:traceability` (S11).",
   "statuses": {
     "untracked": "predates the traceability system — needs backfill",
     "planned": "specified, not yet implemented",
@@ -2921,6 +2922,63 @@
       "impl": [
         "docs/.vitepress/theme/SpecTraceability.vue",
         "docs/specs/[id].md"
+      ],
+      "note": ""
+    },
+    "S11-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/generate-traceability-types.mjs",
+        "src/typeGenerator.ts"
+      ],
+      "note": ""
+    },
+    "S11-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/typeGenerator.ts"
+      ],
+      "note": ""
+    },
+    "S11-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "specs/traceability.schema.json"
+      ],
+      "note": ""
+    },
+    "S11-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "specs/traceability.json",
+        "specs/traceability.schema.json",
+        "scripts/check-traceability.mjs"
+      ],
+      "note": ""
+    },
+    "S11-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "scripts/generate-traceability-types.mjs",
+        "tsconfig.codegen.json",
+        "docs/.vitepress/traceability.types.ts",
+        "package.json"
+      ],
+      "note": ""
+    },
+    "S11-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "scripts/generate-traceability-types.mjs",
+        "docs/.vitepress/traceability.types.ts"
+      ],
+      "note": ""
+    },
+    "S11-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/specs.data.ts",
+        "docs/.vitepress/traceability.types.ts"
       ],
       "note": ""
     }
