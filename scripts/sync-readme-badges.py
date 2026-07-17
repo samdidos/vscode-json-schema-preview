@@ -1,20 +1,28 @@
 #!/usr/bin/env python3
 """Sync static shields.io badges in README.md from live project data.
 
-Called by:
-  update-readme-badges.sh — after package.json edits (engine/node/license badges;
-    also refreshes the coverage badge from whatever coverage/coverage-summary.json
-    is on disk, if present)
+Vendor-neutral: run it directly as `npm run badges:sync` (or
+`python3 scripts/sync-readme-badges.py`). It reads package.json and, when
+present, coverage/coverage-summary.json, and rewrites the matching static
+shields.io badges in README.md. It never fails a build — a missing coverage
+summary just leaves the coverage badge untouched.
 
-The coverage badge is only as fresh as the last `npm run test:coverage` run
-(e.g. via `npm run verify` at commit time) — nothing runs coverage on every
-source edit anymore, so run it manually first if you need an up-to-date badge
-outside of a commit.
+Called from two places, both through the npm command so the logic lives here
+only (AGENTS.md "reach shared logic through vendor-neutral commands"):
+  - `.claude/hooks/update-readme-badges.sh` — a Claude Code convenience hook,
+    after package.json edits (engine/node/license badges).
+  - `.github/workflows/maturity-refresh.yml` — the weekly CI job that runs
+    coverage and opens a data-only PR, so the coverage badge is refreshed and
+    committed as a real pipeline guarantee, not only when an agent happens to
+    run.
+
+The coverage badge is only as fresh as the last coverage run on disk, so run
+`npm run test:coverage` first if you invoke this by hand.
 """
 import json, re, sys, urllib.parse
 from pathlib import Path
 
-root = Path(__file__).parent.parent.parent
+root = Path(__file__).parent.parent
 readme_path = root / 'README.md'
 text = readme_path.read_text()
 pkg = json.loads((root / 'package.json').read_text())
