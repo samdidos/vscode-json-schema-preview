@@ -43,8 +43,14 @@ top of the existing artifacts.
   its ID, title, kind (feature/system), and a per-status breakdown of its
   requirements, derived from `specs/traceability.json`.
 - **S10-SR-04** The table MUST be filterable by requirement status and by spec
-  kind, and searchable by free text over spec ID and title. Filtering by a
-  status shows the specs that have at least one requirement in that status.
+  kind, and searchable by free text over spec ID and title. Status and kind
+  each MUST be presented as a **multi-select dropdown** (a labelled control
+  that opens a checkbox list), so several values can be active at once. Within
+  one dropdown the selected values combine as OR (a spec matches if it has at
+  least one requirement in any selected status; a spec matches if its kind is
+  any selected kind); the two dropdowns and the search box combine as AND. An
+  **empty** dropdown applies no constraint for that dimension (all values
+  pass), and the control MUST show how many values are active.
 - **S10-SR-05** Each spec listed in the table MUST link to that spec's page.
 
 ### Spec Pages
