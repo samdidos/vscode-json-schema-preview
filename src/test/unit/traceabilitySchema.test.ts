@@ -23,6 +23,10 @@ suite('S11 — traceability matrix schema & generated types', () => {
     }
   });
 
+  test('[S11-SR-06] schema $id embeds a major-version segment', () => {
+    assert.match(String(schema.$id), /^https?:\/\/.+\/v\d+\//, `$id must carry a /vN/ segment: ${schema.$id}`);
+  });
+
   test('[S11-SR-02] traceability.json validates against its schema', () => {
     const ajv = createAjv(schema, { allErrors: true, strict: false });
     const validate = ajv.compile(schema);
