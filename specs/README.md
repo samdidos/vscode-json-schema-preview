@@ -39,6 +39,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S07-documentation-traceability.md](S07-documentation-traceability.md) | Documentation ↔ spec traceability (`spec:` tags) |
 | [S08-e2e-testing.md](S08-e2e-testing.md) | End-to-end testing in a real VS Code instance |
 | [S09-ci-workflow-scoping.md](S09-ci-workflow-scoping.md) | Path-scoped CI jobs (`ci.yml`, `codeql.yml`) |
+| [S10-spec-visualization.md](S10-spec-visualization.md) | Spec visualization on the docs site (matrix, spec pages) |
 
 ## Scope
 

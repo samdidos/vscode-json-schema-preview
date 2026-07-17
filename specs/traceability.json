@@ -506,6 +506,15 @@
       ],
       "note": "findBoundSchemaPath resolves scoped to doc.uri and unions Global/Workspace/WorkspaceFolder, matching both folder-relative and workspace-prefixed path forms"
     },
+    "F04-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/nativeSchema.ts",
+        "src/SchemaBindingManager.ts",
+        "src/SchemaCatalogManager.ts"
+      ],
+      "note": "status bar shows an auto state when VS Code resolves a schema natively (jsonValidation or SchemaStore catalog) instead of unbound"
+    },
     "F05-FR-01": {
       "status": "manual",
       "impl": [
@@ -2845,14 +2854,75 @@
       ],
       "note": "analyze's if: always() && (schedule || changes) keeps the weekly cron unconditional"
     },
-    "F04-FR-15": {
+    "S10-NFR-01": {
       "status": "implemented",
       "impl": [
-        "src/nativeSchema.ts",
-        "src/SchemaBindingManager.ts",
-        "src/SchemaCatalogManager.ts"
+        "docs/.vitepress/specs.data.ts",
+        "docs/specs/[id].paths.ts"
       ],
-      "note": "status bar shows an auto state when VS Code resolves a schema natively (jsonValidation or SchemaStore catalog) instead of unbound"
+      "note": ""
+    },
+    "S10-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/config.ts"
+      ],
+      "note": ""
+    },
+    "S10-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/config.ts",
+        "docs/specs/index.md",
+        "docs/specs/matrix.md",
+        "docs/specs/[id].md"
+      ],
+      "note": ""
+    },
+    "S10-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "docs/specs/index.md"
+      ],
+      "note": ""
+    },
+    "S10-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/specs.data.ts",
+        "docs/.vitepress/theme/SpecMatrix.vue"
+      ],
+      "note": ""
+    },
+    "S10-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecMatrix.vue"
+      ],
+      "note": ""
+    },
+    "S10-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecMatrix.vue"
+      ],
+      "note": ""
+    },
+    "S10-SR-06": {
+      "status": "implemented",
+      "impl": [
+        "docs/specs/[id].paths.ts",
+        "docs/specs/[id].md"
+      ],
+      "note": ""
+    },
+    "S10-SR-07": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecTraceability.vue",
+        "docs/specs/[id].md"
+      ],
+      "note": ""
     }
   }
 }

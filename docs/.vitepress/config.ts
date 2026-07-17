@@ -1,4 +1,13 @@
 import { defineConfig } from 'vitepress'
+import { listSpecFiles } from './specsSource'
+
+// Sidebar entries for the generated spec pages (S10-SR-01): built from the
+// spec files themselves so a new spec shows up with no config edit.
+function specSidebarItems(kind: 'feature' | 'system') {
+  return listSpecFiles()
+    .filter((spec) => spec.kind === kind)
+    .map((spec) => ({ text: `${spec.id} · ${spec.title}`, link: `/specs/${spec.id}` }))
+}
 
 export default defineConfig({
   title: 'JSON Schema Preview',
@@ -24,6 +33,14 @@ export default defineConfig({
     // link to the same place.
     nav: [
       { text: 'Guide', link: '/guide/', activeMatch: '/guide/' },
+      {
+        text: 'Specs',
+        activeMatch: '/specs/',
+        items: [
+          { text: 'How specs work', link: '/specs/' },
+          { text: 'Requirement matrix', link: '/specs/matrix' },
+        ],
+      },
       { text: 'Blog', link: '/blog/', activeMatch: '/blog/' },
     ],
 
@@ -49,6 +66,17 @@ export default defineConfig({
             { text: 'All posts', link: '/blog/' },
           ],
         },
+      ],
+      '/specs/': [
+        {
+          text: 'Specs',
+          items: [
+            { text: 'How specs work', link: '/specs/' },
+            { text: 'Requirement matrix', link: '/specs/matrix' },
+          ],
+        },
+        { text: 'Feature specs', collapsed: true, items: specSidebarItems('feature') },
+        { text: 'System specs', collapsed: true, items: specSidebarItems('system') },
       ],
     },
 
