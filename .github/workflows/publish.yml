@@ -1,7 +1,17 @@
 name: Publish
 
-# Packages the extension, attests its SLSA build provenance, and attaches the
-# .vsix to the release — then flips the release from draft to published.
+# Packages the extension, attests its SLSA build provenance, publishes it to
+# the Visual Studio Marketplace, and attaches the .vsix to the release — then
+# flips the release from draft to published.
+#
+# The `publish` job runs under the `vscode-marketplace` GitHub environment,
+# which requires manual approval (Actions tab) before any step in the job
+# runs — this is a deliberate choice to keep a human in the loop before code
+# reaches the Marketplace, at the cost of also delaying the (otherwise
+# harmless) GitHub Release upload behind that same approval. The environment
+# also supplies the OIDC subject (repo:...:environment:vscode-marketplace)
+# that the Microsoft Entra ID federated identity credential is scoped to —
+# see get-mi-user-id.yml for how that identity was provisioned.
 #
 # release-please creates the GitHub Release as a draft (config: "draft": true)
 # and pushes its tag using the default GITHUB_TOKEN. GitHub does not trigger
@@ -87,9 +97,14 @@ jobs:
     needs: resolve-tag
     if: needs.resolve-tag.outputs.tag != ''
     runs-on: ubuntu-latest
+    # Required reviewer on this environment gates the Marketplace publish step
+    # behind manual approval; it's also what makes the OIDC subject below
+    # (repo:...:environment:vscode-marketplace) match the federated identity
+    # credential registered in Entra ID — see get-mi-user-id.yml.
+    environment: vscode-marketplace
     permissions:
       contents: write # upload the .vsix asset to the release
-      id-token: write # OIDC token used to sign the provenance
+      id-token: write # OIDC token used to sign the provenance + Marketplace login
       attestations: write # record the SLSA build provenance
       actions: write # dispatch the docs rebuild below
     env:
@@ -113,6 +128,16 @@ jobs:
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: json-schema-preview.vsix
+
+      - name: Login to Microsoft Entra ID with GitHub OIDC
+        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true # only Marketplace/DevOps access is needed, no Azure subscription
+
+      - name: Publish to Visual Studio Marketplace
+        run: npx @vscode/vsce publish --azure-credential --packagePath json-schema-preview.vsix
 
       - name: Upload VSIX to GitHub Release
         env:
