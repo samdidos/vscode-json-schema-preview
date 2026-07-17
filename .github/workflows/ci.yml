@@ -85,6 +85,9 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:coverage
 
+      - name: Build size budget (S03-SR-15..S03-SR-18)
+        run: npm run package && npm run check:bundle-size
+
       - name: Maturity score is current
         # Recomputes the scorecard from repo facts (coverage now exists from the
         # step above) and warns if the committed maturity-score.json is stale.
