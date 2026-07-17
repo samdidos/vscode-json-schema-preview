@@ -54,7 +54,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git add maturity-score.json docs/public/maturity-scorecard-light.svg docs/public/maturity-scorecard-dark.svg
+          git add maturity-score.json MATURITY.md docs/public/maturity-scorecard-light.svg docs/public/maturity-scorecard-dark.svg
           [ -f ossf-scorecard.json ] && git add ossf-scorecard.json
 
           # --staged so newly-created files (a first-ever OSSF cache) count too.

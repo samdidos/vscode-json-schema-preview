@@ -26,6 +26,7 @@ import { execSync } from 'child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_PATH = join(ROOT, 'maturity-score.json');
+const DOC_PATH = join(ROOT, 'MATURITY.md');
 const MAX = 5;
 
 // ── fact helpers (all read-only, offline) ──────────────────────────────────
@@ -316,6 +317,31 @@ function printTable(result) {
   }
 }
 
+// Keep MATURITY.md's hand-written "**Snapshot: YYYY-MM-DD**" line in lockstep
+// with the computed score, so the two never drift (the date is otherwise the
+// one fact in that doc a human had to remember to bump). Returns the previous
+// date when it differs from `date`, or null when already in sync / no marker.
+const SNAPSHOT_RE = /(\*\*Snapshot:\s*)(\d{4}-\d{2}-\d{2})(\*\*)/;
+function readDocSnapshot() {
+  try {
+    return readFileSync(DOC_PATH, 'utf-8').match(SNAPSHOT_RE)?.[2] ?? null;
+  } catch {
+    return null;
+  }
+}
+function syncDocSnapshot(date) {
+  let text;
+  try {
+    text = readFileSync(DOC_PATH, 'utf-8');
+  } catch {
+    return null; // no MATURITY.md — nothing to keep in sync
+  }
+  const current = text.match(SNAPSHOT_RE)?.[2] ?? null;
+  if (current === null || current === date) { return null; }
+  writeFileSync(DOC_PATH, text.replace(SNAPSHOT_RE, `$1${date}$3`));
+  return current;
+}
+
 const result = compute();
 const serialized = JSON.stringify(result, null, 2) + '\n';
 
@@ -349,9 +375,23 @@ if (process.argv.includes('--check')) {
     console.log('\n✗ maturity-score.json scores are stale. Run `npm run maturity` and commit the result.');
     process.exit(1);
   }
+  // Dates are excluded from the drift comparison above (they change every run),
+  // but MATURITY.md's snapshot should still track the committed score's date —
+  // flag it (non-fatally) so a stale doc gets noticed without failing the gate.
+  const docDate = readDocSnapshot();
+  if (docDate !== null && docDate !== committed.generatedAt) {
+    console.log(
+      `\n⚠ MATURITY.md snapshot (${docDate}) differs from the committed score date ` +
+      `(${committed.generatedAt}). Run \`npm run maturity\` and commit MATURITY.md.`,
+    );
+  }
   console.log('\n✓ maturity-score.json scores are up to date.');
 } else {
   writeFileSync(OUT_PATH, serialized);
+  const prev = syncDocSnapshot(result.generatedAt);
   printTable(result);
   console.log(`\nWrote ${OUT_PATH.replace(ROOT + '/', '')}`);
+  if (prev) {
+    console.log(`Updated MATURITY.md snapshot: ${prev} → ${result.generatedAt}`);
+  }
 }

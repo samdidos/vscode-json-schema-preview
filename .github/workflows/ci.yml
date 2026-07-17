@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
 
+# Least-privilege default token: every job here only reads the repo (checkout,
+# build, test, scan) — none post comments or push. Declared at the top level so
+# it applies to all jobs and satisfies OpenSSF Scorecard's Token-Permissions
+# check; grant a narrower per-job scope if a future job needs to write.
+permissions:
+  contents: read
+
 jobs:
   changes:
     name: Detect source-relevant changes
