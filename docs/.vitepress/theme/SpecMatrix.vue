@@ -6,10 +6,16 @@ import { computed, ref } from 'vue'
 import { withBase } from 'vitepress'
 import { data } from '../specs.data'
 import SpecStatusBadge from './SpecStatusBadge.vue'
+import SpecFilterDropdown from './SpecFilterDropdown.vue'
 
 const query = ref('')
-const kind = ref<'all' | 'feature' | 'system'>('all')
-const activeStatuses = ref(new Set<string>())
+// Both filters are multi-select (S10-SR-04): an empty array means "no
+// constraint"; selected values combine as OR within a dropdown, and the two
+// dropdowns plus the search box combine as AND.
+const selectedKinds = ref<string[]>([])
+const selectedStatuses = ref<string[]>([])
+
+const kindOptions = ['feature', 'system']
 
 // Only offer statuses that actually occur in the matrix, in the order
 // traceability.json declares them.
@@ -17,18 +23,22 @@ const presentStatuses = computed(() =>
   Object.keys(data.statuses).filter((s) => data.specs.some((spec) => spec.counts[s])),
 )
 
-function toggleStatus(status: string) {
-  const next = new Set(activeStatuses.value)
-  next.has(status) ? next.delete(status) : next.add(status)
-  activeStatuses.value = next
+const hasActiveFilter = computed(
+  () => selectedKinds.value.length > 0 || selectedStatuses.value.length > 0 || query.value !== '',
+)
+
+function resetFilters() {
+  selectedKinds.value = []
+  selectedStatuses.value = []
+  query.value = ''
 }
 
 const filtered = computed(() =>
   data.specs.filter((spec) => {
-    if (kind.value !== 'all' && spec.kind !== kind.value) return false
+    if (selectedKinds.value.length > 0 && !selectedKinds.value.includes(spec.kind)) return false
     if (
-      activeStatuses.value.size > 0 &&
-      ![...activeStatuses.value].some((s) => spec.counts[s])
+      selectedStatuses.value.length > 0 &&
+      !selectedStatuses.value.some((s) => spec.counts[s])
     )
       return false
     const q = query.value.trim().toLowerCase()
@@ -51,31 +61,16 @@ const totalRequirements = computed(() =>
         placeholder="Filter by id or title…"
         aria-label="Filter specs by id or title"
       />
-      <div class="spec-matrix-chips" role="group" aria-label="Filter by kind">
-        <button
-          v-for="k in ['all', 'feature', 'system'] as const"
-          :key="k"
-          class="spec-chip"
-          :class="{ active: kind === k }"
-          :aria-pressed="kind === k"
-          @click="kind = k"
-        >
-          {{ k }}
-        </button>
-      </div>
-      <div class="spec-matrix-chips" role="group" aria-label="Filter by requirement status">
-        <button
-          v-for="s in presentStatuses"
-          :key="s"
-          class="spec-chip"
-          :class="{ active: activeStatuses.has(s) }"
-          :aria-pressed="activeStatuses.has(s)"
-          :title="data.statuses[s]"
-          @click="toggleStatus(s)"
-        >
-          {{ s }}
-        </button>
-      </div>
+      <SpecFilterDropdown v-model="selectedKinds" label="Kind" :options="kindOptions" />
+      <SpecFilterDropdown
+        v-model="selectedStatuses"
+        label="Status"
+        :options="presentStatuses"
+        :descriptions="data.statuses"
+      />
+      <button v-if="hasActiveFilter" type="button" class="spec-matrix-reset" @click="resetFilters">
+        Reset
+      </button>
     </div>
 
     <p class="spec-matrix-summary">
@@ -143,30 +138,14 @@ const totalRequirements = computed(() =>
   outline: none;
   border-color: var(--vp-c-brand-1);
 }
-.spec-matrix-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.spec-chip {
-  padding: 2px 12px;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 12px;
+.spec-matrix-reset {
   font-size: 13px;
   color: var(--vp-c-text-2);
-  background-color: var(--vp-c-bg-soft);
-  transition:
-    color 0.2s,
-    border-color 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
-.spec-chip:hover {
-  color: var(--vp-c-text-1);
-  border-color: var(--vp-c-brand-1);
-}
-.spec-chip.active {
+.spec-matrix-reset:hover {
   color: var(--vp-c-brand-1);
-  border-color: var(--vp-c-brand-1);
-  background-color: var(--vp-c-brand-soft);
 }
 .spec-matrix-summary {
   font-size: 13px;

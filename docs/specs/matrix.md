@@ -6,9 +6,11 @@ Every requirement in the [specs](./) has an entry in
 recording its implementation status. This table is generated from that file at
 build time — it always matches the repository.
 
-Filter by spec kind or by requirement status (a status filter keeps the specs
-that have at least one requirement in that status), or search by id and title.
-Click a spec to read its full text and per-requirement breakdown.
+Use the **Kind** and **Status** dropdowns to filter — each is multi-select, so
+you can pick several values at once (a status keeps the specs that have at
+least one requirement in that status). Selections within a dropdown combine as
+OR; the two dropdowns and the search box combine as AND. Search by id or title,
+and click a spec to read its full text and per-requirement breakdown.
 
 <SpecMatrix />
 <!-- spec:S10 end -->
