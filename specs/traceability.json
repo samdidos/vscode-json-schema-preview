@@ -2514,6 +2514,37 @@
       ],
       "note": "resolveTimeoutMs clamp/fallback + config readers unit-tested; wired into PreviewWebPanel/ValidationManager/SchemaCache"
     },
+    "S03-SR-15": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-bundle-size.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "note": "ci.yml build job runs `npm run package && npm run check:bundle-size` on every build; script exits non-zero on budget overrun"
+    },
+    "S03-SR-16": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-bundle-size.mjs"
+      ],
+      "note": "BUNDLE_BUDGET_BYTES=3MB / VSIX_BUDGET_BYTES=1.5MB constants; WARN_RATIO=0.85 prints a non-fatal warning before the hard fail"
+    },
+    "S03-SR-17": {
+      "status": "implemented",
+      "impl": [
+        ".vscodeignore"
+      ],
+      "note": "excludes specs/, .specify/, .husky/, alternate tsconfigs, lint/test/release config, project meta-docs; reduced the packaged .vsix from 864KB/83 files to ~748KB/13 files"
+    },
+    "S03-SR-18": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-bundle-size.mjs",
+        "bundle-size.json",
+        ".github/workflows/maturity-refresh.yml"
+      ],
+      "note": "check-bundle-size.mjs writes bundle-size.json on every run; the weekly refresh workflow commits it (alongside the maturity score) when it changes"
+    },
     "S04-SR-01": {
       "status": "implemented",
       "impl": [

@@ -379,6 +379,7 @@
     "package": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint",
     "knip": "knip",
+    "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "check:traceability": "node scripts/check-traceability.mjs",
     "check:doc-traceability": "node scripts/check-doc-traceability.mjs",
     "trace:init": "node scripts/check-traceability.mjs --init",
