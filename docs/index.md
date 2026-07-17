@@ -12,6 +12,9 @@ hero:
     - theme: brand
       text: Get Started
       link: /guide/
+    - theme: brand
+      text: Install from Marketplace
+      link: https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview
     - theme: alt
       text: View on GitHub
       link: https://github.com/samdidos/vscode-json-schema-preview
