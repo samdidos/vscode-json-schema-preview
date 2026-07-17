@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/samdidos/vscode-json-schema-preview/blob/main/specs/traceability.schema.json",
+  "$id": "https://samdidos.github.io/vscode-json-schema-preview/schemas/v1/traceability.schema.json",
+  "$comment": "The major version lives in the $id path (/v1/), per JSON Schema's convention that a schema's identity carries its version (S11-SR-06). A backward-incompatible change to the matrix shape ships as /v2/…; the working file stays at specs/traceability.schema.json.",
   "title": "TraceabilityMatrix",
   "description": "Requirement traceability matrix for the JSON Schema Preview extension. Maps every requirement ID (defined in the specs directory) to its implementation status and the source files realising it.",
   "type": "object",

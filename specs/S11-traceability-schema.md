@@ -32,6 +32,13 @@ code consumes, so neither can silently drift from it.
   `specs/traceability.schema.json`. It MUST be self-contained (no external
   `$ref`), so it needs no F14 bundling before F18 consumes it, and it MUST
   declare a JSON Schema draft via `$schema`.
+- **S11-SR-06** The schema MUST carry an absolute `$id` whose path embeds a
+  **major-version segment** (`.../v1/...`), following JSON Schema's convention
+  that a schema's *identity* — not its file location — carries its version: a
+  backward-incompatible change to the matrix shape is published under a new
+  `$id` (`.../v2/...`) so existing consumers keep resolving the identity they
+  validated against, while the working file stays at
+  `specs/traceability.schema.json`.
 - **S11-SR-02** `specs/traceability.json` MUST validate against
   `specs/traceability.schema.json`, and MUST reference it with an inline
   `$schema` key (the F10 inline-binding convention) so the extension and other

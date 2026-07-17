@@ -2981,6 +2981,13 @@
         "docs/.vitepress/traceability.types.ts"
       ],
       "note": ""
+    },
+    "S11-SR-06": {
+      "status": "implemented",
+      "impl": [
+        "specs/traceability.schema.json"
+      ],
+      "note": ""
     }
   }
 }
