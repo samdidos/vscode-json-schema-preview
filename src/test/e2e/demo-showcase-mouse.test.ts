@@ -1,138 +1,183 @@
 import { test } from '@playwright/test';
-import { runDemo } from './helpers/demo';
-import { seedUserSettings } from './helpers/launch';
-import {
-  installCursor,
-  openFileVisible,
-  clickEditorAction,
-  clickEditorOverflowAction,
-  clickStatusBarItem,
-  clickSelector,
-  typeSlowly,
-} from './helpers/mouse';
+import path from 'path';
+import { launchVSCode, seedUserSettings } from './helpers/launch';
+import { openFile } from './helpers/ui';
+import { startRecording, Recording } from './helpers/recorder';
+import { createRealCursor } from './helpers/realCursor';
 
 /**
- * Mouse-driven, end-to-end tour of the extension's core workflow, chained
- * into a single continuous session instead of five separate ones: generate a
- * schema from data (F06), preview it and watch a live edit refresh it (F01,
- * F02), bind a second data file to that schema from the status bar (F04),
- * validate it and see the deliberately-broken values fail (F03), then
- * generate TypeScript types from the schema (F18). This is the only demo
- * referenced from the README (the per-feature demos above stay docs-only) —
- * see scripts/make-gifs.mjs's `showcase` entry and README.md.
+ * A real screen-recording tour of the extension's core workflow, chained
+ * into a single continuous session: generate a schema from data (F06),
+ * preview it and watch a live edit refresh it (F01, F02), bind a second data
+ * file to that schema from the status bar (F04), validate it and see the
+ * deliberately-broken values fail (F03), then generate TypeScript types from
+ * the schema (F18). This is the only demo referenced from the README — the
+ * per-feature demos stay docs-only, still built the old way (see below).
  *
- * Reuses the exact interactions of demo-inference-mouse, demo-live-update-mouse,
- * demo-binding-mouse, demo-validation-mouse, and demo-codegen-mouse — each
- * already proven reliable on its own — rather than inventing new selectors.
+ * Unlike every other demo, this one is NOT stitched from Playwright
+ * screenshots (a Playwright-dispatched mouse move never moves the real OS
+ * pointer, so those recordings fake a cursor with an animated DOM overlay —
+ * see helpers/mouse.ts). This test instead:
+ *   - records the real X11 display with `ffmpeg -f x11grab` (helpers/recorder.ts),
+ *     which captures whatever the X server actually composites, including a
+ *     genuine system cursor;
+ *   - drives that cursor with `xdotool` (helpers/realCursor.ts) in lockstep
+ *     with the actual UI actions, which still go through Playwright
+ *     (`locator.click()`, `window.keyboard`) for the same reliability every
+ *     other demo depends on — xdotool only moves the pointer, it never
+ *     clicks or types.
+ * scripts/make-showcase-gif.mjs then converts the recording to
+ * docs/public/demo-showcase.gif via ffmpeg's palette pipeline, instead of
+ * scripts/make-gifs.mjs's gif-encoder-2 frame-stitching.
  */
 test('demo-showcase-mouse: generate, preview, bind, validate, and generate types in one flow', async () => {
-  // Five chained feature flows in one VS Code session comfortably exceed the
-  // suite's 120s default (every other demo covers a single feature).
+  // Five chained feature flows plus real video encoding comfortably exceed
+  // the suite's 120s default (every other demo covers a single feature).
   test.setTimeout(180_000);
   seedUserSettings({ 'jsonschema.preview.liveUpdate': true });
 
-  await runDemo('showcase-mouse', async (window, capture) => {
-    await installCursor(window);
-    await capture('workspace');
+  const display = process.env.DISPLAY;
+  if (!display) {
+    throw new Error(
+      'DISPLAY is not set — this demo records the real X11 screen (ffmpeg -f x11grab) ' +
+      'and needs a running X server (Xvfb in CI, a real X session locally).',
+    );
+  }
+
+  const { app, window } = await launchVSCode();
+  let recording: Recording | undefined;
+
+  try {
+    const bounds = await app.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows()[0];
+      return win.getContentBounds();
+    });
+
+    recording = startRecording(display, bounds, path.join(process.cwd(), 'videos', 'showcase.mp4'));
+    await window.waitForTimeout(1_000); // let ffmpeg actually start grabbing frames
+
+    const cursor = createRealCursor({ x: bounds.x, y: bounds.y });
+    await cursor.glideTo(bounds.x + 700, bounds.y + 460, 1); // snap to a known starting mark
+    await window.waitForTimeout(600);
 
     // ── 1. Generate a schema from raw data (F06) ──────────────────────────
-    await openFileVisible(window, capture, 'person-valid.json');
-    await clickEditorAction(
-      window,
-      capture,
-      'JSON Schema: Generate Schema from This File',
-      'infer',
-    );
-    await window.waitForTimeout(4_000);
-    await capture('infer-inferred-schema');
+    await openFile(window, 'person-valid.json');
 
-    // Close the generated-schema tab/column so the rest of the tour stays
-    // in a single editor group.
-    await window.waitForTimeout(500);
+    const inferIcon = window.locator(
+      '.editor-actions .action-item a.action-label[aria-label*="JSON Schema: Generate Schema from This File"], ' +
+      '.editor-actions .action-item a.action-label[title*="JSON Schema: Generate Schema from This File"]',
+    ).first();
+    await cursor.glideToLocator(inferIcon);
+    await inferIcon.click();
+    await window.waitForTimeout(4_000);
+
+    // Close the generated-schema tab/column so the rest of the tour stays in
+    // a single editor group.
     await window.keyboard.press('Control+w');
-    await window.waitForTimeout(400);
+    await window.waitForTimeout(600);
 
     // ── 2. Preview the schema, then live-edit it (F01, F02) ───────────────
-    await openFileVisible(window, capture, 'person.schema.json');
-    await clickEditorAction(window, capture, 'JSON Schema: Preview', 'preview');
-    await window.waitForTimeout(3_500);
-    await capture('preview-open');
+    await openFile(window, 'person.schema.json');
 
-    await clickSelector(window, capture, '.tab[aria-label*="person.schema.json"]', 'schema-tab');
-    await window.waitForTimeout(400);
+    const previewIcon = window.locator(
+      '.editor-actions .action-item a.action-label[aria-label*="JSON Schema: Preview"], ' +
+      '.editor-actions .action-item a.action-label[title*="JSON Schema: Preview"]',
+    ).first();
+    await cursor.glideToLocator(previewIcon);
+    await previewIcon.click();
+    await window.waitForTimeout(3_500);
+
+    const schemaTab = window.locator('.tab[aria-label*="person.schema.json"]').first();
+    await cursor.glideToLocator(schemaTab);
+    await schemaTab.click();
+    await window.waitForTimeout(500);
 
     // Click the "title" line, jump to end-of-line, then step back over the
     // closing quote and trailing comma so the appended text lands *inside*
     // the string value ("Person (Draft)") instead of after it — appending
     // straight after End would land past the comma and break the JSON.
-    await clickSelector(window, capture, '.view-line:has-text("title")', 'title-line');
+    const titleLine = window.locator('.view-line:has-text("title")').first();
+    await cursor.glideToLocator(titleLine);
+    await titleLine.click();
     await window.keyboard.press('End');
     await window.keyboard.press('ArrowLeft');
     await window.keyboard.press('ArrowLeft');
-    await typeSlowly(window, capture, ' (Draft)', 'edit-title');
-    await capture('schema-being-edited');
+    await window.keyboard.type(' (Draft)', { delay: 75 });
+    await window.waitForTimeout(500);
 
     await window.keyboard.press('Control+s');
     await window.waitForTimeout(2_800); // debounce + render
-    await capture('preview-live-updated');
 
     // ── 3. Bind a second data file to that schema from the status bar (F04) ─
-    await openFileVisible(window, capture, 'person-invalid.json');
-    await clickStatusBarItem(window, capture, 'Schema:', 'bind-statusbar');
+    await openFile(window, 'person-invalid.json');
+
+    const bindStatusItem = window.locator('.statusbar-item:has-text("Schema:")').first();
+    await cursor.glideToLocator(bindStatusItem);
+    await bindStatusItem.click();
     await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(700);
-    await capture('schema-picker');
-
-    await typeSlowly(window, capture, 'person.schema.json', 'schema-filter');
+    await window.keyboard.type('person.schema.json', { delay: 60 });
     await window.waitForTimeout(500);
-    await capture('schema-picker-filtered');
 
-    await clickSelector(
-      window,
-      capture,
-      '.quick-input-list .monaco-list-row:has-text("person.schema.json")',
-      'pick-schema',
-    );
+    const schemaRow = window.locator('.quick-input-list .monaco-list-row:has-text("person.schema.json")').first();
+    await cursor.glideToLocator(schemaRow);
+    await schemaRow.click();
     await window.waitForTimeout(1_800);
-    await capture('status-bar-bound');
 
     // ── 4. Validate — the deliberately-broken values fail (F03) ───────────
-    await clickEditorAction(window, capture, 'JSON Schema: Validate This File', 'validate');
+    const validateIcon = window.locator(
+      '.editor-actions .action-item a.action-label[aria-label*="JSON Schema: Validate This File"], ' +
+      '.editor-actions .action-item a.action-label[title*="JSON Schema: Validate This File"]',
+    ).first();
+    await cursor.glideToLocator(validateIcon);
+    await validateIcon.click();
     await window.waitForTimeout(4_000);
-    await capture('validation-errors');
 
     // Put the cursor on the invalid id ("not-a-number") for a close-up beat.
-    await clickSelector(window, capture, '.view-line:has-text("not-a-number")', 'bad-value');
-    await window.waitForTimeout(700);
-    await capture('validation-errors-detail');
+    const badValueLine = window.locator('.view-line:has-text("not-a-number")').first();
+    await cursor.glideToLocator(badValueLine);
+    await badValueLine.click();
+    await window.waitForTimeout(1_500);
 
     // ── 5. Generate TypeScript types from the schema (F18) ────────────────
-    await clickSelector(window, capture, '.tab[aria-label*="person.schema.json"]', 'schema-tab-again');
+    const schemaTabAgain = window.locator('.tab[aria-label*="person.schema.json"]').first();
+    await cursor.glideToLocator(schemaTabAgain);
+    await schemaTabAgain.click();
     await window.waitForTimeout(500);
 
-    await clickEditorOverflowAction(
-      window,
-      capture,
-      'Generate Types from This Schema',
-      'codegen',
-    );
+    const moreActions = window.locator(
+      '.editor-actions .action-item a.action-label[aria-label*="More Actions"], ' +
+      '.editor-actions .action-item a.action-label.codicon-toolbar-more',
+    ).first();
+    await cursor.glideToLocator(moreActions);
+    await moreActions.click();
+    await window.waitForSelector('.monaco-menu', { state: 'visible', timeout: 10_000 });
+    await window.waitForTimeout(400);
+
+    const codegenItem = window.locator(
+      '.monaco-menu .action-item .action-label:has-text("Generate Types from This Schema")',
+    ).first();
+    await cursor.glideToLocator(codegenItem);
+    await codegenItem.click();
 
     // Target-language picker — TypeScript is the first/default item; click it.
     await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(500);
-    await capture('codegen-language-picker');
-    await clickSelector(window, capture, '.quick-input-list .monaco-list-row', 'codegen-language-pick');
+    const languageRow = window.locator('.quick-input-list .monaco-list-row').first();
+    await cursor.glideToLocator(languageRow);
+    await languageRow.click();
 
     // Destination picker — "Open in a new editor" is the default; click it.
     await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(500);
-    await capture('codegen-destination-picker');
-    await clickSelector(window, capture, '.quick-input-list .monaco-list-row', 'codegen-destination-pick');
+    const destinationRow = window.locator('.quick-input-list .monaco-list-row').first();
+    await cursor.glideToLocator(destinationRow);
+    await destinationRow.click();
 
     await window.waitForTimeout(5_000);
-    await capture('codegen-generated-types');
-
-    await window.waitForTimeout(900);
-    await capture('codegen-generated-types-hold');
-  });
+    await window.waitForTimeout(1_500); // final hold — a clear rest beat for the GIF loop
+  } finally {
+    await recording?.stop();
+    await app.close();
+  }
 });

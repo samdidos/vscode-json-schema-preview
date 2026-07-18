@@ -84,11 +84,13 @@ jobs:
 
       # canvas (used by make-gifs.mjs) ships prebuilt binaries but falls back to
       # building from source when no prebuilt matches — install system headers so
-      # the build succeeds in that case.
-      - name: Install system libraries for canvas
+      # the build succeeds in that case. ffmpeg/xdotool are for demo-showcase-mouse
+      # only: it records the real X11 display instead of stitching screenshots
+      # (see helpers/recorder.ts, helpers/realCursor.ts, make-showcase-gif.mjs).
+      - name: Install system libraries for canvas, ffmpeg, xdotool
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+          sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ffmpeg xdotool
 
       # The extension's preview feature shells out to json-schema-for-humans.
       - name: Install Python preview renderer
@@ -101,27 +103,33 @@ jobs:
       - name: Build extension
         run: npm run compile
 
-      - name: Run E2E tests (capture screenshot frames)
+      - name: Run E2E tests (capture screenshot frames + showcase recording)
         env:
           DISPLAY: ':99.0'
         # Only the mouse demos feed GIFs (make-gifs.mjs consumes the *-mouse
-        # frame dirs); the non-mouse twins run as CI UI-smoke instead
-        # (ci.yml e2e-smoke, S08-SR-11), so don't run them here.
+        # frame dirs, make-showcase-gif.mjs consumes videos/showcase.mp4); the
+        # non-mouse twins run as CI UI-smoke instead (ci.yml e2e-smoke,
+        # S08-SR-11), so don't run them here.
         run: npx playwright test --config playwright.e2e.config.ts --grep mouse
 
-      # Failure screenshots and error context — without these a demo timeout is
-      # just an opaque TimeoutError in the log.
+      # Failure screenshots/error context and the raw showcase recording —
+      # without these a demo timeout is just an opaque TimeoutError in the log.
       - name: Upload Playwright failure artifacts
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-failure-results
-          path: test-results/
+          path: |
+            test-results/
+            videos/
           if-no-files-found: ignore
           retention-days: 7
 
       - name: Generate demo GIFs
         run: node scripts/make-gifs.mjs
+
+      - name: Generate showcase GIF from the screen recording
+        run: node scripts/make-showcase-gif.mjs
 
       - name: Commit and push refreshed GIFs
         run: |

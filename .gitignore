@@ -21,6 +21,10 @@ screenshots/
 playwright.e2e.config.js
 playwright.e2e.config.js.map
 
+# demo-showcase-mouse's raw ffmpeg/xdotool screen recording (the GIF in
+# docs/public/ is the output — see scripts/make-showcase-gif.mjs)
+videos/
+
 # Playwright state
 playwright-report/
 test-results/

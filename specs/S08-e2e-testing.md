@@ -80,6 +80,13 @@ yet they exercise the real feature flow through the actual VS Code UI, so they
 have value as a lightweight UI **smoke** signal the assertion-based integration
 suite (API-level) does not provide.
 
+`demo-showcase-mouse` is the one exception to "capture screenshot frames": it
+records the real X11 display instead (see the 2026-07 History note) and feeds
+`scripts/make-showcase-gif.mjs`, not `scripts/make-gifs.mjs`. It still follows
+the mouse/non-mouse split below — `mouse` in the title is what routes it to
+the GIF-refresh job rather than the smoke job, regardless of capture
+mechanism.
+
 - **S08-SR-10** The command-palette (non-mouse) demo scripts MUST run as a
   UI-smoke job (Playwright launching real VS Code, headless via xvfb), passing
   when each demo flow completes without throwing or timing out — i.e. crash /
@@ -158,14 +165,33 @@ suite (API-level) does not provide.
 - **2026-07** — Added `demo-showcase`/`demo-showcase-mouse`, a sixth-ish demo
   pair that chains five features (F06 inference, F01 preview, F02 live-update,
   F04 binding, F03 validation, F18 code generation) into one continuous
-  session instead of one GIF per feature. It follows the same mouse/non-mouse
-  split as every other demo (S08-SR-10/11) and is the only demo GIF referenced
-  from README.md — the per-feature GIFs stay docs-site-only via
-  `docs/.vitepress/theme/QuickDemo.vue`. `scripts/make-gifs.mjs`'s `DEMOS`
-  list gained one `showcase` entry; no new fixtures were needed (it reuses
-  `showcase/data/person-valid.json`, `showcase/data/person-invalid.json`, and
-  `showcase/schemas/person.schema.json`, already used by the individual
-  inference/binding/validation/codegen demos).
+  session instead of one GIF per feature. `demo-showcase` (command-palette
+  twin) follows the existing screenshot-based smoke pattern unchanged. It is
+  the only demo GIF referenced from README.md — the per-feature GIFs stay
+  docs-site-only via `docs/.vitepress/theme/QuickDemo.vue`. No new fixtures
+  were needed: it reuses `showcase/data/person-valid.json`,
+  `showcase/data/person-invalid.json`, and `showcase/schemas/person.schema.json`,
+  already used by the individual inference/binding/validation/codegen demos.
+  `demo-showcase-mouse` initially reused the stitched-screenshot approach
+  (`helpers/mouse.ts`'s animated DOM cursor + `scripts/make-gifs.mjs`) like
+  every other mouse demo, but that read as visibly synthetic once combined
+  into one long recording — the DOM cursor moves in discrete steps (a
+  Playwright-dispatched mouse move never moves the real OS pointer, so it
+  can't be shown in a screenshot at all) and `gif-encoder-2`'s octree
+  quantiser at low quality bands/dithers badly over five minutes of VS Code
+  UI. It was switched to a **real screen recording**: `ffmpeg -f x11grab`
+  (`helpers/recorder.ts`) captures whatever the X server actually composites
+  for the Electron window's content-bounds region, `xdotool` drives the
+  genuine X11 pointer in lockstep with the UI actions (`helpers/realCursor.ts`)
+  — cosmetic only, the actual clicks/typing still go through Playwright for
+  the same reliability every other demo depends on — and
+  `scripts/make-showcase-gif.mjs` converts the recording to
+  `docs/public/demo-showcase.gif` via ffmpeg's two-pass palette pipeline
+  (`palettegen`/`paletteuse`, proper dithering) instead of `gif-encoder-2`.
+  This is deliberately scoped to this one demo only: the other 16 stay on the
+  screenshot pipeline, which is simpler and has no external-binary dependency
+  beyond the already-required `canvas`. The refresh-gifs workflow gained
+  `ffmpeg`/`xdotool` apt packages and a `make-showcase-gif.mjs` step.
 - **2026-07** — S08-SR-10's UI-smoke job moved from `ci.yml` (every PR/push) to
   `refresh-gifs.yml` (release time, parallel to the GIF-refresh job it shares
   fixtures with). Running on every PR meant it contended for shared runner
