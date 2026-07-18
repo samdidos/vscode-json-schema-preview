@@ -154,6 +154,24 @@ Discovery respects `files.exclude`/`search.exclude`, skips files over 1 MiB, and
 
 ---
 
+<!-- spec:F23 start -->
+## JSON Schema: Report Schema Coverage from Data
+
+**ID:** `jsonschema.schemaCoverage`
+
+The mirror of validation: instead of "is this data valid?", it answers "which parts of the schema does my data actually use?". Run it on a data file (JSON/JSONC/JSONL/YAML/TOML) that has a bound schema — inline `$schema` or a settings binding — and it reports how many of the schema's declared properties the data exercises, and lists the ones it never sets. For a JSONL file every record counts, and a property is exercised if it appears in any record.
+
+Each unexercised property is highlighted on the schema file itself as a dimmed **Information** diagnostic (tagged _Unnecessary_) on its definition, so the gaps show up where you read the schema; re-running replaces the previous run's highlights. The summary offers a **Copy report** action that puts a Markdown list of the unexercised paths on the clipboard.
+
+Coverage is a **heuristic presence** check, not validation: it walks named `properties` (through nested objects, array `items`, `allOf`/`anyOf`/`oneOf`, and same-document `$ref`), but does not resolve remote `$ref`, evaluate conditional applicability (`if`/`then`), or reason about `patternProperties`. An unexercised property means "worth a look", not "provably dead".
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — | ✅ (on a data file) |
+<!-- spec:F23 end -->
+
+---
+
 <!-- spec:F18 start -->
 ## JSON Schema: Generate Types from This Schema
 

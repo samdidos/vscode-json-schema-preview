@@ -379,6 +379,7 @@ export class ThemeColor {
 
 export const ProgressLocation = { Notification: 15, Window: 10, SourceControl: 1 };
 export const DiagnosticSeverity = { Error: 0, Warning: 1, Information: 2, Hint: 3 };
+export const DiagnosticTag = { Unnecessary: 1, Deprecated: 2 };
 export class Position {
   constructor(public line: number, public character: number) {}
 }
@@ -408,6 +409,7 @@ export class Range {
 export class Diagnostic {
   code?: string | number;
   source?: string;
+  tags?: number[];
   constructor(public range: Range, public message: string, public severity?: number) {}
 }
 
