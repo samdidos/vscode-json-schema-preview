@@ -4,18 +4,21 @@ import { openFile, runCommand } from './helpers/ui';
 import { seedUserSettings } from './helpers/launch';
 
 /**
- * Command-palette twin of demo-showcase-mouse (S08-SR-11): exercises the same
- * chained workflow — infer, preview + live-edit, bind, validate, generate
- * types — through the real UI for crash/broken-selector smoke coverage
- * (S08-SR-10). Its frames are not consumed by scripts/make-gifs.mjs.
+ * Command-palette twin of demo-showcase-mouse (S08-SR-11): exercises the
+ * same underlying commands — Generate Schema, Preview, edit + live-update —
+ * for crash/broken-selector smoke coverage (S08-SR-10). Its frames are not
+ * consumed by any GIF pipeline.
+ *
+ * Deliberately simpler than the mouse version: it previews the existing,
+ * already-saved person.schema.json rather than the just-generated one, so it
+ * doesn't need the mouse version's native-save-dialog stub or webview
+ * frame-interaction — this twin's only job is smoke-testing the commands
+ * involved, not reproducing the showcase narrative frame for frame.
  */
-test('demo-showcase: generate, preview, bind, validate, and generate types in one flow', async () => {
-  // Five chained feature flows in one VS Code session comfortably exceed the
-  // suite's 120s default (every other demo covers a single feature).
-  test.setTimeout(180_000);
+test('demo-showcase: generate a schema, then preview and live-edit a schema', () => {
   seedUserSettings({ 'jsonschema.preview.liveUpdate': true });
 
-  await runDemo('showcase', async (window, capture) => {
+  return runDemo('showcase', async (window, capture) => {
     await capture('workspace');
 
     // ── 1. Generate a schema from raw data (F06) ──────────────────────────
@@ -23,10 +26,15 @@ test('demo-showcase: generate, preview, bind, validate, and generate types in on
     await runCommand(window, 'JSON Schema: Generate Schema from This File');
     await window.waitForTimeout(4_000);
     await capture('inferred-schema');
+    await window.keyboard.press('Control+w'); // close the generated-schema tab/column
+    await window.waitForTimeout(400);
+
+    // ── 2. Close the original data file ────────────────────────────────────
+    await openFile(window, 'person-valid.json');
     await window.keyboard.press('Control+w');
     await window.waitForTimeout(400);
 
-    // ── 2. Preview the schema, then live-edit it (F01, F02) ───────────────
+    // ── 3. Preview a schema, then live-edit it (F01, F02) ──────────────────
     await openFile(window, 'person.schema.json');
     await runCommand(window, 'JSON Schema: Preview');
     await window.waitForTimeout(3_500);
@@ -50,35 +58,7 @@ test('demo-showcase: generate, preview, bind, validate, and generate types in on
     await window.waitForTimeout(2_800);
     await capture('preview-live-updated');
 
-    // ── 3. Bind a second data file to that schema (F04) ────────────────────
-    await openFile(window, 'person-invalid.json');
-    await runCommand(window, 'JSON Schema: Bind Schema');
-    await window.waitForTimeout(2_000);
-    await capture('schema-picker');
-    await window.keyboard.type('person.schema.json', { delay: 30 });
-    await window.waitForTimeout(400);
-    await window.keyboard.press('Enter');
-    await window.waitForTimeout(2_000);
-    await capture('status-bar-bound');
-
-    // ── 4. Validate — the deliberately-broken values fail (F03) ───────────
-    await runCommand(window, 'JSON Schema: Validate This File');
-    await window.waitForTimeout(4_000);
-    await capture('validation-errors');
-
-    // ── 5. Generate TypeScript types from the schema (F18) ────────────────
-    await openFile(window, 'person.schema.json');
-    await runCommand(window, 'JSON Schema: Generate Types from This Schema');
-    await window.waitForTimeout(800);
-    await capture('codegen-language-picker');
-    await window.keyboard.press('Enter');
-    await window.waitForTimeout(800);
-    await capture('codegen-destination-picker');
-    await window.keyboard.press('Enter');
-    await window.waitForTimeout(5_000);
-    await capture('codegen-generated-types');
-
-    await window.waitForTimeout(800);
-    await capture('codegen-generated-types-hold');
+    await window.waitForTimeout(500);
+    await capture('preview-live-updated-hold');
   });
 });

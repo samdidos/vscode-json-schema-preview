@@ -80,6 +80,9 @@ const BASE_ARGS = [
 export interface VSCodeInstance {
   app: ElectronApplication;
   window: Page;
+  /** Absolute path to this launch's isolated workspace copy — e.g. for a
+   *  test that needs to point a stubbed native dialog at a real path. */
+  workspaceDir: string;
 }
 
 // Cached so multiple launch calls in the same process don't re-download.
@@ -157,7 +160,7 @@ async function launch(extraArgs: string[], openRelPaths: string[] = []): Promise
   }
   await window.waitForTimeout(300);
 
-  return { app, window };
+  return { app, window, workspaceDir };
 }
 
 /**

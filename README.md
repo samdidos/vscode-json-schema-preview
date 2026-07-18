@@ -35,10 +35,10 @@ Handles schemas behind authentication (GitHub private repos, Artifactory, any HT
 
 ---
 
-<!-- spec:F01,F02,F03,F04,F06,F18 -->
-![Generate a schema from data, preview it with a live edit, bind and validate a data file, then generate TypeScript types — all in one continuous walkthrough](docs/public/demo-showcase.gif)
+<!-- spec:F01,F02,F06 -->
+![Generate a schema from a JSON file, preview it, click into a field, then live-edit the schema and watch the preview update](docs/public/demo-showcase.gif)
 
-One continuous take: generate a schema from data, preview it and watch a live edit refresh the panel, bind a second file to that schema, validate it and watch the deliberately-broken values fail, then generate TypeScript types — all from the editor toolbar. More per-feature demos (private-schema auth, visual editing, bundling, and more) are on the **[documentation site](https://samdidos.github.io/vscode-json-schema-preview/)**.
+One continuous take: open a JSON file, generate a schema from it, preview that schema, click into a field, then live-edit the schema and watch the preview refresh — all from the editor toolbar. More per-feature demos (private-schema auth, visual editing, bundling, and more) are on the **[documentation site](https://samdidos.github.io/vscode-json-schema-preview/)**.
 
 ---
 

@@ -1,18 +1,17 @@
 import { test } from '@playwright/test';
 import path from 'path';
 import { launchVSCode, seedUserSettings } from './helpers/launch';
-import { openFile } from './helpers/ui';
 import { startRecording, Recording } from './helpers/recorder';
 import { createRealCursor } from './helpers/realCursor';
 
 /**
  * A real screen-recording tour of the extension's core workflow, chained
- * into a single continuous session: generate a schema from data (F06),
- * preview it and watch a live edit refresh it (F01, F02), bind a second data
- * file to that schema from the status bar (F04), validate it and see the
- * deliberately-broken values fail (F03), then generate TypeScript types from
- * the schema (F18). This is the only demo referenced from the README — the
- * per-feature demos stay docs-only, still built the old way (see below).
+ * into a single continuous session: open a JSON data file from Explorer,
+ * generate a schema from it (F06), close the data file, preview the
+ * generated schema (F01), click a field in the rendered HTML, then live-edit
+ * the schema and watch the preview refresh (F02). This is the only demo
+ * referenced from the README — the per-feature demos stay docs-only, still
+ * built the old way (see scripts/make-gifs.mjs).
  *
  * Unlike every other demo, this one is NOT stitched from Playwright
  * screenshots (a Playwright-dispatched mouse move never moves the real OS
@@ -25,14 +24,28 @@ import { createRealCursor } from './helpers/realCursor';
  *     with the actual UI actions, which still go through Playwright
  *     (`locator.click()`, `window.keyboard`) for the same reliability every
  *     other demo depends on — xdotool only moves the pointer, it never
- *     clicks or types.
+ *     clicks or types;
+ *   - stubs Electron's native save dialog (`app.evaluate`) so the freshly
+ *     generated schema can be saved to a real path with no dialog ever
+ *     appearing on screen — Preview reads a real file from disk (it shells
+ *     out to a Python renderer), so it can't render an unsaved buffer, but
+ *     the demo still shouldn't show a native file picker.
  * scripts/make-showcase-gif.mjs then converts the recording to
  * docs/public/demo-showcase.gif via ffmpeg's palette pipeline, instead of
  * scripts/make-gifs.mjs's gif-encoder-2 frame-stitching.
+ *
+ * The preview itself renders with json-schema-for-humans' "flat" template
+ * (PreviewWebPanel.ts deliberately avoids the default accordion template,
+ * which pulls Bootstrap/jQuery from a CDN — a network request this
+ * zero-telemetry extension doesn't make). The flat template has no
+ * expand/collapse — every field is already fully rendered — so "click a
+ * field" here means clicking a field far enough down the page that
+ * Playwright's actionability scroll-into-view is itself the visible motion,
+ * not an expand/collapse that doesn't exist in the real product.
  */
-test('demo-showcase-mouse: generate, preview, bind, validate, and generate types in one flow', async () => {
-  // Five chained feature flows plus real video encoding comfortably exceed
-  // the suite's 120s default (every other demo covers a single feature).
+test('demo-showcase-mouse: generate, preview, click a field, and live-edit in one flow', async () => {
+  // Real video encoding plus several UI flows comfortably exceeds the
+  // suite's 120s default (every other demo covers a single feature).
   test.setTimeout(180_000);
   seedUserSettings({ 'jsonschema.preview.liveUpdate': true });
 
@@ -44,7 +57,7 @@ test('demo-showcase-mouse: generate, preview, bind, validate, and generate types
     );
   }
 
-  const { app, window } = await launchVSCode();
+  const { app, window, workspaceDir } = await launchVSCode();
   let recording: Recording | undefined;
 
   try {
@@ -60,9 +73,28 @@ test('demo-showcase-mouse: generate, preview, bind, validate, and generate types
     await cursor.glideTo(bounds.x + 700, bounds.y + 460, 1); // snap to a known starting mark
     await window.waitForTimeout(600);
 
-    // ── 1. Generate a schema from raw data (F06) ──────────────────────────
-    await openFile(window, 'person-valid.json');
+    // ── 1. Open a JSON file from the file explorer ─────────────────────────
+    let explorerVisible = await window.locator('.explorer-folders-view').count() > 0;
+    if (!explorerVisible) {
+      await window.keyboard.press('Control+Shift+e');
+      await window.waitForSelector('.explorer-folders-view', { state: 'visible', timeout: 10_000 });
+      explorerVisible = true;
+    }
 
+    const dataFolder = window.locator('.explorer-folders-view .monaco-list-row:has-text("data")').first();
+    await cursor.glideToLocator(dataFolder);
+    await dataFolder.click();
+    await window.waitForTimeout(500);
+
+    const dataFile = window.locator(
+      '.explorer-folders-view .monaco-list-row:has-text("person-valid.json")',
+    ).first();
+    await cursor.glideToLocator(dataFile);
+    await dataFile.click();
+    await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
+    await window.waitForTimeout(600);
+
+    // ── 2. Generate a schema from it (F06) ─────────────────────────────────
     const inferIcon = window.locator(
       '.editor-actions .action-item a.action-label[aria-label*="JSON Schema: Generate Schema from This File"], ' +
       '.editor-actions .action-item a.action-label[title*="JSON Schema: Generate Schema from This File"]',
@@ -71,110 +103,65 @@ test('demo-showcase-mouse: generate, preview, bind, validate, and generate types
     await inferIcon.click();
     await window.waitForTimeout(4_000);
 
-    // Close the generated-schema tab/column so the rest of the tour stays in
-    // a single editor group.
-    await window.keyboard.press('Control+w');
+    // Save the generated schema to a real path with no visible dialog: Preview
+    // needs a real file on disk (it shells a Python renderer), but nothing in
+    // this flow should show a native file picker. Standard Playwright/Electron
+    // technique — stub the main-process dialog module before triggering it.
+    const savedSchemaPath = path.join(workspaceDir, 'schemas', 'generated-schema.json');
+    await app.evaluate(({ dialog }, targetPath) => {
+      dialog.showSaveDialog = (() => Promise.resolve({ canceled: false, filePath: targetPath })) as typeof dialog.showSaveDialog;
+    }, savedSchemaPath);
+    await window.keyboard.press('Control+s');
+    await window.waitForTimeout(2_000); // untitled → real file, tab title updates
+
+    // ── 3. Close the original JSON data file ───────────────────────────────
+    const dataTabClose = window.locator('.tab[aria-label*="person-valid.json"] .codicon-close').first();
+    await cursor.glideToLocator(dataTabClose);
+    await dataTabClose.click();
     await window.waitForTimeout(600);
 
-    // ── 2. Preview the schema, then live-edit it (F01, F02) ───────────────
-    await openFile(window, 'person.schema.json');
-
+    // ── 4. Open the JSON schema preview (F01) ──────────────────────────────
     const previewIcon = window.locator(
       '.editor-actions .action-item a.action-label[aria-label*="JSON Schema: Preview"], ' +
       '.editor-actions .action-item a.action-label[title*="JSON Schema: Preview"]',
     ).first();
     await cursor.glideToLocator(previewIcon);
     await previewIcon.click();
-    await window.waitForTimeout(3_500);
+    await window.waitForTimeout(4_000);
 
-    const schemaTab = window.locator('.tab[aria-label*="person.schema.json"]').first();
+    // ── 5. Click a field in the rendered HTML ──────────────────────────────
+    // The flat template (see file doc-comment) has no expand/collapse, so
+    // "click a field" targets the last property — far enough down the page
+    // that Playwright's actionability scroll-into-view is itself the visible
+    // motion, landing on a real click target rather than a decorative one.
+    const previewFrame = window.frameLocator('iframe.webview.ready').frameLocator('#active-frame');
+    const fieldLink = previewFrame.locator('a[href="#createdAt"]').first();
+    await fieldLink.waitFor({ state: 'attached', timeout: 15_000 });
+    await fieldLink.scrollIntoViewIfNeeded();
+    await cursor.glideToLocator(fieldLink);
+    await fieldLink.click();
+    await window.waitForTimeout(1_200);
+
+    // ── 6. Live-edit the schema and watch the preview refresh (F02) ────────
+    const schemaTab = window.locator('.tab[aria-label*="generated-schema.json"]').first();
     await cursor.glideToLocator(schemaTab);
     await schemaTab.click();
     await window.waitForTimeout(500);
 
-    // Click the "title" line, jump to end-of-line, then step back over the
-    // closing quote and trailing comma so the appended text lands *inside*
-    // the string value ("Person (Draft)") instead of after it — appending
-    // straight after End would land past the comma and break the JSON.
-    const titleLine = window.locator('.view-line:has-text("title")').first();
-    await cursor.glideToLocator(titleLine);
-    await titleLine.click();
+    // Anchor on the root opening brace (always line 1, always just "{") rather
+    // than any property — createSchema() assigns $schema *last*, so no
+    // property has a fixed, predictable position except the very first line.
+    const rootBrace = window.locator('.view-line:has-text("{")').first();
+    await cursor.glideToLocator(rootBrace);
+    await rootBrace.click();
     await window.keyboard.press('End');
-    await window.keyboard.press('ArrowLeft');
-    await window.keyboard.press('ArrowLeft');
-    await window.keyboard.type(' (Draft)', { delay: 75 });
+    await window.keyboard.press('Enter');
+    await window.keyboard.type('  "title": "Person Record",', { delay: 60 });
     await window.waitForTimeout(500);
 
     await window.keyboard.press('Control+s');
     await window.waitForTimeout(2_800); // debounce + render
 
-    // ── 3. Bind a second data file to that schema from the status bar (F04) ─
-    await openFile(window, 'person-invalid.json');
-
-    const bindStatusItem = window.locator('.statusbar-item:has-text("Schema:")').first();
-    await cursor.glideToLocator(bindStatusItem);
-    await bindStatusItem.click();
-    await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
-    await window.waitForTimeout(700);
-    await window.keyboard.type('person.schema.json', { delay: 60 });
-    await window.waitForTimeout(500);
-
-    const schemaRow = window.locator('.quick-input-list .monaco-list-row:has-text("person.schema.json")').first();
-    await cursor.glideToLocator(schemaRow);
-    await schemaRow.click();
-    await window.waitForTimeout(1_800);
-
-    // ── 4. Validate — the deliberately-broken values fail (F03) ───────────
-    const validateIcon = window.locator(
-      '.editor-actions .action-item a.action-label[aria-label*="JSON Schema: Validate This File"], ' +
-      '.editor-actions .action-item a.action-label[title*="JSON Schema: Validate This File"]',
-    ).first();
-    await cursor.glideToLocator(validateIcon);
-    await validateIcon.click();
-    await window.waitForTimeout(4_000);
-
-    // Put the cursor on the invalid id ("not-a-number") for a close-up beat.
-    const badValueLine = window.locator('.view-line:has-text("not-a-number")').first();
-    await cursor.glideToLocator(badValueLine);
-    await badValueLine.click();
-    await window.waitForTimeout(1_500);
-
-    // ── 5. Generate TypeScript types from the schema (F18) ────────────────
-    const schemaTabAgain = window.locator('.tab[aria-label*="person.schema.json"]').first();
-    await cursor.glideToLocator(schemaTabAgain);
-    await schemaTabAgain.click();
-    await window.waitForTimeout(500);
-
-    const moreActions = window.locator(
-      '.editor-actions .action-item a.action-label[aria-label*="More Actions"], ' +
-      '.editor-actions .action-item a.action-label.codicon-toolbar-more',
-    ).first();
-    await cursor.glideToLocator(moreActions);
-    await moreActions.click();
-    await window.waitForSelector('.monaco-menu', { state: 'visible', timeout: 10_000 });
-    await window.waitForTimeout(400);
-
-    const codegenItem = window.locator(
-      '.monaco-menu .action-item .action-label:has-text("Generate Types from This Schema")',
-    ).first();
-    await cursor.glideToLocator(codegenItem);
-    await codegenItem.click();
-
-    // Target-language picker — TypeScript is the first/default item; click it.
-    await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
-    await window.waitForTimeout(500);
-    const languageRow = window.locator('.quick-input-list .monaco-list-row').first();
-    await cursor.glideToLocator(languageRow);
-    await languageRow.click();
-
-    // Destination picker — "Open in a new editor" is the default; click it.
-    await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
-    await window.waitForTimeout(500);
-    const destinationRow = window.locator('.quick-input-list .monaco-list-row').first();
-    await cursor.glideToLocator(destinationRow);
-    await destinationRow.click();
-
-    await window.waitForTimeout(5_000);
     await window.waitForTimeout(1_500); // final hold — a clear rest beat for the GIF loop
   } finally {
     await recording?.stop();

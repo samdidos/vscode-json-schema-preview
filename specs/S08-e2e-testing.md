@@ -163,23 +163,38 @@ mechanism.
 ## History
 
 - **2026-07** — Added `demo-showcase`/`demo-showcase-mouse`, a sixth-ish demo
-  pair that chains five features (F06 inference, F01 preview, F02 live-update,
-  F04 binding, F03 validation, F18 code generation) into one continuous
-  session instead of one GIF per feature. `demo-showcase` (command-palette
-  twin) follows the existing screenshot-based smoke pattern unchanged. It is
-  the only demo GIF referenced from README.md — the per-feature GIFs stay
-  docs-site-only via `docs/.vitepress/theme/QuickDemo.vue`. No new fixtures
-  were needed: it reuses `showcase/data/person-valid.json`,
-  `showcase/data/person-invalid.json`, and `showcase/schemas/person.schema.json`,
-  already used by the individual inference/binding/validation/codegen demos.
+  pair that chains several features into one continuous session instead of
+  one GIF per feature — the only demo GIF referenced from README.md, the
+  per-feature GIFs stay docs-site-only via `docs/.vitepress/theme/QuickDemo.vue`.
+  `demo-showcase-mouse`'s content settled on: open a JSON data file from
+  Explorer, generate a schema from it (F06), save that schema to a real path
+  with no visible dialog (Electron's native save dialog is stubbed via
+  `app.evaluate` — Preview shells a Python renderer that reads a real file
+  from disk, so it can't render an unsaved buffer, but nothing in the flow
+  should show a native picker), close the original data file, preview the
+  generated schema (F01), click a field in the rendered HTML, then live-edit
+  the schema and watch the preview refresh (F02). No new fixtures: it reuses
+  `showcase/data/person-valid.json`, already used by the individual
+  inference demo. An earlier version chained five features (inference,
+  preview/live-update, binding, validation, code generation) reusing the
+  hand-curated `person.schema.json` rather than the schema the demo itself
+  generated; it was narrowed to this tighter, single-artifact flow once video
+  capture (below) made the compromises in that version — a schema swapped
+  mid-story, an untouched-then-discarded inferred tab — visible instead of
+  hidden by fast-cut screenshot stitching.
+  `demo-showcase` (command-palette twin) intentionally stays simpler: it
+  previews the existing `person.schema.json` rather than reproducing the
+  save-dialog-stub and webview-click steps, since its only job is
+  crash-smoke-testing the underlying commands (S08-SR-10), not reproducing
+  the showcase narrative frame for frame.
   `demo-showcase-mouse` initially reused the stitched-screenshot approach
   (`helpers/mouse.ts`'s animated DOM cursor + `scripts/make-gifs.mjs`) like
   every other mouse demo, but that read as visibly synthetic once combined
   into one long recording — the DOM cursor moves in discrete steps (a
   Playwright-dispatched mouse move never moves the real OS pointer, so it
   can't be shown in a screenshot at all) and `gif-encoder-2`'s octree
-  quantiser at low quality bands/dithers badly over five minutes of VS Code
-  UI. It was switched to a **real screen recording**: `ffmpeg -f x11grab`
+  quantiser at low quality bands/dithers badly over an extended capture. It
+  was switched to a **real screen recording**: `ffmpeg -f x11grab`
   (`helpers/recorder.ts`) captures whatever the X server actually composites
   for the Electron window's content-bounds region, `xdotool` drives the
   genuine X11 pointer in lockstep with the UI actions (`helpers/realCursor.ts`)
@@ -192,6 +207,13 @@ mechanism.
   screenshot pipeline, which is simpler and has no external-binary dependency
   beyond the already-required `canvas`. The refresh-gifs workflow gained
   `ffmpeg`/`xdotool` apt packages and a `make-showcase-gif.mjs` step.
+  The preview itself renders json-schema-for-humans' **flat** template
+  (`PreviewWebPanel.ts` avoids the default accordion template, which would
+  pull Bootstrap/jQuery from a CDN — a network request this zero-telemetry
+  extension doesn't make, per S05). The flat template has no expand/collapse
+  — "click a field" therefore targets a field far enough down the page that
+  Playwright's actionability scroll-into-view is itself the visible motion,
+  rather than an expand/collapse interaction the real product doesn't have.
 - **2026-07** — S08-SR-10's UI-smoke job moved from `ci.yml` (every PR/push) to
   `refresh-gifs.yml` (release time, parallel to the GIF-refresh job it shares
   fixtures with). Running on every PR meant it contended for shared runner
