@@ -25,12 +25,14 @@ import {
  * demo-binding-mouse, demo-validation-mouse, and demo-codegen-mouse — each
  * already proven reliable on its own — rather than inventing new selectors.
  */
-test('demo-showcase-mouse: generate, preview, bind, validate, and generate types in one flow', () => {
+test('demo-showcase-mouse: generate, preview, bind, validate, and generate types in one flow', async () => {
+  // Five chained feature flows in one VS Code session comfortably exceed the
+  // suite's 120s default (every other demo covers a single feature).
+  test.setTimeout(180_000);
   seedUserSettings({ 'jsonschema.preview.liveUpdate': true });
 
-  return runDemo('showcase-mouse', async (window, capture) => {
+  await runDemo('showcase-mouse', async (window, capture) => {
     await installCursor(window);
-    await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
     await capture('workspace');
 
     // ── 1. Generate a schema from raw data (F06) ──────────────────────────

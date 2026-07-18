@@ -9,10 +9,13 @@ import { seedUserSettings } from './helpers/launch';
  * types — through the real UI for crash/broken-selector smoke coverage
  * (S08-SR-10). Its frames are not consumed by scripts/make-gifs.mjs.
  */
-test('demo-showcase: generate, preview, bind, validate, and generate types in one flow', () => {
+test('demo-showcase: generate, preview, bind, validate, and generate types in one flow', async () => {
+  // Five chained feature flows in one VS Code session comfortably exceed the
+  // suite's 120s default (every other demo covers a single feature).
+  test.setTimeout(180_000);
   seedUserSettings({ 'jsonschema.preview.liveUpdate': true });
 
-  return runDemo('showcase', async (window, capture) => {
+  await runDemo('showcase', async (window, capture) => {
     await capture('workspace');
 
     // ── 1. Generate a schema from raw data (F06) ──────────────────────────
