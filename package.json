@@ -2,7 +2,7 @@
   "name": "json-schema-preview",
   "displayName": "JSON Schema Preview",
   "description": "Preview JSON Schema documents inside VSCode.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "galleryBanner": {
     "color": "#4a4a4a",
     "theme": "dark"
@@ -91,6 +91,11 @@
         "icon": "$(checklist)"
       },
       {
+        "command": "jsonschema.schemaCoverage",
+        "title": "JSON Schema: Report Schema Coverage from Data",
+        "icon": "$(graph)"
+      },
+      {
         "command": "jsonschema.inferSchema",
         "title": "JSON Schema: Generate Schema from This File",
         "icon": "$(wand)"
@@ -114,6 +119,11 @@
         "command": "jsonschema.diffSchema",
         "title": "JSON Schema: Diff Against Baseline",
         "icon": "$(diff)"
+      },
+      {
+        "command": "jsonschema.refGraph",
+        "title": "JSON Schema: View $ref Dependency Graph",
+        "icon": "$(type-hierarchy)"
       },
       {
         "command": "jsonschema.migrateDraft",
@@ -278,6 +288,11 @@
         },
         {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.refGraph",
+          "group": "1_run@6"
+        },
+        {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
           "command": "jsonschema.migrateDraft",
           "group": "1_run@5"
         },
@@ -290,6 +305,11 @@
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema && !jsonschema.hasSchemaBinding",
           "command": "jsonschema.inferSchema",
           "group": "navigation@5"
+        },
+        {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
+          "command": "jsonschema.schemaCoverage",
+          "group": "navigation@6"
         }
       ],
       "commandPalette": [
@@ -321,6 +341,10 @@
           "when": "!jsonschema.isJsonSchema"
         },
         {
+          "command": "jsonschema.schemaCoverage",
+          "when": "!jsonschema.isJsonSchema"
+        },
+        {
           "command": "jsonschema.generateSampleData",
           "when": "jsonschema.isJsonSchema"
         },
@@ -334,6 +358,10 @@
         },
         {
           "command": "jsonschema.diffSchema",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.refGraph",
           "when": "jsonschema.isJsonSchema"
         },
         {
@@ -379,6 +407,7 @@
     "package": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint",
     "knip": "knip",
+    "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "check:traceability": "node scripts/check-traceability.mjs",
     "check:doc-traceability": "node scripts/check-doc-traceability.mjs",
     "trace:init": "node scripts/check-traceability.mjs --init",
@@ -397,6 +426,7 @@
     "maturity:check": "node scripts/maturity-score.mjs --check",
     "maturity:ossf": "node scripts/fetch-ossf-scorecard.mjs",
     "badges:sync": "python3 scripts/sync-readme-badges.py",
+    "schema:compat": "tsc -p tsconfig.test.json && node scripts/schema-compat.mjs",
     "generate:assets": "npm run test:e2e && npm run make-gifs && npm run make-showcase-gif",
     "bump:version": "npm --no-git-tag-version --allow-same-version version $VERSION",
     "docs:install": "npm --prefix docs install",
@@ -417,7 +447,8 @@
       "out/test/**",
       "out/python.js",
       "out/SchemaEditorPanel.js",
-      "out/ConfigWebPanel.js"
+      "out/ConfigWebPanel.js",
+      "out/RefGraphPanel.js"
     ],
     "all": true
   },

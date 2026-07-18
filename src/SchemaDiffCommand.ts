@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { diffSchemas, renderReport, summaryLine } from './schemaDiff';
+import { compatibilityVerdict, verdictVerb } from './schemaCompat';
 import { parseSchemaText } from './schemaPointer';
 import { isJsonSchemaFile } from './PreviewWebPanel';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
@@ -54,8 +55,11 @@ export function registerSchemaDiff(context: vscode.ExtensionContext, auth: Schem
       const uri = vscode.Uri.parse(`${SCHEME}:Schema Diff ${++seq}.md`);
       reports.set(uri.toString(), content);
 
+      // F26: lead the summary with the backward-compatibility verdict, using the
+      // same pure verdict the CLI gate uses so the editor and CI never disagree.
+      const verb = verdictVerb(compatibilityVerdict(entries));
       const action = await vscode.window.showInformationMessage(
-        `Schema diff: ${summaryLine(entries)}.`,
+        `Schema diff — ${verb}: ${summaryLine(entries)}.`,
         'Open report',
       );
       if (action === 'Open report') {

@@ -71,6 +71,38 @@ F02-FR-04 (default 1500 ms, minimum 500 ms) and is not restated here.
   default; any valid value MUST be clamped to a minimum of 1000 ms so a
   mistyped tiny value cannot make every render fail instantly.
 
+### Build Size Budgets
+
+A large or steadily-growing bundle slows down every user's install and
+extension-host activation, regardless of the runtime timeouts above. Budgets
+decided 2026-07-17, sized with roughly 50-60% headroom over the measured
+baseline at the time (production `dist/extension.js` ~1.91 MB;
+packaged `.vsix` ~748 KB after the S03-SR-17 packaging-hygiene fix) so routine
+dependency growth doesn't trip the gate, while still catching an accidental
+large dependency or an un-excluded dev-only tree shipped into the package.
+
+- **S03-SR-15** A script MUST measure, on every CI build, (a) the production
+  webpack bundle (`dist/extension.js`, built via `npm run package`) and (b)
+  the packaged `.vsix` produced by `vsce package --no-dependencies`, and MUST
+  fail (non-zero exit) if either exceeds its budget in S03-SR-16.
+- **S03-SR-16** Budgets: `dist/extension.js` MUST NOT exceed **3 MB**; the
+  packaged `.vsix` MUST NOT exceed **1.5 MB**. A run that exceeds 85% of
+  either budget MUST print a warning (non-fatal) so creeping growth is visible
+  in CI logs before it becomes a hard failure.
+- **S03-SR-17** `.vscodeignore` MUST exclude every file/directory that is not
+  needed at extension runtime (specs, spec-kit tooling, git hooks, alternate
+  tsconfigs, lint/test/release config, project meta-docs) so the packaging
+  step in S03-SR-15 measures — and ships — only what the extension host
+  actually loads.
+- **S03-SR-18** The measurement in S03-SR-15 MUST be written to a committed,
+  version-controlled snapshot file (`bundle-size.json`, at the repo root,
+  excluded from the `.vsix` itself per S03-SR-17) each time it runs, so the
+  size trend over time is inspectable via that file's git history — the same
+  pattern `maturity-score.json` uses for the maturity score. A scheduled
+  workflow MUST refresh this snapshot regularly (independent of whether any
+  PR happened to trip the budget) so the tracked history doesn't go stale
+  between size-relevant changes.
+
 ## Acceptance Criteria
 
 1. Closing the preview panel while a live-update is pending produces no error
@@ -79,3 +111,8 @@ F02-FR-04 (default 1500 ms, minimum 500 ms) and is not restated here.
    structured log output from the extension.
 3. With no configuration override, a hung Python render or remote fetch is
    killed/aborted after 30 s and an error page is shown.
+4. `npm run check:bundle-size` (run after `npm run package`) exits non-zero
+   and names the offending artifact when either the production bundle or the
+   packaged `.vsix` exceeds its S03-SR-16 budget.
+5. `bundle-size.json`'s `git log -p` shows one entry per refresh, so the size
+   trend over releases is readable without re-running the build.

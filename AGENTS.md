@@ -15,6 +15,8 @@
 - **Traceability check** (spec ↔ matrix ↔ test-tag drift): `npm run check:traceability`
 - **Mutation testing**: `npm run test:mutation` (StrykerJS — report in `reports/mutation/`)
 - **Dead code / unused deps**: `npm run knip`
+- **Schema compatibility gate** (F26): `npm run schema:compat -- <old> <new>
+  [--strict] [--json]` — exits 1 on a breaking schema change, for CI.
 - **Package**: `npx @vscode/vsce package --no-dependencies`
 <!-- spec:S08 -->
 - **Integration tests** (real VS Code via `@vscode/test-electron`, downloads a

@@ -2,6 +2,15 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.11.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.10.0...v0.11.0) (2026-07-18)
+
+
+### Features
+
+* **F23:** schema coverage — unused-in-data lens ([b5d754f](https://github.com/samdidos/vscode-json-schema-preview/commit/b5d754f01240e9c786c4b71fce419a785ecfd0f5))
+* **F25:** rank enum quick-fixes by nearest match ([f076b04](https://github.com/samdidos/vscode-json-schema-preview/commit/f076b04ae4459c90284fde9bf665bd181d7f15a1))
+* **perf:** track and gate build size (S03-SR-15..S03-SR-18) ([97f23b8](https://github.com/samdidos/vscode-json-schema-preview/commit/97f23b8d6e833155f547fa60ab26852f08842122))
+
 ## [0.10.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.9.0...v0.10.0) (2026-07-17)
 
 

@@ -100,6 +100,9 @@ If the file already has an inline `$schema` field the bound schema is inferred f
 For JSON and JSONC files, the validation errors above carry a **lightbulb** (💡) offering a one-click repair when the fix is unambiguous: insert a **missing required property** with a type-appropriate placeholder, **remove an unexpected property**, replace a value that is outside an `enum`/`const` with an allowed one, or **coerce a mistyped scalar** (e.g. `"5"` → `5`) when the conversion is lossless. Only safe, mechanical fixes are offered — errors whose correct value can't be known (a `pattern`, a numeric bound, a `format`) have no quick fix. Fixes are computed against the file's current text, so they stay correct after edits and a fix whose target you've already removed simply disappears.
 <!-- spec:F21 end -->
 
+<!-- spec:F25 -->
+For an `enum` mismatch the allowed values are **ranked by how close they are to what you typed**, so the likely-intended value is offered first rather than in schema order — type `"prod"` where the schema allows `["development", "staging", "production"]` and `Change to "production" (closest match)` leads the list. When the closest value is a clear near-miss (a typo, a wrong-case value, or an abbreviation like `prod`→`production`) it's marked the editor's **preferred** fix, so a single <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>.</kbd> applies it.
+
 
 ---
 
@@ -151,6 +154,24 @@ Discovery respects `files.exclude`/`search.exclude`, skips files over 1 MiB, and
 
 ---
 
+<!-- spec:F23 start -->
+## JSON Schema: Report Schema Coverage from Data
+
+**ID:** `jsonschema.schemaCoverage`
+
+The mirror of validation: instead of "is this data valid?", it answers "which parts of the schema does my data actually use?". Run it on a data file (JSON/JSONC/JSONL/YAML/TOML) that has a bound schema — inline `$schema` or a settings binding — and it reports how many of the schema's declared properties the data exercises, and lists the ones it never sets. For a JSONL file every record counts, and a property is exercised if it appears in any record.
+
+Each unexercised property is highlighted on the schema file itself as a dimmed **Information** diagnostic (tagged _Unnecessary_) on its definition, so the gaps show up where you read the schema; re-running replaces the previous run's highlights. The summary offers a **Copy report** action that puts a Markdown list of the unexercised paths on the clipboard.
+
+Coverage is a **heuristic presence** check, not validation: it walks named `properties` (through nested objects, array `items`, `allOf`/`anyOf`/`oneOf`, and same-document `$ref`), but does not resolve remote `$ref`, evaluate conditional applicability (`if`/`then`), or reason about `patternProperties`. An unexercised property means "worth a look", not "provably dead".
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — | ✅ (on a data file) |
+<!-- spec:F23 end -->
+
+---
+
 <!-- spec:F18 start -->
 ## JSON Schema: Generate Types from This Schema
 
@@ -199,6 +220,36 @@ Compares the active schema against a baseline — Git HEAD, another workspace fi
 |---------|----------------|
 | ✅ (diff icon, schema files only) | ✅ |
 <!-- spec:F15 end -->
+
+<!-- spec:F26 start -->
+The summary leads with a one-word **verdict** — _backward-compatible_ or _NOT backward-compatible_ — so you can judge "can I ship this?" before reading the details. A new `required` name or a narrowed `type` is breaking; an added optional property or a relaxed constraint is not.
+
+**Gate a PR in CI.** The same verdict is available headlessly, so an incompatible schema never merges by accident. It reuses the extension's own classifier — no duplicated logic:
+
+```sh
+npm run schema:compat -- path/to/old.schema.json path/to/new.schema.json
+# exit 0 = backward-compatible, 1 = breaking. Add --strict to also fail on
+# changes the classifier can't prove safe (exit 2), or --json for machine output.
+```
+
+A typical PR check diffs the proposed schema against its base-branch version and fails the job on a non-zero exit. Comparison is in-process and reads only the two files you pass it — nothing is fetched (bundle first with **Bundle / Dereference** for a cross-`$ref` compare).
+<!-- spec:F26 end -->
+
+---
+
+<!-- spec:F24 start -->
+## JSON Schema: View $ref Dependency Graph
+
+**ID:** `jsonschema.refGraph`
+
+Opens a bird's-eye view of the active schema's `$ref` dependencies in a side panel: which `$defs`/`definitions` reference which, and every external file or URL the schema pulls in. It's the middle ground between [`$ref` go-to-definition](/guide/#ref-navigation) (one reference at a time) and [Bundle / Dereference](#json-schema-bundle-dereference-schema) (flatten them all) — a way to *see the shape* of a schema: unused definitions show up as isolated nodes, unresolved pointers are flagged, and reference cycles (a schema that can't be flattened trivially) are called out.
+
+The panel is a static, **script-free** rendering (locked-down CSP): a left-to-right layered diagram (nodes ordered by dependency depth from the root) plus a text adjacency list beside it, so it reads the same with or without the diagram. Nothing is fetched — external references are shown as endpoints by their URI; bundle first (F14) if you want to graph across files. A schema with no `$ref` reports "nothing to graph" and opens no panel.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — | ✅ (schema files only) |
+<!-- spec:F24 end -->
 
 ---
 
