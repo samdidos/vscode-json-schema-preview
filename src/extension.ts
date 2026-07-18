@@ -31,6 +31,7 @@ import { bundleSchemaCommand, computeTargetId } from './SchemaBundleCommand';
 import { generateTypesCommand } from './GenerateTypesCommand';
 import { registerSchemaDiff } from './SchemaDiffCommand';
 import { registerWorkspaceValidation } from './WorkspaceValidateCommand';
+import { registerSchemaCoverage } from './SchemaCoverageCommand';
 import { isYaml, isSupported, languageForSchemaSource } from './languages';
 import { getCacheAutoRefresh } from './settings';
 import { createSchema } from 'genson-js';
@@ -166,6 +167,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   // ── Workspace validation report (F20) ──────────────────────────────────────
   registerWorkspaceValidation(context, authManager, schemaCache);
+
+  // ── Schema coverage / unused-in-data lens (F23) ─────────────────────────────
+  registerSchemaCoverage(context, schemaCache);
 
   // ── Commands ───────────────────────────────────────────────────────────────
   context.subscriptions.push(

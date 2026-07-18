@@ -2310,6 +2310,79 @@
       ],
       "note": "bounded to short capped candidate set; no new I/O or async"
     },
+    "F23-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCoverageCommand.ts",
+        "src/extension.ts"
+      ],
+      "note": "command registered; palette/context menu gated to data files"
+    },
+    "F23-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCoverageCommand.ts"
+      ],
+      "note": "resolves inline $schema then settings binding; offers to cache uncached remote"
+    },
+    "F23-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCoverageCommand.ts",
+        "src/schemaCoverage.ts"
+      ],
+      "note": "JSONL parsed to one instance per record; coverage is the union"
+    },
+    "F23-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCoverage.ts"
+      ],
+      "note": "collectSchemaProperties: properties/items/allOf/anyOf/oneOf/$ref with cycle guard"
+    },
+    "F23-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCoverage.ts"
+      ],
+      "note": "collectDataPaths + computeCoverage classify exercised/unexercised"
+    },
+    "F23-FR-06": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCoverage.ts"
+      ],
+      "note": "CoverageResult total/split/percent; pure and non-throwing"
+    },
+    "F23-FR-07": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCoverageCommand.ts"
+      ],
+      "note": "Information/Unnecessary diagnostics on schema spans; cleared each run"
+    },
+    "F23-FR-08": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaCoverageCommand.ts",
+        "src/schemaCoverage.ts"
+      ],
+      "note": "summary notification + Copy report -> renderCoverageReport markdown"
+    },
+    "F23-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCoverage.ts"
+      ],
+      "note": "pure analyser modules, unit-tested incl. property-based"
+    },
+    "F23-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCoverage.ts"
+      ],
+      "note": "renderCoverageReport states the heuristic-presence caveat"
+    },
     "S01-SR-01": {
       "status": "manual",
       "impl": [
