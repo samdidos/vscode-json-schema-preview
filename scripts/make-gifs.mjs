@@ -23,6 +23,11 @@ const ROOT = resolve(__dirname, '..');
 // `delay` is the per-frame hold in ms — kept short so the dense frame sequences
 // play back smoothly and realistically. The output name stays demo-<name>.gif.
 const DEMOS = [
+  // The only demo embedded in README.md (the rest are docs-site-only, via
+  // QuickDemo.vue) — a single chained tour across five features instead of
+  // one feature per GIF. Longer hold: it's the first thing a README reader
+  // sees, so the loop's rest beat should be easy to catch mid-scroll.
+  { name: 'showcase',         dir: 'showcase-mouse',        delay: 220, hold: 1_800 },
   { name: 'preview',          dir: 'preview-mouse',         delay: 220, hold: 1_200 },
   { name: 'validation',       dir: 'validation-mouse',      delay: 220, hold: 1_400 },
   { name: 'inference',        dir: 'inference-mouse',       delay: 220, hold: 1_400 },

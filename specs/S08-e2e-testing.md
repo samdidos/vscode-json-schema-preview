@@ -155,6 +155,17 @@ suite (API-level) does not provide.
 
 ## History
 
+- **2026-07** — Added `demo-showcase`/`demo-showcase-mouse`, a sixth-ish demo
+  pair that chains five features (F06 inference, F01 preview, F02 live-update,
+  F04 binding, F03 validation, F18 code generation) into one continuous
+  session instead of one GIF per feature. It follows the same mouse/non-mouse
+  split as every other demo (S08-SR-10/11) and is the only demo GIF referenced
+  from README.md — the per-feature GIFs stay docs-site-only via
+  `docs/.vitepress/theme/QuickDemo.vue`. `scripts/make-gifs.mjs`'s `DEMOS`
+  list gained one `showcase` entry; no new fixtures were needed (it reuses
+  `showcase/data/person-valid.json`, `showcase/data/person-invalid.json`, and
+  `showcase/schemas/person.schema.json`, already used by the individual
+  inference/binding/validation/codegen demos).
 - **2026-07** — S08-SR-10's UI-smoke job moved from `ci.yml` (every PR/push) to
   `refresh-gifs.yml` (release time, parallel to the GIF-refresh job it shares
   fixtures with). Running on every PR meant it contended for shared runner
