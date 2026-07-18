@@ -100,6 +100,27 @@ suite('[F21-FR-08] ValidationFixProvider — matches fixes to diagnostics by ins
   });
 });
 
+suite('[F25-FR-03] ValidationFixProvider — preferred enum near-miss', () => {
+  const text = '{ "env": "prod" }';
+
+  test('marks the closest enum fix as the editor default (isPreferred)', () => {
+    const provider = new ValidationFixProvider();
+    const doc = makeDoc(text);
+    provider.record(
+      doc.uri,
+      buildFixes(
+        [{ keyword: 'enum', instancePath: '/env', params: { allowedValues: ['development', 'staging', 'production'] } }],
+        {},
+        { env: 'prod' },
+      ),
+    );
+    const actions = provider.provideCodeActions(doc, wholeRange(text), ctx([validationDiag('/env')]));
+    const preferred = actions.filter(a => a.isPreferred);
+    assert.strictEqual(preferred.length, 1, 'exactly one preferred fix');
+    assert.match(preferred[0].title, /production.*closest match/);
+  });
+});
+
 suite('[F21-FR-09] ValidationFixProvider — lifecycle', () => {
   const text = '{ "kind": "other" }';
 

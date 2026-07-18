@@ -2267,6 +2267,49 @@
       ],
       "note": "draftMigration.test.ts — both directions + idempotence"
     },
+    "F25-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "enum candidates ranked by nearest match before the MAX_ENUM_FIXES cap"
+    },
+    "F25-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "levenshtein: case-insensitive primary, case-sensitive tie-break, schema-order fallback for non-strings"
+    },
+    "F25-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts",
+        "src/ValidationFixProvider.ts"
+      ],
+      "note": "closest labelled + marked preferred only on a near-miss; provider sets isPreferred"
+    },
+    "F25-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "const/required/additionalProperties/type fixes unchanged"
+    },
+    "F25-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "rankEnumCandidates + levenshtein pure, table-driven unit tests"
+    },
+    "F25-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "bounded to short capped candidate set; no new I/O or async"
+    },
     "S01-SR-01": {
       "status": "manual",
       "impl": [

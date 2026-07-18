@@ -59,6 +59,8 @@ export class ValidationFixProvider implements vscode.CodeActionProvider {
       }
       action.edit = edit;
       action.diagnostics = diagnostics;
+      // F25: the closest enum near-miss is the editor's default fix.
+      if (fix.preferred) { action.isPreferred = true; }
       actions.push(action);
     }
     return actions;

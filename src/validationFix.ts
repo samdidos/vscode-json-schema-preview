@@ -38,6 +38,8 @@ export interface ValidationFix {
   /** Value to write; ignored when `remove` is true. */
   value?: unknown;
   remove?: boolean;
+  /** F25: the editor's default/preferred quick fix (a clear enum near-miss). */
+  preferred?: boolean;
 }
 
 /** Coerce numeric-looking pointer tokens to numbers for jsonc-parser paths. */
@@ -123,6 +125,72 @@ function coerce(value: unknown, expected: unknown): { ok: true; value: unknown }
 
 const MAX_ENUM_FIXES = 6;
 
+/** Levenshtein edit distance between two strings (F25-FR-02). */
+export function levenshtein(a: string, b: string): number {
+  if (a === b) { return 0; }
+  if (a.length === 0) { return b.length; }
+  if (b.length === 0) { return a.length; }
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  let curr = new Array<number>(b.length + 1);
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[b.length];
+}
+
+export interface RankedCandidate {
+  value: unknown;
+  /** True for the single closest candidate. */
+  closest: boolean;
+  /** True when the closest candidate is a genuine near-miss (case-only or small typo). */
+  preferred: boolean;
+}
+
+/**
+ * Rank `enum` candidates by similarity to the offending `current` value
+ * (F25-FR-02/03). String candidates are ordered by case-insensitive edit
+ * distance (case-sensitive distance as a tie-break), with a stable fall-back to
+ * schema order; non-string candidates (or a non-string `current`) keep schema
+ * order. The single closest candidate is flagged, and marked preferred only when
+ * it is a case-only difference or an edit distance within a small fraction of
+ * its length. Never throws.
+ */
+export function rankEnumCandidates(current: unknown, candidates: unknown[]): RankedCandidate[] {
+  const currentStr = typeof current === 'string' ? current : undefined;
+  const scored = candidates.map((value, index) => {
+    if (currentStr === undefined || typeof value !== 'string') {
+      return { value, index, ci: Infinity, cs: Infinity };
+    }
+    return {
+      value,
+      index,
+      ci: levenshtein(currentStr.toLowerCase(), value.toLowerCase()),
+      cs: levenshtein(currentStr, value),
+    };
+  });
+  scored.sort((a, b) => a.ci - b.ci || a.cs - b.cs || a.index - b.index);
+
+  return scored.map((s, rank) => {
+    const isClosest = rank === 0 && Number.isFinite(s.ci) && candidates.length > 0;
+    let preferred = false;
+    if (isClosest && typeof s.value === 'string' && currentStr !== undefined) {
+      const cand = s.value.toLowerCase();
+      const cur = currentStr.toLowerCase();
+      const threshold = Math.max(1, Math.floor(s.value.length * 0.34));
+      // A near-miss is a case-only difference, a small typo, or an abbreviation
+      // (the typed value is a ≥2-char prefix of the candidate, e.g. prod→production).
+      const isPrefix = cur.length >= 2 && (cand.startsWith(cur) || cur.startsWith(cand));
+      preferred = s.ci <= threshold || isPrefix;
+    }
+    return { value: s.value, closest: isClosest, preferred };
+  });
+}
+
 /**
  * Map Ajv errors to concrete fixes (F21-FR-01). `data` is the parsed instance
  * (needed only to read the offending value for `type` coercion); `schema` is the
@@ -159,8 +227,18 @@ export function buildFixes(errors: AjvErrorLike[], schema: unknown, data: unknow
       }
       case 'enum': {
         const allowed = Array.isArray(err.params.allowedValues) ? err.params.allowedValues : [];
-        for (const value of allowed.slice(0, MAX_ENUM_FIXES)) {
-          fixes.push({ title: `Change to ${JSON.stringify(value)}`, kind: 'set-enum', path, value });
+        // F25: rank by nearest match to the offending value before the cap, so
+        // the closest candidate survives and is offered first.
+        const ranked = rankEnumCandidates(readAt(data, segments), allowed);
+        for (const cand of ranked.slice(0, MAX_ENUM_FIXES)) {
+          const suffix = cand.closest && allowed.length > 1 ? ' (closest match)' : '';
+          fixes.push({
+            title: `Change to ${JSON.stringify(cand.value)}${suffix}`,
+            kind: 'set-enum',
+            path,
+            value: cand.value,
+            preferred: cand.preferred || undefined,
+          });
         }
         break;
       }

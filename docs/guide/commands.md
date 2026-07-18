@@ -100,6 +100,9 @@ If the file already has an inline `$schema` field the bound schema is inferred f
 For JSON and JSONC files, the validation errors above carry a **lightbulb** (💡) offering a one-click repair when the fix is unambiguous: insert a **missing required property** with a type-appropriate placeholder, **remove an unexpected property**, replace a value that is outside an `enum`/`const` with an allowed one, or **coerce a mistyped scalar** (e.g. `"5"` → `5`) when the conversion is lossless. Only safe, mechanical fixes are offered — errors whose correct value can't be known (a `pattern`, a numeric bound, a `format`) have no quick fix. Fixes are computed against the file's current text, so they stay correct after edits and a fix whose target you've already removed simply disappears.
 <!-- spec:F21 end -->
 
+<!-- spec:F25 -->
+For an `enum` mismatch the allowed values are **ranked by how close they are to what you typed**, so the likely-intended value is offered first rather than in schema order — type `"prod"` where the schema allows `["development", "staging", "production"]` and `Change to "production" (closest match)` leads the list. When the closest value is a clear near-miss (a typo, a wrong-case value, or an abbreviation like `prod`→`production`) it's marked the editor's **preferred** fix, so a single <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>.</kbd> applies it.
+
 
 ---
 
