@@ -223,6 +223,22 @@ Compares the active schema against a baseline — Git HEAD, another workspace fi
 
 ---
 
+<!-- spec:F24 start -->
+## JSON Schema: View $ref Dependency Graph
+
+**ID:** `jsonschema.refGraph`
+
+Opens a bird's-eye view of the active schema's `$ref` dependencies in a side panel: which `$defs`/`definitions` reference which, and every external file or URL the schema pulls in. It's the middle ground between [`$ref` go-to-definition](/guide/#ref-navigation) (one reference at a time) and [Bundle / Dereference](#json-schema-bundle-dereference-schema) (flatten them all) — a way to *see the shape* of a schema: unused definitions show up as isolated nodes, unresolved pointers are flagged, and reference cycles (a schema that can't be flattened trivially) are called out.
+
+The panel is a static, **script-free** rendering (locked-down CSP): a left-to-right layered diagram (nodes ordered by dependency depth from the root) plus a text adjacency list beside it, so it reads the same with or without the diagram. Nothing is fetched — external references are shown as endpoints by their URI; bundle first (F14) if you want to graph across files. A schema with no `$ref` reports "nothing to graph" and opens no panel.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — | ✅ (schema files only) |
+<!-- spec:F24 end -->
+
+---
+
 <!-- spec:F22 start -->
 ## JSON Schema: Migrate to Draft…
 
