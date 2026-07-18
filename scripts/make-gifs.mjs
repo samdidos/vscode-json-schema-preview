@@ -22,6 +22,9 @@ const ROOT = resolve(__dirname, '..');
 // show an animated cursor and character-by-character typing across many frames.
 // `delay` is the per-frame hold in ms — kept short so the dense frame sequences
 // play back smoothly and realistically. The output name stays demo-<name>.gif.
+// demo-showcase (README's hero GIF) is deliberately NOT in this list: it's a
+// real screen recording converted by scripts/make-showcase-gif.mjs, not a
+// screenshot-frame stitch — see that script and helpers/recorder.ts for why.
 const DEMOS = [
   { name: 'preview',          dir: 'preview-mouse',         delay: 220, hold: 1_200 },
   { name: 'validation',       dir: 'validation-mouse',      delay: 220, hold: 1_400 },

@@ -21,5 +21,6 @@
     "@types/command-line-args",
     "@types/readable-stream",
     "@types/urijs"
-  ]
+  ],
+  "ignoreBinaries": ["ffmpeg"]
 }
