@@ -221,6 +221,20 @@ Compares the active schema against a baseline — Git HEAD, another workspace fi
 | ✅ (diff icon, schema files only) | ✅ |
 <!-- spec:F15 end -->
 
+<!-- spec:F26 start -->
+The summary leads with a one-word **verdict** — _backward-compatible_ or _NOT backward-compatible_ — so you can judge "can I ship this?" before reading the details. A new `required` name or a narrowed `type` is breaking; an added optional property or a relaxed constraint is not.
+
+**Gate a PR in CI.** The same verdict is available headlessly, so an incompatible schema never merges by accident. It reuses the extension's own classifier — no duplicated logic:
+
+```sh
+npm run schema:compat -- path/to/old.schema.json path/to/new.schema.json
+# exit 0 = backward-compatible, 1 = breaking. Add --strict to also fail on
+# changes the classifier can't prove safe (exit 2), or --json for machine output.
+```
+
+A typical PR check diffs the proposed schema against its base-branch version and fails the job on a non-zero exit. Comparison is in-process and reads only the two files you pass it — nothing is fetched (bundle first with **Bundle / Dereference** for a cross-`$ref` compare).
+<!-- spec:F26 end -->
+
 ---
 
 <!-- spec:F24 start -->

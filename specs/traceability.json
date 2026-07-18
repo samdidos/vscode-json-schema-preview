@@ -2454,6 +2454,64 @@
       ],
       "note": "no fetching of external refs; never throws on malformed schemas"
     },
+    "F26-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCompat.ts"
+      ],
+      "note": "compatibilityVerdict reduces DiffEntry counts; compatible when no breaking"
+    },
+    "F26-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCompat.ts"
+      ],
+      "note": "strict mode also fails on unclassified changes"
+    },
+    "F26-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCompat.ts"
+      ],
+      "note": "verdictExitCode: 0 compatible / 1 breaking / 2 strict-unknown"
+    },
+    "F26-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCompat.ts"
+      ],
+      "note": "renderCompatReport leads with verdictHeadline, then F15 grouped list"
+    },
+    "F26-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaDiffCommand.ts",
+        "src/schemaCompat.ts"
+      ],
+      "note": "diff command summary leads with the verdict verb"
+    },
+    "F26-FR-06": {
+      "status": "manual",
+      "impl": [
+        "scripts/schema-compat.mjs",
+        "src/schemaCompat.ts"
+      ],
+      "note": "headless CLI: npm run schema:compat; reuses out/ modules, verdict exit codes; verified manually"
+    },
+    "F26-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCompat.ts"
+      ],
+      "note": "pure vscode-free verdict/renderer building only on schemaDiff; unit-tested"
+    },
+    "F26-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCompat.ts"
+      ],
+      "note": "in-process, no I/O in the pure module, never throws"
+    },
     "S01-SR-01": {
       "status": "manual",
       "impl": [

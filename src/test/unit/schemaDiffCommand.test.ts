@@ -75,6 +75,8 @@ suite('[F15-FR-02][F15-FR-03] diffSchema — baselines', () => {
     await handler();
     assert.ok(offered.some((i: any) => i.id === 'head'), 'Git HEAD option offered');
     assert.ok(vscode.window.showInformationMessage.calledWithMatch(/1 breaking/));
+    // F26-FR-05: the summary leads with the backward-compatibility verdict.
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/NOT backward-compatible/));
   });
 
   test('[F15-FR-03] hides Git HEAD when no repository/committed version', async () => {
