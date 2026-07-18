@@ -2,6 +2,15 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.12.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.11.0...v0.12.0) (2026-07-18)
+
+
+### Features
+
+* add a real-screen-recording showcase demo GIF, embedded in README ([#102](https://github.com/samdidos/vscode-json-schema-preview/issues/102)) ([ffb60e3](https://github.com/samdidos/vscode-json-schema-preview/commit/ffb60e3524d89871349f14f124ed98cf5ccc6774))
+* **F24:** $ref dependency graph view ([5c95b81](https://github.com/samdidos/vscode-json-schema-preview/commit/5c95b817592be4f78450b87bedd57ba1a12a9763))
+* **F26:** backward-compatibility verdict & CI gate for schema diff ([0cff56f](https://github.com/samdidos/vscode-json-schema-preview/commit/0cff56f486eb1f2b49d6c6850f1245e77ff75944))
+
 ## [0.11.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.10.0...v0.11.0) (2026-07-18)
 
 
