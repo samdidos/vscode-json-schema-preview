@@ -121,6 +121,11 @@
         "icon": "$(diff)"
       },
       {
+        "command": "jsonschema.refGraph",
+        "title": "JSON Schema: View $ref Dependency Graph",
+        "icon": "$(type-hierarchy)"
+      },
+      {
         "command": "jsonschema.migrateDraft",
         "title": "JSON Schema: Migrate to Draft…",
         "icon": "$(arrow-swap)"
@@ -283,6 +288,11 @@
         },
         {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "command": "jsonschema.refGraph",
+          "group": "1_run@6"
+        },
+        {
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
           "command": "jsonschema.migrateDraft",
           "group": "1_run@5"
         },
@@ -348,6 +358,10 @@
         },
         {
           "command": "jsonschema.diffSchema",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.refGraph",
           "when": "jsonschema.isJsonSchema"
         },
         {
@@ -431,7 +445,8 @@
       "out/test/**",
       "out/python.js",
       "out/SchemaEditorPanel.js",
-      "out/ConfigWebPanel.js"
+      "out/ConfigWebPanel.js",
+      "out/RefGraphPanel.js"
     ],
     "all": true
   },

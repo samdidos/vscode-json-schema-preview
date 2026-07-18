@@ -2383,6 +2383,77 @@
       ],
       "note": "renderCoverageReport states the heuristic-presence caveat"
     },
+    "F24-FR-01": {
+      "status": "manual",
+      "impl": [
+        "src/RefGraphPanel.ts",
+        "src/extension.ts"
+      ],
+      "note": "command registered; palette/editor menu gated to schema files"
+    },
+    "F24-FR-02": {
+      "status": "manual",
+      "impl": [
+        "src/RefGraphPanel.ts"
+      ],
+      "note": "static script-free webview: locked CSP, SVG + text adjacency (S01/S06)"
+    },
+    "F24-FR-03": {
+      "status": "manual",
+      "impl": [
+        "src/RefGraphPanel.ts"
+      ],
+      "note": "no-$ref schemas show a notice and open no panel"
+    },
+    "F24-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "buildRefGraph: root/definition/external nodes, enclosing-owner edges"
+    },
+    "F24-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "classifyTarget marks resolvable vs unresolved local refs"
+    },
+    "F24-FR-06": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "detectCycle finds a same-document reference cycle"
+    },
+    "F24-FR-07": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "layoutGraph assigns BFS layers from the root"
+    },
+    "F24-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "pure graph/layout/render modules, unit-tested; panel excluded/manual"
+    },
+    "F24-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "renderGraphSvg/adjacency escape all labels and ref strings"
+    },
+    "F24-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "no fetching of external refs; never throws on malformed schemas"
+    },
     "S01-SR-01": {
       "status": "manual",
       "impl": [
