@@ -1,13 +1,15 @@
-// Coverage excluded: registers a DiagnosticCollection and wires VS Code UI
-// (notifications, error messages). Covered by manual / E2E testing.
+// F03 — the validate-file command: schema resolution (binding → inline
+// $schema → native match), remote fetch with stale-cache fallback, Ajv
+// validation, and diagnostics. Unit-tested via the shared vscode mock; the
+// pure parsing/locating core is shared with F20 in workspaceValidation.ts.
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './SchemaBindingManager';
 import type { NativeSchemaMatch } from './nativeSchema';
-import * as YAML from 'yaml';
-import { isYaml, isToml, isSupported, stripJsoncComments, parseJsonl, parseToml, languageForSchemaSource } from './languages';
+import { isSupported, languageForSchemaSource } from './languages';
 import { parseSchemaText } from './schemaPointer';
+import { parseDataText, locateInstanceSpan } from './workspaceValidation';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
@@ -90,18 +92,7 @@ export function validateCurrentFile(
 
     let items: unknown[];
     try {
-      const text = doc.getText();
-      if (isYaml(doc.languageId)) {
-        items = [YAML.parse(text)];
-      } else if (isToml(doc.languageId)) {
-        items = [parseToml(text)];
-      } else if (doc.languageId === 'jsonl') {
-        items = parseJsonl(text);
-      } else if (doc.languageId === 'jsonc') {
-        items = [JSON.parse(stripJsoncComments(text))];
-      } else {
-        items = [JSON.parse(text)];
-      }
+      items = parseDataText(doc.getText(), doc.languageId);
     } catch (e) {
       vscode.window.showErrorMessage(
         `Cannot parse ${path.basename(doc.uri.fsPath)}: ${(e as Error).message}`
@@ -222,23 +213,10 @@ function parseSchema(text: string, source: string): unknown {
   return parsed;
 }
 
+/** Range of an Ajv instance path via the shared F03/F20 locator (AST-exact
+ *  for JSON/JSONC/YAML, text-scan fallback); document start when unlocatable. */
 function locateInDocument(doc: vscode.TextDocument, instancePath: string): vscode.Range {
-  const parts = instancePath.split('/').filter(Boolean);
-  if (!parts.length) { return new vscode.Range(0, 0, 0, 0); }
-
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const key = parts[i];
-    if (/^\d+$/.test(key)) { continue; } // array index — skip
-    const pattern = new RegExp(`"${escapeRegex(key)}"\\s*:`);
-    const match = pattern.exec(doc.getText());
-    if (match) {
-      const pos = doc.positionAt(match.index);
-      return new vscode.Range(pos, doc.positionAt(match.index + match[0].length));
-    }
-  }
-  return new vscode.Range(0, 0, 0, 0);
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const span = locateInstanceSpan(doc.getText(), doc.languageId, instancePath);
+  if (!span) { return new vscode.Range(0, 0, 0, 0); }
+  return new vscode.Range(doc.positionAt(span.start), doc.positionAt(span.end));
 }

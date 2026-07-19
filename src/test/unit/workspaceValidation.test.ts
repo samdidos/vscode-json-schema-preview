@@ -41,7 +41,7 @@ suite('[F20-FR-02] workspaceValidation — classification helpers', () => {
   });
 });
 
-suite('[F20-FR-04] workspaceValidation — data parsing & validation', () => {
+suite('[F20-FR-04][F20-NFR-01] workspaceValidation — data parsing & validation', () => {
   test('parseDataText handles every supported language', () => {
     assert.deepStrictEqual(parseDataText('{"a":1}', 'json'), [{ a: 1 }]);
     assert.deepStrictEqual(parseDataText('// c\n{"a":1}', 'jsonc'), [{ a: 1 }]);
@@ -78,9 +78,18 @@ suite('[F20-FR-04] workspaceValidation — data parsing & validation', () => {
 
   test('locateInstancePath finds the deepest locatable key, TOML included', () => {
     assert.strictEqual(locateInstancePath('{\n"a": {\n  "b": 1\n}\n}', '/a/b'), 2);
-    assert.strictEqual(locateInstancePath('a = 1\nport = 99\n', '/port'), 1);
+    assert.strictEqual(locateInstancePath('a = 1\nport = 99\n', '/port', 'toml'), 1);
     assert.strictEqual(locateInstancePath('{}', '/missing'), undefined);
     assert.strictEqual(locateInstancePath('{"x": [1]}', '/x/0'), 0);
+  });
+
+  test('locateInstancePath resolves a repeated key name to the right occurrence (AST-exact)', () => {
+    // "port" appears first under /x — a text scan would stop there; the AST
+    // locator must land on the /a/port occurrence the error actually names.
+    const json = '{\n  "x": { "port": 1 },\n  "a": { "port": "bad" }\n}';
+    assert.strictEqual(locateInstancePath(json, '/a/port'), 2);
+    const yaml = 'x:\n  port: 1\na:\n  port: bad\n';
+    assert.strictEqual(locateInstancePath(yaml, '/a/port', 'yaml'), 3);
   });
 
   test('lineOfMatch returns 0-based lines and undefined for no match', () => {

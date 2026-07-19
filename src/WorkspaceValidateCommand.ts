@@ -233,7 +233,7 @@ class WorkspaceRun {
 
     let issues: ValidationIssue[];
     try {
-      issues = validateInstances(parseDataText(text, languageId), outcome.schema, text);
+      issues = validateInstances(parseDataText(text, languageId), outcome.schema, text, languageId);
     } catch (e) {
       issues = [{ message: `Cannot ${languageId === 'json' || languageId === 'jsonc' ? 'parse or validate' : 'parse'} file: ${(e as Error).message}`, line: 0 }];
     }
