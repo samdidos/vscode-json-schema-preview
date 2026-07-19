@@ -74,18 +74,23 @@ F02-FR-04 (default 1500 ms, minimum 500 ms) and is not restated here.
 ### Build Size Budgets
 
 A large or steadily-growing bundle slows down every user's install and
-extension-host activation, regardless of the runtime timeouts above. Budgets
-decided 2026-07-17, sized with roughly 50-60% headroom over the measured
-baseline at the time (production `dist/extension.js` ~1.91 MB;
-packaged `.vsix` ~748 KB after the S03-SR-17 packaging-hygiene fix) so routine
-dependency growth doesn't trip the gate, while still catching an accidental
-large dependency or an un-excluded dev-only tree shipped into the package.
+extension-host activation, regardless of the runtime timeouts above.
+`dist/extension.js` is the **activation bundle** — the code the extension host
+loads on every activation; lazily-loaded webpack chunks (`dist/chunk-*.js`,
+e.g. the quicktype-core code-generation engine) load on first use only and
+count toward the `.vsix` budget, not the activation budget. Budgets sized
+with roughly 50-60% headroom over the measured baseline (2026-07-19:
+production `dist/extension.js` ~0.40 MB after splitting quicktype-core out;
+packaged `.vsix` ~0.75 MB) so routine dependency growth doesn't trip the
+gate, while still catching an accidental large dependency, an un-excluded
+dev-only tree shipped into the package, or a heavy module regressing into
+the activation path.
 
 - **S03-SR-15** A script MUST measure, on every CI build, (a) the production
-  webpack bundle (`dist/extension.js`, built via `npm run package`) and (b)
-  the packaged `.vsix` produced by `vsce package --no-dependencies`, and MUST
-  fail (non-zero exit) if either exceeds its budget in S03-SR-16.
-- **S03-SR-16** Budgets: `dist/extension.js` MUST NOT exceed **3 MB**; the
+  webpack activation bundle (`dist/extension.js`, built via `npm run package`)
+  and (b) the packaged `.vsix` produced by `vsce package --no-dependencies`,
+  and MUST fail (non-zero exit) if either exceeds its budget in S03-SR-16.
+- **S03-SR-16** Budgets: `dist/extension.js` MUST NOT exceed **1 MB**; the
   packaged `.vsix` MUST NOT exceed **1.5 MB**. A run that exceeds 85% of
   either budget MUST print a warning (non-fatal) so creeping growth is visible
   in CI logs before it becomes a hard failure.
@@ -116,3 +121,10 @@ large dependency or an un-excluded dev-only tree shipped into the package.
    packaged `.vsix` exceeds its S03-SR-16 budget.
 5. `bundle-size.json`'s `git log -p` shows one entry per refresh, so the size
    trend over releases is readable without re-running the build.
+
+## History
+
+- 2026-07-19 — quicktype-core moved out of the activation bundle into a lazy
+  webpack chunk; `dist/extension.js` dropped ~1.91 MB → ~0.40 MB, and the
+  S03-SR-16 activation-bundle budget was tightened 3 MB → 1 MB to lock the
+  win in (the `.vsix` budget is unchanged — the chunk still ships).

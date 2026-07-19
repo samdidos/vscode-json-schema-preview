@@ -17,6 +17,9 @@ const extensionConfig = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'extension.js',
+    // Lazy chunks (dynamic import(), e.g. quicktype-core in typeGenerator.ts)
+    // get their own file so activation only loads extension.js (S03-SR-16).
+    chunkFilename: 'chunk-[name].js',
     libraryTarget: 'commonjs2',
   },
   externals: {
@@ -30,7 +33,13 @@ const extensionConfig = {
       {
         test: /\.ts$/,
         exclude: /node_modules/,
-        use: [{ loader: 'ts-loader' }],
+        use: [{
+          loader: 'ts-loader',
+          // tsconfig.json targets commonjs (tsc/mocha), which would compile
+          // dynamic import() down to require() and defeat code splitting.
+          // Emit ES modules for webpack only, so import() stays a split point.
+          options: { compilerOptions: { module: 'es2020' } },
+        }],
       },
     ],
   },
