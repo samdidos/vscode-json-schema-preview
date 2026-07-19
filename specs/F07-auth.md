@@ -46,6 +46,10 @@ tokens, and Basic auth.
 - **F07-FR-09** If a fetch returns 401 or 403 the extension MUST surface an
   `AuthRequiredError` with the URL so the caller can offer the Configure Auth
   flow.
+- **F07-FR-14** When stored credentials are attached to a plain-`http://` URL
+  the extension MUST warn the user that the credential is sent unencrypted,
+  at most once per host per session. The request MUST still proceed — the
+  warning informs, it does not block.
 
 ### Discoverability
 
@@ -77,3 +81,8 @@ tokens, and Basic auth.
    completes without prompting for a token on machines already signed into GitHub
    in VS Code.
 2. Running the command with no remote schema URL shows an information message.
+
+## History
+
+- 2026-07-19 — Added F07-FR-14: warn (once per host per session, non-blocking)
+  when credentials are sent over plain `http://`.

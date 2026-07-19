@@ -78,6 +78,26 @@ suite('[F07-FR-08] SchemaAuthManager.getAuthHeaders()', () => {
     assert.deepStrictEqual(headers, { Authorization: 'Basic dXNlcjpwYXNz' });
   });
 
+  test('[F07-FR-14] warns once per host when credentials go out over plain http, still attaching them', async () => {
+    const ctx = makeContext();
+    ctx._store['schemaauth:example.com'] = JSON.stringify({ type: 'bearer', value: 'abc123' });
+    const auth = new SchemaAuthManager(ctx as any);
+    const headers = await auth.getAuthHeaders('http://example.com/schema.json');
+    assert.deepStrictEqual(headers, { Authorization: 'Bearer abc123' }, 'the request must still proceed with auth');
+    await auth.getAuthHeaders('http://example.com/other.json');
+    assert.strictEqual(vscode.window.showWarningMessage.callCount, 1, 'one warning per host per session');
+    assert.match(vscode.window.showWarningMessage.firstCall.args[0], /example\.com.*http/);
+  });
+
+  test('[F07-FR-14] no insecure-transport warning for https or credential-less http fetches', async () => {
+    const ctx = makeContext();
+    ctx._store['schemaauth:secure.example'] = JSON.stringify({ type: 'bearer', value: 'abc123' });
+    const auth = new SchemaAuthManager(ctx as any);
+    await auth.getAuthHeaders('https://secure.example/schema.json');
+    await auth.getAuthHeaders('http://open.example/schema.json'); // no stored credential
+    assert.strictEqual(vscode.window.showWarningMessage.callCount, 0);
+  });
+
   test('[F07-FR-07][S05-SR-03] one credential keyed by host covers every path under that host, and no other host', async () => {
     const ctx = makeContext();
     // A single credential, stored once under the host key…

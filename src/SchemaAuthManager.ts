@@ -32,6 +32,9 @@ export interface ConditionalFetchResult extends CacheValidators {
 export class SchemaAuthManager {
   private static readonly SECRET_PREFIX = 'schemaauth:';
 
+  /** Hosts already warned about plain-http credential use this session (F07-FR-14). */
+  private readonly warnedInsecureHosts = new Set<string>();
+
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   // ── Static URL utilities ──────────────────────────────────────────────────
@@ -76,15 +79,35 @@ export class SchemaAuthManager {
   // ── Auth header resolution ────────────────────────────────────────────────
 
   async getAuthHeaders(url: string): Promise<Record<string, string>> {
+    const headers = await this.resolveAuthHeaders(url);
+    if (headers.Authorization && url.startsWith('http://')) {
+      this.warnInsecureAuthOnce(url); // F07-FR-14: inform, never block
+    }
+    return headers;
+  }
+
+  private async resolveAuthHeaders(url: string): Promise<Record<string, string>> {
     if (SchemaAuthManager.isGitHubUrl(url)) {
       const token = await this.getGitHubToken();
-      if (token) return { Authorization: `Bearer ${token}` };
+      if (token) {return { Authorization: `Bearer ${token}` };}
     }
     const cred = await this.getStoredCredential(SchemaAuthManager.hostOf(url));
-    if (!cred) return {};
+    if (!cred) {return {};}
     return cred.type === 'bearer'
       ? { Authorization: `Bearer ${cred.value}` }
       : { Authorization: `Basic ${cred.value}` };
+  }
+
+  /** One warning per host per session that a credential is going out over
+   *  plain http (F07-FR-14) — fire-and-forget so fetches are never delayed. */
+  private warnInsecureAuthOnce(url: string): void {
+    const host = SchemaAuthManager.hostOf(url);
+    if (this.warnedInsecureHosts.has(host)) { return; }
+    this.warnedInsecureHosts.add(host);
+    void vscode.window.showWarningMessage(
+      `Credentials for ${host} are being sent over plain http:// and can be read in transit. ` +
+      'Prefer an https URL for this schema.',
+    );
   }
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
@@ -104,8 +127,8 @@ export class SchemaAuthManager {
     } finally {
       clearTimeout(timer);
     }
-    if (res.status === 401 || res.status === 403) throw new AuthRequiredError(url, res.status);
-    if (!res.ok) throw new HttpError(res.status, `HTTP ${res.status} fetching ${url}`);
+    if (res.status === 401 || res.status === 403) {throw new AuthRequiredError(url, res.status);}
+    if (!res.ok) {throw new HttpError(res.status, `HTTP ${res.status} fetching ${url}`);}
     return res.text();
   }
 
@@ -158,7 +181,7 @@ export class SchemaAuthManager {
   // ── Credential state ──────────────────────────────────────────────────────
 
   async isConfigured(url: string): Promise<boolean> {
-    if (SchemaAuthManager.isGitHubUrl(url)) return this.hasGitHubSession();
+    if (SchemaAuthManager.isGitHubUrl(url)) {return this.hasGitHubSession();}
     return (await this.getStoredCredential(SchemaAuthManager.hostOf(url))) !== undefined;
   }
 
@@ -198,7 +221,7 @@ export class SchemaAuthManager {
       title: `Configure authentication for ${host}`,
       placeHolder: 'Select authentication method',
     });
-    if (!pick) return false;
+    if (!pick) {return false;}
 
     switch (pick.id) {
       case 'github': {
@@ -214,7 +237,7 @@ export class SchemaAuthManager {
           password: true,
           ignoreFocusOut: true,
         });
-        if (!token) return false;
+        if (!token) {return false;}
         await this.storeCredential(host, { type: 'bearer', value: token });
         vscode.window.showInformationMessage(`Bearer token saved for ${host}.`);
         return true;
@@ -226,14 +249,14 @@ export class SchemaAuthManager {
           prompt: 'Username',
           ignoreFocusOut: true,
         });
-        if (!username) return false;
+        if (!username) {return false;}
         const password = await vscode.window.showInputBox({
           title: `Basic auth for ${host} (2/2)`,
           prompt: 'Password or access token',
           password: true,
           ignoreFocusOut: true,
         });
-        if (!password) return false;
+        if (!password) {return false;}
         const encoded = Buffer.from(`${username}:${password}`).toString('base64');
         await this.storeCredential(host, { type: 'basic', value: encoded });
         vscode.window.showInformationMessage(`Basic auth saved for ${host}.`);
@@ -275,7 +298,7 @@ export class SchemaAuthManager {
     } catch {
       return undefined;
     }
-    if (!raw) return undefined;
+    if (!raw) {return undefined;}
     try { return JSON.parse(raw) as StoredCredential; } catch { return undefined; }
   }
 
