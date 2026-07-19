@@ -133,129 +133,225 @@ function srcExclusionRatio() {
 
 // ── the rubric ──────────────────────────────────────────────────────────────
 // Each check: { id, points, earn } where earn() returns a fraction 0..1 of its
-// points (a boolean is coerced). `note` documents the fact it reads. An optional
+// points (a boolean is coerced). `note` documents the fact it reads; `why`
+// justifies the check's point weight relative to its dimension's other checks
+// (S12-SR-01 — rendered on the docs site's criteria pages). An optional
 // `skip()` returning true drops the check from BOTH earned and possible (used
-// for the OpenSSF grade, which only counts when its offline cache is present).
+// for the OpenSSF grade, which only counts when its offline cache is present);
+// skipped checks are still emitted, flagged `skipped`, so the rubric stays
+// documented even when a snapshot omits them (S12-SR-08).
+// Each dimension additionally carries a URL-safe `slug` (the docs-site page
+// path) and a `description` of what it measures (S12-SR-01).
 
 const warnings = [];
 
 const DIMENSIONS = [
   {
     label: 'Spec & process',
+    slug: 'spec-process',
+    description:
+      'Whether the spec-driven workflow is real rather than aspirational: RFC-2119 requirements exist, ' +
+      'every one is tracked in the traceability matrix, and the verify gate mechanically enforces the link ' +
+      'between specs, matrix, and tests on every commit.',
     checks: [
       { id: 'traceability-passes', points: 4, note: 'npm run check:traceability exits 0',
+        why: 'The core guarantee: the whole spec system is only trustworthy while the checker passes, so drift between specs, matrix, and test tags outweighs every other signal here.',
         earn: () => commandSucceeds('node scripts/check-traceability.mjs') },
       { id: 'zero-untracked', points: 2, note: 'no requirement left untracked',
+        why: 'Untracked entries are acknowledged debt that hides real status; serious, but a narrower signal than the checker passing outright.',
         earn: () => traceabilityCounts().untracked === 0 },
       { id: 'verify-runs-traceability', points: 2, note: 'the local/CI gate runs check:traceability',
+        why: 'Enforcement placement: a checker that passes today is worth little unless the shared gate forces it on every commit for any agent or human.',
         earn: () => /check:traceability/.test(readJson('package.json')?.scripts?.verify ?? '') },
       { id: 'constitution-present', points: 1, note: '.specify/memory/constitution.md exists',
+        why: 'Presence of the governing document matters, but presence alone proves little about practice — minimal weight.',
         earn: () => exists('.specify/memory/constitution.md') },
       { id: 'specs-present', points: 1, note: '≥ 10 requirement spec files',
+        why: 'A crude floor on corpus size so the other checks cannot be satisfied by a near-empty specs/ directory; deliberately the weakest signal.',
         earn: () => listFiles('specs', (f) => /\/[FS]\d\d.*\.md$/.test(f)).length >= 10 },
     ],
   },
   {
     label: 'Testing',
+    slug: 'testing',
+    description:
+      'How much of the code the test suite genuinely exercises: the three c8 coverage axes against a 95% ' +
+      'target, whether a mutation-testing gate exists to check that the tests assert (not just execute), and ' +
+      'how few source files escape measurement via coverage exclusions.',
     checks: [
       { id: 'branch-coverage', points: 3, note: 'branch coverage vs a 95% target',
+        why: 'Branches are the hardest and most meaningful coverage axis — error paths and edge cases live there, and it is the axis that actually lags — so it carries the most weight.',
         earn: () => { const c = coverage(); if (!c) { warnings.push('coverage-summary.json missing — run npm test'); return 0; } return clamp01(c.branches / 95); } },
       { id: 'line-coverage', points: 2, note: 'line coverage vs a 95% target',
+        why: 'A broad bulk signal, but easier to satisfy than branch coverage (straight-line code inflates it), so it earns less.',
         earn: () => { const c = coverage(); return c ? clamp01(c.lines / 95) : 0; } },
       { id: 'function-coverage', points: 1, note: 'function coverage vs a 95% target',
+        why: 'Near-saturated in practice and the weakest discriminator of the three axes — a function counts as covered after a single call.',
         earn: () => { const c = coverage(); return c ? clamp01(c.functions / 95) : 0; } },
       { id: 'mutation-gate', points: 2, note: 'stryker break threshold is set (not null)',
+        why: 'Coverage proves code ran; mutation testing proves tests assert. Only the gate’s existence is checked (a full run is expensive), so it gets mid weight rather than more.',
         earn: () => readJson('stryker.config.json')?.thresholds?.break != null },
       { id: 'low-exclusion', points: 2, note: 'few source files excluded from coverage',
+        why: 'Excluded files are blind spots that silently inflate every other number in this dimension, so exclusion creep has to cost points.',
         earn: () => 1 - srcExclusionRatio().ratio },
     ],
   },
   {
     label: 'Security / supply chain',
+    slug: 'security-supply-chain',
+    description:
+      'Defences against vulnerable code and a compromised build pipeline: continuous static analysis and ' +
+      'posture scanning (CodeQL, OpenSSF Scorecard), dependency update automation, SLSA provenance for the ' +
+      'released artifact, SHA-pinned GitHub Actions, and — when its cache is present — the live, externally ' +
+      'measured OpenSSF Scorecard grade.',
     checks: [
       { id: 'codeql', points: 2, note: 'CodeQL workflow present',
+        why: 'Continuous static vulnerability analysis on every change — one of the two always-on scanners this dimension leans on.',
         earn: () => exists('.github/workflows/codeql.yml') },
       { id: 'scorecard', points: 2, note: 'OpenSSF Scorecard workflow present',
+        why: 'Continuously re-measures the repo’s supply-chain posture against an open industry standard, catching regressions the presence checks here would miss.',
         earn: () => exists('.github/workflows/scorecard.yml') },
       { id: 'dependabot', points: 1, note: 'Dependabot configured',
+        why: 'Automated dependency updates are important hygiene but nearly free to set up, so mere presence earns the least.',
         earn: () => exists('.github/dependabot.yml') },
       { id: 'slsa-provenance', points: 2, note: 'SLSA build provenance attested for the release artifact',
+        why: 'Provenance lets downstream users verify the published .vsix came from this repo’s CI — protection that extends beyond the repo itself.',
         earn: () => workflowFiles().some((f) => /provenance|slsa|attest/i.test(read(f))) },
       { id: 'pinned-actions', points: 3, note: 'GitHub Actions pinned to a full commit SHA',
+        why: 'An unpinned action is arbitrary third-party code execution inside CI — the most direct supply-chain risk here — and the ratio moves with every workflow edit, so it outweighs the presence checks.',
         earn: () => actionPinRatio() },
       { id: 'ossf-scorecard-grade', points: 4,
         note: 'live OpenSSF Scorecard grade /10 (offline cache; refresh with npm run maturity:ossf)',
+        why: 'The one externally *measured* grade in the dimension — independent and continuous rather than self-reported presence — so it carries the most weight; skipped entirely when no offline cache exists, to keep the scorer deterministic.',
         skip: () => { const c = readJson('ossf-scorecard.json'); return c == null || typeof c.score !== 'number'; },
         earn: () => clamp01((readJson('ossf-scorecard.json')?.score ?? 0) / 10) },
     ],
   },
   {
     label: 'CI/CD & release',
+    slug: 'cicd-release',
+    description:
+      'Whether the path from commit to release is automated and honest: CI exists and no job swallows ' +
+      'failures, releases and changelogs are derived mechanically from Conventional Commits, and the same ' +
+      'verify gate runs locally before a commit ever reaches CI.',
     checks: [
       { id: 'ci-present', points: 1, note: 'a CI workflow exists',
+        why: 'Table stakes — everything else in this dimension presumes it, so bare presence earns the minimum.',
         earn: () => exists('.github/workflows/ci.yml') },
       { id: 'no-continue-on-error', points: 2, note: 'no CI job silently swallows failures',
+        why: 'A swallowed failure rots the signal of every other check CI runs — green must actually mean green.',
         earn: () => !workflowFiles().some((f) => /continue-on-error:\s*true/.test(read(f))) },
       { id: 'release-automation', points: 2, note: 'release-please configured',
+        why: 'Removes human error from versioning and changelogs, making releases reproducible decisions instead of rituals.',
         earn: () => exists('.github/workflows/release-please.yml') },
       { id: 'conventional-commits', points: 2, note: 'commitlint + commit-msg hook enforce Conventional Commits',
+        why: 'The machine-readable history that release automation depends on; enforced at commit time, it keeps the changelog derivable rather than curated.',
         earn: () => exists('commitlint.config.js') && exists('.husky/commit-msg') },
       { id: 'precommit-gate', points: 2, note: 'a pre-commit hook runs the verify gate',
+        why: 'Catches failures before they ever reach CI, and — because it is a git hook — applies to any agent or human, per the project’s agnosticity principle.',
         earn: () => has('.husky/pre-commit', /verify/) },
       { id: 'knip-in-ci', points: 1, note: 'dead-code analysis runs in CI',
+        why: 'Valuable hygiene, but a narrower concern than gates and release automation — hence the smallest weight.',
         earn: () => has('.github/workflows/ci.yml', /knip/) },
     ],
   },
   {
     label: 'Docs',
+    slug: 'docs',
+    description:
+      'Whether the project explains itself: the standard community files exist (README, CONTRIBUTING, code ' +
+      'of conduct, security policy, license), a docs site is published, maturity is tracked over time, and — ' +
+      'the depth signal — guide pages actually keep up with the feature specs.',
     checks: [
-      { id: 'readme', points: 1, note: 'README.md', earn: () => exists('README.md') },
-      { id: 'contributing', points: 1, note: 'CONTRIBUTING.md', earn: () => exists('CONTRIBUTING.md') },
-      { id: 'code-of-conduct', points: 1, note: 'CODE_OF_CONDUCT.md', earn: () => exists('CODE_OF_CONDUCT.md') },
-      { id: 'security-policy', points: 1, note: 'SECURITY.md', earn: () => exists('SECURITY.md') },
-      { id: 'license', points: 1, note: 'LICENSE.md', earn: () => exists('LICENSE.md') },
-      { id: 'docs-site', points: 1, note: 'a docs site (docs/) exists', earn: () => exists('docs/index.md') },
+      { id: 'readme', points: 1, note: 'README.md',
+        why: 'The community-standard files are each binary and roughly equally important, so every presence check here carries the same single point.',
+        earn: () => exists('README.md') },
+      { id: 'contributing', points: 1, note: 'CONTRIBUTING.md',
+        why: 'Equal-weight presence check: how to contribute is one of the standard files a healthy repo simply has.',
+        earn: () => exists('CONTRIBUTING.md') },
+      { id: 'code-of-conduct', points: 1, note: 'CODE_OF_CONDUCT.md',
+        why: 'Equal-weight presence check alongside the other community-standard files.',
+        earn: () => exists('CODE_OF_CONDUCT.md') },
+      { id: 'security-policy', points: 1, note: 'SECURITY.md',
+        why: 'Equal-weight presence check: a documented way to report vulnerabilities.',
+        earn: () => exists('SECURITY.md') },
+      { id: 'license', points: 1, note: 'LICENSE.md',
+        why: 'Equal-weight presence check: without a license the rest of the docs hardly matter.',
+        earn: () => exists('LICENSE.md') },
+      { id: 'docs-site', points: 1, note: 'a docs site (docs/) exists',
+        why: 'Equal-weight presence check for a published site; its *depth* is scored separately by guide-coverage.',
+        earn: () => exists('docs/index.md') },
       { id: 'guide-coverage', points: 3, note: 'guide pages cover the feature specs',
+        why: 'The only depth signal in the dimension — it measures whether features get documented, not whether files exist, and it moves with every feature added — so it outweighs any single presence check.',
         earn: () => clamp01(listFiles('docs/guide', (f) => f.endsWith('.md')).length / listFiles('specs', (f) => /\/F\d\d.*\.md$/.test(f)).length) },
-      { id: 'maturity-tracked', points: 1, note: 'MATURITY.md exists', earn: () => exists('MATURITY.md') },
+      { id: 'maturity-tracked', points: 1, note: 'MATURITY.md exists',
+        why: 'Equal-weight presence check: maturity itself is tracked in a committed, dated document.',
+        earn: () => exists('MATURITY.md') },
     ],
   },
   {
     label: 'Code quality',
+    slug: 'code-quality',
+    description:
+      'The static health of the source: TypeScript strict mode, an error-free lint run, how far the tolerated ' +
+      'lint-warning count sits below its ceiling, a clean dead-code analysis, and a production bundler for ' +
+      'the shipped artifact.',
     checks: [
       { id: 'strict-ts', points: 2, note: 'TypeScript strict mode',
+        why: 'The compiler’s strongest correctness net — it eliminates whole bug classes at build time rather than flagging them for later.',
         earn: () => /"strict"\s*:\s*true/.test(read('tsconfig.json')) },
       { id: 'zero-lint-errors', points: 2, note: 'eslint reports no errors',
+        why: 'Lint errors are defects the project has already agreed to prohibit; any nonzero count means the agreement is not being kept.',
         earn: () => { const l = lintCounts(); if (!l.ran) { warnings.push('eslint did not run'); return 0; } return l.errors === 0; } },
       { id: 'few-lint-warnings', points: 3, note: 'eslint warnings vs a 200 ceiling',
+        why: 'The live debt gauge of the dimension: unlike the binary checks it has range, moves with every edit, and rewards paying debt down — so it carries the most weight.',
         earn: () => { const l = lintCounts(); return l.ran ? clamp01(1 - l.warnings / 200) : 0; } },
       { id: 'knip-clean', points: 2, note: 'no unused files/exports/deps (knip exits 0)',
+        why: 'Dead code is untested, misleading surface area that still costs review and maintenance; keeping it at zero is a real, enforced discipline.',
         earn: () => commandSucceeds('npm run knip --silent') },
       { id: 'bundled', points: 1, note: 'a production bundler is configured',
+        why: 'Matters for what ships, but it is mostly a one-time setup rather than an ongoing practice — hence the smallest weight.',
         earn: () => exists('webpack.config.js') },
     ],
   },
   {
     label: 'AI-agent integration',
+    slug: 'ai-agent-integration',
+    description:
+      'How well the repository supports AI coding agents — of any vendor — as first-class contributors. ' +
+      'No external standard exists for this, so it is a deliberate equal-weight presence checklist ' +
+      '(documented in MATURITY.md): each item is one point because ranking them would be judgement, ' +
+      'not measurement.',
     checks: [
-      { id: 'agents-md', points: 1, note: 'AGENTS.md (cross-vendor source of truth)', earn: () => exists('AGENTS.md') },
+      { id: 'agents-md', points: 1, note: 'AGENTS.md (cross-vendor source of truth)',
+        why: 'The cross-vendor instruction file every agent can read — the foundation of the checklist; one point like every item in this deliberately unranked dimension.',
+        earn: () => exists('AGENTS.md') },
       { id: 'claude-imports-agents', points: 1, note: 'CLAUDE.md points at AGENTS.md, not a copy',
+        why: 'Verifies the per-tool file is a pointer, not a fork — duplicated instructions drift. Equal weight by the checklist principle.',
         earn: () => has('CLAUDE.md', /@AGENTS\.md/) },
       { id: 'spec-prompt-hook', points: 1, note: 'a prompt hook injects the spec workflow',
+        why: 'Puts the spec-driven workflow in front of the agent on every prompt, instead of relying on it re-reading docs. Equal weight by the checklist principle.',
         earn: () => exists('.claude/hooks/spec-context.sh') },
       { id: 'precommit-agent-hook', points: 1, note: 'an agent pre-commit hook reaches the shared gate',
+        why: 'Fast in-session feedback that delegates to the vendor-neutral git hook, so the check logic lives in one place. Equal weight by the checklist principle.',
         earn: () => exists('.claude/hooks/pre-commit-gate.sh') },
       { id: 'coverage-agent-hook', points: 1, note: 'an agent hook checks coverage after edits',
+        why: 'Surfaces coverage regressions right after an edit instead of at commit time. Equal weight by the checklist principle.',
         earn: () => exists('.claude/hooks/check-coverage.sh') },
       { id: 'session-bootstrap', points: 1, note: 'cold-session bootstrap (script + hook)',
+        why: 'A cold container that cannot install dependencies wastes every subsequent agent action; bootstrap makes sessions productive from the first prompt. Equal weight by the checklist principle.',
         earn: () => exists('scripts/bootstrap.sh') && exists('.claude/hooks/session-bootstrap.sh') },
       { id: 'permissions-allowlist', points: 1, note: 'a permissions allowlist reduces prompts',
+        why: 'Pre-approving known-safe commands keeps agents autonomous without widening what they may do. Equal weight by the checklist principle.',
         earn: () => (readJson('.claude/settings.json')?.permissions?.allow ?? []).length > 0 },
       { id: 'portable-mcp', points: 1, note: 'project-scoped MCP config (.mcp.json)',
+        why: 'Tool access declared once via the open protocol works for any MCP-capable agent, instead of per-vendor integrations. Equal weight by the checklist principle.',
         earn: () => exists('.mcp.json') },
       { id: 'pr-template-ids', points: 1, note: 'the PR template asks for requirement IDs',
+        why: 'Makes requirement traceability part of the review surface for human and agent PRs alike. Equal weight by the checklist principle.',
         earn: () => has('.github/pull_request_template.md', /requirement/i) },
       { id: 'machine-readable-state', points: 1, note: 'build state is machine-readable (traceability.json)',
+        why: 'Agents plan far better against structured state than prose; the matrix is the machine-readable ground truth. Equal weight by the checklist principle.',
         earn: () => readJson('specs/traceability.json') !== undefined },
     ],
   },
@@ -268,15 +364,22 @@ function scoreDimension(dim) {
   let possible = 0;
   const checks = [];
   for (const c of dim.checks) {
-    if (c.skip?.()) continue; // dropped from earned AND possible (e.g. uncached OSSF grade)
+    if (c.skip?.()) {
+      // Dropped from earned AND possible (e.g. uncached OSSF grade), but still
+      // emitted — flagged — so the rubric stays fully documented (S12-SR-08).
+      checks.push({ id: c.id, points: c.points, skipped: true, note: c.note, why: c.why });
+      continue;
+    }
     const raw = c.earn();
     const frac = clamp01(typeof raw === 'boolean' ? (raw ? 1 : 0) : raw);
     earned += frac * c.points;
     possible += c.points;
-    checks.push({ id: c.id, points: c.points, earned: Math.round(frac * c.points * 100) / 100, note: c.note });
+    checks.push({ id: c.id, points: c.points, earned: Math.round(frac * c.points * 100) / 100, note: c.note, why: c.why });
   }
   return {
     label: dim.label,
+    slug: dim.slug,
+    description: dim.description,
     score: Math.round((MAX * earned / possible) * 10) / 10,
     earned: Math.round(earned * 100) / 100,
     possible,

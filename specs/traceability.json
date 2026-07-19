@@ -3271,6 +3271,90 @@
         "specs/traceability.schema.json"
       ],
       "note": ""
+    },
+    "S12-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/maturitySource.ts",
+        "docs/.vitepress/maturity.data.ts",
+        "docs/maturity/[dimension].paths.ts"
+      ],
+      "note": "loader + dynamic route read maturity-score.json at build time; nothing hand-copied"
+    },
+    "S12-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/MaturityRadar.vue"
+      ],
+      "note": "inline SVG rendered by Vue; no chart library added to docs/package.json"
+    },
+    "S12-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/MaturityRadar.vue"
+      ],
+      "note": "all chart colors are --vp-c-* theme variables"
+    },
+    "S12-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs"
+      ],
+      "note": "each dimension carries slug + description, each check a why; emitted into maturity-score.json"
+    },
+    "S12-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs",
+        "docs/.vitepress/maturity.data.ts"
+      ],
+      "note": "justifications authored only in the scorer; docs render the generated JSON"
+    },
+    "S12-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/config.ts",
+        "docs/maturity/[dimension].paths.ts"
+      ],
+      "note": "Maturity nav entry; dimension pages + sidebar generated from maturity-score.json"
+    },
+    "S12-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "docs/maturity/index.md",
+        "docs/.vitepress/theme/MaturityRadar.vue"
+      ],
+      "note": "overall + snapshot date + interactive radar; hover/focus tooltip, click/keyboard navigates"
+    },
+    "S12-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/MaturityScoreList.vue",
+        "docs/.vitepress/theme/MaturityRadar.vue"
+      ],
+      "note": "linked text score list mirrors the radar; SVG axes are real anchors with aria-labels"
+    },
+    "S12-SR-06": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/MaturityChecks.vue"
+      ],
+      "note": "per-check weight, earned, note, and why on each dimension page"
+    },
+    "S12-SR-07": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/MaturityChecks.vue"
+      ],
+      "note": "each check section carries id={check.id} with a permalink anchor"
+    },
+    "S12-SR-08": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs",
+        "docs/.vitepress/theme/MaturityChecks.vue"
+      ],
+      "note": "skipped checks emitted flagged `skipped`, rendered as \"not counted in this snapshot\""
     }
   }
 }
