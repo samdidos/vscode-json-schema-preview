@@ -755,6 +755,13 @@
       ],
       "note": "VS Code API-bound; verified by manual / E2E testing"
     },
+    "F07-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "Warn once per host per session on plain-http credential use; never blocks."
+    },
     "F07-NFR-01": {
       "status": "manual",
       "impl": [
@@ -1455,12 +1462,12 @@
       "note": "hover never fetches; uncached remote states not-cached + command hint"
     },
     "F13-NFR-01": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "src/schemaPointer.ts",
         "src/SchemaRefProvider.ts"
       ],
-      "note": "pure in-process resolution; no subprocess, no hover network I/O; SchemaRefProvider memoizes the parsed AST/value-tree per document version (per-version caching allowance in the requirement text)"
+      "note": "pure in-process resolution; no subprocess, no hover network I/O; SchemaRefProvider memoizes the parsed AST/value-tree per document version (per-version caching allowance in the requirement text); performance/in-process property, verified by design + E2E, not unit-taggable"
     },
     "F13-NFR-02": {
       "status": "implemented",
@@ -2267,49 +2274,6 @@
       ],
       "note": "draftMigration.test.ts — both directions + idempotence"
     },
-    "F25-FR-01": {
-      "status": "implemented",
-      "impl": [
-        "src/validationFix.ts"
-      ],
-      "note": "enum candidates ranked by nearest match before the MAX_ENUM_FIXES cap"
-    },
-    "F25-FR-02": {
-      "status": "implemented",
-      "impl": [
-        "src/validationFix.ts"
-      ],
-      "note": "levenshtein: case-insensitive primary, case-sensitive tie-break, schema-order fallback for non-strings"
-    },
-    "F25-FR-03": {
-      "status": "implemented",
-      "impl": [
-        "src/validationFix.ts",
-        "src/ValidationFixProvider.ts"
-      ],
-      "note": "closest labelled + marked preferred only on a near-miss; provider sets isPreferred"
-    },
-    "F25-FR-04": {
-      "status": "implemented",
-      "impl": [
-        "src/validationFix.ts"
-      ],
-      "note": "const/required/additionalProperties/type fixes unchanged"
-    },
-    "F25-NFR-01": {
-      "status": "implemented",
-      "impl": [
-        "src/validationFix.ts"
-      ],
-      "note": "rankEnumCandidates + levenshtein pure, table-driven unit tests"
-    },
-    "F25-NFR-02": {
-      "status": "implemented",
-      "impl": [
-        "src/validationFix.ts"
-      ],
-      "note": "bounded to short capped candidate set; no new I/O or async"
-    },
     "F23-FR-01": {
       "status": "implemented",
       "impl": [
@@ -2453,6 +2417,49 @@
         "src/refGraph.ts"
       ],
       "note": "no fetching of external refs; never throws on malformed schemas"
+    },
+    "F25-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "enum candidates ranked by nearest match before the MAX_ENUM_FIXES cap"
+    },
+    "F25-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "levenshtein: case-insensitive primary, case-sensitive tie-break, schema-order fallback for non-strings"
+    },
+    "F25-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts",
+        "src/ValidationFixProvider.ts"
+      ],
+      "note": "closest labelled + marked preferred only on a near-miss; provider sets isPreferred"
+    },
+    "F25-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "const/required/additionalProperties/type fixes unchanged"
+    },
+    "F25-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "rankEnumCandidates + levenshtein pure, table-driven unit tests"
+    },
+    "F25-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "bounded to short capped candidate set; no new I/O or async"
     },
     "F26-FR-01": {
       "status": "implemented",
@@ -2760,35 +2767,35 @@
       "note": "resolveTimeoutMs clamp/fallback + config readers unit-tested; wired into PreviewWebPanel/ValidationManager/SchemaCache"
     },
     "S03-SR-15": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-bundle-size.mjs",
         ".github/workflows/ci.yml"
       ],
-      "note": "ci.yml build job runs `npm run package && npm run check:bundle-size` on every build; script exits non-zero on budget overrun"
+      "note": "ci.yml build job runs `npm run package && npm run check:bundle-size` on every build; script exits non-zero on budget overrun; build-size gate: enforced by scripts/check-bundle-size.mjs in CI, not unit-taggable"
     },
     "S03-SR-16": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-bundle-size.mjs"
       ],
-      "note": "BUNDLE_BUDGET_BYTES=3MB / VSIX_BUDGET_BYTES=1.5MB constants; WARN_RATIO=0.85 prints a non-fatal warning before the hard fail"
+      "note": "BUNDLE_BUDGET_BYTES=3MB / VSIX_BUDGET_BYTES=1.5MB constants; WARN_RATIO=0.85 prints a non-fatal warning before the hard fail; build-size gate: enforced by scripts/check-bundle-size.mjs in CI, not unit-taggable"
     },
     "S03-SR-17": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".vscodeignore"
       ],
-      "note": "excludes specs/, .specify/, .husky/, alternate tsconfigs, lint/test/release config, project meta-docs; reduced the packaged .vsix from 864KB/83 files to ~748KB/13 files"
+      "note": "excludes specs/, .specify/, .husky/, alternate tsconfigs, lint/test/release config, project meta-docs; reduced the packaged .vsix from 864KB/83 files to ~748KB/13 files; build-size gate: enforced by scripts/check-bundle-size.mjs in CI, not unit-taggable"
     },
     "S03-SR-18": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-bundle-size.mjs",
         "bundle-size.json",
         ".github/workflows/maturity-refresh.yml"
       ],
-      "note": "check-bundle-size.mjs writes bundle-size.json on every run; the weekly refresh workflow commits it (alongside the maturity score) when it changes"
+      "note": "check-bundle-size.mjs writes bundle-size.json on every run; the weekly refresh workflow commits it (alongside the maturity score) when it changes; build-size gate: enforced by scripts/check-bundle-size.mjs in CI, not unit-taggable"
     },
     "S04-SR-01": {
       "status": "implemented",
@@ -2902,35 +2909,35 @@
       "note": "required column uses textual Yes/—, not colour alone; unit-tested"
     },
     "S07-NFR-01": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-doc-traceability.mjs"
       ],
-      "note": "plain HTML comments only; no vendor-specific doc-tracing tool or format"
+      "note": "plain HTML comments only; no vendor-specific doc-tracing tool or format; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-NFR-02": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-doc-traceability.mjs"
       ],
-      "note": "zero-dependency Node script (fs/path/url only); scans an explicit path list, never node_modules"
+      "note": "zero-dependency Node script (fs/path/url only); scans an explicit path list, never node_modules; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-SR-01": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-doc-traceability.mjs"
       ],
-      "note": "HTML-comment tag <!-- spec:<IDs> -->; TAG_RE accepts feature ids and requirement ids, comma-separated"
+      "note": "HTML-comment tag <!-- spec:<IDs> -->; TAG_RE accepts feature ids and requirement ids, comma-separated; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-SR-02": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-doc-traceability.mjs"
       ],
-      "note": "inline tags (no keyword) and start/end section pairs matched via a per-file stack, order-insensitive id-set comparison"
+      "note": "inline tags (no keyword) and start/end section pairs matched via a per-file stack, order-insensitive id-set comparison; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-SR-03": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "README.md",
         "docs/index.md",
@@ -2939,58 +2946,58 @@
         "docs/guide/authentication.md",
         "docs/guide/configuration.md"
       ],
-      "note": "README.md and docs/**/*.md tagged per feature"
+      "note": "README.md and docs/**/*.md tagged per feature; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-SR-04": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-doc-traceability.mjs",
         "AGENTS.md"
       ],
-      "note": "AGENTS.md is scanned (ids validated) but excluded from the required-coverage set"
+      "note": "AGENTS.md is scanned (ids validated) but excluded from the required-coverage set; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-SR-05": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-doc-traceability.mjs",
         "package.json"
       ],
-      "note": "npm run check:doc-traceability cross-references feature ids (filenames) + requirement ids (bold defs) against spec: tags"
+      "note": "npm run check:doc-traceability cross-references feature ids (filenames) + requirement ids (bold defs) against spec: tags; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-SR-06": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-doc-traceability.mjs"
       ],
-      "note": "unknown id -> error; unmatched start/end or mismatched id-set between start/end -> error"
+      "note": "unknown id -> error; unmatched start/end or mismatched id-set between start/end -> error; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-SR-07": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-doc-traceability.mjs"
       ],
-      "note": "per-feature coverage printed; undocumented features listed as warnings, exit code unaffected"
+      "note": "per-feature coverage printed; undocumented features listed as warnings, exit code unaffected; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-SR-08": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "package.json"
       ],
-      "note": "check:doc-traceability wired into npm run verify (runs before test:coverage)"
+      "note": "check:doc-traceability wired into npm run verify (runs before test:coverage); doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S07-SR-09": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/check-doc-traceability.mjs"
       ],
-      "note": "tag of a planned/deferred requirement, or of a feature whose matrix entries are all planned/deferred, -> error; such features excluded from the undocumented warning"
+      "note": "tag of a planned/deferred requirement, or of a feature whose matrix entries are all planned/deferred, -> error; such features excluded from the undocumented warning; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
     "S08-NFR-01": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/ci.yml"
       ],
-      "note": "measured against real CI runs (2026-07-13, runs 29279453959 and 29280433507): the \"Integration tests\" job completes in ~47-52s on ubuntu-latest and ~1m37s-1m50s on windows-latest, including VS Code download/setup, well within the 10-minute budget"
+      "note": "measured against real CI runs (2026-07-13, runs 29279453959 and 29280433507): the \"Integration tests\" job completes in ~47-52s on ubuntu-latest and ~1m37s-1m50s on windows-latest, including VS Code download/setup, well within the 10-minute budget; e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
     "S08-NFR-02": {
       "status": "implemented",
@@ -3001,29 +3008,29 @@
       "note": "remote-schema scenario (jsonschema.cacheSchemaLocally against a \"remote\" URL) is driven against a loopback-only fixture HTTP server (helpers.ts's startFixtureHttpServer), keeping the run deterministic and offline"
     },
     "S08-SR-01": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "src/test/integration/runTest.ts",
         "src/test/integration/index.ts",
         "tsconfig.integration.json"
       ],
-      "note": "runTest.ts launches @vscode/test-electron once per fixture; index.ts is the tdd mocha loader run inside the Extension Host; npm run test:integration"
+      "note": "runTest.ts launches @vscode/test-electron once per fixture; index.ts is the tdd mocha loader run inside the Extension Host; npm run test:integration; e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
     "S08-SR-02": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "src/test/integration/fixtures/single-folder",
         "src/test/integration/fixtures/multi-root"
       ],
-      "note": "single-folder fixture (JSON/YAML/TOML) and a 2-folder multi-root .code-workspace with distinct .vscode/settings.json per folder"
+      "note": "single-folder fixture (JSON/YAML/TOML) and a 2-folder multi-root .code-workspace with distinct .vscode/settings.json per folder; e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
     "S08-SR-03": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "src/test/integration/index.ts",
         "scripts/check-traceability.mjs"
       ],
-      "note": "suites use suite()/test() (tdd); check-traceability.mjs already walks all of src/test/**/*.ts so [ID] tags in integration suites count with no changes needed"
+      "note": "suites use suite()/test() (tdd); check-traceability.mjs already walks all of src/test/**/*.ts so [ID] tags in integration suites count with no changes needed; e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
     "S08-SR-04": {
       "status": "implemented",
@@ -3056,150 +3063,150 @@
       "note": "measures and logs p95 preview-generation latency over 20 runs against the S03-SR-13 budget; asserts the budget so a regression fails CI, and prints the measured numbers per S08-SR-07's \"measured ... and reported\""
     },
     "S08-SR-08": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/ci.yml"
       ],
-      "note": "new \"integration\" job, continue-on-error (non-blocking) until 2 clean weeks per this requirement; promotion to required not yet recorded"
+      "note": "new \"integration\" job, continue-on-error (non-blocking) until 2 clean weeks per this requirement; promotion to required not yet recorded; e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
     "S08-SR-09": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/ci.yml"
       ],
-      "note": "integration job matrix runs on ubuntu-latest (via xvfb-run) and windows-latest"
+      "note": "integration job matrix runs on ubuntu-latest (via xvfb-run) and windows-latest; e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
     "S08-SR-10": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/refresh-gifs.yml",
         "src/test/e2e"
       ],
-      "note": "e2e-smoke job (parallel to refresh-gifs, both needs: find-pr) runs non-mouse Playwright demos non-blocking at release time — moved off ci.yml per the 2026-07 History note (PR contention caused spurious timeouts)"
+      "note": "e2e-smoke job (parallel to refresh-gifs, both needs: find-pr) runs non-mouse Playwright demos non-blocking at release time — moved off ci.yml per the 2026-07 History note (PR contention caused spurious timeouts); e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
     "S08-SR-11": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/refresh-gifs.yml"
       ],
-      "note": "e2e-smoke uses --grep-invert mouse; refresh-gifs job uses --grep mouse; each variant runs in exactly one place, both jobs now live in refresh-gifs.yml"
+      "note": "e2e-smoke uses --grep-invert mouse; refresh-gifs job uses --grep mouse; each variant runs in exactly one place, both jobs now live in refresh-gifs.yml; e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
     "S09-NFR-01": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/ci.yml",
         ".github/workflows/codeql.yml"
       ],
-      "note": "diff detection uses plain git diff/grep, no third-party path-filter action"
+      "note": "diff detection uses plain git diff/grep, no third-party path-filter action; CI workflow-scoping requirement: enforced/observable in .github/workflows, not unit-taggable"
     },
     "S09-NFR-02": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "scripts/ci-detect-source-changes.sh",
         ".github/workflows/ci.yml",
         ".github/workflows/codeql.yml"
       ],
-      "note": "single script shared by both changes jobs instead of duplicated inline shell"
+      "note": "single script shared by both changes jobs instead of duplicated inline shell; CI workflow-scoping requirement: enforced/observable in .github/workflows, not unit-taggable"
     },
     "S09-SR-01": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/ci.yml"
       ],
-      "note": "traceability job runs unconditionally on every push/PR"
+      "note": "traceability job runs unconditionally on every push/PR; CI workflow-scoping requirement: enforced/observable in .github/workflows, not unit-taggable"
     },
     "S09-SR-02": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/ci.yml",
         ".github/workflows/codeql.yml"
       ],
-      "note": "build/security/knip/integration/analyze jobs gated by the changes job output"
+      "note": "build/security/knip/integration/analyze jobs gated by the changes job output; CI workflow-scoping requirement: enforced/observable in .github/workflows, not unit-taggable"
     },
     "S09-SR-03": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/ci.yml",
         ".github/workflows/codeql.yml"
       ],
-      "note": "job-level if: conditions, not workflow-level paths/paths-ignore triggers"
+      "note": "job-level if: conditions, not workflow-level paths/paths-ignore triggers; CI workflow-scoping requirement: enforced/observable in .github/workflows, not unit-taggable"
     },
     "S09-SR-04": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         ".github/workflows/codeql.yml"
       ],
-      "note": "analyze's if: always() && (schedule || changes) keeps the weekly cron unconditional"
+      "note": "analyze's if: always() && (schedule || changes) keeps the weekly cron unconditional; CI workflow-scoping requirement: enforced/observable in .github/workflows, not unit-taggable"
     },
     "S10-NFR-01": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "docs/.vitepress/specs.data.ts",
         "docs/specs/[id].paths.ts"
       ],
-      "note": ""
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S10-NFR-02": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "docs/.vitepress/config.ts"
       ],
-      "note": ""
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S10-SR-01": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "docs/.vitepress/config.ts",
         "docs/specs/index.md",
         "docs/specs/matrix.md",
         "docs/specs/[id].md"
       ],
-      "note": ""
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S10-SR-02": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "docs/specs/index.md"
       ],
-      "note": ""
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S10-SR-03": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "docs/.vitepress/specs.data.ts",
         "docs/.vitepress/theme/SpecMatrix.vue"
       ],
-      "note": ""
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S10-SR-04": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "docs/.vitepress/theme/SpecMatrix.vue"
       ],
-      "note": ""
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S10-SR-05": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "docs/.vitepress/theme/SpecMatrix.vue"
       ],
-      "note": ""
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S10-SR-06": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "docs/specs/[id].paths.ts",
         "docs/specs/[id].md"
       ],
-      "note": ""
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S10-SR-07": {
-      "status": "implemented",
+      "status": "manual",
       "impl": [
         "docs/.vitepress/theme/SpecTraceability.vue",
         "docs/specs/[id].md"
       ],
-      "note": ""
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S11-NFR-01": {
       "status": "implemented",

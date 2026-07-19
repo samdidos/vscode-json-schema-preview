@@ -135,7 +135,7 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
         }
       } else if (message.type === 'download') {
         const cached = rawOutputCache.get(uri.fsPath);
-        if (!cached) return;
+        if (!cached) {return;}
         const stem = path.basename(uri.fsPath, path.extname(uri.fsPath));
         const defaultUri = vscode.Uri.file(path.join(path.dirname(uri.fsPath), `${stem}.${cached.ext}`));
         const dest = await vscode.window.showSaveDialog({
@@ -143,7 +143,7 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
           filters: { 'Generated output': [cached.ext] },
           saveLabel: 'Save Preview',
         });
-        if (!dest) return;
+        if (!dest) {return;}
         await fs.promises.writeFile(dest.fsPath, cached.content, 'utf-8');
         vscode.window.showInformationMessage(`Preview saved to ${path.basename(dest.fsPath)}`);
       }
@@ -169,18 +169,18 @@ const rawOutputCache = new Map<string, CachedOutput>();
 
 export function scheduleLiveUpdate(_context: vscode.ExtensionContext, doc: vscode.TextDocument): void {
   const panel = openJsonSchemaFiles[doc.uri.fsPath];
-  if (!panel) return; // preview not open — nothing to refresh
-  if (!vscode.workspace.isTrusted) return; // never run Python in an untrusted workspace
+  if (!panel) {return;} // preview not open — nothing to refresh
+  if (!vscode.workspace.isTrusted) {return;} // never run Python in an untrusted workspace
 
   const cfg = vscode.workspace.getConfiguration('jsonschema.preview');
   const delay = Math.max(500, cfg.get<number>('liveUpdateDelay') ?? 1500);
 
   const existing = liveTimers.get(doc.uri.fsPath);
-  if (existing) clearTimeout(existing);
+  if (existing) {clearTimeout(existing);}
 
   liveTimers.set(doc.uri.fsPath, setTimeout(async () => {
     liveTimers.delete(doc.uri.fsPath);
-    if (!openJsonSchemaFiles[doc.uri.fsPath]) return; // panel closed during delay
+    if (!openJsonSchemaFiles[doc.uri.fsPath]) {return;} // panel closed during delay
 
     // Write current (unsaved) text to a temp file so Python can read it.
     // JSONC: strip comments first — Python's json parser doesn't handle them.
@@ -226,17 +226,17 @@ export function findConfigFile(forUri?: vscode.Uri): string | undefined {
   // Prioritise the workspace folder that owns the schema file being rendered
   if (forUri) {
     const folder = vscode.workspace.getWorkspaceFolder(forUri);
-    if (folder) roots.push(folder.uri.fsPath);
+    if (folder) {roots.push(folder.uri.fsPath);}
   }
 
   // Fall back to remaining workspace folders in order
   (vscode.workspace.workspaceFolders ?? []).forEach(f => {
-    if (!roots.includes(f.uri.fsPath)) roots.push(f.uri.fsPath);
+    if (!roots.includes(f.uri.fsPath)) {roots.push(f.uri.fsPath);}
   });
 
   for (const root of roots) {
     const candidate = path.join(root, CONFIG_FILENAME);
-    if (fs.existsSync(candidate)) return candidate;
+    if (fs.existsSync(candidate)) {return candidate;}
   }
   return undefined;
 }
@@ -327,7 +327,7 @@ async function detectOutputFmt(configFile?: string): Promise<{ ext: string; isHt
     try {
       const raw = await fs.promises.readFile(configFile, 'utf-8');
       const cfg = JSON.parse(raw) as { template_name?: string };
-      if (/^md/i.test(cfg.template_name ?? '')) return { ext: 'md', isHtml: false };
+      if (/^md/i.test(cfg.template_name ?? '')) {return { ext: 'md', isHtml: false };}
     } catch { /* fall through */ }
   }
   return { ext: 'html', isHtml: true };

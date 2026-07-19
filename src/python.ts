@@ -33,9 +33,9 @@ export async function getPythonInterpreter(): Promise<string> {
           if (api.environments.resolveEnvironment) {
             const resolved = await api.environments.resolveEnvironment(envPath);
             const exe = resolved?.executable?.uri?.fsPath;
-            if (exe) return exe;
+            if (exe) {return exe;}
           }
-          if (envPath.path) return envPath.path;
+          if (envPath.path) {return envPath.path;}
         }
       }
 
@@ -45,7 +45,7 @@ export async function getPythonInterpreter(): Promise<string> {
           vscode.workspace.workspaceFolders?.[0]?.uri
         );
         const exe = details?.execCommand?.[0];
-        if (exe) return exe;
+        if (exe) {return exe;}
       }
     }
   } catch {
@@ -75,8 +75,8 @@ export function run(cmd: string, args: string[], timeoutMs = 30_000): Promise<vo
 export function capture(cmd: string, args: string[], timeoutMs = 10_000): Promise<string> {
   return new Promise((resolve, reject) =>
     execFile(cmd, args, { timeout: timeoutMs }, (err, stdout, stderr) => {
-      if (err) reject(new Error(stderr || err.message));
-      else resolve(stdout);
+      if (err) {reject(new Error(stderr || err.message));}
+      else {resolve(stdout);}
     })
   );
 }

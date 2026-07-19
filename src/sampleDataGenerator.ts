@@ -3,7 +3,7 @@
 // why one cannot be produced), so it is exhaustively unit-testable. The command
 // layer supplies ref resolution and does the editor I/O.
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const Ajv = require('ajv').default as typeof import('ajv').default;
 
 type Json = unknown;

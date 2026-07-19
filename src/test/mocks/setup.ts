@@ -1,6 +1,6 @@
 // Intercepts require('vscode') before any test file is loaded and returns the
 // mock module instead. Must be passed via mocha --require so it runs first.
-/* eslint-disable @typescript-eslint/no-var-requires */
+ 
 const Module = require('module');
 const path   = require('path');
 

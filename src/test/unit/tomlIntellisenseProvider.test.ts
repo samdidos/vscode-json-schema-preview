@@ -60,7 +60,7 @@ setup(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-tomlint-'));
   fs.writeFileSync(path.join(dir, 'schema.json'), SCHEMA);
 });
-teardown(() => { if (dir) fs.rmSync(dir, { recursive: true, force: true }); });
+teardown(() => { if (dir) {fs.rmSync(dir, { recursive: true, force: true });} });
 
 function tomlDoc(body: string, version = 1) {
   const text = `"$schema" = "./schema.json"\n${body}`;

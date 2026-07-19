@@ -53,7 +53,7 @@ suite('parseRef() / refKind()', () => {
   });
 });
 
-suite('[F13-FR-03] resolvePointer()', () => {
+suite('[F13-FR-03][F13-NFR-02] resolvePointer()', () => {
   const root = {
     $defs: { address: { type: 'object', title: 'Address' } },
     items: [{ id: 1 }, { id: 2 }],

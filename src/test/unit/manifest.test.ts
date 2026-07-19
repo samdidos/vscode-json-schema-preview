@@ -3,7 +3,7 @@ import * as assert from 'assert';
 // The extension's behaviour for these requirements is declared in
 // package.json#contributes / #activationEvents / #capabilities — VS Code reads
 // the manifest, so asserting the manifest IS the verification (no mock needed).
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const pkg = require('../../../package.json');
 
 const activationEvents: string[] = pkg.activationEvents ?? [];
@@ -35,6 +35,14 @@ suite('[F11-FR-01] TOML activation', () => {
 suite('[F11-FR-05] TOML dependency', () => {
   test('smol-toml is a production dependency', () => {
     assert.ok(pkg.dependencies?.['smol-toml'], 'smol-toml must be in dependencies');
+  });
+});
+
+suite('[F18-NFR-03] quicktype-core version pin', () => {
+  test('quicktype-core is pinned to an exact version (no ^/~ range)', () => {
+    const spec = pkg.dependencies?.['quicktype-core'];
+    assert.ok(spec, 'quicktype-core must be in dependencies');
+    assert.match(spec, /^\d+\.\d+\.\d+$/, `"${spec}" must be an exact version — codegen determinism (F18-FR-09) depends on it`);
   });
 });
 

@@ -139,7 +139,7 @@ function applyMockEdit(text: string, edit: { edits: { range: any; newText: strin
   function offsetOf(line: number, character: number): number {
     const lines = text.split('\n');
     let offset = 0;
-    for (let i = 0; i < line; i++) offset += lines[i].length + 1;
+    for (let i = 0; i < line; i++) {offset += lines[i].length + 1;}
     return offset + character;
   }
   const ops = edit.edits
@@ -150,7 +150,7 @@ function applyMockEdit(text: string, edit: { edits: { range: any; newText: strin
     }))
     .sort((a, b) => b.start - a.start);
   let result = text;
-  for (const op of ops) result = result.slice(0, op.start) + op.newText + result.slice(op.end);
+  for (const op of ops) {result = result.slice(0, op.start) + op.newText + result.slice(op.end);}
   return result;
 }
 
@@ -681,14 +681,14 @@ suite('SchemaBindingManager — local schema path resolution by scope', () => {
       // Mirrors real VS Code: resolve whichever folder actually contains the path.
       vscode.workspace.getWorkspaceFolder.callsFake((u: any) => {
         const p = typeof u === 'string' ? u : u.fsPath;
-        if (p.startsWith(tmpA)) return { uri: { fsPath: tmpA }, name: 'projA' };
-        if (p.startsWith(tmpB)) return { uri: { fsPath: tmpB }, name: 'projB' };
+        if (p.startsWith(tmpA)) {return { uri: { fsPath: tmpA }, name: 'projA' };}
+        if (p.startsWith(tmpB)) {return { uri: { fsPath: tmpB }, name: 'projB' };}
         return undefined;
       });
       vscode.workspace.asRelativePath.callsFake((u: any, includeFolder?: boolean) => {
         const p = typeof u === 'string' ? u : u.fsPath;
-        if (p.startsWith(tmpA)) return includeFolder ? `projA/${path.relative(tmpA, p)}` : path.relative(tmpA, p);
-        if (p.startsWith(tmpB)) return includeFolder ? `projB/${path.relative(tmpB, p)}` : path.relative(tmpB, p);
+        if (p.startsWith(tmpA)) {return includeFolder ? `projA/${path.relative(tmpA, p)}` : path.relative(tmpA, p);}
+        if (p.startsWith(tmpB)) {return includeFolder ? `projB/${path.relative(tmpB, p)}` : path.relative(tmpB, p);}
         return p;
       });
       vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
@@ -725,14 +725,14 @@ suite('SchemaBindingManager — local schema path resolution by scope', () => {
       ] as any;
       vscode.workspace.getWorkspaceFolder.callsFake((u: any) => {
         const p = typeof u === 'string' ? u : u.fsPath;
-        if (p.startsWith(tmpA)) return { uri: { fsPath: tmpA }, name: 'projA' };
-        if (p.startsWith(tmpB)) return { uri: { fsPath: tmpB }, name: 'projB' };
+        if (p.startsWith(tmpA)) {return { uri: { fsPath: tmpA }, name: 'projA' };}
+        if (p.startsWith(tmpB)) {return { uri: { fsPath: tmpB }, name: 'projB' };}
         return undefined;
       });
       vscode.workspace.asRelativePath.callsFake((u: any) => {
         const p = typeof u === 'string' ? u : u.fsPath;
-        if (p.startsWith(tmpA)) return path.relative(tmpA, p);
-        if (p.startsWith(tmpB)) return path.relative(tmpB, p);
+        if (p.startsWith(tmpA)) {return path.relative(tmpA, p);}
+        if (p.startsWith(tmpB)) {return path.relative(tmpB, p);}
         return p;
       });
       vscode.workspace.findFiles.resolves([{ fsPath: schema }]);
@@ -941,14 +941,14 @@ suite('SchemaBindingManager — inline binding (F10)', () => {
       ] as any;
       vscode.workspace.getWorkspaceFolder.callsFake((u: any) => {
         const p = typeof u === 'string' ? u : u.fsPath;
-        if (p.startsWith(tmpA)) return { uri: { fsPath: tmpA }, name: 'projA' };
-        if (p.startsWith(tmpB)) return { uri: { fsPath: tmpB }, name: 'projB' };
+        if (p.startsWith(tmpA)) {return { uri: { fsPath: tmpA }, name: 'projA' };}
+        if (p.startsWith(tmpB)) {return { uri: { fsPath: tmpB }, name: 'projB' };}
         return undefined;
       });
       vscode.workspace.asRelativePath.callsFake((u: any) => {
         const p = typeof u === 'string' ? u : u.fsPath;
-        if (p.startsWith(tmpA)) return path.relative(tmpA, p);
-        if (p.startsWith(tmpB)) return path.relative(tmpB, p);
+        if (p.startsWith(tmpA)) {return path.relative(tmpA, p);}
+        if (p.startsWith(tmpB)) {return path.relative(tmpB, p);}
         return p;
       });
       vscode.workspace.findFiles.resolves([{ fsPath: schema }]);

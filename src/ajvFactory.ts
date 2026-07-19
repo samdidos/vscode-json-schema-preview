@@ -6,7 +6,7 @@
 // warning. `draftOf` is a pure function of the `$schema` string; `createAjv`
 // instantiates the matching dialect.
 
-/* eslint-disable @typescript-eslint/no-require-imports */
+ 
 
 export type SchemaDraft = '2020-12' | '2019-09' | 'draft-07';
 

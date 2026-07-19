@@ -49,7 +49,7 @@ function scriptedAuth(responses: any[]) {
 
 suite('[F08-FR-01][F08-FR-02] SchemaCache.download()', () => {
   let ctx: ReturnType<typeof makeContext>;
-  teardown(() => { if (ctx) fs.rmSync(ctx._dir, { recursive: true, force: true }); });
+  teardown(() => { if (ctx) {fs.rmSync(ctx._dir, { recursive: true, force: true });} });
 
   test('writes the fetched content to a stable local path and returns it', async () => {
     ctx = makeContext();
@@ -98,7 +98,7 @@ suite('[F08-FR-01][F08-FR-02] SchemaCache.download()', () => {
 
 suite('[F08-FR-03] SchemaCache.isCached() / getOriginalUrl()', () => {
   let ctx: ReturnType<typeof makeContext>;
-  teardown(() => { if (ctx) fs.rmSync(ctx._dir, { recursive: true, force: true }); });
+  teardown(() => { if (ctx) {fs.rmSync(ctx._dir, { recursive: true, force: true });} });
 
   test('isCached() is false before download and true after', async () => {
     ctx = makeContext();
@@ -151,7 +151,7 @@ suite('[F08-FR-03] SchemaCache.isCached() / getOriginalUrl()', () => {
 
 suite('[F08-FR-14][F08-FR-15][F08-FR-16][F08-FR-17] SchemaCache.revalidate()', () => {
   let ctx: ReturnType<typeof makeContext>;
-  teardown(() => { if (ctx) fs.rmSync(ctx._dir, { recursive: true, force: true }); });
+  teardown(() => { if (ctx) {fs.rmSync(ctx._dir, { recursive: true, force: true });} });
 
   test('[F08-FR-14] returns "no-entry" when nothing is cached for the URL', async () => {
     ctx = makeContext();
@@ -263,7 +263,7 @@ suite('[F08-FR-14][F08-FR-15][F08-FR-16][F08-FR-17] SchemaCache.revalidate()', (
 
 suite('[S04-SR-01] SchemaCache.readCached()', () => {
   let ctx: ReturnType<typeof makeContext>;
-  teardown(() => { if (ctx) fs.rmSync(ctx._dir, { recursive: true, force: true }); });
+  teardown(() => { if (ctx) {fs.rmSync(ctx._dir, { recursive: true, force: true });} });
 
   test('returns the cached content for a downloaded URL', async () => {
     ctx = makeContext();

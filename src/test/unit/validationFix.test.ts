@@ -16,7 +16,7 @@ function only(fixes: ValidationFix[]): ValidationFix {
 
 // ── required → add-property ──────────────────────────────────────────────────
 
-suite('[F21-FR-02][F21-NFR-02] buildFixes() — required properties', () => {
+suite('[F21-FR-02][F21-NFR-01][F21-NFR-02] buildFixes() — required properties', () => {
   const schema = {
     type: 'object',
     required: ['name'],

@@ -83,13 +83,13 @@ export class SchemaBindingManager {
 
   async cleanupTemporaryBindings() {
     const temps = this.ctx.workspaceState.get<TempBindingRecord[]>(TEMP_KEY, []);
-    if (!temps.length) return;
+    if (!temps.length) {return;}
 
     const now = Date.now();
     const deferred: TempBindingRecord[] = [];
 
     for (const record of temps) {
-      if (record.addedAt !== undefined && now - record.addedAt > TEMP_EXPIRY_MS) continue;
+      if (record.addedAt !== undefined && now - record.addedAt > TEMP_EXPIRY_MS) {continue;}
 
       const folder = vscode.workspace.workspaceFolders?.find(
         f => f.uri.toString() === record.folderUri
@@ -259,7 +259,7 @@ export class SchemaBindingManager {
       placeHolder: `Bind schema to ${vscode.workspace.asRelativePath(doc.uri)}`,
       matchOnDescription: true,
     });
-    if (!pick) return;
+    if (!pick) {return;}
 
     if (pick.isRemove) {
       // Only offer to remove the inline form when there is actually one to remove
@@ -269,7 +269,7 @@ export class SchemaBindingManager {
         allowInline: inlineSupported && currentInline !== undefined,
         tomlInlineOnly: docIsToml,
       });
-      if (target === undefined) return;
+      if (target === undefined) {return;}
       if (target === INLINE_SCOPE) {
         await this.removeInlineBinding(doc);
         this.refresh(doc);
@@ -294,7 +294,7 @@ export class SchemaBindingManager {
         prompt: 'Enter the URL or file path of the JSON Schema',
         validateInput: validateSchemaRefInput,
       });
-      if (!url) return;
+      if (!url) {return;}
       schemaRef = url.trim();
 
       // GitHub raw URLs from the "Raw" button embed a short-lived ?token= query
@@ -318,7 +318,7 @@ export class SchemaBindingManager {
       // F12: catalog only supplies the URL; scope handling below is unchanged.
       const fileName = vscode.workspace.asRelativePath(doc.uri, false);
       const url = await this.catalog!.browse(fileName);
-      if (!url) return;
+      if (!url) {return;}
       schemaRef = url.trim();
     } else if (pick.isBrowse) {
       const defaultUri = folder?.uri ?? vscode.Uri.file(path.dirname(doc.uri.fsPath));
@@ -330,7 +330,7 @@ export class SchemaBindingManager {
         openLabel: 'Bind Schema',
         defaultUri,
       });
-      if (!uris?.length) return;
+      if (!uris?.length) {return;}
       localSchemaUri = uris[0];
     } else {
       localSchemaUri = pick.uri!;
@@ -340,7 +340,7 @@ export class SchemaBindingManager {
       allowInline: inlineSupported,
       tomlInlineOnly: docIsToml,
     });
-    if (target === undefined) return;
+    if (target === undefined) {return;}
 
     if (target === vscode.ConfigurationTarget.Workspace && !folder) {
       vscode.window.showErrorMessage('File must be inside a workspace folder to use workspace settings.');
@@ -414,7 +414,7 @@ export class SchemaBindingManager {
     docFolder: vscode.WorkspaceFolder | undefined
   ): string {
     const schemaFolder = vscode.workspace.getWorkspaceFolder(uri);
-    if (!schemaFolder || schemaFolder.uri.fsPath !== docFolder?.uri.fsPath) return uri.fsPath;
+    if (!schemaFolder || schemaFolder.uri.fsPath !== docFolder?.uri.fsPath) {return uri.fsPath;}
     if (target === vscode.ConfigurationTarget.WorkspaceFolder || target === INLINE_SCOPE) {
       return `./${vscode.workspace.asRelativePath(uri, false)}`;
     }
@@ -451,7 +451,7 @@ export class SchemaBindingManager {
       edits = result.edits;
     }
 
-    if (!(await this.applyJsoncEdits(doc, edits))) return;
+    if (!(await this.applyJsoncEdits(doc, edits))) {return;}
 
     // F10-FR-05: warn when the embedded reference had to fall back to an
     // absolute, machine-specific path (schema lives outside the data file's
@@ -483,7 +483,7 @@ export class SchemaBindingManager {
       edits = computeJsonSchemaRemoveEdits(text, this.formattingOptionsFor(doc));
     }
 
-    if (!edits.length) return; // nothing to remove
+    if (!edits.length) {return;} // nothing to remove
     await this.applyJsoncEdits(doc, edits);
   }
 
@@ -499,7 +499,7 @@ export class SchemaBindingManager {
   /** Applies jsonc-parser-style offset/length edits to `doc` via a vscode.WorkspaceEdit
    *  so the change is undoable and shows as an unsaved edit (F10-NFR-01). */
   private async applyJsoncEdits(doc: vscode.TextDocument, edits: JsoncEdit[]): Promise<boolean> {
-    if (!edits.length) return true;
+    if (!edits.length) {return true;}
     const workspaceEdit = new vscode.WorkspaceEdit();
     for (const e of edits) {
       const start = doc.positionAt(e.offset);
@@ -579,7 +579,7 @@ export class SchemaBindingManager {
       target: vscode.ConfigurationTarget.Global,
     });
 
-    if (items.length === 1) return items[0].target;
+    if (items.length === 1) {return items[0].target;}
 
     const pick = await vscode.window.showQuickPick(items, {
       placeHolder: forRemove
@@ -607,7 +607,7 @@ export class SchemaBindingManager {
       try {
         const raw = await fs.promises.readFile(uri.fsPath, 'utf-8');
         const isSchema = /"?\$schema"?\s*:/.test(raw) || /^\$schema\s*:/m.test(raw);
-        if (!isSchema) return undefined;
+        if (!isSchema) {return undefined;}
         return {
           label: `$(file-code) ${path.basename(uri.fsPath)}`,
           description: vscode.workspace.asRelativePath(uri),
@@ -698,8 +698,8 @@ export class SchemaBindingManager {
       const schemas = { ...pickInspectValue(inspect, target) ?? {} };
       for (const key of Object.keys(schemas)) {
         const dropped = dropPattern(schemas[key], relFile);
-        if (!dropped) delete schemas[key];
-        else schemas[key] = dropped;
+        if (!dropped) {delete schemas[key];}
+        else {schemas[key] = dropped;}
       }
       schemas[schemaRef] = relFile;
       await cfg.update('schemas', schemas, target);
@@ -726,8 +726,8 @@ export class SchemaBindingManager {
       const schemas = { ...pickInspectValue(inspect, target) ?? {} };
       for (const key of Object.keys(schemas)) {
         const dropped = dropPattern(schemas[key], relFile);
-        if (!dropped) delete schemas[key];
-        else schemas[key] = dropped;
+        if (!dropped) {delete schemas[key];}
+        else {schemas[key] = dropped;}
       }
       await cfg.update('schemas', Object.keys(schemas).length ? schemas : undefined, target);
     } else {
@@ -813,7 +813,7 @@ export function findBoundSchemaPath(doc: vscode.TextDocument): string | undefine
   ];
   for (const entry of jsonSchemas) {
     const patterns: string[] = entry.fileMatch ?? [];
-    if (candidates.some(rel => matchesFile(patterns, rel))) return entry.url as string;
+    if (candidates.some(rel => matchesFile(patterns, rel))) {return entry.url as string;}
   }
 
   const yamlInspect = vscode.workspace.getConfiguration('yaml', doc.uri)
@@ -825,7 +825,7 @@ export function findBoundSchemaPath(doc: vscode.TextDocument): string | undefine
   };
   for (const [schemaPath, patterns] of Object.entries(yamlSchemas)) {
     const arr = Array.isArray(patterns) ? patterns : [patterns];
-    if (arr.some(p => candidates.some(rel => normalise(p) === normalise(rel)))) return schemaPath;
+    if (arr.some(p => candidates.some(rel => normalise(p) === normalise(rel)))) {return schemaPath;}
   }
 
   return undefined;
@@ -885,7 +885,7 @@ export function dropPattern(
 ): string | string[] | undefined {
   const arr = Array.isArray(patterns) ? patterns : [patterns];
   const kept = arr.filter(p => normalise(p) !== normalise(relFile));
-  if (!kept.length) return undefined;
+  if (!kept.length) {return undefined;}
   return kept.length === 1 ? kept[0] : kept;
 }
 
@@ -913,8 +913,8 @@ export function pickInspectValue<T>(
   inspect: { workspaceValue?: T; globalValue?: T; workspaceFolderValue?: T } | undefined,
   target: vscode.ConfigurationTarget
 ): T | undefined {
-  if (target === vscode.ConfigurationTarget.WorkspaceFolder) return inspect?.workspaceFolderValue;
-  if (target === vscode.ConfigurationTarget.Workspace)       return inspect?.workspaceValue;
+  if (target === vscode.ConfigurationTarget.WorkspaceFolder) {return inspect?.workspaceFolderValue;}
+  if (target === vscode.ConfigurationTarget.Workspace)       {return inspect?.workspaceValue;}
   return inspect?.globalValue;
 }
 
@@ -994,7 +994,7 @@ export function computeJsonSchemaRemoveEdits(
   formattingOptions: FormattingOptions
 ): JsoncEdit[] {
   const tree = parseTree(text);
-  if (!tree || tree.type !== 'object') return [];
+  if (!tree || tree.type !== 'object') {return [];}
   return modify(text, ['$schema'], undefined, { formattingOptions });
 }
 
@@ -1034,9 +1034,9 @@ export function computeYamlSchemaUpsertEdit(
  */
 export function computeYamlSchemaRemoveEdit(text: string): JsoncEdit | undefined {
   const directiveLine = /^#\s*yaml-language-server:\s*\$schema=\S+\r?\n?/im.exec(text);
-  if (directiveLine) return { offset: directiveLine.index, length: directiveLine[0].length, content: '' };
+  if (directiveLine) {return { offset: directiveLine.index, length: directiveLine[0].length, content: '' };}
   const keyLine = /^\$schema:\s*\S+\r?\n?/m.exec(text);
-  if (keyLine) return { offset: keyLine.index, length: keyLine[0].length, content: '' };
+  if (keyLine) {return { offset: keyLine.index, length: keyLine[0].length, content: '' };}
   return undefined;
 }
 
@@ -1087,6 +1087,6 @@ export function computeTomlSchemaRemoveEdit(text: string): JsoncEdit | undefined
   // Restricted to the root table, mirroring computeTomlSchemaUpsertEdit (F11-FR-15/17).
   const rootText = tomlRootTableText(text);
   const line = /^"\$schema"\s*=\s*"[^"]*"[^\n]*\r?\n?/m.exec(rootText);
-  if (line) return { offset: line.index, length: line[0].length, content: '' };
+  if (line) {return { offset: line.index, length: line[0].length, content: '' };}
   return undefined;
 }

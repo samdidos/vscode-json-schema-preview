@@ -78,7 +78,7 @@ suite('[F13-FR-04] provideDefinition() — same document', () => {
 
 suite('[F13-FR-05] provideDefinition() — relative file', () => {
   let dir: string;
-  teardown(() => { if (dir) fs.rmSync(dir, { recursive: true, force: true }); });
+  teardown(() => { if (dir) {fs.rmSync(dir, { recursive: true, force: true });} });
 
   test('resolves a relative $ref into a sibling file', () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-ref-'));

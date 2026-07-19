@@ -30,6 +30,10 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [F20-workspace-validation.md](F20-workspace-validation.md) | Workspace-wide validation report |
 | [F21-validation-quickfix.md](F21-validation-quickfix.md) | Quick fixes for data-validation errors |
 | [F22-draft-migration.md](F22-draft-migration.md) | Schema draft migration (07 ↔ 2019-09 ↔ 2020-12) |
+| [F23-schema-coverage.md](F23-schema-coverage.md) | Schema coverage — unused-in-data report |
+| [F24-ref-graph.md](F24-ref-graph.md) | `$ref` dependency graph view |
+| [F25-enum-nearest.md](F25-enum-nearest.md) | Enum quick-fixes ranked by nearest match |
+| [F26-compat-gate.md](F26-compat-gate.md) | Backward-compatibility verdict & CI gate for schema diff |
 | [S01-security.md](S01-security.md) | Webview security (CSP, nonces, sanitisation) |
 | [S02-workspace-trust.md](S02-workspace-trust.md) | Workspace Trust integration |
 | [S03-performance.md](S03-performance.md) | Performance and resource management |
@@ -45,7 +49,11 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 ## Scope
 
 The extension targets VS Code **≥ 1.96.0** on desktop (not virtual workspaces).
-It requires **Python 3** on the user's PATH with `json-schema-for-humans` installed.
+The richest preview output uses **Python 3** on the user's PATH with
+`json-schema-for-humans` installed, but Python is **optional**: without it (or
+with `jsonschema.preview.renderer: "builtin"`) the dependency-free built-in
+renderer is used instead (F01-FR-21/22), and every non-preview feature —
+validation, binding, inference, linting, diff, codegen — is Python-free.
 
 `package.json`'s `engines.vscode` and `@types/vscode` are pinned to this exact
 floor for backward compatibility — don't bump either casually (e.g. as a side

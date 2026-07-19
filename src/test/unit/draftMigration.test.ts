@@ -14,7 +14,7 @@ const META_2020 = 'https://json-schema.org/draft/2020-12/schema';
 const META_2019 = 'https://json-schema.org/draft/2019-09/schema';
 const META_07 = 'http://json-schema.org/draft-07/schema#';
 
-suite('[F22-FR-02][F22-NFR-02] migrateSchema() — $schema meta-schema', () => {
+suite('[F22-FR-01][F22-FR-02][F22-NFR-01][F22-NFR-02] migrateSchema() — $schema meta-schema', () => {
   test('sets the target meta-schema at the root', () => {
     assert.strictEqual(to({}, '2020-12').$schema, META_2020);
     assert.strictEqual(to({}, '2019-09').$schema, META_2019);
