@@ -6,7 +6,7 @@
 // build-time loader (S12-NFR-01); the dimension is picked via the dynamic
 // route's `dimension` param.
 import { computed } from 'vue'
-import { useData } from 'vitepress'
+import { useData, withBase } from 'vitepress'
 import { data } from '../maturity.data'
 import { REPO_BLOB_URL } from './repo'
 
@@ -55,7 +55,8 @@ const dim = computed(() => data.dimensions.find((d) => d.slug === params.value?.
       <a :href="`${REPO_BLOB_URL}/scripts/maturity-score.mjs`" target="_blank" rel="noreferrer"
         ><code>scripts/maturity-score.mjs</code></a
       >
-      — the single source of truth this page is generated from.
+      — the single source of truth this page is generated from. New to the
+      scorecard? See <a :href="withBase('/maturity/how-it-works')">how the maturity score works</a>.
     </p>
   </div>
 </template>

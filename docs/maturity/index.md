@@ -13,8 +13,12 @@ from observable facts in the repository — coverage numbers, workflow config,
 the traceability matrix, file presence, lint output — never a hand-set number.
 This page renders the committed
 [`maturity-score.json`](https://github.com/samdidos/vscode-json-schema-preview/blob/main/maturity-score.json)
-at build time, so it always matches the repository. Methodology, history, and
-known limitations live in
+at build time, so it always matches the repository.
+
+New here? **[How the maturity score works](./how-it-works)** explains what this
+number is for, how it is computed, and — importantly — why it is a self-relative
+signal rather than a reliable absolute. Methodology, history, and known
+limitations also live in
 [`MATURITY.md`](https://github.com/samdidos/vscode-json-schema-preview/blob/main/MATURITY.md).
 
 <p class="maturity-overall">

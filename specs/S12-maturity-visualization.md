@@ -47,11 +47,24 @@ script alongside the checks they explain** and emitted into
 ### Maturity Section
 
 - **S12-SR-03** The docs site MUST expose a **Maturity** section reachable
-  from the top navigation, containing an overview page and one page per
-  scoring dimension, with a sidebar listing every dimension page. Dimension
-  pages MUST be generated from the dimensions present in
+  from the top navigation, containing an overview page, a methodology page,
+  and one page per scoring dimension, with a sidebar listing every dimension
+  page. Dimension pages MUST be generated from the dimensions present in
   `maturity-score.json` (a rubric change appears on the next build with no
   config edit).
+- **S12-SR-13** The section MUST include a **methodology page** explaining, in
+  prose: the purpose of the score (a modest, best-effort attempt to measure
+  engineering maturity as objectively as possible from observable facts rather
+  than judgement); how a score is computed (weighted checks per dimension,
+  dimension = 5 × earned/possible, overall = mean of dimensions); that the
+  rubric leans on existing external standards where they fit (e.g. OpenSSF
+  Scorecard, SLSA, SHA-pinned actions, coverage) and is an explicit checklist
+  only where none exists; and — explicitly — that the **rubric itself evolves**,
+  so the number is not a reliable absolute or a cross-project certification but
+  a self-relative signal that trends toward the most accurate measure the
+  project can currently express. The page MUST link to the live scorer
+  (`scripts/maturity-score.mjs`) and `MATURITY.md` as the authoritative
+  sources, and the overview and dimension pages MUST link to it.
 - **S12-SR-04** The overview page MUST show the overall score, the snapshot
   date, and an **interactive diagram** of all dimension scores on the 0–5
   scale: hovering or focusing a dimension MUST reveal its exact score, and

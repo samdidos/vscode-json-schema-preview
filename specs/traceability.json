@@ -3386,6 +3386,16 @@
         "docs/.vitepress/theme/MaturityEvolution.vue"
       ],
       "note": "collapsible per-snapshot table below the chart"
+    },
+    "S12-SR-13": {
+      "status": "implemented",
+      "impl": [
+        "docs/maturity/how-it-works.md",
+        "docs/.vitepress/config.ts",
+        "docs/maturity/index.md",
+        "docs/.vitepress/theme/MaturityChecks.vue"
+      ],
+      "note": "prose methodology page: purpose, computation, standards leaned on, and the self-relative/evolving caveat; linked from nav, overview, and dimension pages"
     }
   }
 }

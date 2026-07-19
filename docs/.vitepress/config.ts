@@ -52,7 +52,14 @@ export default defineConfig({
           { text: 'Requirement matrix', link: '/specs/matrix' },
         ],
       },
-      { text: 'Maturity', link: '/maturity/', activeMatch: '/maturity/' },
+      {
+        text: 'Maturity',
+        activeMatch: '/maturity/',
+        items: [
+          { text: 'Scorecard', link: '/maturity/' },
+          { text: 'How it works', link: '/maturity/how-it-works' },
+        ],
+      },
       { text: 'Blog', link: '/blog/', activeMatch: '/blog/' },
     ],
 
@@ -93,7 +100,10 @@ export default defineConfig({
       '/maturity/': [
         {
           text: 'Maturity',
-          items: [{ text: 'Scorecard', link: '/maturity/' }],
+          items: [
+            { text: 'Scorecard', link: '/maturity/' },
+            { text: 'How it works', link: '/maturity/how-it-works' },
+          ],
         },
         { text: 'Dimensions', items: maturitySidebarItems() },
       ],
