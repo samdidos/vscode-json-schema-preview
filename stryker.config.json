@@ -1,11 +1,18 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "$comment": "Mutation testing (constitution Article V). The mocha runner + perTest coverage re-runs only the tests covering each mutant, orders of magnitude faster than the old command runner which ran `npm test` (tsc + full suite) per mutant. buildCommand compiles the instrumented sandbox once; disableTypeChecks is scoped to src/**/*.ts so Stryker's `// @ts-nocheck` header is NOT prepended to non-source files — it used to hit docs/.vitepress/traceability.types.ts and break the S11-SR-04 banner assertion in the initial run.",
   "packageManager": "npm",
-  "testRunner": "command",
-  "commandRunner": { "command": "npm test" },
+  "testRunner": "mocha",
+  "buildCommand": "tsc -p tsconfig.test.json",
+  "mochaOptions": {
+    "ui": "tdd",
+    "require": ["./out/test/mocks/setup.js"],
+    "spec": ["out/test/unit/**/*.test.js"]
+  },
   "checkers": ["typescript"],
   "tsconfigFile": "tsconfig.json",
-  "coverageAnalysis": "off",
+  "disableTypeChecks": "src/**/*.ts",
+  "coverageAnalysis": "perTest",
   "reporters": ["html", "clear-text", "progress"],
   "htmlReporter": { "fileName": "reports/mutation/index.html" },
   "incremental": true,

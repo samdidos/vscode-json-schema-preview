@@ -17,7 +17,6 @@
   ],
   "ignoreDependencies": [
     "@json-editor/json-editor",
-    "@stryker-mutator/command-runner",
     "@types/command-line-args",
     "@types/readable-stream",
     "@types/urijs"
