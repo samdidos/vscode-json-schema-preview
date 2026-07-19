@@ -12,8 +12,8 @@ import { parseSchemaText, parseJsonPointer, locatePointerTarget } from './schema
 import { findBoundSchemaPath, extractInlineSchemaUrl } from './SchemaBindingManager';
 import { SchemaAuthManager } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
-import { isSupported, isYaml, isToml, languageForSchemaSource, parseToml, parseJsonl, stripJsoncComments } from './languages';
-import { parse as parseYaml } from 'yaml';
+import { isSupported, languageForSchemaSource } from './languages';
+import { parseDataText } from './workspaceValidation';
 
 /** Register the coverage command and its dedicated diagnostic collection. */
 export function registerSchemaCoverage(context: vscode.ExtensionContext, schemaCache: SchemaCache): void {
@@ -117,15 +117,12 @@ async function resolveSchema(
   return { text, languageId: languageForSchemaSource(absPath), uri: vscode.Uri.file(absPath) };
 }
 
-/** Parse the data document into instances — one per JSONL record, else one. */
+/** Parse the data document into instances via the shared F03/F20 dispatch —
+ *  one per JSONL record, else one; empty on unparsable input (nothing to
+ *  measure, rather than an error). */
 function parseInstances(doc: vscode.TextDocument): unknown[] {
-  const text = doc.getText();
   try {
-    if (isYaml(doc.languageId)) { return [parseYaml(text)]; }
-    if (isToml(doc.languageId)) { return [parseToml(text)]; }
-    if (doc.languageId === 'jsonl') { return parseJsonl(text); }
-    if (doc.languageId === 'jsonc') { return [JSON.parse(stripJsoncComments(text))]; }
-    return [JSON.parse(text)];
+    return parseDataText(doc.getText(), doc.languageId);
   } catch {
     return [];
   }

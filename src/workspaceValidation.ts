@@ -6,6 +6,7 @@
 import * as YAML from 'yaml';
 import { isYaml, isToml, stripJsoncComments, parseJsonl, parseToml } from './languages';
 import { createAjv } from './ajvFactory';
+import { parseJsonPointer, locatePointerTarget, type SourceSpan } from './schemaPointer';
 
 /** Files above this size are skipped with a note (F20-FR-03). */
 export const MAX_FILE_BYTES = 1024 * 1024;
@@ -77,7 +78,7 @@ export function parseDataText(text: string, languageId: string): unknown[] {
  * (draft-aware via `createAjv`, F03-FR-15). Returns one issue per Ajv error,
  * located best-effort in `text`. Throws when the schema does not compile.
  */
-export function validateInstances(items: unknown[], schema: unknown, text: string): ValidationIssue[] {
+export function validateInstances(items: unknown[], schema: unknown, text: string, languageId = 'json'): ValidationIssue[] {
   const ajv = createAjv(schema, { allErrors: true, strict: false });
   const validate = ajv.compile(schema as object);
   const issues: ValidationIssue[] = [];
@@ -87,24 +88,40 @@ export function validateInstances(items: unknown[], schema: unknown, text: strin
       const label = err.instancePath || '(root)';
       issues.push({
         message: `${label}: ${err.message ?? 'validation error'}`,
-        line: locateInstancePath(text, err.instancePath ?? ''),
+        line: locateInstancePath(text, err.instancePath ?? '', languageId),
       });
     }
   }
   return issues;
 }
 
-/** Best-effort 0-based line of an Ajv instance path in the source text —
- *  the deepest non-numeric segment found as a quoted key (mirrors F03's
- *  locator, text-based so unopened files can be mapped). */
-export function locateInstancePath(text: string, instancePath: string): number | undefined {
-  const parts = instancePath.split('/').filter(Boolean);
-  for (let i = parts.length - 1; i >= 0; i--) {
-    if (/^\d+$/.test(parts[i])) { continue; }
-    const line = locateKeyLine(text, parts[i]);
-    if (line !== undefined) { return line; }
+/**
+ * Best-effort source span of an Ajv instance path — the single locator behind
+ * both the editor diagnostics (F03) and the workspace report (F20). JSON,
+ * JSONC, and YAML resolve the exact path through the document AST, so a key
+ * name that appears more than once lands on the right occurrence; TOML and
+ * JSONL (which have no AST locator) fall back to a text scan for the deepest
+ * locatable key. `undefined` for a root path or when nothing matches.
+ */
+export function locateInstanceSpan(text: string, languageId: string, instancePath: string): SourceSpan | undefined {
+  const segments = parseJsonPointer(instancePath);
+  if (!segments.length) { return undefined; }
+  if (languageId === 'json' || languageId === 'jsonc' || isYaml(languageId)) {
+    const span = locatePointerTarget(text, languageId, segments);
+    if (span) { return span; }
+  }
+  for (let i = segments.length - 1; i >= 0; i--) {
+    if (/^\d+$/.test(segments[i])) { continue; }
+    const at = locateKeyIndex(text, segments[i]);
+    if (at !== undefined) { return { start: at, end: at + segments[i].length }; }
   }
   return undefined;
+}
+
+/** 0-based line form of {@link locateInstanceSpan}, for the text-only report. */
+export function locateInstancePath(text: string, instancePath: string, languageId = 'json'): number | undefined {
+  const span = locateInstanceSpan(text, languageId, instancePath);
+  return span ? lineAt(text, span.start) : undefined;
 }
 
 /** 0-based line containing text offset `index`. */
@@ -121,20 +138,20 @@ export function lineOfMatch(text: string, pattern: RegExp): number | undefined {
 }
 
 /**
- * Best-effort 0-based line of a key token: `key` optionally double-quoted,
+ * Best-effort text offset of a key token: `key` optionally double-quoted,
  * followed by optional spaces/tabs and `:` (JSON/YAML) or `=` (TOML). A
  * literal substring scan — `key` comes from the data file being validated,
  * so it is never used to build a RegExp (a hand-escaped string is not a
  * sanitizer a static analyzer can recognize as safe).
  */
-function locateKeyLine(text: string, key: string): number | undefined {
+function locateKeyIndex(text: string, key: string): number | undefined {
   if (!key) { return undefined; }
   for (let i = 0; i + key.length <= text.length; i++) {
     if (!text.startsWith(key, i)) { continue; }
     let j = i + key.length;
     if (text[j] === '"') { j++; }
     while (text[j] === ' ' || text[j] === '\t') { j++; }
-    if (text[j] === ':' || text[j] === '=') { return lineAt(text, i); }
+    if (text[j] === ':' || text[j] === '=') { return i; }
   }
   return undefined;
 }

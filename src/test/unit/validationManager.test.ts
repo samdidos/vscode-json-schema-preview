@@ -309,7 +309,7 @@ suite('[F03-FR-06][F03-FR-07] validateCurrentFile() — validation outcomes', ()
     assert.strictEqual(diags[0].range.startLine, 1);
   });
 
-  test('falls back to a (0,0)-(0,0) range for a purely numeric (array-index) instancePath', async () => {
+  test('locates a purely numeric (array-index) instancePath at the offending element', async () => {
     const doc = makeDoc('json', '{"$schema":"https://example.com/s.json"}\n[1,2,"x"]'.split('\n')[1], '/ws/data.json');
     activate(doc);
     // Bind externally since the data root is an array and has no room for $schema.
@@ -318,10 +318,11 @@ suite('[F03-FR-06][F03-FR-07] validateCurrentFile() — validation outcomes', ()
     const schema = { type: 'array', items: { type: 'number' } };
     await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any)();
     const diags = validationDiagnostics.set.firstCall.args[1];
+    // The AST locator resolves /2 to the `"x"` element of `[1,2,"x"]`.
     assert.strictEqual(diags[0].range.startLine, 0);
-    assert.strictEqual(diags[0].range.startChar, 0);
+    assert.strictEqual(diags[0].range.startChar, 5);
     assert.strictEqual(diags[0].range.endLine, 0);
-    assert.strictEqual(diags[0].range.endChar, 0);
+    assert.strictEqual(diags[0].range.endChar, 8);
   });
 
   test('falls back to a (0,0)-(0,0) range for a root-level error', async () => {
