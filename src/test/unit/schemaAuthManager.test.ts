@@ -86,7 +86,12 @@ suite('[F07-FR-08] SchemaAuthManager.getAuthHeaders()', () => {
     assert.deepStrictEqual(headers, { Authorization: 'Bearer abc123' }, 'the request must still proceed with auth');
     await auth.getAuthHeaders('http://example.com/other.json');
     assert.strictEqual(vscode.window.showWarningMessage.callCount, 1, 'one warning per host per session');
-    assert.match(vscode.window.showWarningMessage.firstCall.args[0], /example\.com.*http/);
+    // Anchored so this doesn't read as a host-substring URL check (CodeQL
+    // js/missing-regexp-anchor): assert the exact message shape instead.
+    assert.match(
+      vscode.window.showWarningMessage.firstCall.args[0],
+      /^Credentials for example\.com are being sent over plain http/,
+    );
   });
 
   test('[F07-FR-14] no insecure-transport warning for https or credential-less http fetches', async () => {
