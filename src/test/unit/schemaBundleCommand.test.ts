@@ -29,7 +29,7 @@ setup(() => {
   vscode.resetAll();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-bundle-'));
 });
-teardown(() => { if (dir) fs.rmSync(dir, { recursive: true, force: true }); });
+teardown(() => { if (dir) {fs.rmSync(dir, { recursive: true, force: true });} });
 
 suite('[F14-FR-01] bundleSchemaCommand — gating', () => {
   test('non-schema file shows an info message', async () => {

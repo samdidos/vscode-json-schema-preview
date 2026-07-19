@@ -34,7 +34,7 @@ setup(() => {
   vscode.resetAll();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-gentypes-'));
 });
-teardown(() => { if (dir) fs.rmSync(dir, { recursive: true, force: true }); });
+teardown(() => { if (dir) {fs.rmSync(dir, { recursive: true, force: true });} });
 
 suite('[F18-FR-01] generateTypesCommand — gating', () => {
   test('non-schema file shows an info message', async () => {

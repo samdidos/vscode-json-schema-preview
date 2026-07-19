@@ -22,7 +22,7 @@ suite('[F25-FR-02] levenshtein()', () => {
   });
 });
 
-suite('[F25-FR-01][F25-FR-03] rankEnumCandidates()', () => {
+suite('[F25-FR-01][F25-FR-03][F25-NFR-01][F25-NFR-02] rankEnumCandidates()', () => {
   test('orders by nearest and marks a near-miss preferred', () => {
     const ranked = rankEnumCandidates('prod', ENUM);
     assert.strictEqual(ranked[0].value, 'production');

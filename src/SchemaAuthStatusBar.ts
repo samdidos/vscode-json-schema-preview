@@ -63,10 +63,10 @@ export class SchemaAuthStatusBar {
  */
 function resolveSchemaUrl(doc: vscode.TextDocument): string | undefined {
   const bound = findBoundSchemaPath(doc);
-  if (bound && SchemaAuthManager.isRemoteUrl(bound)) return bound;
+  if (bound && SchemaAuthManager.isRemoteUrl(bound)) {return bound;}
 
   const inline = extractInlineSchemaUrl(doc);
-  if (inline && SchemaAuthManager.isRemoteUrl(inline)) return inline;
+  if (inline && SchemaAuthManager.isRemoteUrl(inline)) {return inline;}
 
   return undefined;
 }

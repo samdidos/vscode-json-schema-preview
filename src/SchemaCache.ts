@@ -121,7 +121,7 @@ export class SchemaCache {
    */
   readCached(url: string): string | undefined {
     const cachedPath = this.getCachedPath(url);
-    if (!cachedPath) return undefined;
+    if (!cachedPath) {return undefined;}
     try {
       return fs.readFileSync(cachedPath, 'utf-8');
     } catch {

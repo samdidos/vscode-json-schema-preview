@@ -14,11 +14,11 @@ const CONFIG_SCHEMA_URL =
  */
 async function ensureConfigSchemaBinding(): Promise<void> {
   const folder = vscode.workspace.workspaceFolders?.[0];
-  if (!folder) return;
+  if (!folder) {return;}
 
   const cfg = vscode.workspace.getConfiguration('json', folder.uri);
   const schemas = cfg.get<any[]>('schemas') ?? [];
-  if (schemas.some(s => (s.fileMatch ?? []).includes(CONFIG_FILENAME))) return;
+  if (schemas.some(s => (s.fileMatch ?? []).includes(CONFIG_FILENAME))) {return;}
 
   schemas.push({ url: CONFIG_SCHEMA_URL, fileMatch: [CONFIG_FILENAME] });
   await cfg.update('schemas', schemas, vscode.ConfigurationTarget.Workspace);
@@ -29,7 +29,7 @@ function injectSchemaField(filePath: string): void {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     const obj = JSON.parse(content) as Record<string, unknown>;
-    if (obj.$schema) return;
+    if (obj.$schema) {return;}
     fs.writeFileSync(
       filePath,
       JSON.stringify({ $schema: CONFIG_SCHEMA_URL, ...obj }, null, 2) + '\n',
@@ -42,7 +42,7 @@ function injectSchemaField(filePath: string): void {
 
 function getConfigFilePath(): string {
   const existing = findConfigFile();
-  if (existing) return existing;
+  if (existing) {return existing;}
 
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   if (workspaceRoot) {

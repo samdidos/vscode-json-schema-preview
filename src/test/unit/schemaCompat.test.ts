@@ -16,7 +16,7 @@ const addedOptional = () =>
   diffSchemas({ properties: { a: {} } }, { properties: { a: {}, b: {} } });
 const identical = () => diffSchemas({ type: 'object' }, { type: 'object' });
 
-suite('[F26-FR-01] compatibilityVerdict() — counts & compatibility', () => {
+suite('[F26-FR-01][F26-NFR-01][F26-NFR-02] compatibilityVerdict() — counts & compatibility', () => {
   test('a new required name is breaking → not compatible', () => {
     const v = compatibilityVerdict(addedRequired());
     assert.strictEqual(v.breaking, 1);

@@ -2,7 +2,7 @@
 
 All commands are available in the **Command Palette** (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> / <kbd>⌘⇧P</kbd>).
 
-Commands that act on the current file are also available as **editor toolbar icons** when a JSON or YAML file is active.
+Commands that act on the current file are also available as **editor toolbar icons** when a JSON or YAML file is active (data-file commands such as **Validate This File** also appear for JSONL and TOML files).
 
 ---
 

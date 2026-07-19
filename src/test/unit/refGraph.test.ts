@@ -14,7 +14,7 @@ const nodeIds = (g: { nodes: { id: string }[] }): string[] => g.nodes.map((n) =>
 const edgePairs = (g: { edges: { from: string; to: string }[] }): string[] =>
   g.edges.map((e) => `${e.from}->${e.to}`).sort();
 
-suite('[F24-FR-04] buildRefGraph() — nodes & edges', () => {
+suite('[F24-FR-04][F24-NFR-01] buildRefGraph() — nodes & edges', () => {
   test('creates root plus a node per $defs entry, referenced or not', () => {
     const schema = {
       properties: { u: { $ref: '#/$defs/A' } },

@@ -46,25 +46,25 @@ function asObject(v: unknown): Sub | undefined {
 /** Human-readable type label for a subschema. Never throws. */
 export function describeType(sub: unknown): string {
   const o = asObject(sub);
-  if (!o) return 'any';
-  if (typeof o.$ref === 'string') return `$ref: ${o.$ref}`;
-  if (Array.isArray(o.type)) return o.type.map(String).join(' | ');
+  if (!o) {return 'any';}
+  if (typeof o.$ref === 'string') {return `$ref: ${o.$ref}`;}
+  if (Array.isArray(o.type)) {return o.type.map(String).join(' | ');}
   if (typeof o.type === 'string') {
-    if (o.type === 'array' && asObject(o.items)) return `array<${describeType(o.items)}>`;
+    if (o.type === 'array' && asObject(o.items)) {return `array<${describeType(o.items)}>`;}
     return o.type;
   }
-  if (Array.isArray(o.enum)) return 'enum';
-  if (asObject(o.properties)) return 'object';
+  if (Array.isArray(o.enum)) {return 'enum';}
+  if (asObject(o.properties)) {return 'object';}
   return 'any';
 }
 
 /** Renders the `properties` of a schema as a table, recursing one level into nested objects. */
 function renderProperties(schema: Sub, depth: number): string {
   const props = asObject(schema.properties);
-  if (!props) return '';
+  if (!props) {return '';}
   const required = new Set(Array.isArray(schema.required) ? schema.required.map(String) : []);
   const names = Object.keys(props);
-  if (names.length === 0) return '';
+  if (names.length === 0) {return '';}
 
   const rows = names.map(name => {
     const sub = asObject(props[name]) ?? {};

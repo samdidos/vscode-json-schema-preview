@@ -28,7 +28,7 @@ suite('editDistance()', () => {
   });
 });
 
-suite('[F17-FR-05] require-schema-declaration', () => {
+suite('[F17-FR-05][F17-NFR-02] require-schema-declaration', () => {
   test('flags a root without $schema', () => {
     assert.ok(ids('{"type":"object"}').includes('require-schema-declaration'));
   });

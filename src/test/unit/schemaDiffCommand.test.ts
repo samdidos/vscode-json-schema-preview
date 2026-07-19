@@ -46,7 +46,7 @@ setup(() => {
   vscode.resetAll();
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-diff-'));
 });
-teardown(() => { if (dir) fs.rmSync(dir, { recursive: true, force: true }); });
+teardown(() => { if (dir) {fs.rmSync(dir, { recursive: true, force: true });} });
 
 suite('[F15-FR-01] diffSchema — gating & registration', () => {
   test('registers a content provider and the command', () => {
@@ -65,7 +65,7 @@ suite('[F15-FR-01] diffSchema — gating & registration', () => {
 });
 
 suite('[F15-FR-02][F15-FR-03] diffSchema — baselines', () => {
-  test('offers Git HEAD when a committed version exists and reports breaking changes', async () => {
+  test('[F26-FR-05] offers Git HEAD when a committed version exists and reports breaking changes', async () => {
     stubGit(JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', required: ['a'] }));
     const { handler } = register();
     activate(path.join(dir, 's.json'), JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', required: ['a', 'b'] }));

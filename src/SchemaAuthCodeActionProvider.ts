@@ -58,7 +58,7 @@ export class SchemaAuthCodeActionProvider implements vscode.CodeActionProvider {
         title: 'Refresh Schema Cache',
         arguments: [url],
       };
-      if (schemaLoadDiags.length > 0) refreshAction.diagnostics = schemaLoadDiags;
+      if (schemaLoadDiags.length > 0) {refreshAction.diagnostics = schemaLoadDiags;}
       actions.push(refreshAction);
     } else {
       const cacheAction = new vscode.CodeAction(
@@ -70,7 +70,7 @@ export class SchemaAuthCodeActionProvider implements vscode.CodeActionProvider {
         title: 'Cache Schema Locally',
         arguments: [url, document.uri],
       };
-      if (schemaLoadDiags.length > 0) cacheAction.diagnostics = schemaLoadDiags;
+      if (schemaLoadDiags.length > 0) {cacheAction.diagnostics = schemaLoadDiags;}
       actions.push(cacheAction);
     }
 
@@ -89,15 +89,15 @@ export function extractSchemaUrlFromLine(
 
   // JSON/JSONC: `"$schema": "https://..."` (anywhere on the line)
   const jsonMatch = /"\$schema"\s*:\s*"(https?:\/\/[^"]+)"/.exec(line);
-  if (jsonMatch) return jsonMatch[1];
+  if (jsonMatch) {return jsonMatch[1];}
 
   // YAML comment directive: `# yaml-language-server: $schema=https://...`
   const directiveMatch = /yaml-language-server[^$]*\$schema=(https?:\/\/\S+)/i.exec(line);
-  if (directiveMatch) return directiveMatch[1];
+  if (directiveMatch) {return directiveMatch[1];}
 
   // YAML inline: `$schema: https://...`
   const yamlMatch = /^\s*\$schema:\s*(https?:\/\/\S+)/.exec(line);
-  if (yamlMatch) return yamlMatch[1];
+  if (yamlMatch) {return yamlMatch[1];}
 
   return undefined;
 }
