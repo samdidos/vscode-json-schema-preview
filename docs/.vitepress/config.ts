@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { listSpecFiles } from './specsSource'
+import { readMaturityScore } from './maturitySource'
 
 // Sidebar entries for the generated spec pages (S10-SR-01): built from the
 // spec files themselves so a new spec shows up with no config edit.
@@ -7,6 +8,16 @@ function specSidebarItems(kind: 'feature' | 'system') {
   return listSpecFiles()
     .filter((spec) => spec.kind === kind)
     .map((spec) => ({ text: `${spec.id} · ${spec.title}`, link: `/specs/${spec.id}` }))
+}
+
+// Sidebar entries for the generated maturity criteria pages (S12-SR-03):
+// built from maturity-score.json so a rubric change shows up with no config
+// edit.
+function maturitySidebarItems() {
+  return readMaturityScore().dimensions.map((d) => ({
+    text: d.label,
+    link: `/maturity/${d.slug}`,
+  }))
 }
 
 export default defineConfig({
@@ -41,6 +52,7 @@ export default defineConfig({
           { text: 'Requirement matrix', link: '/specs/matrix' },
         ],
       },
+      { text: 'Maturity', link: '/maturity/', activeMatch: '/maturity/' },
       { text: 'Blog', link: '/blog/', activeMatch: '/blog/' },
     ],
 
@@ -77,6 +89,13 @@ export default defineConfig({
         },
         { text: 'Feature specs', collapsed: true, items: specSidebarItems('feature') },
         { text: 'System specs', collapsed: true, items: specSidebarItems('system') },
+      ],
+      '/maturity/': [
+        {
+          text: 'Maturity',
+          items: [{ text: 'Scorecard', link: '/maturity/' }],
+        },
+        { text: 'Dimensions', items: maturitySidebarItems() },
       ],
     },
 

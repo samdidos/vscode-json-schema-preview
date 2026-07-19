@@ -39,6 +39,11 @@ Weights are points; a dimension's checks sum to its "possible" column. Numeric
 checks (coverage, lint warnings, pin ratio) earn a fraction of their points
 against the target shown.
 
+Each check also carries a written **justification for its weight** (`why` in
+the scorer, emitted into `maturity-score.json`), rendered on the docs site's
+[Maturity section](https://samdidos.github.io/vscode-json-schema-preview/maturity/)
+alongside an interactive diagram of the dimension scores. <!-- spec:S12 -->
+
 | Dimension | Checks (points) |
 |---|---|
 | **Spec & process** | `check:traceability` passes (4) · zero untracked requirements (2) · the verify gate runs traceability (2) · constitution present (1) · ≥ 10 spec files (1) |
@@ -49,7 +54,7 @@ against the target shown.
 | **Code quality** | TS strict (2) · zero lint errors (2) · lint warnings vs a 200 ceiling (3) · knip clean (2) · bundler configured (1) |
 | **AI-agent integration** | AGENTS.md (1) · CLAUDE.md imports it (1) · spec-prompt hook (1) · pre-commit agent hook (1) · coverage agent hook (1) · session bootstrap script + hook (1) · permissions allowlist (1) · `.mcp.json` (1) · PR template asks for requirement IDs (1) · machine-readable build state (1) |
 
-The two dimensions currently below 4.5 are **Docs** (guide pages cover 4 of 11
+The two dimensions currently lowest are **Docs** (guide pages cover 4 of 26
 feature specs — the ratio check is the drag) and **Code quality** (≈130 tolerated
 ESLint warnings against the 200 ceiling). Both are honest, mechanical signals: to
 move them, write more guide pages or clear lint warnings, and the score follows on
@@ -114,6 +119,15 @@ the next `npm run maturity`.
   true` (`.github/workflows/ci.yml`, `build` job): drift still surfaces as a
   visible warning, but no longer fails the build. The scorer and its rubric
   are unchanged.
+- **2026-07-19** — The scorecard is now **visualized on the docs site** (spec
+  `S12`): a Maturity section with an interactive dimension diagram and one
+  page per dimension. To support it, every check in `maturity-score.mjs`
+  gained a `why` field justifying its point weight, and every dimension a
+  `slug` + `description` — all emitted into `maturity-score.json`. Checks
+  skipped for a snapshot (the uncached OSSF grade) are now *listed* in the
+  JSON flagged `skipped` instead of omitted, still excluded from
+  earned/possible. No check, weight, or threshold changed, so scores are
+  unaffected.
 
 ## Maintaining this file
 
