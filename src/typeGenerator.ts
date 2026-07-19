@@ -5,7 +5,7 @@
 // (F18-FR-06); the JSONSchemaInput below is constructed without a schema
 // store, so the engine cannot fetch anything itself (F18-NFR-01).
 
-import { quicktypeMultiFile, InputData, JSONSchemaInput, type LanguageName } from 'quicktype-core';
+import type { LanguageName } from 'quicktype-core';
 import { isObject } from './schemaPointer';
 
 /** Validation keywords with no TypeScript type-level counterpart. Their
@@ -216,6 +216,12 @@ export async function generateCodeFiles(
   fallbackName: string,
   target: TargetLanguage,
 ): Promise<Map<string, string>> {
+  // quicktype-core dominates the extension bundle, so it is loaded on first
+  // use — as its own webpack chunk — instead of at activation (S03-SR-16:
+  // dist/extension.js stays within the activation-bundle budget).
+  const { quicktypeMultiFile, InputData, JSONSchemaInput } =
+    await import(/* webpackChunkName: "quicktype" */ 'quicktype-core');
+
   const schema = annotateSchemaForCodegen(bundledSchema);
   const title = isObject(bundledSchema) && typeof bundledSchema.title === 'string'
     ? bundledSchema.title

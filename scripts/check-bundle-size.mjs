@@ -22,8 +22,9 @@ import { execFileSync } from 'child_process';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_PATH = join(ROOT, 'bundle-size.json');
 
-// Budgets per S03-SR-16.
-const BUNDLE_BUDGET_BYTES = 3 * 1024 * 1024;
+// Budgets per S03-SR-16. extension.js is the activation bundle only — lazy
+// chunks (dist/chunk-*.js) load on first use and count toward the .vsix.
+const BUNDLE_BUDGET_BYTES = 1 * 1024 * 1024;
 const VSIX_BUDGET_BYTES = 1.5 * 1024 * 1024;
 const WARN_RATIO = 0.85;
 
