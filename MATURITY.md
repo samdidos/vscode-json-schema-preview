@@ -42,7 +42,11 @@ against the target shown.
 Each check also carries a written **justification for its weight** (`why` in
 the scorer, emitted into `maturity-score.json`), rendered on the docs site's
 [Maturity section](https://samdidos.github.io/vscode-json-schema-preview/maturity/)
-alongside an interactive diagram of the dimension scores. <!-- spec:S12 -->
+alongside an interactive diagram of the dimension scores. Score **history**
+lives in [`maturity-history/`](maturity-history/): the scorer appends a
+timestamped snapshot whenever the rounded scores change (past changes were
+backfilled from git history via `npm run maturity:backfill`), and the docs
+site plots the evolution over time from that folder. <!-- spec:S12 -->
 
 | Dimension | Checks (points) |
 |---|---|
@@ -128,6 +132,12 @@ the next `npm run maturity`.
   JSON flagged `skipped` instead of omitted, still excluded from
   earned/possible. No check, weight, or threshold changed, so scores are
   unaffected.
+- **2026-07-19 (later)** — Score history: the scorer now records a snapshot in
+  **`maturity-history/`** each time the rounded scores change, the 13 past
+  score states were backfilled from the git history of `maturity-score.json`
+  (`npm run maturity:backfill`), and the docs site's Maturity page gained an
+  **evolution-over-time diagram** rendered from that folder. Scoring itself is
+  unchanged.
 
 ## Maintaining this file
 

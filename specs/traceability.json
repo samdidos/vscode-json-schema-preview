@@ -3355,6 +3355,37 @@
         "docs/.vitepress/theme/MaturityChecks.vue"
       ],
       "note": "skipped checks emitted flagged `skipped`, rendered as \"not counted in this snapshot\""
+    },
+    "S12-SR-09": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs",
+        "scripts/maturity-history-lib.mjs"
+      ],
+      "note": "writeHistorySnapshot: timestamp-named file only when rounded scores differ from the latest snapshot"
+    },
+    "S12-SR-10": {
+      "status": "implemented",
+      "impl": [
+        "scripts/backfill-maturity-history.mjs",
+        "scripts/maturity-history-lib.mjs"
+      ],
+      "note": "maturity:backfill rebuilds maturity-history/ from git log of maturity-score.json; seq tie-break for batch commits"
+    },
+    "S12-SR-11": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/MaturityEvolution.vue",
+        "docs/.vitepress/maturityHistory.data.ts"
+      ],
+      "note": "overall emphasized; crosshair tooltip reads all series; legend hover highlights, click opens dimension page"
+    },
+    "S12-SR-12": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/MaturityEvolution.vue"
+      ],
+      "note": "collapsible per-snapshot table below the chart"
     }
   }
 }
