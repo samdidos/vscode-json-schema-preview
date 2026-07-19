@@ -398,9 +398,9 @@
       "branches": 88.89
     },
     "requirements": {
-      "total": 465,
+      "total": 466,
       "byStatus": {
-        "implemented": 317,
+        "implemented": 318,
         "manual": 148
       }
     },
