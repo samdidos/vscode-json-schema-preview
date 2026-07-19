@@ -5,8 +5,12 @@
 // by hand under docs/.
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+// The history folder's shape/ordering rules live with the scripts that write
+// it (S12-SR-09/10) — the docs site only reads.
+import { readHistory } from '../../scripts/maturity-history-lib.mjs'
 
 export const SCORE_PATH = resolve(__dirname, '../../maturity-score.json')
+export const HISTORY_GLOB = resolve(__dirname, '../../maturity-history/*.json')
 
 export interface MaturityCheck {
   /** Check id, e.g. "branch-coverage" — also the docs-page anchor (S12-SR-07). */
@@ -46,4 +50,19 @@ export interface MaturityScore {
 
 export function readMaturityScore(): MaturityScore {
   return JSON.parse(readFileSync(SCORE_PATH, 'utf-8')) as MaturityScore
+}
+
+export interface MaturitySnapshot {
+  /** UTC instant of the score change (ISO, second precision). */
+  at: string
+  /** Short sha of the originating commit — backfilled snapshots only. */
+  commit?: string
+  scale: number
+  overall: number
+  dimensions: { label: string; slug: string; score: number }[]
+}
+
+/** All history snapshots, oldest first (S12-SR-09/10). */
+export function readMaturityHistory(): MaturitySnapshot[] {
+  return readHistory(resolve(__dirname, '../..')) as MaturitySnapshot[]
 }

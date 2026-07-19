@@ -75,11 +75,36 @@ script alongside the checks they explain** and emitted into
   dimension page — marked as not counted in the committed score — because the
   rubric documents them even when a snapshot omits them.
 
+### Score history
+
+- **S12-SR-09** The scorer MUST maintain a **`maturity-history/`** folder at
+  the repository root: on a scoring run (not `--check`), when the rounded
+  score state (overall and per-dimension scores) differs from the most recent
+  history snapshot — or no snapshot exists — it MUST write a new
+  timestamp-named snapshot file recording the date, overall score, scale, and
+  every dimension's label, slug, and score. A run whose rounded scores are
+  unchanged MUST NOT add a file.
+- **S12-SR-10** A backfill command MUST reconstruct `maturity-history/` from
+  the git history of `maturity-score.json`: one snapshot per commit whose
+  rounded score state differs from the preceding one, timestamped from the
+  commit date. Re-running the backfill MUST be idempotent for an unchanged
+  git history.
+- **S12-SR-11** The Maturity overview page MUST render an **evolution
+  diagram** from `maturity-history/` at build time: score over time for the
+  overall score and every dimension on the 0–5 scale, with the overall series
+  visually emphasized. Hovering the diagram MUST reveal every series' value
+  at the nearest snapshot, and a dimension's series MUST be highlightable via
+  its legend entry, which links to that dimension's page.
+- **S12-SR-12** The evolution data MUST also be reachable as text: a table
+  listing every snapshot's date, overall score, and per-dimension scores.
+
 ## Non-Functional Requirements
 
 - **S12-NFR-01** All Maturity-section content MUST be generated at build time
-  from `maturity-score.json` (VitePress data loader / dynamic routes), with
-  no score, weight, or justification duplicated by hand under `docs/`.
+  from `maturity-score.json` and `maturity-history/` (VitePress data loaders /
+  dynamic routes), with no score, weight, or justification duplicated by hand
+  under `docs/`. History snapshots are written only by the scorer and the
+  backfill command, never by hand.
 - **S12-NFR-02** The section MUST build with the existing docs toolchain
   (VitePress, `docs.yml`) with **no new runtime dependency**: the diagram is
   inline SVG rendered by Vue, fully static, with interactivity running
@@ -89,8 +114,6 @@ script alongside the checks they explain** and emitted into
 
 ## Out of Scope
 
-- Plotting score *history* over time — `maturity-score.json` holds only the
-  current snapshot; a time series would need new data collection first.
 - Re-computing scores in the browser — the committed JSON is the only input.
 - Replacing the static scorecard SVGs used by `MATURITY.md`/README — they
   remain for contexts that cannot run Vue (GitHub-rendered markdown).
@@ -110,3 +133,9 @@ script alongside the checks they explain** and emitted into
    and justification, each under a stable anchor.
 5. `npm run check:doc-traceability` passes with the new pages tagged
    `<!-- spec:S12 -->`.
+6. Running `npm run maturity` twice in a row adds exactly one history file at
+   most (none the second time); running the backfill twice yields the same
+   folder contents.
+7. The overview page shows the evolution diagram; hovering it reads out every
+   score at a snapshot, and activating a legend entry opens that dimension's
+   page.

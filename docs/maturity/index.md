@@ -32,6 +32,17 @@ justification for that weight.
 
 <MaturityScoreList />
 
+## Evolution over time
+
+Every time the computed scores change, the scorer records a snapshot in
+[`maturity-history/`](https://github.com/samdidos/vscode-json-schema-preview/tree/main/maturity-history)
+(the past was backfilled from the git history of `maturity-score.json`). The
+**overall** score is highlighted; hover the chart to read every score at a
+snapshot, and hover a legend entry to follow one dimension — clicking it opens
+that dimension's criteria.
+
+<MaturityEvolution />
+
 > This is a **self-relative** rubric: it tracks this repository's trend over
 > time and is not a certification comparable across projects.
 
