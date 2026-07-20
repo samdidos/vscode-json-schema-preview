@@ -7,6 +7,7 @@ import MaturityEvolution from './MaturityEvolution.vue'
 import MaturityRadar from './MaturityRadar.vue'
 import MaturityScoreList from './MaturityScoreList.vue'
 import SpecDocSections from './SpecDocSections.vue'
+import SpecEffort from './SpecEffort.vue'
 import SpecMatrix from './SpecMatrix.vue'
 import SpecSourceLink from './SpecSourceLink.vue'
 import SpecStatusTable from './SpecStatusTable.vue'
@@ -25,6 +26,7 @@ export default {
     app.component('MaturityRadar', MaturityRadar)
     app.component('MaturityScoreList', MaturityScoreList)
     app.component('SpecDocSections', SpecDocSections)
+    app.component('SpecEffort', SpecEffort)
     app.component('SpecMatrix', SpecMatrix)
     app.component('SpecSourceLink', SpecSourceLink)
     app.component('SpecStatusTable', SpecStatusTable)

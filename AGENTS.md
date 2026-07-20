@@ -35,6 +35,7 @@
 | Bundle-size budgets | `specs/S03-performance.md` + `scripts/check-bundle-size.mjs` (snapshot: `bundle-size.json`) |
 | Integration/E2E testing | `specs/S08-e2e-testing.md` <!-- spec:S08 --> |
 | Maturity scoring | `MATURITY.md` (scores computed by `scripts/maturity-score.mjs` — never hand-edit) |
+| Spec effort estimates (advisory, never in the maturity score) | `specs/effort.json` (rubric: `specs/S13-spec-effort-estimation.md`, validated by `npm run check:spec-effort`) <!-- spec:S13 --> |
 | Project constitution | `.specify/memory/constitution.md` |
 
 ## Rules that gate your change
