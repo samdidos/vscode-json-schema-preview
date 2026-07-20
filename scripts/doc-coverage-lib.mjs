@@ -21,17 +21,28 @@
 // Fenced code blocks and inline code spans are blanked before measuring:
 // prose documents, code illustrates.
 //
-// Expected words (S07-SR-11): complexity is the number of *documentable*
-// requirements (traceability status not planned/deferred; ids missing from
-// the matrix count as documentable — matrix drift is check:traceability's
-// problem, not this metric's).
+// Expected words (S07-SR-11): each *documentable* requirement (traceability
+// status not planned/deferred; ids missing from the matrix count as
+// documentable — matrix drift is check:traceability's problem) contributes
+// kind-weight × size-factor complexity units:
+//   - kind-weight: FR/SR 1.0, NFR less — qualities are largely invisible to
+//     users, so they call for less user-facing documentation;
+//   - size-factor: the requirement definition's own word count, normalized by
+//     the corpus median and clamped, so a multi-paragraph requirement expects
+//     more documentation than a one-liner without any single one dominating.
+// expected = WORDS_PER_COMPLEXITY_UNIT × Σ units, floored.
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, relative, extname } from 'path';
 
-/** Words of documentation expected per documentable requirement (S07-SR-11). */
-export const WORDS_PER_REQUIREMENT = 40;
+/** Words of documentation expected per complexity unit (S07-SR-11). */
+export const WORDS_PER_COMPLEXITY_UNIT = 40;
 /** Floor: even the smallest spec deserves an intro's worth of words. */
 export const MIN_EXPECTED_WORDS = 120;
+/** How much user-facing documentation each requirement kind calls for. */
+export const KIND_WEIGHTS = { FR: 1, SR: 1, NFR: 0.4 };
+/** Clamp band for the per-requirement size factor (definition ÷ median). */
+export const SIZE_FACTOR_MIN = 0.5;
+export const SIZE_FACTOR_MAX = 2;
 
 const UNIMPLEMENTED_STATUSES = new Set(['planned', 'deferred']);
 const REQ_ID = '[FS]\\d{2}-(?:FR|NFR|SR)-\\d+';
@@ -115,27 +126,62 @@ export function computeDocCoverage(rootDir) {
   const matrix = JSON.parse(readFileSync(join(specsDir, 'traceability.json'), 'utf-8'));
   const statusOf = (id) => matrix.requirements?.[id]?.status;
 
-  // Spec inventory: id, title, and documentable-requirement count.
+  // Pass 1 — spec inventory with each documentable requirement's kind and its
+  // definition length (from its bold ID to the next requirement or heading).
   const specs = new Map();
+  const allDefWords = [];
   for (const name of readdirSync(specsDir).sort()) {
     if (!/^[FS]\d{2}-.*\.md$/.test(name)) continue;
     const text = readFileSync(join(specsDir, name), 'utf-8');
     const id = name.slice(0, 3);
     const title = /^#\s+\S+\s+—\s+(.+)$/m.exec(text)?.[1] ?? name;
-    const reqIds = [...new Set([...text.matchAll(DEF_RE)].map((m) => m[1]))];
-    const documentable = reqIds.filter((r) => !UNIMPLEMENTED_STATUSES.has(statusOf(r) ?? 'implemented'));
-    if (documentable.length === 0) continue;
+    const defs = [...text.matchAll(DEF_RE)];
+    const seen = new Set();
+    const reqs = [];
+    for (let i = 0; i < defs.length; i++) {
+      const rid = defs[i][1];
+      if (seen.has(rid)) continue; // measure the definition site only
+      seen.add(rid);
+      if (UNIMPLEMENTED_STATUSES.has(statusOf(rid) ?? 'implemented')) continue;
+      const from = defs[i].index;
+      const nextDef = defs[i + 1]?.index ?? text.length;
+      const nextHeading = text.indexOf('\n#', from);
+      const to = Math.min(nextDef, nextHeading === -1 ? text.length : nextHeading);
+      const defWords = countWords(text.slice(from, to));
+      const kind = /-(FR|NFR|SR)-/.exec(rid)?.[1] ?? 'FR';
+      reqs.push({ kind, defWords });
+      allDefWords.push(defWords);
+    }
+    if (reqs.length === 0) continue;
     specs.set(id, {
       id,
       title,
       file: name,
-      documentableRequirements: documentable.length,
-      expectedWords: Math.max(MIN_EXPECTED_WORDS, WORDS_PER_REQUIREMENT * documentable.length),
+      documentableRequirements: reqs.length,
+      kinds: reqs.reduce((acc, r) => ((acc[r.kind] = (acc[r.kind] ?? 0) + 1), acc), {}),
+      complexity: 0,
+      expectedWords: 0,
       actualWords: 0,
       coverage: 0,
       sections: [],
+      _reqs: reqs,
       _intervals: new Map(), // file -> [start, end][] on that file's stripped text
     });
+  }
+
+  // Pass 2 — evaluate complexity against the corpus-wide median definition
+  // length (S07-SR-11), then derive each spec's expected words.
+  const sortedDefWords = [...allDefWords].sort((a, b) => a - b);
+  const medianDefWords = sortedDefWords[Math.floor(sortedDefWords.length / 2)] || 1;
+  for (const spec of specs.values()) {
+    let complexity = 0;
+    for (const r of spec._reqs) {
+      const size = Math.min(SIZE_FACTOR_MAX, Math.max(SIZE_FACTOR_MIN, r.defWords / medianDefWords));
+      complexity += (KIND_WEIGHTS[r.kind] ?? 1) * size;
+    }
+    spec.complexity = Math.round(complexity * 10) / 10;
+    spec.expectedWords = Math.max(MIN_EXPECTED_WORDS, Math.round(WORDS_PER_COMPLEXITY_UNIT * complexity));
+    delete spec._reqs;
   }
 
   // Scan the user-documentation set: README.md + docs/ (AGENTS.md is process
@@ -243,7 +289,13 @@ export function computeDocCoverage(rootDir) {
     ...spec,
     coverage: Math.min(1, spec.actualWords / spec.expectedWords),
   }));
-  return { wordsPerRequirement: WORDS_PER_REQUIREMENT, minExpectedWords: MIN_EXPECTED_WORDS, specs: out };
+  return {
+    wordsPerComplexityUnit: WORDS_PER_COMPLEXITY_UNIT,
+    minExpectedWords: MIN_EXPECTED_WORDS,
+    kindWeights: KIND_WEIGHTS,
+    medianDefinitionWords: medianDefWords,
+    specs: out,
+  };
 }
 
 /** Mean per-spec coverage — the Docs dimension's doc-coverage earn (S07-SR-12). */

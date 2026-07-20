@@ -87,10 +87,13 @@ specs), and the score follows on the next `npm run maturity`.
   team picks different targets, and the History note should say so.
 - **The documentation-depth expectation is a chosen model, not a law.** The
   Docs dimension's depth check (`scripts/doc-coverage-lib.mjs`) expects
-  `40 words × documentable requirements` (floor 120) per spec and counts the
-  words attributed through `<!-- spec:… -->` tags (S07-SR-10..12). Requirement
-  count is a crude complexity proxy and 40 is a calibrated constant, both
-  declared in one place — tune them there and note it in the History.
+  `40 words × evaluated complexity` (floor 120) per spec, where complexity is
+  evaluated per documentable requirement as kind-weight (FR/SR 1.0, NFR 0.4)
+  × the requirement definition's length normalized by the corpus median
+  (clamped ×0.5–×2), and counts the words attributed through
+  `<!-- spec:… -->` tags (S07-SR-10..12). The evaluation reads only the spec
+  corpus — no hand-set weight — but every constant is a calibrated knob
+  declared in one place; tune them there and note it in the History.
 
 ## History
 
@@ -139,6 +142,15 @@ specs), and the score follows on the next `npm run maturity`.
   JSON flagged `skipped` instead of omitted, still excluded from
   earned/possible. No check, weight, or threshold changed, so scores are
   unaffected.
+- **2026-07-20** — **Evaluated spec complexity** (S07-SR-11 revised): the
+  depth metric's expectation is no longer a flat
+  `40 × requirement count` — each documentable requirement now contributes
+  kind-weight (FR/SR 1.0, NFR 0.4) × its definition's length relative to the
+  corpus median (clamped ×0.5–×2), so a spec of dense, user-facing
+  requirements expects more documentation than one of terse internal rules.
+  Derived entirely from the spec corpus; per-spec complexity is shown on the
+  docs site. Mean coverage barely moved (≈42%), so scores are unchanged —
+  expectations are just distributed more fairly.
 - **2026-07-19 (later still)** — **Docs depth metric** (S07-SR-10..13): the
   Docs dimension's 3-point depth check now scores **mean per-spec
   documentation coverage** — words attributed to each spec through its

@@ -26,6 +26,10 @@ export interface SpecDocCoverage {
   title: string
   file: string
   documentableRequirements: number
+  /** Documentable requirement count per kind, e.g. { FR: 10, NFR: 2 }. */
+  kinds: Record<string, number>
+  /** Evaluated complexity units (kind-weight × size-factor summed). */
+  complexity: number
   expectedWords: number
   actualWords: number
   /** min(1, actual/expected) */
@@ -34,8 +38,10 @@ export interface SpecDocCoverage {
 }
 
 export interface DocCoverageData {
-  wordsPerRequirement: number
+  wordsPerComplexityUnit: number
   minExpectedWords: number
+  kindWeights: Record<string, number>
+  medianDefinitionWords: number
   specs: SpecDocCoverage[]
 }
 
