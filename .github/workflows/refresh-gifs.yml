@@ -34,14 +34,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "branch=${{ inputs.branch }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ inputs.branch }}" >> "$GITHUB_OUTPUT"
           else
             branch=$(gh pr list \
               --repo ${{ github.repository }} \
               --state open \
               --json headRefName \
               --jq '[.[] | select(.headRefName | startswith("release-please--"))][0].headRefName // ""')
-            echo "branch=$branch" >> $GITHUB_OUTPUT
+            echo "branch=$branch" >> "$GITHUB_OUTPUT"
           fi
 
   refresh-gifs:

@@ -1,0 +1,181 @@
+{
+  "$comment": "DORA delivery-performance metrics (S14) computed from git by scripts/dora-metrics.mjs — do not edit by hand. Run `npm run dora`. NEVER read by the maturity scorer.",
+  "generatedAt": "2026-07-20",
+  "releaseCount": 15,
+  "firstRelease": "2026-06-18",
+  "lastRelease": "2026-07-18",
+  "metrics": {
+    "deploymentFrequency": {
+      "medianIntervalDays": 1,
+      "perWeek": 3.5,
+      "band": "Elite"
+    },
+    "leadTimeForChanges": {
+      "medianDays": 0.9,
+      "band": "Elite"
+    },
+    "changeFailureRate": {
+      "percent": 20,
+      "failures": 3,
+      "of": 15,
+      "band": "Medium"
+    },
+    "timeToRestore": {
+      "medianDays": 0,
+      "failures": 3,
+      "band": "Elite"
+    }
+  },
+  "perRelease": [
+    {
+      "tag": "v0.1.0",
+      "date": "2026-06-18",
+      "commits": 3,
+      "intervalDays": null,
+      "leadTimeDays": null,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.2.0",
+      "date": "2026-06-30",
+      "commits": 59,
+      "intervalDays": 12.2,
+      "leadTimeDays": 7,
+      "isPatch": false,
+      "failure": true,
+      "restoreDays": 0
+    },
+    {
+      "tag": "v0.2.1",
+      "date": "2026-06-30",
+      "commits": 2,
+      "intervalDays": 0,
+      "leadTimeDays": 0,
+      "isPatch": true,
+      "failure": true,
+      "restoreDays": 0
+    },
+    {
+      "tag": "v0.2.2",
+      "date": "2026-06-30",
+      "commits": 2,
+      "intervalDays": 0,
+      "leadTimeDays": 0,
+      "isPatch": true,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.3.0",
+      "date": "2026-07-01",
+      "commits": 10,
+      "intervalDays": 1.1,
+      "leadTimeDays": 0.2,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.4.0",
+      "date": "2026-07-05",
+      "commits": 38,
+      "intervalDays": 3.9,
+      "leadTimeDays": 2,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.5.0",
+      "date": "2026-07-07",
+      "commits": 22,
+      "intervalDays": 1.9,
+      "leadTimeDays": 0.4,
+      "isPatch": false,
+      "failure": true,
+      "restoreDays": 0
+    },
+    {
+      "tag": "v0.5.1",
+      "date": "2026-07-07",
+      "commits": 3,
+      "intervalDays": 0,
+      "leadTimeDays": 0,
+      "isPatch": true,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.6.0",
+      "date": "2026-07-11",
+      "commits": 47,
+      "intervalDays": 4.1,
+      "leadTimeDays": 2.1,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.7.0",
+      "date": "2026-07-13",
+      "commits": 11,
+      "intervalDays": 1.7,
+      "leadTimeDays": 0.4,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.8.0",
+      "date": "2026-07-14",
+      "commits": 9,
+      "intervalDays": 0.5,
+      "leadTimeDays": 0.1,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.9.0",
+      "date": "2026-07-14",
+      "commits": 14,
+      "intervalDays": 0.7,
+      "leadTimeDays": 0.2,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.10.0",
+      "date": "2026-07-17",
+      "commits": 22,
+      "intervalDays": 2.2,
+      "leadTimeDays": 0.5,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.11.0",
+      "date": "2026-07-17",
+      "commits": 9,
+      "intervalDays": 0.9,
+      "leadTimeDays": 0.3,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.12.0",
+      "date": "2026-07-18",
+      "commits": 5,
+      "intervalDays": 0.6,
+      "leadTimeDays": 0.2,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    }
+  ]
+}

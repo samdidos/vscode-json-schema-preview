@@ -31,6 +31,9 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          # Full history + tags so the DORA metrics (S14) can read the whole
+          # release timeline, not just the shallow default clone.
+          fetch-depth: 0
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -55,6 +58,12 @@ jobs:
       - name: Recompute maturity score and chart
         run: npm run maturity
 
+      # DORA delivery metrics are computed from git tags/commits (S14), so a
+      # new release since last week changes them — refresh here where the full
+      # history is available (fetch-depth: 0 on checkout below is required).
+      - name: Recompute DORA delivery metrics
+        run: npm run dora
+
       # Coverage ran above, so coverage-summary.json is on disk — refresh the
       # static README coverage badge from it here (and commit it below) so the
       # badge is a pipeline guarantee, not just synced when a Claude Code agent
@@ -73,7 +82,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git add maturity-score.json MATURITY.md README.md docs/public/maturity-scorecard-light.svg docs/public/maturity-scorecard-dark.svg bundle-size.json
+          git add maturity-score.json MATURITY.md README.md docs/public/maturity-scorecard-light.svg docs/public/maturity-scorecard-dark.svg bundle-size.json dora.json
           [ -f ossf-scorecard.json ] && git add ossf-scorecard.json
 
           # --staged so newly-created files (a first-ever OSSF cache) count too.

@@ -1,6 +1,7 @@
 import DefaultTheme from 'vitepress/theme'
 import './style.css'
 import Layout from './Layout.vue'
+import DoraMetrics from './DoraMetrics.vue'
 import MaturityChecks from './MaturityChecks.vue'
 import MaturityDocCoverage from './MaturityDocCoverage.vue'
 import MaturityEvolution from './MaturityEvolution.vue'
@@ -20,6 +21,7 @@ export default {
   // Registered globally because the generated spec pages (docs/specs/[id].md)
   // share one markdown template and can't carry per-page <script setup>.
   enhanceApp({ app }) {
+    app.component('DoraMetrics', DoraMetrics)
     app.component('MaturityChecks', MaturityChecks)
     app.component('MaturityDocCoverage', MaturityDocCoverage)
     app.component('MaturityEvolution', MaturityEvolution)

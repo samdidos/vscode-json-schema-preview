@@ -3167,6 +3167,13 @@
       ],
       "note": "analyze's if: always() && (schedule || changes) keeps the weekly cron unconditional; CI workflow-scoping requirement: enforced/observable in .github/workflows, not unit-taggable"
     },
+    "S09-SR-05": {
+      "status": "manual",
+      "impl": [
+        ".github/workflows/ci.yml"
+      ],
+      "note": "actionlint job lints all workflow YAML on push/PR via version-pinned container image; CI-verified, no unit test"
+    },
     "S10-NFR-01": {
       "status": "manual",
       "impl": [
@@ -3498,6 +3505,75 @@
         "docs/specs/[id].md"
       ],
       "note": "advisory-labelled estimate box on each spec page with provenance, linking to S13"
+    },
+    "S14-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs",
+        "scripts/dora-metrics.mjs"
+      ],
+      "note": "scorer has no reference to dora.json; standalone dashboard"
+    },
+    "S14-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/dora-metrics.mjs"
+      ],
+      "note": "plain Node, no dependencies; tool-neutral JSON"
+    },
+    "S14-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/dora-metrics.mjs"
+      ],
+      "note": "median inter-release interval + per-week; per-release intervals exposed"
+    },
+    "S14-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/dora-metrics.mjs"
+      ],
+      "note": "per-release median lead time (author→tag) over previousTag..thisTag; seed release excluded; aggregate median"
+    },
+    "S14-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "scripts/dora-metrics.mjs"
+      ],
+      "note": "failure = next release is a semver patch bump; derivable from tag sequence; failing releases flagged"
+    },
+    "S14-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "scripts/dora-metrics.mjs"
+      ],
+      "note": "restore = failing release → fixing patch elapsed; median; n/a when no failures"
+    },
+    "S14-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "scripts/dora-metrics.mjs",
+        "docs/delivery/index.md"
+      ],
+      "note": "Elite/High/Medium/Low bands declared once; docs shows the continuously-deployed caveat"
+    },
+    "S14-SR-06": {
+      "status": "implemented",
+      "impl": [
+        "scripts/dora-metrics.mjs",
+        "package.json"
+      ],
+      "note": "offline git-only compute; npm run dora writes dora.json; --check detects staleness"
+    },
+    "S14-SR-07": {
+      "status": "manual",
+      "impl": [
+        "docs/delivery/index.md",
+        "docs/.vitepress/dora.data.ts",
+        "docs/.vitepress/theme/DoraMetrics.vue",
+        "docs/.vitepress/config.ts"
+      ],
+      "note": "Delivery view: four tiles + bands, lead-time trend, per-release table, dora.dev link"
     }
   }
 }
