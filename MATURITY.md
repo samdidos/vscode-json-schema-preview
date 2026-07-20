@@ -19,7 +19,7 @@ is committed as [`maturity-score.json`](maturity-score.json).
 > signal directly; where none does (AI-agent integration) it is an explicit
 > presence checklist, documented below, not a vibe.
 
-**Snapshot: 2026-07-19**
+**Snapshot: 2026-07-20**
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/public/maturity-scorecard-dark.svg">
@@ -54,15 +54,17 @@ site plots the evolution over time from that folder. <!-- spec:S12 -->
 | **Testing** | branch coverage vs 95% (3) · line coverage vs 95% (2) · function coverage vs 95% (1) · mutation `break` threshold set (2) · low coverage-exclusion ratio (2) |
 | **Security / supply chain** | CodeQL workflow (2) · OpenSSF Scorecard workflow (2) · Dependabot (1) · SLSA/provenance/attestation in a workflow (2) · GitHub Actions pinned to a full SHA, as a ratio (3) · **live OpenSSF Scorecard grade /10 (4, when cached — see below)** |
 | **CI/CD & release** | CI workflow present (1) · no `continue-on-error` job (2) · release-please (2) · commitlint + commit-msg hook (2) · pre-commit hook runs verify (2) · knip runs in CI (1) |
-| **Docs** | README (1) · CONTRIBUTING (1) · CODE_OF_CONDUCT (1) · SECURITY (1) · LICENSE (1) · docs site (1) · guide-page-to-feature ratio (3) · MATURITY.md (1) |
+| **Docs** | README (1) · CONTRIBUTING (1) · CODE_OF_CONDUCT (1) · SECURITY (1) · LICENSE (1) · docs site (1) · documentation depth: mean per-spec tagged words vs complexity-expected words (3) · MATURITY.md (1) |
 | **Code quality** | TS strict (2) · zero lint errors (2) · lint warnings vs a 200 ceiling (3) · knip clean (2) · bundler configured (1) |
 | **AI-agent integration** | AGENTS.md (1) · CLAUDE.md imports it (1) · spec-prompt hook (1) · pre-commit agent hook (1) · coverage agent hook (1) · session bootstrap script + hook (1) · permissions allowlist (1) · `.mcp.json` (1) · PR template asks for requirement IDs (1) · machine-readable build state (1) |
 
-The two dimensions currently lowest are **Docs** (guide pages cover 4 of 26
-feature specs — the ratio check is the drag) and **Code quality** (≈130 tolerated
-ESLint warnings against the 200 ceiling). Both are honest, mechanical signals: to
-move them, write more guide pages or clear lint warnings, and the score follows on
-the next `npm run maturity`.
+The dimensions currently lowest are **CI/CD & release** (three deliberately
+non-blocking `continue-on-error` jobs — a values trade-off, not an accident),
+**Security / supply chain** (the cached OpenSSF Scorecard grade is 5.1/10),
+and **Docs** (specs are ~43% documented by the depth metric). All are honest,
+mechanical signals: raise the Scorecard grade, write the missing spec
+documentation (the docs site's Docs dimension page lists the least-covered
+specs), and the score follows on the next `npm run maturity`.
 
 ## Known limitations of the current metrics
 
@@ -74,9 +76,8 @@ the next `npm run maturity`.
   `maturity:check` stays reproducible — where there is no cache (e.g. a sandbox
   with no egress to that host), the check is **skipped entirely** (dropped from
   both earned and possible), so its absence never distorts the score. The
-  snapshot above has no cache, so Security is scored on the five presence/pin
-  checks alone; run `maturity:ossf` where the API is reachable, then
-  `npm run maturity`, to activate it.
+  committed cache currently carries a 5.1/10 grade; run `maturity:ossf` where
+  the API is reachable, then `npm run maturity`, to refresh it.
 - **Mutation quality isn't scored, only its `break` threshold.** The threshold
   `60` in `stryker.config.json` was set from the tool's pre-existing "low" bound,
   not a measured run (a full Stryker pass is expensive). The score credits that a
@@ -84,6 +85,12 @@ the next `npm run maturity`.
 - **"Coverage vs 95%" and "warnings vs 200" targets are chosen, not derived.**
   They're transparent knobs in `maturity-score.mjs`; adjust them there if the
   team picks different targets, and the History note should say so.
+- **The documentation-depth expectation is a chosen model, not a law.** The
+  Docs dimension's depth check (`scripts/doc-coverage-lib.mjs`) expects
+  `40 words × documentable requirements` (floor 120) per spec and counts the
+  words attributed through `<!-- spec:… -->` tags (S07-SR-10..12). Requirement
+  count is a crude complexity proxy and 40 is a calibrated constant, both
+  declared in one place — tune them there and note it in the History.
 
 ## History
 
@@ -132,6 +139,18 @@ the next `npm run maturity`.
   JSON flagged `skipped` instead of omitted, still excluded from
   earned/possible. No check, weight, or threshold changed, so scores are
   unaffected.
+- **2026-07-19 (later still)** — **Docs depth metric** (S07-SR-10..13): the
+  Docs dimension's 3-point depth check now scores **mean per-spec
+  documentation coverage** — words attributed to each spec through its
+  `<!-- spec:… -->` tags versus `40 words × documentable requirements`
+  (floor 120) — replacing the guide-page-to-feature-count ratio, which a stub
+  page could satisfy. Computed by the new shared `scripts/doc-coverage-lib.mjs`
+  (also rendered on the docs site: per-spec chart on the Docs dimension page,
+  "documented in" links on each spec page). Also: fixed the `pinned-actions`
+  check's regex, which miscounted `statuses: write` permission lines as
+  unpinned actions (ratio was understated), and hardened the three workflows
+  with top-level `contents: write` tokens down to read-only top-level with
+  job-scoped writes (OpenSSF Token-Permissions).
 - **2026-07-19 (later)** — Score history: the scorer now records a snapshot in
   **`maturity-history/`** each time the rounded scores change, the 13 past
   score states were backfilled from the git history of `maturity-score.json`

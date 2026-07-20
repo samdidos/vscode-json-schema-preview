@@ -15,9 +15,10 @@ on:
         required: false
         default: 'release-please--branches--main--components--json-schema-preview'
 
+# Top-level token is read-only (OSSF Token-Permissions); write scopes are
+# granted only to the job that pushes the refreshed GIFs.
 permissions:
-  contents: write
-  statuses: write # post a "Demo GIFs" status on the release-please PR's head commit
+  contents: read
 
 jobs:
   find-pr:
@@ -49,6 +50,9 @@ jobs:
     # just merged — release-please closes the PR and won't have a new one yet).
     if: needs.find-pr.outputs.branch != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # push refreshed GIFs onto the release-please branch
+      statuses: write # post a "Demo GIFs" status on the release-please PR's head commit
 
     env:
       TARGET_BRANCH: ${{ needs.find-pr.outputs.branch }}

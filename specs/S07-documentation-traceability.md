@@ -115,6 +115,39 @@ Markdown, VitePress, and rendered HTML without affecting the reader.
   under this rule, so warning about the missing documentation would be
   contradictory guidance.
 
+### Documentation depth metric
+
+The tags above make documentation *presence* checkable; the requirements below
+make its *depth* measurable, so the maturity score's Docs dimension can score
+how much of each spec is actually documented instead of counting pages.
+
+- **S07-SR-10** A shared library MUST compute, per spec, the **actual words of
+  documentation** attributed to it from the `spec:` tags in the scanned doc
+  set: a `start`/`end` section attributes the words between its tags; an
+  inline tag attributes the words from the tag to the next heading, next
+  `spec:` tag, or end of file, whichever comes first — and when that region is
+  blank because the tag sits directly above a heading (the repository's
+  established placement), it attributes the section **under** that heading
+  instead, up to the following heading, `spec:` tag, or end of file. A
+  comma-list tag attributes its words to **every** listed id; requirement-id
+  tags attribute to their parent spec; overlapping regions for the same spec
+  in the same file MUST be merged so no word is counted twice for one spec.
+- **S07-SR-11** The same library MUST compute each spec's **expected words**
+  from its complexity, where complexity is the count of its *documentable*
+  requirements (matrix status not `planned`/`deferred`): expected =
+  `words-per-requirement × documentable requirements`, clamped to a declared
+  minimum floor. The words-per-requirement constant and the floor MUST be
+  declared once in the library, visible and adjustable.
+- **S07-SR-12** A spec's **documentation coverage** is
+  `min(1, actual ÷ expected)`, and the maturity score's Docs dimension MUST
+  score documentation depth as the **mean coverage across documentable
+  specs** — replacing any page-count-based proxy. Specs with no documentable
+  requirement are excluded (documenting them is an error under S07-SR-09).
+- **S07-SR-13** For each attributed region the library MUST also record the
+  source file and the nearest preceding markdown heading (text and URL
+  anchor), so consumers (the docs site) can link a spec to the exact
+  documentation sections that describe it.
+
 ## Non-Functional Requirements
 
 - **S07-NFR-01** The convention MUST remain tool-neutral: plain HTML comments

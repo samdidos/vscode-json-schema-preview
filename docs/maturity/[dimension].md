@@ -3,3 +3,5 @@
 <!-- @content -->
 
 <MaturityChecks />
+
+<MaturityDocCoverage />

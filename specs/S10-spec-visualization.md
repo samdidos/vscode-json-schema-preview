@@ -61,6 +61,14 @@ top of the existing artifacts.
 - **S10-SR-07** Each spec page MUST include a requirement traceability table
   for that spec's requirements: ID, status, implementing files (linked to the
   repository), and the matrix note.
+- **S10-SR-08** Each spec page MUST list the **documentation sections** that
+  carry that spec's `<!-- spec:… -->` tags (S07), showing for each: the source
+  document, the nearest heading, and the attributed word count — linking
+  docs-site pages to the page and nearest anchor, and repository-only
+  documents (e.g. `README.md`) to the file on the repository host. The list is
+  derived at build time from the S07 depth-metric library (S07-SR-13), never
+  hand-maintained, and a spec with no tagged section shows its expected word
+  count as the gap to fill.
 
 ## Non-Functional Requirements
 

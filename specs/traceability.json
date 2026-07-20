@@ -2992,6 +2992,35 @@
       ],
       "note": "tag of a planned/deferred requirement, or of a feature whose matrix entries are all planned/deferred, -> error; such features excluded from the undocumented warning; doc-traceability convention: enforced by scripts/check-doc-traceability.mjs (verify/CI), not unit-taggable"
     },
+    "S07-SR-10": {
+      "status": "implemented",
+      "impl": [
+        "scripts/doc-coverage-lib.mjs"
+      ],
+      "note": "per-spec word attribution from spec: tags; blank-inline-tag adopts the following heading section; per-spec interval merge"
+    },
+    "S07-SR-11": {
+      "status": "implemented",
+      "impl": [
+        "scripts/doc-coverage-lib.mjs"
+      ],
+      "note": "expected = WORDS_PER_REQUIREMENT (40) × documentable requirements, floor MIN_EXPECTED_WORDS (120); constants declared once"
+    },
+    "S07-SR-12": {
+      "status": "implemented",
+      "impl": [
+        "scripts/doc-coverage-lib.mjs",
+        "scripts/maturity-score.mjs"
+      ],
+      "note": "coverage = min(1, actual/expected); Docs dimension doc-coverage check earns the mean via meanDocCoverage()"
+    },
+    "S07-SR-13": {
+      "status": "implemented",
+      "impl": [
+        "scripts/doc-coverage-lib.mjs"
+      ],
+      "note": "sections carry file, site page, nearest heading text + VitePress-slugified anchor"
+    },
     "S08-NFR-01": {
       "status": "manual",
       "impl": [
@@ -3208,6 +3237,15 @@
       ],
       "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
+    "S10-SR-08": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecDocSections.vue",
+        "docs/.vitepress/docCoverage.data.ts",
+        "docs/specs/[id].md"
+      ],
+      "note": "\"Documented in\" list on each spec page: heading links to page#anchor or repo blob; expected-words gap shown when untagged"
+    },
     "S11-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -3396,6 +3434,14 @@
         "docs/.vitepress/theme/MaturityChecks.vue"
       ],
       "note": "prose methodology page: purpose, computation, standards leaned on, and the self-relative/evolving caveat; linked from nav, overview, and dimension pages"
+    },
+    "S12-SR-14": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/MaturityDocCoverage.vue",
+        "docs/maturity/[dimension].md"
+      ],
+      "note": "per-spec words-vs-expected chart on the Docs dimension page, least-covered first, linking to spec pages"
     }
   }
 }
