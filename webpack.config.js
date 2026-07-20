@@ -3,6 +3,7 @@
 'use strict';
 
 const path = require('path');
+const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 
 //@ts-check
@@ -10,6 +11,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 
 /** @type WebpackConfig */
 const extensionConfig = {
+  name: 'extension',
   target: 'node',
   mode: 'none',
 
@@ -58,4 +60,44 @@ const extensionConfig = {
     }),
   ],
 };
-module.exports = [extensionConfig];
+
+// F27 — the standalone CLI. A separate, self-contained Node bundle (F27-NFR-03)
+// built from the same pure `src/` core the extension uses, published as the
+// `cli/` npm package. Build just this one with `npm run build:cli`
+// (`webpack --config-name cli`).
+/** @type WebpackConfig */
+const cliConfig = {
+  name: 'cli',
+  target: 'node',
+  mode: 'none',
+
+  entry: './src/cli/bin.ts',
+  output: {
+    path: path.resolve(__dirname, 'cli', 'dist'),
+    filename: 'cli.js',
+    libraryTarget: 'commonjs2',
+  },
+  resolve: {
+    extensions: ['.ts', '.js'],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: [{ loader: 'ts-loader' }],
+      },
+    ],
+  },
+  devtool: 'source-map',
+  plugins: [
+    // Make the output directly executable, and inline the CLI package version
+    // (F27-FR-02) so the bundle stays self-contained with no runtime read.
+    new webpack.BannerPlugin({ banner: '#!/usr/bin/env node', raw: true, entryOnly: true }),
+    new webpack.DefinePlugin({
+      CLI_VERSION: JSON.stringify(require('./cli/package.json').version),
+    }),
+  ],
+};
+
+module.exports = [extensionConfig, cliConfig];

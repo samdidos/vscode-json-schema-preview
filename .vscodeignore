@@ -44,3 +44,4 @@ CODEOWNERS
 .vscode-test.mjs
 .json-schema-tool
 **/*.map
+cli/**

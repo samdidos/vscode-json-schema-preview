@@ -1,0 +1,46 @@
+{
+  "name": "json-schema-tools",
+  "version": "0.1.0",
+  "description": "Standalone CLI for JSON Schema: validate, lint, diff (with backward-compat gate), bundle & migrate drafts. The editor-free front end of the json-schema-preview core.",
+  "keywords": [
+    "json-schema",
+    "jsonschema",
+    "cli",
+    "validate",
+    "lint",
+    "diff",
+    "bundle",
+    "dereference",
+    "migrate",
+    "ajv",
+    "ci"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Samuel Cardinal",
+    "url": "https://github.com/samdidos"
+  },
+  "homepage": "https://github.com/samdidos/vscode-json-schema-preview/blob/main/cli/README.md",
+  "bugs": {
+    "url": "https://github.com/samdidos/vscode-json-schema-preview/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samdidos/vscode-json-schema-preview.git",
+    "directory": "cli"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "commonjs",
+  "bin": {
+    "json-schema-tools": "dist/cli.js"
+  },
+  "files": [
+    "dist/cli.js",
+    "README.md"
+  ],
+  "scripts": {
+    "prepack": "cd .. && npm run build:cli"
+  }
+}
