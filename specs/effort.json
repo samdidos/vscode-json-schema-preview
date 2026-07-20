@@ -16,7 +16,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 6,
-        "implLoc": 1818,
+        "implLoc": 1820,
         "taggedTests": 15,
         "requirements": 30
       }
@@ -69,7 +69,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 5,
-        "implLoc": 1876,
+        "implLoc": 1878,
         "taggedTests": 28,
         "requirements": 15
       }
@@ -105,7 +105,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 3,
-        "implLoc": 2055,
+        "implLoc": 2057,
         "taggedTests": 13,
         "requirements": 12
       }
@@ -194,7 +194,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 5,
-        "implLoc": 2367,
+        "implLoc": 2369,
         "taggedTests": 30,
         "requirements": 21
       }
@@ -249,7 +249,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 4,
-        "implLoc": 1334,
+        "implLoc": 1336,
         "taggedTests": 18,
         "requirements": 11
       }
@@ -268,7 +268,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 4,
-        "implLoc": 1397,
+        "implLoc": 1399,
         "taggedTests": 17,
         "requirements": 13
       }
@@ -321,7 +321,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 5,
-        "implLoc": 2590,
+        "implLoc": 2592,
         "taggedTests": 29,
         "requirements": 14
       }
@@ -357,7 +357,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 5,
-        "implLoc": 1656,
+        "implLoc": 1658,
         "taggedTests": 16,
         "requirements": 11
       }
@@ -393,7 +393,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 4,
-        "implLoc": 1251,
+        "implLoc": 1253,
         "taggedTests": 17,
         "requirements": 14
       }
@@ -497,7 +497,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 4,
-        "implLoc": 1648,
+        "implLoc": 1650,
         "taggedTests": 3,
         "requirements": 10
       }
@@ -514,7 +514,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 11,
-        "implLoc": 3016,
+        "implLoc": 3039,
         "taggedTests": 19,
         "requirements": 18
       }
@@ -588,7 +588,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 11,
-        "implLoc": 2599,
+        "implLoc": 2601,
         "taggedTests": 0,
         "requirements": 15
       }
@@ -607,7 +607,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 14,
-        "implLoc": 1767,
+        "implLoc": 1781,
         "taggedTests": 34,
         "requirements": 13
       }
@@ -624,9 +624,9 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 3,
-        "implLoc": 258,
+        "implLoc": 272,
         "taggedTests": 0,
-        "requirements": 6
+        "requirements": 7
       }
     },
     "S10": {
@@ -643,7 +643,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 10,
-        "implLoc": 750,
+        "implLoc": 751,
         "taggedTests": 0,
         "requirements": 10
       }
@@ -662,7 +662,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 9,
-        "implLoc": 4760,
+        "implLoc": 4822,
         "taggedTests": 9,
         "requirements": 8
       }
@@ -679,7 +679,7 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 16,
-        "implLoc": 2092,
+        "implLoc": 2093,
         "taggedTests": 0,
         "requirements": 17
       }
@@ -696,9 +696,26 @@
       "estimatedAt": "2026-07-20",
       "evidence": {
         "implFiles": 7,
-        "implLoc": 2071,
+        "implLoc": 2090,
         "taggedTests": 0,
         "requirements": 7
+      }
+    },
+    "S14": {
+      "points": 2,
+      "basePoints": 2,
+      "tshirt": "S",
+      "hoursMin": 2,
+      "hoursMax": 4,
+      "factors": [],
+      "justification": "DORA metrics extractor from git history, plus the Delivery docs view — sized by its band.",
+      "estimator": "the project's AI coding agent (Claude Code)",
+      "estimatedAt": "2026-07-20",
+      "evidence": {
+        "implFiles": 1,
+        "implLoc": 198,
+        "taggedTests": 0,
+        "requirements": 9
       }
     }
   }

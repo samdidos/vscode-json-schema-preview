@@ -398,10 +398,10 @@
       "branches": 88.89
     },
     "requirements": {
-      "total": 479,
+      "total": 489,
       "byStatus": {
-        "implemented": 331,
-        "manual": 148
+        "implemented": 339,
+        "manual": 150
       }
     },
     "pinnedActionRatio": 1

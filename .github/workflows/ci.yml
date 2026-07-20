@@ -39,6 +39,20 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
         run: bash scripts/ci-detect-source-changes.sh
 
+  actionlint:
+    name: Lint workflows (actionlint)
+    runs-on: ubuntu-latest
+    # The workflow YAML is code too (S09-SR-05). Always run — it's fast and a
+    # broken workflow can slip in on a PR that doesn't touch source. A
+    # version-pinned container image (not a `uses:` action) keeps this off the
+    # SHA-pin ledger the security metric tracks.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: actionlint
+        uses: docker://rhysd/actionlint:1.7.11
+        with:
+          args: -color
+
   traceability:
     name: Spec & doc traceability
     runs-on: ubuntu-latest

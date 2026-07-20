@@ -60,6 +60,7 @@ export default defineConfig({
           { text: 'How it works', link: '/maturity/how-it-works' },
         ],
       },
+      { text: 'Delivery', link: '/delivery/', activeMatch: '/delivery/' },
       { text: 'Blog', link: '/blog/', activeMatch: '/blog/' },
     ],
 

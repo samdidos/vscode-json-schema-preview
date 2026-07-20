@@ -51,6 +51,13 @@ drift on the PRs most likely to introduce it.
   full analysis regardless of SR-02's path filter — a scheduled run has no PR
   diff to gate against, and periodic full scans are the point of the
   schedule trigger.
+- **S09-SR-05** The workflow files themselves MUST be statically checked in
+  CI with [`actionlint`](https://github.com/rhysd/actionlint) — the workflow
+  YAML is code (shell scripts, expressions, action references) and deserves a
+  linter like the rest of the source. The check MUST run on every push and
+  pull request, and MUST NOT add an unpinned action reference (use a
+  version-pinned container image, which is exempt from the SHA-pin rule the
+  security metric enforces).
 
 ## Non-Functional Requirements
 
