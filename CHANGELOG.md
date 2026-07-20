@@ -2,6 +2,24 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.13.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.12.0...v0.13.0) (2026-07-20)
+
+
+### Features
+
+* **F07:** warn once per host when credentials are sent over plain http ([d01c114](https://github.com/samdidos/vscode-json-schema-preview/commit/d01c114f4cb88b4439278729507f89306f489ff9))
+* **S07:** complexity-weighted documentation-depth metric + doc links on spec pages ([6c0d3ba](https://github.com/samdidos/vscode-json-schema-preview/commit/6c0d3ba386dd966a334b524bb33f3eebc51514e6))
+* **S07:** evaluate per-spec complexity for the documentation expectation ([a9f8363](https://github.com/samdidos/vscode-json-schema-preview/commit/a9f8363c43503656278162a73abcc17a2cf2980b))
+* **S12:** score history + evolution-over-time diagram on the docs site ([b9f9e1b](https://github.com/samdidos/vscode-json-schema-preview/commit/b9f9e1b2acfbff635b28d9a54618aca998e193ea))
+* **S12:** visualize the maturity scorecard on the docs site ([e1c7d1e](https://github.com/samdidos/vscode-json-schema-preview/commit/e1c7d1e4076a08ae17cefa38b9cee1d4335fe637))
+* **S13:** advisory per-spec effort estimates — points, T-shirt, hours ([671ed7d](https://github.com/samdidos/vscode-json-schema-preview/commit/671ed7de4575744edbc0f8fd9762f5cb951fa1a7))
+* **S14:** delivery-performance (DORA) metrics + actionlint in CI ([6de3415](https://github.com/samdidos/vscode-json-schema-preview/commit/6de3415abdd208c7497dcdc4ad1803cfd8355c9c))
+
+
+### Performance Improvements
+
+* **S03:** load quicktype-core lazily as its own webpack chunk ([17a348f](https://github.com/samdidos/vscode-json-schema-preview/commit/17a348ff399f27e7acd46d043158211751c49b22))
+
 ## [0.12.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.11.0...v0.12.0) (2026-07-18)
 
 
