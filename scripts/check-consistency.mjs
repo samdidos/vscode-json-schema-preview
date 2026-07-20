@@ -36,14 +36,17 @@ for (const file of specFiles) {
 // Normalize both lists to bare module names ("SchemaEditorPanel") and compare
 // as sets. Test-tree globs are structural, not per-file decisions — skipped.
 
+// Capture the module path (minus out/-src/ prefix and extension), allowing
+// subdirectories (e.g. cli/bin) but never glob patterns (the `test/**` /
+// `**/*.test.ts` entries contain `*` and are structural, not per-file).
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
 const c8Excluded = (pkg.c8?.exclude ?? [])
-  .map((e) => /^out\/([A-Za-z0-9_]+)\.js$/.exec(e)?.[1])
+  .map((e) => /^out\/([A-Za-z0-9_/]+)\.js$/.exec(e)?.[1])
   .filter(Boolean);
 
 const stryker = JSON.parse(readFileSync(join(ROOT, 'stryker.config.json'), 'utf-8'));
 const strykerExcluded = (stryker.mutate ?? [])
-  .map((e) => /^!src\/([A-Za-z0-9_]+)\.ts$/.exec(e)?.[1])
+  .map((e) => /^!src\/([A-Za-z0-9_/]+)\.ts$/.exec(e)?.[1])
   .filter(Boolean);
 
 for (const name of c8Excluded) {

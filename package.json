@@ -405,6 +405,7 @@
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
+    "build:cli": "webpack --mode production --config-name cli",
     "lint": "eslint --max-warnings 0",
     "knip": "knip",
     "check:bundle-size": "node scripts/check-bundle-size.mjs",
@@ -453,7 +454,8 @@
       "out/python.js",
       "out/SchemaEditorPanel.js",
       "out/ConfigWebPanel.js",
-      "out/RefGraphPanel.js"
+      "out/RefGraphPanel.js",
+      "out/cli/bin.js"
     ],
     "all": true
   },

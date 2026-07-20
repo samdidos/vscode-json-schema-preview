@@ -33,3 +33,6 @@ test-results/
 docs/node_modules
 docs/.vitepress/dist
 docs/.vitepress/cache
+
+# F27 CLI bundle (built by `npm run build:cli`; published from cli/)
+cli/dist

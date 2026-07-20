@@ -74,6 +74,7 @@ export default defineConfig({
           items: [
             { text: 'Introduction', link: '/guide/' },
             { text: 'Commands', link: '/guide/commands' },
+            { text: 'CLI', link: '/guide/cli' },
             { text: 'Authentication', link: '/guide/authentication' },
             { text: 'Configuration', link: '/guide/configuration' },
           ],

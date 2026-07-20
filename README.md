@@ -83,6 +83,21 @@ All features are reachable from the Command Palette, with matching editor toolba
 
 ---
 
+<!-- spec:F27 -->
+## Command-line interface
+
+Prefer the terminal or need these checks in CI? The same core ships as a
+standalone CLI, **`json-schema-tools`** — validate, lint, diff (with a
+backward-compatibility gate), bundle, and migrate schemas without VS Code.
+
+```sh
+npx json-schema-tools diff api.v1.json api.v2.json --check --strict
+```
+
+**[CLI guide →](https://samdidos.github.io/vscode-json-schema-preview/guide/cli)**
+
+---
+
 <!-- spec:F09 start -->
 ## Configuration
 

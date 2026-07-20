@@ -1,722 +1,739 @@
 {
-  "$comment": "Advisory effort estimates per spec (S13) — points are the single authored value; tshirt/hours derive from the calibration chart in specs/S13-spec-effort-estimation.md. Validated by npm run check:spec-effort. NEVER read by the maturity scorer.",
-  "rubricVersion": 1,
-  "specs": {
-    "F01": {
-      "points": 13,
-      "basePoints": 8,
-      "tshirt": "XL",
-      "hoursMin": 32,
-      "hoursMax": 80,
-      "factors": [
-        "INFRA"
-      ],
-      "justification": "Flagship preview: Python subprocess management, dual renderer (json-schema-for-humans + built-in fallback), webview lifecycle — 30 requirements; scaffolding effort exceeds its LOC.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 6,
-        "implLoc": 1820,
-        "taggedTests": 15,
-        "requirements": 30
-      }
-    },
-    "F02": {
-      "points": 3,
-      "basePoints": 5,
-      "tshirt": "S",
-      "hoursMin": 4,
-      "hoursMax": 8,
-      "factors": [
-        "PATTERN"
-      ],
-      "justification": "Debounced re-render on top of the already-built preview infrastructure; LOC overstates the marginal work.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 2,
-        "implLoc": 916,
-        "taggedTests": 1,
-        "requirements": 10
-      }
-    },
-    "F03": {
-      "points": 8,
-      "basePoints": 8,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [],
-      "justification": "Core ajv validation with AST-exact instance location across JSON/YAML — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 4,
-        "implLoc": 1813,
-        "taggedTests": 20,
-        "requirements": 16
-      }
-    },
-    "F04": {
-      "points": 8,
-      "basePoints": 8,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [],
-      "justification": "Binding management across workspace scopes and formats — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 5,
-        "implLoc": 1878,
-        "taggedTests": 28,
-        "requirements": 15
-      }
-    },
-    "F05": {
-      "points": 3,
-      "basePoints": 2,
-      "tshirt": "S",
-      "hoursMin": 4,
-      "hoursMax": 8,
-      "factors": [
-        "UI"
-      ],
-      "justification": "Visual editor webview: the coverage-excluded SchemaEditorPanel understates LOC evidence.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 1,
-        "implLoc": 262,
-        "taggedTests": 0,
-        "requirements": 9
-      }
-    },
-    "F06": {
-      "points": 8,
-      "basePoints": 8,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [],
-      "justification": "Schema inference with refinement passes — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 2057,
-        "taggedTests": 13,
-        "requirements": 12
-      }
-    },
-    "F07": {
-      "points": 8,
-      "basePoints": 5,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [
-        "EXT"
-      ],
-      "justification": "Remote auth: secret storage, header injection, 401/403 handling, plain-http warnings — external-integration edge cases beyond LOC.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 5,
-        "implLoc": 1169,
-        "taggedTests": 19,
-        "requirements": 16
-      }
-    },
-    "F08": {
-      "points": 8,
-      "basePoints": 8,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [],
-      "justification": "Cache freshness, auto-refresh policies, offline behaviour — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 5,
-        "implLoc": 2155,
-        "taggedTests": 32,
-        "requirements": 21
-      }
-    },
-    "F09": {
-      "points": 2,
-      "basePoints": 1,
-      "tshirt": "S",
-      "hoursMin": 2,
-      "hoursMax": 4,
-      "factors": [
-        "UI"
-      ],
-      "justification": "Configuration webview panel (coverage-excluded file) understates the LOC evidence.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 1,
-        "implLoc": 75,
-        "taggedTests": 0,
-        "requirements": 11
-      }
-    },
-    "F10": {
-      "points": 5,
-      "basePoints": 5,
-      "tshirt": "M",
-      "hoursMin": 8,
-      "hoursMax": 16,
-      "factors": [],
-      "justification": "Inline $schema binding with AST edits across formats — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 1,
-        "implLoc": 1093,
-        "taggedTests": 27,
-        "requirements": 19
-      }
-    },
-    "F11": {
-      "points": 8,
-      "basePoints": 8,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [],
-      "justification": "TOML parsing integrated across validate/bind/preview — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 5,
-        "implLoc": 2369,
-        "taggedTests": 30,
-        "requirements": 21
-      }
-    },
-    "F12": {
-      "points": 8,
-      "basePoints": 5,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [
-        "EXT"
-      ],
-      "justification": "SchemaStore + private catalog fetching, matching, and binding — external-integration edge cases.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 4,
-        "implLoc": 1467,
-        "taggedTests": 19,
-        "requirements": 14
-      }
-    },
-    "F13": {
-      "points": 5,
-      "basePoints": 5,
-      "tshirt": "M",
-      "hoursMin": 8,
-      "hoursMax": 16,
-      "factors": [],
-      "justification": "$ref navigation and hover across local, workspace, and cached remote targets — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 948,
-        "taggedTests": 28,
-        "requirements": 12
-      }
-    },
-    "F14": {
-      "points": 8,
-      "basePoints": 5,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [
-        "NOVEL"
-      ],
-      "justification": "Bundling/dereferencing with pointer rewriting is intricate new semantics, not a repo pattern.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 4,
-        "implLoc": 1336,
-        "taggedTests": 18,
-        "requirements": 11
-      }
-    },
-    "F15": {
-      "points": 8,
-      "basePoints": 5,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [
-        "NOVEL"
-      ],
-      "justification": "Structural diff with breaking-change classification — new comparison semantics.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 4,
-        "implLoc": 1399,
-        "taggedTests": 17,
-        "requirements": 13
-      }
-    },
-    "F16": {
-      "points": 8,
-      "basePoints": 8,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [],
-      "justification": "Constraint-respecting sample data generation — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 1788,
-        "taggedTests": 18,
-        "requirements": 11
-      }
-    },
-    "F17": {
-      "points": 3,
-      "basePoints": 3,
-      "tshirt": "S",
-      "hoursMin": 4,
-      "hoursMax": 8,
-      "factors": [],
-      "justification": "Lint rule engine with quick fixes — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 634,
-        "taggedTests": 23,
-        "requirements": 15
-      }
-    },
-    "F18": {
-      "points": 8,
-      "basePoints": 13,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [
-        "PATTERN"
-      ],
-      "justification": "quicktype-core does the heavy lifting; the work is integration and option mapping.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 5,
-        "implLoc": 2592,
-        "taggedTests": 29,
-        "requirements": 14
-      }
-    },
-    "F19": {
-      "points": 5,
-      "basePoints": 5,
-      "tshirt": "M",
-      "hoursMin": 8,
-      "hoursMax": 16,
-      "factors": [],
-      "justification": "Schema-driven TOML completions and hover — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 1023,
-        "taggedTests": 20,
-        "requirements": 9
-      }
-    },
-    "F20": {
-      "points": 5,
-      "basePoints": 8,
-      "tshirt": "M",
-      "hoursMin": 8,
-      "hoursMax": 16,
-      "factors": [
-        "PATTERN"
-      ],
-      "justification": "Workspace-wide report assembles the existing validation engine over many files.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 5,
-        "implLoc": 1658,
-        "taggedTests": 16,
-        "requirements": 11
-      }
-    },
-    "F21": {
-      "points": 3,
-      "basePoints": 3,
-      "tshirt": "S",
-      "hoursMin": 4,
-      "hoursMax": 8,
-      "factors": [],
-      "justification": "Quick fixes for validation errors — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 631,
-        "taggedTests": 18,
-        "requirements": 11
-      }
-    },
-    "F22": {
-      "points": 8,
-      "basePoints": 5,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [
-        "NOVEL"
-      ],
-      "justification": "Cross-draft migration semantics in both directions with idempotence guarantees — new algorithmic ground.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 4,
-        "implLoc": 1253,
-        "taggedTests": 17,
-        "requirements": 14
-      }
-    },
-    "F23": {
-      "points": 3,
-      "basePoints": 3,
-      "tshirt": "S",
-      "hoursMin": 4,
-      "hoursMax": 8,
-      "factors": [],
-      "justification": "Unused-in-data coverage lens — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 799,
-        "taggedTests": 12,
-        "requirements": 10
-      }
-    },
-    "F24": {
-      "points": 5,
-      "basePoints": 5,
-      "tshirt": "M",
-      "hoursMin": 8,
-      "hoursMax": 16,
-      "factors": [],
-      "justification": "$ref dependency graph extraction and webview view — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 868,
-        "taggedTests": 9,
-        "requirements": 10
-      }
-    },
-    "F25": {
-      "points": 3,
-      "basePoints": 3,
-      "tshirt": "S",
-      "hoursMin": 4,
-      "hoursMax": 8,
-      "factors": [],
-      "justification": "Nearest-match enum ranking (Levenshtein + tie-breaks) — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 2,
-        "implLoc": 408,
-        "taggedTests": 9,
-        "requirements": 6
-      }
-    },
-    "F26": {
-      "points": 2,
-      "basePoints": 2,
-      "tshirt": "S",
-      "hoursMin": 2,
-      "hoursMax": 4,
-      "factors": [],
-      "justification": "Compatibility verdict layered on the F15 diff — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 304,
-        "taggedTests": 7,
-        "requirements": 8
-      }
-    },
-    "S01": {
-      "points": 3,
-      "basePoints": 3,
-      "tshirt": "S",
-      "hoursMin": 4,
-      "hoursMax": 8,
-      "factors": [],
-      "justification": "CSP, nonces, and sanitisation across webviews — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 2,
-        "implLoc": 582,
-        "taggedTests": 4,
-        "requirements": 11
-      }
-    },
-    "S02": {
-      "points": 5,
-      "basePoints": 8,
-      "tshirt": "M",
-      "hoursMin": 8,
-      "hoursMax": 16,
-      "factors": [
-        "PATTERN"
-      ],
-      "justification": "Workspace Trust gating is conditional wiring through existing features; shared impl files inflate LOC.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 4,
-        "implLoc": 1650,
-        "taggedTests": 3,
-        "requirements": 10
-      }
-    },
-    "S03": {
-      "points": 13,
-      "basePoints": 13,
-      "tshirt": "XL",
-      "hoursMin": 32,
-      "hoursMax": 80,
-      "factors": [],
-      "justification": "Performance budgets, lazy loading, timeouts, and the bundle-size gate span many subsystems — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 11,
-        "implLoc": 3039,
-        "taggedTests": 19,
-        "requirements": 18
-      }
-    },
-    "S04": {
-      "points": 5,
-      "basePoints": 3,
-      "tshirt": "M",
-      "hoursMin": 8,
-      "hoursMax": 16,
-      "factors": [
-        "EXT"
-      ],
-      "justification": "Reliability is a matrix of network failure modes (timeout, DNS, 5xx vs authoritative 404, stale-cache fallback) — harder than its LOC.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 454,
-        "taggedTests": 18,
-        "requirements": 5
-      }
-    },
-    "S05": {
-      "points": 2,
-      "basePoints": 3,
-      "tshirt": "S",
-      "hoursMin": 2,
-      "hoursMax": 4,
-      "factors": [
-        "PATTERN"
-      ],
-      "justification": "Zero-telemetry privacy is an audit with assertion tests over existing code paths.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 2,
-        "implLoc": 769,
-        "taggedTests": 1,
-        "requirements": 3
-      }
-    },
-    "S06": {
-      "points": 5,
-      "basePoints": 5,
-      "tshirt": "M",
-      "hoursMin": 8,
-      "hoursMax": 16,
-      "factors": [],
-      "justification": "Keyboard, screen-reader, and contrast work across webviews — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 4,
-        "implLoc": 979,
-        "taggedTests": 3,
-        "requirements": 7
-      }
-    },
-    "S07": {
-      "points": 8,
-      "basePoints": 13,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [
-        "PATTERN"
-      ],
-      "justification": "Checkers follow the established plain-Node checker pattern; impl LOC includes wordy docs pages.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 11,
-        "implLoc": 2601,
-        "taggedTests": 0,
-        "requirements": 15
-      }
-    },
-    "S08": {
-      "points": 13,
-      "basePoints": 8,
-      "tshirt": "XL",
-      "hoursMin": 32,
-      "hoursMax": 80,
-      "factors": [
-        "INFRA"
-      ],
-      "justification": "Real-VS-Code E2E: harness download, xvfb, CI wiring, flake management — infrastructure effort invisible in LOC.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 14,
-        "implLoc": 1781,
-        "taggedTests": 34,
-        "requirements": 13
-      }
-    },
-    "S09": {
-      "points": 2,
-      "basePoints": 2,
-      "tshirt": "S",
-      "hoursMin": 2,
-      "hoursMax": 4,
-      "factors": [],
-      "justification": "Path-scoped CI workflows and their checker — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 3,
-        "implLoc": 272,
-        "taggedTests": 0,
-        "requirements": 7
-      }
-    },
-    "S10": {
-      "points": 5,
-      "basePoints": 3,
-      "tshirt": "M",
-      "hoursMin": 8,
-      "hoursMax": 16,
-      "factors": [
-        "UI"
-      ],
-      "justification": "Filterable matrix UI, dynamic per-spec routes, and multi-select dropdowns — interactive surface beyond LOC.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 10,
-        "implLoc": 751,
-        "taggedTests": 0,
-        "requirements": 10
-      }
-    },
-    "S11": {
-      "points": 13,
-      "basePoints": 21,
-      "tshirt": "XL",
-      "hoursMin": 32,
-      "hoursMax": 80,
-      "factors": [
-        "GEN"
-      ],
-      "justification": "Generated TypeScript types and the JSON Schema inflate LOC; the authored work is the schema + generator wiring.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 9,
-        "implLoc": 4822,
-        "taggedTests": 9,
-        "requirements": 8
-      }
-    },
-    "S12": {
-      "points": 8,
-      "basePoints": 8,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [],
-      "justification": "Radar + evolution diagrams, history backfill, and generated dimension pages — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 16,
-        "implLoc": 2093,
-        "taggedTests": 0,
-        "requirements": 17
-      }
-    },
-    "S13": {
-      "points": 8,
-      "basePoints": 8,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [],
-      "justification": "Rubric, validator, estimates file, and spec-page display — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 7,
-        "implLoc": 2090,
-        "taggedTests": 0,
-        "requirements": 7
-      }
-    },
-    "S14": {
-      "points": 2,
-      "basePoints": 2,
-      "tshirt": "S",
-      "hoursMin": 2,
-      "hoursMax": 4,
-      "factors": [],
-      "justification": "DORA metrics extractor from git history, plus the Delivery docs view — sized by its band.",
-      "estimator": "the project's AI coding agent (Claude Code)",
-      "estimatedAt": "2026-07-20",
-      "evidence": {
-        "implFiles": 1,
-        "implLoc": 198,
-        "taggedTests": 0,
-        "requirements": 9
-      }
-    }
+ "$comment": "Advisory effort estimates per spec (S13) — points are the single authored value; tshirt/hours derive from the calibration chart in specs/S13-spec-effort-estimation.md. Validated by npm run check:spec-effort. NEVER read by the maturity scorer.",
+ "rubricVersion": 1,
+ "specs": {
+  "F01": {
+   "points": 13,
+   "basePoints": 8,
+   "tshirt": "XL",
+   "hoursMin": 32,
+   "hoursMax": 80,
+   "factors": [
+    "INFRA"
+   ],
+   "justification": "Flagship preview: Python subprocess management, dual renderer (json-schema-for-humans + built-in fallback), webview lifecycle — 30 requirements; scaffolding effort exceeds its LOC.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 6,
+    "implLoc": 1820,
+    "taggedTests": 15,
+    "requirements": 30
+   }
+  },
+  "F02": {
+   "points": 3,
+   "basePoints": 5,
+   "tshirt": "S",
+   "hoursMin": 4,
+   "hoursMax": 8,
+   "factors": [
+    "PATTERN"
+   ],
+   "justification": "Debounced re-render on top of the already-built preview infrastructure; LOC overstates the marginal work.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 2,
+    "implLoc": 916,
+    "taggedTests": 1,
+    "requirements": 10
+   }
+  },
+  "F03": {
+   "points": 8,
+   "basePoints": 8,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [],
+   "justification": "Core ajv validation with AST-exact instance location across JSON/YAML — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 4,
+    "implLoc": 1813,
+    "taggedTests": 20,
+    "requirements": 16
+   }
+  },
+  "F04": {
+   "points": 8,
+   "basePoints": 8,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [],
+   "justification": "Binding management across workspace scopes and formats — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 5,
+    "implLoc": 1878,
+    "taggedTests": 28,
+    "requirements": 15
+   }
+  },
+  "F05": {
+   "points": 3,
+   "basePoints": 2,
+   "tshirt": "S",
+   "hoursMin": 4,
+   "hoursMax": 8,
+   "factors": [
+    "UI"
+   ],
+   "justification": "Visual editor webview: the coverage-excluded SchemaEditorPanel understates LOC evidence.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 1,
+    "implLoc": 262,
+    "taggedTests": 0,
+    "requirements": 9
+   }
+  },
+  "F06": {
+   "points": 8,
+   "basePoints": 8,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [],
+   "justification": "Schema inference with refinement passes — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 2057,
+    "taggedTests": 13,
+    "requirements": 12
+   }
+  },
+  "F07": {
+   "points": 8,
+   "basePoints": 5,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [
+    "EXT"
+   ],
+   "justification": "Remote auth: secret storage, header injection, 401/403 handling, plain-http warnings — external-integration edge cases beyond LOC.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 5,
+    "implLoc": 1169,
+    "taggedTests": 19,
+    "requirements": 16
+   }
+  },
+  "F08": {
+   "points": 8,
+   "basePoints": 8,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [],
+   "justification": "Cache freshness, auto-refresh policies, offline behaviour — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 5,
+    "implLoc": 2155,
+    "taggedTests": 32,
+    "requirements": 21
+   }
+  },
+  "F09": {
+   "points": 2,
+   "basePoints": 1,
+   "tshirt": "S",
+   "hoursMin": 2,
+   "hoursMax": 4,
+   "factors": [
+    "UI"
+   ],
+   "justification": "Configuration webview panel (coverage-excluded file) understates the LOC evidence.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 1,
+    "implLoc": 75,
+    "taggedTests": 0,
+    "requirements": 11
+   }
+  },
+  "F10": {
+   "points": 5,
+   "basePoints": 5,
+   "tshirt": "M",
+   "hoursMin": 8,
+   "hoursMax": 16,
+   "factors": [],
+   "justification": "Inline $schema binding with AST edits across formats — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 1,
+    "implLoc": 1093,
+    "taggedTests": 27,
+    "requirements": 19
+   }
+  },
+  "F11": {
+   "points": 8,
+   "basePoints": 8,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [],
+   "justification": "TOML parsing integrated across validate/bind/preview — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 5,
+    "implLoc": 2369,
+    "taggedTests": 30,
+    "requirements": 21
+   }
+  },
+  "F12": {
+   "points": 8,
+   "basePoints": 5,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [
+    "EXT"
+   ],
+   "justification": "SchemaStore + private catalog fetching, matching, and binding — external-integration edge cases.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 4,
+    "implLoc": 1467,
+    "taggedTests": 19,
+    "requirements": 14
+   }
+  },
+  "F13": {
+   "points": 5,
+   "basePoints": 5,
+   "tshirt": "M",
+   "hoursMin": 8,
+   "hoursMax": 16,
+   "factors": [],
+   "justification": "$ref navigation and hover across local, workspace, and cached remote targets — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 948,
+    "taggedTests": 28,
+    "requirements": 12
+   }
+  },
+  "F14": {
+   "points": 8,
+   "basePoints": 5,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [
+    "NOVEL"
+   ],
+   "justification": "Bundling/dereferencing with pointer rewriting is intricate new semantics, not a repo pattern.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 4,
+    "implLoc": 1336,
+    "taggedTests": 18,
+    "requirements": 11
+   }
+  },
+  "F15": {
+   "points": 8,
+   "basePoints": 5,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [
+    "NOVEL"
+   ],
+   "justification": "Structural diff with breaking-change classification — new comparison semantics.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 4,
+    "implLoc": 1399,
+    "taggedTests": 17,
+    "requirements": 13
+   }
+  },
+  "F16": {
+   "points": 8,
+   "basePoints": 8,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [],
+   "justification": "Constraint-respecting sample data generation — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 1788,
+    "taggedTests": 18,
+    "requirements": 11
+   }
+  },
+  "F17": {
+   "points": 3,
+   "basePoints": 3,
+   "tshirt": "S",
+   "hoursMin": 4,
+   "hoursMax": 8,
+   "factors": [],
+   "justification": "Lint rule engine with quick fixes — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 634,
+    "taggedTests": 23,
+    "requirements": 15
+   }
+  },
+  "F18": {
+   "points": 8,
+   "basePoints": 13,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [
+    "PATTERN"
+   ],
+   "justification": "quicktype-core does the heavy lifting; the work is integration and option mapping.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 5,
+    "implLoc": 2592,
+    "taggedTests": 29,
+    "requirements": 14
+   }
+  },
+  "F19": {
+   "points": 5,
+   "basePoints": 5,
+   "tshirt": "M",
+   "hoursMin": 8,
+   "hoursMax": 16,
+   "factors": [],
+   "justification": "Schema-driven TOML completions and hover — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 1023,
+    "taggedTests": 20,
+    "requirements": 9
+   }
+  },
+  "F20": {
+   "points": 5,
+   "basePoints": 8,
+   "tshirt": "M",
+   "hoursMin": 8,
+   "hoursMax": 16,
+   "factors": [
+    "PATTERN"
+   ],
+   "justification": "Workspace-wide report assembles the existing validation engine over many files.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 5,
+    "implLoc": 1658,
+    "taggedTests": 16,
+    "requirements": 11
+   }
+  },
+  "F21": {
+   "points": 3,
+   "basePoints": 3,
+   "tshirt": "S",
+   "hoursMin": 4,
+   "hoursMax": 8,
+   "factors": [],
+   "justification": "Quick fixes for validation errors — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 631,
+    "taggedTests": 18,
+    "requirements": 11
+   }
+  },
+  "F22": {
+   "points": 8,
+   "basePoints": 5,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [
+    "NOVEL"
+   ],
+   "justification": "Cross-draft migration semantics in both directions with idempotence guarantees — new algorithmic ground.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 4,
+    "implLoc": 1253,
+    "taggedTests": 17,
+    "requirements": 14
+   }
+  },
+  "F23": {
+   "points": 3,
+   "basePoints": 3,
+   "tshirt": "S",
+   "hoursMin": 4,
+   "hoursMax": 8,
+   "factors": [],
+   "justification": "Unused-in-data coverage lens — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 799,
+    "taggedTests": 12,
+    "requirements": 10
+   }
+  },
+  "F24": {
+   "points": 5,
+   "basePoints": 5,
+   "tshirt": "M",
+   "hoursMin": 8,
+   "hoursMax": 16,
+   "factors": [],
+   "justification": "$ref dependency graph extraction and webview view — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 868,
+    "taggedTests": 9,
+    "requirements": 10
+   }
+  },
+  "F25": {
+   "points": 3,
+   "basePoints": 3,
+   "tshirt": "S",
+   "hoursMin": 4,
+   "hoursMax": 8,
+   "factors": [],
+   "justification": "Nearest-match enum ranking (Levenshtein + tie-breaks) — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 2,
+    "implLoc": 408,
+    "taggedTests": 9,
+    "requirements": 6
+   }
+  },
+  "F26": {
+   "points": 2,
+   "basePoints": 2,
+   "tshirt": "S",
+   "hoursMin": 2,
+   "hoursMax": 4,
+   "factors": [],
+   "justification": "Compatibility verdict layered on the F15 diff — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 304,
+    "taggedTests": 7,
+    "requirements": 8
+   }
+  },
+  "S01": {
+   "points": 3,
+   "basePoints": 3,
+   "tshirt": "S",
+   "hoursMin": 4,
+   "hoursMax": 8,
+   "factors": [],
+   "justification": "CSP, nonces, and sanitisation across webviews — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 2,
+    "implLoc": 582,
+    "taggedTests": 4,
+    "requirements": 11
+   }
+  },
+  "S02": {
+   "points": 5,
+   "basePoints": 8,
+   "tshirt": "M",
+   "hoursMin": 8,
+   "hoursMax": 16,
+   "factors": [
+    "PATTERN"
+   ],
+   "justification": "Workspace Trust gating is conditional wiring through existing features; shared impl files inflate LOC.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 4,
+    "implLoc": 1650,
+    "taggedTests": 3,
+    "requirements": 10
+   }
+  },
+  "S03": {
+   "points": 13,
+   "basePoints": 13,
+   "tshirt": "XL",
+   "hoursMin": 32,
+   "hoursMax": 80,
+   "factors": [],
+   "justification": "Performance budgets, lazy loading, timeouts, and the bundle-size gate span many subsystems — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 11,
+    "implLoc": 3039,
+    "taggedTests": 19,
+    "requirements": 18
+   }
+  },
+  "S04": {
+   "points": 5,
+   "basePoints": 3,
+   "tshirt": "M",
+   "hoursMin": 8,
+   "hoursMax": 16,
+   "factors": [
+    "EXT"
+   ],
+   "justification": "Reliability is a matrix of network failure modes (timeout, DNS, 5xx vs authoritative 404, stale-cache fallback) — harder than its LOC.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 454,
+    "taggedTests": 18,
+    "requirements": 5
+   }
+  },
+  "S05": {
+   "points": 2,
+   "basePoints": 3,
+   "tshirt": "S",
+   "hoursMin": 2,
+   "hoursMax": 4,
+   "factors": [
+    "PATTERN"
+   ],
+   "justification": "Zero-telemetry privacy is an audit with assertion tests over existing code paths.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 2,
+    "implLoc": 769,
+    "taggedTests": 1,
+    "requirements": 3
+   }
+  },
+  "S06": {
+   "points": 5,
+   "basePoints": 5,
+   "tshirt": "M",
+   "hoursMin": 8,
+   "hoursMax": 16,
+   "factors": [],
+   "justification": "Keyboard, screen-reader, and contrast work across webviews — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 4,
+    "implLoc": 979,
+    "taggedTests": 3,
+    "requirements": 7
+   }
+  },
+  "S07": {
+   "points": 8,
+   "basePoints": 13,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [
+    "PATTERN"
+   ],
+   "justification": "Checkers follow the established plain-Node checker pattern; impl LOC includes wordy docs pages.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 11,
+    "implLoc": 2601,
+    "taggedTests": 0,
+    "requirements": 15
+   }
+  },
+  "S08": {
+   "points": 13,
+   "basePoints": 8,
+   "tshirt": "XL",
+   "hoursMin": 32,
+   "hoursMax": 80,
+   "factors": [
+    "INFRA"
+   ],
+   "justification": "Real-VS-Code E2E: harness download, xvfb, CI wiring, flake management — infrastructure effort invisible in LOC.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 14,
+    "implLoc": 1781,
+    "taggedTests": 34,
+    "requirements": 13
+   }
+  },
+  "S09": {
+   "points": 2,
+   "basePoints": 2,
+   "tshirt": "S",
+   "hoursMin": 2,
+   "hoursMax": 4,
+   "factors": [],
+   "justification": "Path-scoped CI workflows and their checker — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 272,
+    "taggedTests": 0,
+    "requirements": 7
+   }
+  },
+  "S10": {
+   "points": 5,
+   "basePoints": 3,
+   "tshirt": "M",
+   "hoursMin": 8,
+   "hoursMax": 16,
+   "factors": [
+    "UI"
+   ],
+   "justification": "Filterable matrix UI, dynamic per-spec routes, and multi-select dropdowns — interactive surface beyond LOC.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 10,
+    "implLoc": 751,
+    "taggedTests": 0,
+    "requirements": 10
+   }
+  },
+  "S11": {
+   "points": 13,
+   "basePoints": 21,
+   "tshirt": "XL",
+   "hoursMin": 32,
+   "hoursMax": 80,
+   "factors": [
+    "GEN"
+   ],
+   "justification": "Generated TypeScript types and the JSON Schema inflate LOC; the authored work is the schema + generator wiring.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 9,
+    "implLoc": 4822,
+    "taggedTests": 9,
+    "requirements": 8
+   }
+  },
+  "S12": {
+   "points": 8,
+   "basePoints": 8,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [],
+   "justification": "Radar + evolution diagrams, history backfill, and generated dimension pages — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 16,
+    "implLoc": 2093,
+    "taggedTests": 0,
+    "requirements": 17
+   }
+  },
+  "S13": {
+   "points": 8,
+   "basePoints": 8,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [],
+   "justification": "Rubric, validator, estimates file, and spec-page display — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 7,
+    "implLoc": 2090,
+    "taggedTests": 0,
+    "requirements": 7
+   }
+  },
+  "S14": {
+   "points": 2,
+   "basePoints": 2,
+   "tshirt": "S",
+   "hoursMin": 2,
+   "hoursMax": 4,
+   "factors": [],
+   "justification": "DORA metrics extractor from git history, plus the Delivery docs view — sized by its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 1,
+    "implLoc": 198,
+    "taggedTests": 0,
+    "requirements": 9
+   }
+  },
+  "F27": {
+   "points": 3,
+   "basePoints": 3,
+   "tshirt": "S",
+   "hoursMin": 4,
+   "hoursMax": 8,
+   "factors": [],
+   "justification": "New CLI front end — argument parsing, command routing, a filesystem/HTTP $ref resolver, and its own build config + publishable package — that reuses the existing pure core for every schema operation; sits squarely in its evidence band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-20",
+   "evidence": {
+    "implFiles": 4,
+    "implLoc": 520,
+    "taggedTests": 12,
+    "requirements": 13
+   }
   }
+ }
 }

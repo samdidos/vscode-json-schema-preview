@@ -6,15 +6,27 @@
   "buildCommand": "tsc -p tsconfig.test.json",
   "mochaOptions": {
     "ui": "tdd",
-    "require": ["./out/test/mocks/setup.js"],
-    "spec": ["out/test/unit/**/*.test.js"]
+    "require": [
+      "./out/test/mocks/setup.js"
+    ],
+    "spec": [
+      "out/test/unit/**/*.test.js"
+    ]
   },
-  "checkers": ["typescript"],
+  "checkers": [
+    "typescript"
+  ],
   "tsconfigFile": "tsconfig.json",
   "disableTypeChecks": "src/**/*.ts",
   "coverageAnalysis": "perTest",
-  "reporters": ["html", "clear-text", "progress"],
-  "htmlReporter": { "fileName": "reports/mutation/index.html" },
+  "reporters": [
+    "html",
+    "clear-text",
+    "progress"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
   "incremental": true,
   "incrementalFile": "reports/stryker-incremental.json",
   "mutate": [
@@ -24,7 +36,12 @@
     "!src/SchemaEditorPanel.ts",
     "!src/ConfigWebPanel.ts",
     "!src/RefGraphPanel.ts",
-    "!src/python.ts"
+    "!src/python.ts",
+    "!src/cli/bin.ts"
   ],
-  "thresholds": { "high": 80, "low": 60, "break": 60 }
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 60
+  }
 }
