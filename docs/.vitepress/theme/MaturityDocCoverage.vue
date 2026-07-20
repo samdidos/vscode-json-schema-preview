@@ -30,14 +30,22 @@ const mean = computed(() =>
     <p class="doc-coverage-intro">
       What the <code>doc-coverage</code> check above actually measures: for every spec, the words
       of documentation attributed to it via <code>&lt;!-- spec:… --&gt;</code> tags versus the
-      words its complexity leads us to expect ({{ data.wordsPerRequirement }} ×&nbsp;its
-      documentable requirements, floor {{ data.minExpectedWords }}). The check earns the
+      words its <strong>evaluated complexity</strong> leads us to expect. Complexity is computed
+      from the spec corpus itself: each documentable requirement contributes
+      kind-weight (FR/SR {{ data.kindWeights.FR }}, NFR {{ data.kindWeights.NFR }}) × its
+      definition's length relative to the corpus median ({{ data.medianDefinitionWords }} words),
+      and expected&nbsp;= {{ data.wordsPerComplexityUnit }} × complexity, floor
+      {{ data.minExpectedWords }}. The check earns the
       <strong>mean coverage: {{ Math.round(mean * 100) }}%</strong>. Least-documented specs
       first — each is the next best place to write.
     </p>
     <ul class="doc-coverage-list">
       <li v-for="s in specs" :key="s.id" class="doc-coverage-row">
-        <a class="doc-coverage-spec" :href="withBase(`/specs/${s.id}`)" :title="s.title">
+        <a
+          class="doc-coverage-spec"
+          :href="withBase(`/specs/${s.id}`)"
+          :title="`${s.title} — complexity ${s.complexity} (${s.documentableRequirements} requirements)`"
+        >
           {{ s.id }} · {{ s.title }}
         </a>
         <span class="doc-coverage-bar" aria-hidden="true">

@@ -3004,7 +3004,7 @@
       "impl": [
         "scripts/doc-coverage-lib.mjs"
       ],
-      "note": "expected = WORDS_PER_REQUIREMENT (40) × documentable requirements, floor MIN_EXPECTED_WORDS (120); constants declared once"
+      "note": "expected = 40 × evaluated complexity (kind-weight FR/SR 1.0, NFR 0.4 × size factor vs corpus-median definition length, clamped 0.5–2), floor 120; constants + per-spec complexity exposed by the lib"
     },
     "S07-SR-12": {
       "status": "implemented",

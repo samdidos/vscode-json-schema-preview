@@ -34,8 +34,10 @@ function labelOf(s: (typeof sections.value)[number]): string {
     <p class="spec-doc-sections-intro">
       Documentation sections tagged <code>spec:{{ spec.id }}</code> (or one of its requirement
       ids) — {{ spec.actualWords }} of ~{{ spec.expectedWords }} expected words
-      ({{ Math.round(spec.coverage * 100) }}%, expectation derived from
-      {{ spec.documentableRequirements }} documentable requirements).
+      ({{ Math.round(spec.coverage * 100) }}%). The expectation comes from this spec's evaluated
+      complexity of {{ spec.complexity }} ({{ spec.documentableRequirements }} documentable
+      requirements — {{ Object.entries(spec.kinds).map(([k, n]) => `${n} ${k}`).join(', ') }} —
+      weighted by kind and by each definition's length).
     </p>
     <span class="spec-doc-sections-bar" aria-hidden="true">
       <span class="spec-doc-sections-fill" :style="{ width: `${spec.coverage * 100}%` }" />

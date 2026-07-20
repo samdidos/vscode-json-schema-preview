@@ -133,11 +133,26 @@ how much of each spec is actually documented instead of counting pages.
   tags attribute to their parent spec; overlapping regions for the same spec
   in the same file MUST be merged so no word is counted twice for one spec.
 - **S07-SR-11** The same library MUST compute each spec's **expected words**
-  from its complexity, where complexity is the count of its *documentable*
-  requirements (matrix status not `planned`/`deferred`): expected =
-  `words-per-requirement × documentable requirements`, clamped to a declared
-  minimum floor. The words-per-requirement constant and the floor MUST be
-  declared once in the library, visible and adjustable.
+  from an **evaluated complexity**, itself derived only from observable facts
+  in the spec corpus — never a hand-set number. Each *documentable*
+  requirement (matrix status not `planned`/`deferred`) contributes
+  `kind-weight × size-factor` complexity units, where:
+  - **kind-weight** reflects how much *user-facing* documentation a
+    requirement kind calls for: functional/system requirements (`FR`, `SR`)
+    weigh 1.0; non-functional requirements (`NFR`) weigh less (qualities and
+    constraints are largely invisible to users);
+  - **size-factor** is the requirement's own definition length (the words from
+    its bold ID to the next requirement or heading) normalized by the
+    corpus-wide median definition length, clamped to a declared band — a
+    one-line requirement expects less documentation than a multi-paragraph
+    one, but no single requirement dominates.
+
+  A spec's complexity is the sum over its documentable requirements, and
+  `expected words = words-per-complexity-unit × complexity`, clamped to a
+  declared minimum floor. Every constant (kind weights, clamp band, rate,
+  floor) MUST be declared once in the library, visible and adjustable, and the
+  library MUST expose each spec's evaluated complexity and per-kind
+  requirement counts so consumers can show *why* an expectation is what it is.
 - **S07-SR-12** A spec's **documentation coverage** is
   `min(1, actual ÷ expected)`, and the maturity score's Docs dimension MUST
   score documentation depth as the **mean coverage across documentable

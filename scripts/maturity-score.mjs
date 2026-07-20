@@ -286,7 +286,7 @@ const DIMENSIONS = [
       { id: 'docs-site', points: 1, note: 'a docs site (docs/) exists',
         why: 'Equal-weight presence check for a published site; its *depth* is scored separately by guide-coverage.',
         earn: () => exists('docs/index.md') },
-      { id: 'doc-coverage', points: 3, note: 'mean per-spec documentation depth: tagged doc words vs words expected from spec complexity (S07-SR-10..12)',
+      { id: 'doc-coverage', points: 3, note: 'mean per-spec documentation depth: tagged doc words vs words expected from each spec’s evaluated complexity (S07-SR-10..12)',
         why: 'The only depth signal in the dimension: it measures how much of each spec is actually documented (words attributed via spec: tags, against a complexity-derived expectation), not whether files exist — replacing the old page-count ratio, which a stub page could satisfy. It moves with every requirement and every paragraph written, so it outweighs any single presence check.',
         earn: () => meanDocCoverage(ROOT) },
       { id: 'maturity-tracked', points: 1, note: 'MATURITY.md exists',
