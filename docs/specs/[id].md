@@ -2,6 +2,9 @@
 
 <SpecSourceLink />
 
+<!-- spec:S13 -->
+<SpecEffort />
+
 <!-- @content -->
 
 <SpecTraceability />

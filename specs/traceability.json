@@ -3442,6 +3442,62 @@
         "docs/maturity/[dimension].md"
       ],
       "note": "per-spec words-vs-expected chart on the Docs dimension page, least-covered first, linking to spec pages"
+    },
+    "S13-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs",
+        "scripts/spec-effort.mjs"
+      ],
+      "note": "scorer has no reference to effort.json; estimates fenced as advisory"
+    },
+    "S13-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-effort.mjs",
+        "specs/effort.json"
+      ],
+      "note": "plain Node, no dependencies; tool-neutral JSON"
+    },
+    "S13-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-effort.mjs",
+        "specs/effort.json"
+      ],
+      "note": "points authored; tshirt + hour band derived from the calibration chart; validator rejects contradictions"
+    },
+    "S13-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "specs/effort.json",
+        "scripts/spec-effort.mjs"
+      ],
+      "note": "basePoints, evidence snapshot, factor codes, justification, estimator, date, rubricVersion per estimate"
+    },
+    "S13-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-effort.mjs",
+        "package.json"
+      ],
+      "note": "check:spec-effort in verify: fails on structural violations, warns on live-evidence band drift"
+    },
+    "S13-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-effort.mjs"
+      ],
+      "note": "FIBONACCI, LOC_BANDS, TSHIRT, HOURS, FACTORS declared once; chart in the spec mirrors them"
+    },
+    "S13-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecEffort.vue",
+        "docs/.vitepress/specEffort.data.ts",
+        "docs/specs/[id].md"
+      ],
+      "note": "advisory-labelled estimate box on each spec page with provenance, linking to S13"
     }
   }
 }

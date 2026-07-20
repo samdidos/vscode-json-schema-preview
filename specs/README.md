@@ -46,6 +46,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S10-spec-visualization.md](S10-spec-visualization.md) | Spec visualization on the docs site (matrix, spec pages) |
 | [S11-traceability-schema.md](S11-traceability-schema.md) | Traceability matrix JSON Schema & generated TypeScript types |
 | [S12-maturity-visualization.md](S12-maturity-visualization.md) | Maturity scorecard visualization & score history on the docs site |
+| [S13-spec-effort-estimation.md](S13-spec-effort-estimation.md) | Advisory per-spec effort estimates (points / T-shirt / hours) |
 
 ## Scope
 
