@@ -3,7 +3,7 @@
   <text x="190" y="28" font-size="16" font-weight="600" fill="#0b0b0b"
         font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Project Maturity Scorecard</text>
   <text x="190" y="48" font-size="12" fill="#52514e"
-        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Snapshot: 2026-07-19 — scored out of 5</text>
+        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Snapshot: 2026-07-20 — scored out of 5</text>
   
     <line x1="268.8" y1="92" x2="268.8" y2="392"
           stroke="#e1e0d9" stroke-width="1" />
@@ -31,9 +31,9 @@
     <text x="174" y="113" font-size="13"
           font-weight="600" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Overall</text>
-    <rect x="190" y="98" width="354.6" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="554.6" y="113" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.5</text>
+    <rect x="190" y="98" width="362.47999999999996" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="562.48" y="113" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.6</text>
     <text x="174" y="161" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Spec &amp; process</text>
@@ -66,14 +66,14 @@
           fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.3</text>
     <text x="174" y="341" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
-          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">CI/CD &amp; release</text>
-    <rect x="190" y="326" width="315.20000000000005" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="515.2" y="341" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.0</text>
+          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Docs</text>
+    <rect x="190" y="326" width="323.08" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="523.0799999999999" y="341" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.1</text>
     <text x="174" y="377" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
-          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Docs</text>
-    <rect x="190" y="362" width="291.56" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="491.56" y="377" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">3.7</text>
+          font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">CI/CD &amp; release</text>
+    <rect x="190" y="362" width="315.20000000000005" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="515.2" y="377" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.0</text>
 </svg>

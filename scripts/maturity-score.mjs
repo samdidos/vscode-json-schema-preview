@@ -24,6 +24,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { HISTORY_DIR, toSnapshot, sameScores, snapshotFileName, readHistory } from './maturity-history-lib.mjs';
+import { meanDocCoverage } from './doc-coverage-lib.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_PATH = join(ROOT, 'maturity-score.json');
@@ -93,7 +94,10 @@ function actionPinRatio() {
   let external = 0;
   for (const f of workflowFiles()) {
     const text = read(f);
-    for (const m of text.matchAll(/uses:\s*([^\s]+)/g)) {
+    // Anchored to a `uses:` step key at the start of a line (after optional
+    // `- `) — a bare substring match also caught `statuses: write` permission
+    // lines and miscounted them as unpinned actions.
+    for (const m of text.matchAll(/^\s*(?:-\s+)?uses:\s*([^\s]+)/gm)) {
       const ref = m[1];
       if (ref.startsWith('./') || ref.startsWith('docker://')) continue; // local / not a pinnable action ref
       external++;
@@ -282,9 +286,9 @@ const DIMENSIONS = [
       { id: 'docs-site', points: 1, note: 'a docs site (docs/) exists',
         why: 'Equal-weight presence check for a published site; its *depth* is scored separately by guide-coverage.',
         earn: () => exists('docs/index.md') },
-      { id: 'guide-coverage', points: 3, note: 'guide pages cover the feature specs',
-        why: 'The only depth signal in the dimension — it measures whether features get documented, not whether files exist, and it moves with every feature added — so it outweighs any single presence check.',
-        earn: () => clamp01(listFiles('docs/guide', (f) => f.endsWith('.md')).length / listFiles('specs', (f) => /\/F\d\d.*\.md$/.test(f)).length) },
+      { id: 'doc-coverage', points: 3, note: 'mean per-spec documentation depth: tagged doc words vs words expected from spec complexity (S07-SR-10..12)',
+        why: 'The only depth signal in the dimension: it measures how much of each spec is actually documented (words attributed via spec: tags, against a complexity-derived expectation), not whether files exist — replacing the old page-count ratio, which a stub page could satisfy. It moves with every requirement and every paragraph written, so it outweighs any single presence check.',
+        earn: () => meanDocCoverage(ROOT) },
       { id: 'maturity-tracked', points: 1, note: 'MATURITY.md exists',
         why: 'Equal-weight presence check: maturity itself is tracked in a committed, dated document.',
         earn: () => exists('MATURITY.md') },

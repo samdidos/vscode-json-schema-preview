@@ -65,6 +65,12 @@ script alongside the checks they explain** and emitted into
   project can currently express. The page MUST link to the live scorer
   (`scripts/maturity-score.mjs`) and `MATURITY.md` as the authoritative
   sources, and the overview and dimension pages MUST link to it.
+- **S12-SR-14** The **Docs dimension page** MUST additionally render a
+  per-spec documentation-coverage chart from the S07 depth metric
+  (S07-SR-10..12): for every documentable spec, its actual words against its
+  expected words (complexity-derived), with the least-covered specs surfaced
+  first and each entry linking to that spec's page. The chart is computed at
+  build time from the shared library — no value is hand-maintained.
 - **S12-SR-04** The overview page MUST show the overall score, the snapshot
   date, and an **interactive diagram** of all dimension scores on the 0–5
   scale: hovering or focusing a dimension MUST reveal its exact score, and
