@@ -67,6 +67,67 @@ clean, pipeable schema.
 jstk migrate legacy.schema.json --to 2020-12 > modern.schema.json
 ```
 
+### `infer <data-file>`
+
+Infer a draft-07 schema from an existing data file (JSON/JSONC/JSONL/YAML/TOML).
+A JSONL file infers over the array of its records.
+
+```sh
+jstk infer config.json > config.schema.json
+```
+
+### `sample <schema-file>`
+
+Generate a valid sample instance from a schema, resolving same-document `$ref`s.
+If the schema is unsatisfiable, it reports the failing keyword(s) and exits with
+the data-error code rather than emitting an invalid document.
+
+```sh
+jstk sample config.schema.json
+```
+
+### `types <schema-file> [--lang <id>]`
+
+Generate typed source from a schema. External `$ref`s are bundled first, so the
+generator runs on a self-contained document. `--lang` selects the target
+(`typescript` — the default — `python`, `go`, `rust`, `java`, `csharp`,
+`kotlin`, `swift`, `dart`, `cpp`).
+
+```sh
+jstk types api.schema.json --lang go > api.go
+```
+
+### `coverage <data-file> --schema <schema>`
+
+Report which of a schema's declared properties the data actually exercises —
+a quick way to spot fields your fixtures never touch. JSONL data unions coverage
+across records.
+
+```sh
+jstk coverage sample-data.json --schema api.schema.json
+```
+
+### `validate <dir> --workspace`
+
+Scan a directory and validate every data file that carries an inline `$schema`
+binding against that schema, printing a grouped Markdown report. Exits `1` if any
+file has a validation or binding error.
+
+```sh
+jstk validate ./config --workspace
+```
+
+### `graph <schema-file> [--svg]`
+
+Print the schema's `$ref` dependency graph — an adjacency list by default, or an
+SVG diagram with `--svg`. External and unresolved refs are shown without being
+fetched, and cycles are flagged.
+
+```sh
+jstk graph api.schema.json          # adjacency list + summary
+jstk graph api.schema.json --svg > api-refs.svg
+```
+
 ## Global options & exit codes
 
 `--json` switches any command to machine-readable output. `-h`/`--help` and

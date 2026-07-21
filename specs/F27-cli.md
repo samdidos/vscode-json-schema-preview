@@ -68,6 +68,39 @@ first-class, multi-command binary.
   transform the schema to the target draft (F22) and print the migrated schema,
   reporting the list of changes to stderr (so stdout stays a clean schema).
 
+### Subcommands over the remaining non-interactive core
+
+These extend the CLI toward parity with the extension's editor-free features.
+Each MUST reuse the same pure module the extension uses (F27-FR-01); none may
+re-implement the logic.
+
+- **F27-FR-11** `infer <data-file>` MUST infer a JSON Schema from a data file
+  (F06, `genson-js`), declaring the draft-07 meta-schema, and print it to
+  stdout. The data file MUST be parsed by its extension (JSON/JSONC/JSONL/YAML/
+  TOML); a JSONL file infers over the array of its records.
+- **F27-FR-12** `sample <schema-file>` MUST generate a valid sample instance
+  from a schema (F16) and print it to stdout, resolving same-document `$ref`s.
+  When the schema is unsatisfiable or will not compile it MUST report the
+  failing keyword(s) and exit with the data-error code (`65`), never emitting an
+  invalid document.
+- **F27-FR-13** `types <schema-file> [--lang <id>]` MUST generate typed source
+  from a schema (F18), bundling external `$ref`s first (F14) so the generator
+  runs on a self-contained document. `--lang` selects a target from F18's
+  supported set (default `typescript`); an unknown target is a usage error
+  (`64`). The generated code MUST be printed to stdout.
+- **F27-FR-14** `coverage <data-file> --schema <schema>` MUST report which of a
+  schema's declared properties the data exercises (F23) and print the coverage
+  report; JSONL data unions coverage across records.
+- **F27-FR-15** `validate <dir> --workspace` MUST scan a directory for supported
+  data files, validate each file that carries an inline `$schema` binding (F10)
+  against that schema (F03/F20), and print the F20 grouped Markdown report. It
+  MUST exit `1` when any file has a validation or binding error, else `0`. Files
+  whose `$schema` is a meta-schema (i.e. schema files, F20-FR-02) MUST NOT be
+  treated as data bindings.
+- **F27-FR-16** `graph <schema-file> [--svg]` MUST print the schema's `$ref`
+  dependency graph (F24): an adjacency list by default, or the SVG rendering
+  with `--svg`. External and unresolved refs MUST be shown without fetching.
+
 ### Output & exit codes
 
 - **F27-FR-09** Every subcommand MUST accept `--json`, emitting a
@@ -112,3 +145,6 @@ first-class, multi-command binary.
 
 - 2026-07-19 — Initial spec: standalone CLI reusing the pure core
   (validate/lint/diff/bundle/migrate), published as its own npm package.
+- 2026-07-21 — Added F27-FR-11..16: `infer` (F06), `sample` (F16), `types`
+  (F18), `coverage` (F23), `validate --workspace` (F20), and `graph` (F24),
+  extending the CLI toward the extension's non-interactive surface.

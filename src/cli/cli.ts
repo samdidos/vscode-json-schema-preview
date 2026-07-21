@@ -5,14 +5,23 @@
 // the same pure modules the VS Code extension uses — no logic is re-implemented
 // (F27-FR-01) and nothing here imports `vscode` (F27-NFR-01).
 import * as path from 'path';
-import { parseDataText, validateInstances, languageIdForPath, lineAt } from '../workspaceValidation';
-import { parseSchemaText } from '../schemaPointer';
+import { createSchema } from 'genson-js';
+import {
+  parseDataText, validateInstances, languageIdForPath, lineAt,
+  isMetaSchemaRef, renderMarkdownReport,
+  type FileResult, type RunMeta,
+} from '../workspaceValidation';
+import { parseSchemaText, parseRef, parseJsonPointer, resolvePointer } from '../schemaPointer';
 import { languageForSchemaSource } from '../languages';
 import { lintSchema } from '../schemaLinter';
 import { diffSchemas, summarise, renderReport } from '../schemaDiff';
 import { compatibilityVerdict, verdictExitCode, renderCompatReport } from '../schemaCompat';
 import { bundleSchema, dereferenceSchema, type ResolvedDoc } from '../schemaBundler';
 import { migrateSchema, type TargetDraft } from '../draftMigration';
+import { generateAndValidate } from '../sampleDataGenerator';
+import { computeCoverage, renderCoverageReport } from '../schemaCoverage';
+import { TARGET_LANGUAGES, generateCode } from '../typeGenerator';
+import { buildRefGraph, detectCycle, summarizeGraph, renderAdjacencyList, layoutGraph, renderGraphSvg } from '../refGraph';
 
 /** Injected side-effect surface so `runCli` stays pure and testable. */
 export interface CliIO {
@@ -20,6 +29,8 @@ export interface CliIO {
   readFile(absPath: string): string;
   /** Fetch a remote (`http(s)`) document as text. */
   fetchText(url: string): Promise<string>;
+  /** List every file path (recursively) under a directory, for `--workspace`. */
+  walk(dir: string): string[];
   /** Directory the CLI was invoked from; file arguments resolve against it. */
   cwd: string;
   /** The CLI package version, for `--version`. */
@@ -50,11 +61,17 @@ const USAGE = [
   '',
   'Commands:',
   '  validate <data-file> --schema <schema>   Validate a data file against a schema',
+  '  validate <dir> --workspace               Validate every inline-$schema file under a dir',
   '  lint <schema-file>                        Report schema-quality findings',
   '  diff <old-schema> <new-schema>            Show changes between two schemas',
   '      [--check] [--strict]                  …and gate on backward-compatibility',
   '  bundle <schema-file> [--dereference]      Produce one self-contained schema',
   '  migrate <schema-file> --to <draft>        Convert to 2020-12 | 2019-09 | draft-07',
+  '  infer <data-file>                         Infer a draft-07 schema from data',
+  '  sample <schema-file>                      Generate a valid sample instance',
+  '  types <schema-file> [--lang <id>]         Generate typed code (default typescript)',
+  '  coverage <data-file> --schema <schema>    Report schema coverage from data',
+  '  graph <schema-file> [--svg]               Print the $ref dependency graph',
   '',
   'Global options:',
   '  --json        Machine-readable output',
@@ -73,7 +90,7 @@ interface ParsedArgs {
 }
 
 /** Flags that take a value (`--schema x` or `--schema=x`); all others boolean. */
-const VALUE_FLAGS = new Set(['schema', 'to']);
+const VALUE_FLAGS = new Set(['schema', 'to', 'lang']);
 
 function parseArgs(argv: string[]): ParsedArgs {
   const positionals: string[] = [];
@@ -311,6 +328,207 @@ function cmdMigrate(args: ParsedArgs, io: CliIO): CliResult {
   return out(`${JSON.stringify(schema, null, 2)}\n`, EXIT.ok, changeLog);
 }
 
+// ── infer (F27-FR-11) ─────────────────────────────────────────────────────────
+
+function cmdInfer(args: ParsedArgs, io: CliIO): CliResult {
+  const [dataFile] = args.positionals;
+  if (!dataFile) {
+    return err(`infer requires a data file.\n\n${USAGE}\n`, EXIT.usage);
+  }
+  const abs = path.resolve(io.cwd, dataFile);
+  let text: string;
+  try {
+    text = io.readFile(abs);
+  } catch {
+    return err(`Cannot read file: ${dataFile}\n`, EXIT.data);
+  }
+  const languageId = languageIdForPath(abs) ?? 'json';
+  let data: unknown;
+  try {
+    const items = parseDataText(text, languageId);
+    // A JSONL file infers over the array of its records; every other format is a
+    // single document, which parseDataText wraps in a one-element array.
+    data = languageId === 'jsonl' ? items : items[0];
+  } catch (e) {
+    return err(`Cannot parse ${dataFile}: ${(e as Error).message}\n`, EXIT.data);
+  }
+  const schema = createSchema(data as object) as Record<string, unknown>;
+  // Declare the draft the inferred shape targets (F06), matching the extension.
+  const withDraft = { $schema: 'http://json-schema.org/draft-07/schema#', ...schema };
+  if (args.flags.has('json')) { return jsonOut({ schema: withDraft }, EXIT.ok); }
+  return out(`${JSON.stringify(withDraft, null, 2)}\n`);
+}
+
+// ── sample (F27-FR-12) ────────────────────────────────────────────────────────
+
+function cmdSample(args: ParsedArgs, io: CliIO): CliResult {
+  const [schemaFile] = args.positionals;
+  if (!schemaFile) {
+    return err(`sample requires a schema file.\n\n${USAGE}\n`, EXIT.usage);
+  }
+  const loaded = loadSchema(io, schemaFile);
+  if ('fail' in loaded) { return loaded.fail; }
+
+  // Resolve same-document ($ref "#/…") pointers against the root schema (F16).
+  const resolveRef = (ref: string): unknown => {
+    const { uri, fragment } = parseRef(ref);
+    if (uri !== '') { return undefined; } // external refs are out of scope for sample
+    return resolvePointer(loaded.schema, parseJsonPointer(fragment));
+  };
+  const result = generateAndValidate(loaded.schema, { resolveRef });
+  if (!result.ok) {
+    return err(`Cannot generate a valid sample for ${path.basename(schemaFile)}:\n${result.errors.map((e) => `  ${e}`).join('\n')}\n`, EXIT.data);
+  }
+  if (args.flags.has('json')) { return jsonOut({ sample: result.value }, EXIT.ok); }
+  return out(`${JSON.stringify(result.value, null, 2)}\n`);
+}
+
+// ── types (F27-FR-13) ─────────────────────────────────────────────────────────
+
+async function cmdTypes(args: ParsedArgs, io: CliIO): Promise<CliResult> {
+  const [schemaFile] = args.positionals;
+  if (!schemaFile) {
+    return err(`types requires a schema file.\n\n${USAGE}\n`, EXIT.usage);
+  }
+  const langId = args.values.lang ?? 'typescript';
+  const target = TARGET_LANGUAGES.find((t) => t.id === langId);
+  if (!target) {
+    const ids = TARGET_LANGUAGES.map((t) => t.id).join(', ');
+    return err(`Unknown --lang "${langId}". Supported: ${ids}.\n`, EXIT.usage);
+  }
+  const rootAbs = path.resolve(io.cwd, schemaFile);
+  const loaded = loadSchema(io, schemaFile);
+  if ('fail' in loaded) { return loaded.fail; }
+
+  // F18 runs on a self-contained schema, so bundle external refs first (F14).
+  const stem = path.basename(schemaFile).replace(/\.[^.]+$/, '');
+  let code: string;
+  try {
+    const bundled = await bundleSchema(loaded.schema, makeResolver(io, rootAbs));
+    code = await generateCode(bundled.schema, stem, target);
+  } catch (e) {
+    return err(`Cannot generate ${target.label} types for ${schemaFile}: ${(e as Error).message}\n`, EXIT.data);
+  }
+  if (args.flags.has('json')) { return jsonOut({ lang: target.id, code }, EXIT.ok); }
+  return out(code.endsWith('\n') ? code : `${code}\n`);
+}
+
+// ── coverage (F27-FR-14) ──────────────────────────────────────────────────────
+
+function cmdCoverage(args: ParsedArgs, io: CliIO): CliResult {
+  const [dataFile] = args.positionals;
+  const schemaFile = args.values.schema;
+  if (!dataFile || !schemaFile) {
+    return err(`coverage requires a data file and --schema <schema>.\n\n${USAGE}\n`, EXIT.usage);
+  }
+  const loaded = loadSchema(io, schemaFile);
+  if ('fail' in loaded) { return loaded.fail; }
+
+  const dataAbs = path.resolve(io.cwd, dataFile);
+  let instances: unknown[];
+  try {
+    instances = parseDataText(io.readFile(dataAbs), languageIdForPath(dataAbs) ?? 'json');
+  } catch (e) {
+    return err(`Cannot read or parse ${dataFile}: ${(e as Error).message}\n`, EXIT.data);
+  }
+  const result = computeCoverage(loaded.schema, instances);
+  const header = `${path.basename(dataFile)} vs ${path.basename(schemaFile)}`;
+  if (args.flags.has('json')) {
+    return jsonOut({
+      total: result.total,
+      exercised: result.exercised.map((p) => p.dataPath),
+      unexercised: result.unexercised.map((p) => p.dataPath),
+      percent: result.percent,
+    }, EXIT.ok);
+  }
+  return out(`${renderCoverageReport(result, header)}\n`);
+}
+
+// ── graph (F27-FR-16) ─────────────────────────────────────────────────────────
+
+function cmdGraph(args: ParsedArgs, io: CliIO): CliResult {
+  const [schemaFile] = args.positionals;
+  if (!schemaFile) {
+    return err(`graph requires a schema file.\n\n${USAGE}\n`, EXIT.usage);
+  }
+  const loaded = loadSchema(io, schemaFile);
+  if ('fail' in loaded) { return loaded.fail; }
+
+  const graph = buildRefGraph(loaded.schema);
+  if (args.flags.has('svg')) {
+    return out(`${renderGraphSvg(layoutGraph(graph))}\n`);
+  }
+  if (args.flags.has('json')) {
+    return jsonOut({ summary: summarizeGraph(graph), cycle: detectCycle(graph) ?? null, nodes: graph.nodes, edges: graph.edges }, EXIT.ok);
+  }
+  const cycle = detectCycle(graph);
+  const cycleLine = cycle ? `\ncycle: ${cycle.join(' → ')}` : '';
+  return out(`${summarizeGraph(graph)}${cycleLine}\n\n${renderAdjacencyList(graph)}\n`);
+}
+
+// ── validate --workspace (F27-FR-15) ──────────────────────────────────────────
+
+/** The inline `$schema` binding of a parsed data document, or undefined — a
+ *  non-meta-schema `$schema` string is a data-file binding (F10/F20-FR-02); a
+ *  meta-schema value means the file is itself a schema, not a bound data file. */
+function inlineSchemaRef(parsed: unknown): string | undefined {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) { return undefined; }
+  const ref = (parsed as Record<string, unknown>).$schema;
+  if (typeof ref !== 'string' || isMetaSchemaRef(ref)) { return undefined; }
+  return ref;
+}
+
+async function cmdValidateWorkspace(args: ParsedArgs, io: CliIO): Promise<CliResult> {
+  const [dirArg] = args.positionals;
+  const dir = path.resolve(io.cwd, dirArg ?? '.');
+  const files = io.walk(dir)
+    .filter((f) => languageIdForPath(f) !== undefined)
+    .sort();
+
+  const results: FileResult[] = [];
+  for (const abs of files) {
+    const relPath = path.relative(dir, abs) || path.basename(abs);
+    const languageId = languageIdForPath(abs) ?? 'json';
+    let items: unknown[];
+    try {
+      items = parseDataText(io.readFile(abs), languageId);
+    } catch {
+      continue; // unparseable / unreadable file — not a schema-bound data file
+    }
+    const ref = inlineSchemaRef(items[0]);
+    if (!ref) { continue; } // only inline-$schema-bound data files are in scope
+
+    const schemaAbs = isRemote(ref) ? ref : path.resolve(path.dirname(abs), ref);
+    let schema: unknown;
+    try {
+      const text = isRemote(schemaAbs) ? await io.fetchText(schemaAbs) : io.readFile(schemaAbs);
+      schema = parseSchemaText(text, languageForSchemaSource(schemaAbs));
+      if (schema === undefined) { throw new Error('schema does not parse'); }
+    } catch (e) {
+      results.push({ relPath, folder: '', kind: 'data', status: 'binding-failed', schemaRef: ref, issues: [{ message: `Cannot load schema "${ref}": ${(e as Error).message}` }] });
+      continue;
+    }
+    let issues;
+    try {
+      issues = validateInstances(items, schema, io.readFile(abs), languageId);
+    } catch (e) {
+      issues = [{ message: `Cannot validate: ${(e as Error).message}` }];
+    }
+    results.push({ relPath, folder: '', kind: 'data', status: issues.length ? 'errors' : 'valid', schemaRef: ref, issues });
+  }
+
+  const meta: RunMeta = { truncated: false, maxFiles: files.length, untrusted: false, skippedLarge: 0 };
+  const hasErrors = results.some((r) => r.status === 'errors' || r.status === 'binding-failed');
+  const code = hasErrors ? EXIT.finding : EXIT.ok;
+  if (args.flags.has('json')) {
+    return jsonOut({ results, checked: results.length }, code);
+  }
+  if (!results.length) {
+    return out(`No inline-$schema-bound data files found under ${dirArg ?? '.'}.\n`);
+  }
+  return out(`${renderMarkdownReport(results, meta)}\n`, code);
+}
+
 // ── Router (F27-FR-02/03) ────────────────────────────────────────────────────
 
 /** Route `argv` (already stripped of node + script) to a subcommand and return
@@ -325,11 +543,16 @@ export async function runCli(argv: string[], io: CliIO): Promise<CliResult> {
   }
   const args = parseArgs(rest);
   switch (command) {
-    case 'validate': return cmdValidate(args, io);
+    case 'validate': return args.flags.has('workspace') ? cmdValidateWorkspace(args, io) : cmdValidate(args, io);
     case 'lint': return cmdLint(args, io);
     case 'diff': return cmdDiff(args, io);
     case 'bundle': return cmdBundle(args, io);
     case 'migrate': return cmdMigrate(args, io);
+    case 'infer': return cmdInfer(args, io);
+    case 'sample': return cmdSample(args, io);
+    case 'types': return cmdTypes(args, io);
+    case 'coverage': return cmdCoverage(args, io);
+    case 'graph': return cmdGraph(args, io);
     default:
       return err(`Unknown command: ${command}\n\n${USAGE}\n`, EXIT.usage);
   }

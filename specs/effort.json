@@ -725,14 +725,14 @@
    "hoursMin": 4,
    "hoursMax": 8,
    "factors": [],
-   "justification": "New CLI front end — argument parsing, command routing, a filesystem/HTTP $ref resolver, and its own build config + publishable package — that reuses the existing pure core for every schema operation; sits squarely in its evidence band.",
+   "justification": "New CLI front end — 11 subcommands (validate, lint, diff, bundle, migrate, infer, sample, types, coverage, workspace-validate, graph), argument parsing, a filesystem/HTTP $ref resolver, directory walking, and its own single-file build + publishable package — that reuses the existing pure core for every schema operation; sits in its evidence band.",
    "estimator": "the project's AI coding agent (Claude Code)",
-   "estimatedAt": "2026-07-20",
+   "estimatedAt": "2026-07-21",
    "evidence": {
     "implFiles": 4,
-    "implLoc": 520,
-    "taggedTests": 12,
-    "requirements": 13
+    "implLoc": 775,
+    "taggedTests": 18,
+    "requirements": 19
    }
   }
  }

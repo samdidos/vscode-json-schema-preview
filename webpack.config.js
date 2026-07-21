@@ -90,7 +90,14 @@ const cliConfig = {
     ],
   },
   devtool: 'source-map',
+  // typeGenerator lazy-imports quicktype-core (a split point that keeps the
+  // *extension*'s activation bundle small). The CLI ships as one self-contained
+  // file (F27-NFR-03), so collapse every chunk back into cli.js here.
+  optimization: {
+    minimize: true,
+  },
   plugins: [
+    new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
     // Make the output directly executable, and inline the CLI package version
     // (F27-FR-02) so the bundle stays self-contained with no runtime read.
     new webpack.BannerPlugin({ banner: '#!/usr/bin/env node', raw: true, entryOnly: true }),
