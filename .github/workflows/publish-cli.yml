@@ -1,0 +1,74 @@
+name: Publish CLI
+
+# Publishes the standalone CLI (F27) — the `json-schema-toolkit` npm package,
+# command `jstk` — to the public npm registry, with npm build provenance.
+#
+# Independent of the extension's release train (publish.yml / release-please,
+# which drive `v*` tags for the Marketplace): the CLI has its own version in
+# cli/package.json and its own `cli-v*` tags, so the two ship on separate
+# cadences and never collide.
+#
+# Publishing is gated on the `npm` GitHub environment (add a required reviewer
+# to it for a manual approval step before anything reaches the registry). It
+# needs one secret — `NPM_TOKEN`, an npm automation token with publish rights.
+#
+# Test it without publishing: run it via "Run workflow" (workflow_dispatch)
+# with dry_run left on — the job builds and `npm publish --dry-run`s, printing
+# the exact tarball it would upload, and needs no token.
+on:
+  push:
+    tags:
+      - 'cli-v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Package and validate only — do not publish to npm'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish-cli:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write # OIDC token npm uses to sign build provenance
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          # Wires NODE_AUTH_TOKEN into .npmrc so `npm publish` authenticates.
+          registry-url: 'https://registry.npmjs.org'
+
+      # Root deps power the webpack build that cli/'s `prepack` runs.
+      - run: npm ci
+
+      - name: Verify the tag matches cli/package.json (tag pushes only)
+        if: github.event_name == 'push'
+        run: |
+          pkg="$(node -p "require('./cli/package.json').version")"
+          tag="${GITHUB_REF_NAME#cli-v}"
+          if [ "$pkg" != "$tag" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match cli/package.json version ${pkg}." >&2
+            exit 1
+          fi
+
+      # `npm publish` runs cli/'s `prepack` (npm run build:cli) itself, so the
+      # bundle is always built fresh from source here — no committed artifact.
+      - name: Publish to npm (or dry-run)
+        working-directory: cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "Dry run — building and validating the package without publishing."
+            npm publish --dry-run
+          else
+            npm publish --provenance --access public
+          fi
