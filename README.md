@@ -3,7 +3,7 @@
 [![VS Marketplace](https://img.shields.io/badge/VS%20Marketplace-json--schema--preview-0065A9?logo=visual-studio-code&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
 [![CI](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/ci.yml?label=CI&logo=github)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/docs.yml?label=docs&logo=github)](https://samdidos.github.io/vscode-json-schema-preview/)
-[![Coverage](https://img.shields.io/badge/coverage-88.9%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-89.0%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-0366d6?logo=dependabot)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/.github/dependabot.yml)
 [![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.96.0-blue?logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -87,11 +87,12 @@ All features are reachable from the Command Palette, with matching editor toolba
 ## Command-line interface
 
 Prefer the terminal or need these checks in CI? The same core ships as a
-standalone CLI, **`json-schema-tools`** — validate, lint, diff (with a
-backward-compatibility gate), bundle, and migrate schemas without VS Code.
+standalone CLI, **`json-schema-toolkit`** (command: `jstk`) — validate, lint,
+diff (with a backward-compatibility gate), bundle, and migrate schemas without
+VS Code.
 
 ```sh
-npx json-schema-tools diff api.v1.json api.v2.json --check --strict
+npx json-schema-toolkit diff api.v1.json api.v2.json --check --strict
 ```
 
 **[CLI guide →](https://samdidos.github.io/vscode-json-schema-preview/guide/cli)**

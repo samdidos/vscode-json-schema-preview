@@ -35,7 +35,7 @@ suite('[F27-FR-02][F27-NFR-02] runCli — help & version', () => {
   test('no command prints usage and exits 0', async () => {
     const r = await runCli([], makeIO({}));
     assert.strictEqual(r.code, EXIT.ok);
-    assert.match(r.stdout, /Usage: json-schema-tools/);
+    assert.match(r.stdout, /Usage: jstk/);
     assert.match(r.stdout, /validate/);
     assert.match(r.stdout, /migrate/);
   });

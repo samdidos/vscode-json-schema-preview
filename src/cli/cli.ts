@@ -44,9 +44,9 @@ export const EXIT = {
 const TARGET_DRAFTS: readonly TargetDraft[] = ['2020-12', '2019-09', 'draft-07'];
 
 const USAGE = [
-  'json-schema-tools — schema validation, linting, diff, bundling & migration',
+  'jstk (json-schema-toolkit) — schema validation, linting, diff, bundling & migration',
   '',
-  'Usage: json-schema-tools <command> [options]',
+  'Usage: jstk <command> [options]',
   '',
   'Commands:',
   '  validate <data-file> --schema <schema>   Validate a data file against a schema',
