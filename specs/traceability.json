@@ -2591,6 +2591,48 @@
       ],
       "note": "Shared exit codes 0/1/2/64/65; data & usage errors go to stderr."
     },
+    "F27-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/cli.ts"
+      ],
+      "note": "infer: genson-js createSchema + draft-07 $schema (F06); JSONL infers over records."
+    },
+    "F27-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/cli.ts"
+      ],
+      "note": "sample: generateAndValidate (F16) with a same-document $ref resolver; exit 65 on unsatisfiable."
+    },
+    "F27-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/cli.ts"
+      ],
+      "note": "types: bundleSchema (F14) then generateCode (F18); --lang selects a target, unknown → 64."
+    },
+    "F27-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/cli.ts"
+      ],
+      "note": "coverage: computeCoverage + renderCoverageReport (F23)."
+    },
+    "F27-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/cli.ts"
+      ],
+      "note": "validate --workspace: walk dir, validate inline-$schema data files (F10/F20), renderMarkdownReport; exit 1 on any error."
+    },
+    "F27-FR-16": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/cli.ts"
+      ],
+      "note": "graph: buildRefGraph + renderAdjacencyList / renderGraphSvg (F24)."
+    },
     "F27-NFR-01": {
       "status": "manual",
       "impl": [

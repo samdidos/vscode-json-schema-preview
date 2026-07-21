@@ -19,6 +19,10 @@ function makeIO(files: Record<string, string>, opts: { remote?: Record<string, s
       if (!(url in remote)) { throw new Error(`HTTP 404 ${url}`); }
       return remote[url];
     },
+    walk(dir: string): string[] {
+      const prefix = dir.endsWith('/') ? dir : `${dir}/`;
+      return Object.keys(files).filter((p) => p === dir || p.startsWith(prefix));
+    },
   };
 }
 
@@ -315,5 +319,264 @@ suite('[F27-FR-08] runCli migrate', () => {
   test('missing --to is a usage error', async () => {
     const r = await runCli(['migrate', 's.json'], makeIO({ '/w/s.json': MODERN }));
     assert.strictEqual(r.code, EXIT.usage);
+  });
+});
+
+// ── infer (F27-FR-11) ─────────────────────────────────────────────────────────
+
+suite('[F27-FR-11] runCli infer', () => {
+  test('infers a draft-07 schema from a JSON data file', async () => {
+    const io = makeIO({ '/w/d.json': '{"name":"Ada","age":36}' });
+    const r = await runCli(['infer', 'd.json'], io);
+    assert.strictEqual(r.code, EXIT.ok);
+    const schema = JSON.parse(r.stdout);
+    assert.strictEqual(schema.$schema, 'http://json-schema.org/draft-07/schema#');
+    assert.strictEqual(schema.type, 'object');
+    assert.ok(schema.properties.name && schema.properties.age);
+  });
+
+  test('infers over the records of a JSONL file (array schema)', async () => {
+    const io = makeIO({ '/w/d.jsonl': '{"a":1}\n{"a":2}\n' });
+    const r = await runCli(['infer', 'd.jsonl'], io);
+    assert.strictEqual(r.code, EXIT.ok);
+    const schema = JSON.parse(r.stdout);
+    assert.strictEqual(schema.type, 'array');
+  });
+
+  test('--json wraps the inferred schema with exitCode', async () => {
+    const r = await runCli(['infer', 'd.json', '--json'], makeIO({ '/w/d.json': '{"a":1}' }));
+    const parsed = JSON.parse(r.stdout);
+    assert.strictEqual(parsed.exitCode, EXIT.ok);
+    assert.strictEqual(parsed.schema.$schema, 'http://json-schema.org/draft-07/schema#');
+  });
+
+  test('an unparseable data file is a data error', async () => {
+    const r = await runCli(['infer', 'd.json'], makeIO({ '/w/d.json': '{nope' }));
+    assert.strictEqual(r.code, EXIT.data);
+  });
+
+  test('missing data file is a usage error', async () => {
+    const r = await runCli(['infer'], makeIO({}));
+    assert.strictEqual(r.code, EXIT.usage);
+  });
+});
+
+// ── sample (F27-FR-12) ────────────────────────────────────────────────────────
+
+suite('[F27-FR-12] runCli sample', () => {
+  const SCH = JSON.stringify({
+    type: 'object', required: ['name'],
+    properties: { name: { type: 'string' }, role: { $ref: '#/$defs/role' } },
+    $defs: { role: { enum: ['admin', 'user'] } },
+  });
+
+  test('generates a valid instance, resolving a same-document $ref', async () => {
+    const r = await runCli(['sample', 's.json'], makeIO({ '/w/s.json': SCH }));
+    assert.strictEqual(r.code, EXIT.ok);
+    const value = JSON.parse(r.stdout);
+    assert.strictEqual(typeof value.name, 'string');
+  });
+
+  test('--json wraps the sample with exitCode', async () => {
+    const r = await runCli(['sample', 's.json', '--json'], makeIO({ '/w/s.json': SCH }));
+    const parsed = JSON.parse(r.stdout);
+    assert.strictEqual(parsed.exitCode, EXIT.ok);
+    assert.ok('sample' in parsed);
+  });
+
+  test('an unsatisfiable schema reports the failure and exits with the data code', async () => {
+    // minLength 5 but maxLength 2 cannot be satisfied.
+    const bad = JSON.stringify({ type: 'string', minLength: 5, maxLength: 2 });
+    const r = await runCli(['sample', 's.json'], makeIO({ '/w/s.json': bad }));
+    assert.strictEqual(r.code, EXIT.data);
+    assert.match(r.stderr, /Cannot generate a valid sample/);
+  });
+
+  test('missing schema file is a usage error', async () => {
+    const r = await runCli(['sample'], makeIO({}));
+    assert.strictEqual(r.code, EXIT.usage);
+  });
+});
+
+// ── types (F27-FR-13) ─────────────────────────────────────────────────────────
+
+const TYPES_SCHEMA = JSON.stringify({
+  title: 'User', type: 'object', required: ['name'],
+  properties: { name: { type: 'string' }, age: { type: 'integer' } },
+});
+
+suite('[F27-FR-13] runCli types', () => {
+  test('generates TypeScript by default', async () => {
+    const r = await runCli(['types', 'user.json'], makeIO({ '/w/user.json': TYPES_SCHEMA }));
+    assert.strictEqual(r.code, EXIT.ok);
+    assert.match(r.stdout, /export interface User/);
+  });
+
+  test('--lang python generates Python', async () => {
+    const r = await runCli(['types', 'user.json', '--lang', 'python'], makeIO({ '/w/user.json': TYPES_SCHEMA }));
+    assert.strictEqual(r.code, EXIT.ok);
+    assert.match(r.stdout, /class User/);
+  });
+
+  test('bundles an external $ref before generating', async () => {
+    const io = makeIO({
+      '/w/user.json': JSON.stringify({ title: 'User', type: 'object', properties: { role: { $ref: 'role.json' } } }),
+      '/w/role.json': JSON.stringify({ title: 'Role', enum: ['admin', 'user'] }),
+    });
+    const r = await runCli(['types', 'user.json'], io);
+    assert.strictEqual(r.code, EXIT.ok);
+    assert.match(r.stdout, /export interface User/);
+  });
+
+  test('--json wraps the code with lang + exitCode', async () => {
+    const r = await runCli(['types', 'user.json', '--json'], makeIO({ '/w/user.json': TYPES_SCHEMA }));
+    const parsed = JSON.parse(r.stdout);
+    assert.strictEqual(parsed.exitCode, EXIT.ok);
+    assert.strictEqual(parsed.lang, 'typescript');
+    assert.match(parsed.code, /interface User/);
+  });
+
+  test('an unknown --lang is a usage error listing the supported ids', async () => {
+    const r = await runCli(['types', 'user.json', '--lang', 'klingon'], makeIO({ '/w/user.json': TYPES_SCHEMA }));
+    assert.strictEqual(r.code, EXIT.usage);
+    assert.match(r.stderr, /typescript/);
+  });
+
+  test('missing schema file is a usage error', async () => {
+    const r = await runCli(['types'], makeIO({}));
+    assert.strictEqual(r.code, EXIT.usage);
+  });
+});
+
+// ── coverage (F27-FR-14) ──────────────────────────────────────────────────────
+
+suite('[F27-FR-14] runCli coverage', () => {
+  const SCH = JSON.stringify({
+    type: 'object',
+    properties: { name: { type: 'string' }, age: { type: 'integer' }, role: { type: 'string' } },
+  });
+
+  test('reports exercised vs unexercised properties', async () => {
+    const io = makeIO({ '/w/s.json': SCH, '/w/d.json': '{"name":"Ada","age":36}' });
+    const r = await runCli(['coverage', 'd.json', '--schema', 's.json'], io);
+    assert.strictEqual(r.code, EXIT.ok);
+    assert.match(r.stdout, /2 \/ 3 declared properties exercised/);
+    assert.match(r.stdout, /role/);
+  });
+
+  test('--json lists exercised, unexercised and percent', async () => {
+    const io = makeIO({ '/w/s.json': SCH, '/w/d.json': '{"name":"Ada"}' });
+    const r = await runCli(['coverage', 'd.json', '--schema', 's.json', '--json'], io);
+    const parsed = JSON.parse(r.stdout);
+    assert.strictEqual(parsed.exitCode, EXIT.ok);
+    assert.strictEqual(parsed.total, 3);
+    assert.ok(parsed.unexercised.includes('age') && parsed.unexercised.includes('role'));
+  });
+
+  test('missing --schema is a usage error', async () => {
+    const r = await runCli(['coverage', 'd.json'], makeIO({ '/w/d.json': '{}' }));
+    assert.strictEqual(r.code, EXIT.usage);
+  });
+
+  test('an unreadable data file is a data error', async () => {
+    const r = await runCli(['coverage', 'gone.json', '--schema', 's.json'], makeIO({ '/w/s.json': SCH }));
+    assert.strictEqual(r.code, EXIT.data);
+  });
+});
+
+// ── graph (F27-FR-16) ─────────────────────────────────────────────────────────
+
+const GRAPH_SCHEMA = JSON.stringify({
+  type: 'object',
+  properties: { role: { $ref: '#/$defs/role' }, boss: { $ref: '#/$defs/person' } },
+  $defs: { role: { enum: ['a', 'b'] }, person: { properties: { manager: { $ref: '#/$defs/person' } } } },
+});
+
+suite('[F27-FR-16] runCli graph', () => {
+  test('prints the summary, cycle line, and adjacency list', async () => {
+    const r = await runCli(['graph', 's.json'], makeIO({ '/w/s.json': GRAPH_SCHEMA }));
+    assert.strictEqual(r.code, EXIT.ok);
+    assert.match(r.stdout, /references, .* definitions/);
+    assert.match(r.stdout, /\(root\) \[root\]/);
+    // person → person is a self-cycle.
+    assert.match(r.stdout, /cycle:/);
+  });
+
+  test('--svg emits an SVG document', async () => {
+    const r = await runCli(['graph', 's.json', '--svg'], makeIO({ '/w/s.json': GRAPH_SCHEMA }));
+    assert.strictEqual(r.code, EXIT.ok);
+    assert.match(r.stdout, /^<svg/);
+  });
+
+  test('--json exposes nodes, edges and cycle', async () => {
+    const r = await runCli(['graph', 's.json', '--json'], makeIO({ '/w/s.json': GRAPH_SCHEMA }));
+    const parsed = JSON.parse(r.stdout);
+    assert.strictEqual(parsed.exitCode, EXIT.ok);
+    assert.ok(Array.isArray(parsed.nodes) && Array.isArray(parsed.edges));
+  });
+
+  test('an unparseable schema is a data error', async () => {
+    const r = await runCli(['graph', 's.json'], makeIO({ '/w/s.json': '{nope' }));
+    assert.strictEqual(r.code, EXIT.data);
+  });
+
+  test('missing schema file is a usage error', async () => {
+    const r = await runCli(['graph'], makeIO({}));
+    assert.strictEqual(r.code, EXIT.usage);
+  });
+});
+
+// ── validate --workspace (F27-FR-15) ──────────────────────────────────────────
+
+suite('[F27-FR-15] runCli validate --workspace', () => {
+  const SCHEMA = JSON.stringify({ type: 'object', required: ['name'], properties: { name: { type: 'string' } } });
+
+  test('validates every inline-$schema-bound data file and reports valid', async () => {
+    const io = makeIO({
+      '/w/proj/schema.json': SCHEMA,
+      '/w/proj/good.json': JSON.stringify({ $schema: './schema.json', name: 'Ada' }),
+    });
+    const r = await runCli(['validate', 'proj', '--workspace'], io);
+    assert.strictEqual(r.code, EXIT.ok);
+    assert.match(r.stdout, /Workspace validation report/);
+    assert.match(r.stdout, /✅ valid `good\.json`/);
+  });
+
+  test('exits 1 when a bound file is invalid', async () => {
+    const io = makeIO({
+      '/w/proj/schema.json': SCHEMA,
+      '/w/proj/bad.json': JSON.stringify({ $schema: './schema.json', age: 1 }),
+    });
+    const r = await runCli(['validate', 'proj', '--workspace'], io);
+    assert.strictEqual(r.code, EXIT.finding);
+    assert.match(r.stdout, /❌ errors `bad\.json`/);
+  });
+
+  test('a missing bound schema is a binding failure (exit 1)', async () => {
+    const io = makeIO({ '/w/proj/data.json': JSON.stringify({ $schema: './gone.json', name: 'Ada' }) });
+    const r = await runCli(['validate', 'proj', '--workspace'], io);
+    assert.strictEqual(r.code, EXIT.finding);
+    assert.match(r.stdout, /binding failed/);
+  });
+
+  test('skips files without an inline $schema and schema files (meta-schema $schema)', async () => {
+    const io = makeIO({
+      '/w/proj/schema.json': JSON.stringify({ $schema: 'https://json-schema.org/draft/2020-12/schema', type: 'object' }),
+      '/w/proj/plain.json': JSON.stringify({ name: 'no binding here' }),
+    });
+    const r = await runCli(['validate', 'proj', '--workspace'], io);
+    assert.strictEqual(r.code, EXIT.ok);
+    assert.match(r.stdout, /No inline-\$schema-bound data files found/);
+  });
+
+  test('--json reports the results array and checked count', async () => {
+    const io = makeIO({
+      '/w/proj/schema.json': SCHEMA,
+      '/w/proj/good.json': JSON.stringify({ $schema: './schema.json', name: 'Ada' }),
+    });
+    const r = await runCli(['validate', 'proj', '--workspace', '--json'], io);
+    const parsed = JSON.parse(r.stdout);
+    assert.strictEqual(parsed.exitCode, EXIT.ok);
+    assert.strictEqual(parsed.checked, 1);
   });
 });

@@ -2,11 +2,35 @@
 // real filesystem, `fetch`, stdout/stderr, and `process.exit` to the pure
 // `runCli` core, which holds all routing and formatting logic. This is the CLI's
 // only I/O-bound file and its sole coverage/mutation exclusion.
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
+import { join } from 'path';
 import { runCli, type CliIO } from './cli';
 
 // Injected at build time from the CLI package's own package.json.
 declare const CLI_VERSION: string;
+
+/** Recursively list files under `dir`, skipping dependency/build/VCS trees. */
+function walk(dir: string): string[] {
+  const skip = new Set(['node_modules', '.git', 'dist', 'out', '.vscode-test', 'coverage']);
+  const files: string[] = [];
+  const visit = (d: string): void => {
+    let entries;
+    try {
+      entries = readdirSync(d, { withFileTypes: true });
+    } catch {
+      return; // unreadable directory — skip rather than abort the scan
+    }
+    for (const e of entries) {
+      if (e.isDirectory()) {
+        if (!skip.has(e.name)) { visit(join(d, e.name)); }
+      } else if (e.isFile()) {
+        files.push(join(d, e.name));
+      }
+    }
+  };
+  visit(dir);
+  return files;
+}
 
 const io: CliIO = {
   readFile: (absPath: string) => readFileSync(absPath, 'utf-8'),
@@ -15,6 +39,7 @@ const io: CliIO = {
     if (!res.ok) { throw new Error(`HTTP ${res.status} fetching ${url}`); }
     return res.text();
   },
+  walk,
   cwd: process.cwd(),
   version: typeof CLI_VERSION === 'string' ? CLI_VERSION : '0.0.0',
 };
