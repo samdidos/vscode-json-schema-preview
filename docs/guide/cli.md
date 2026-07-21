@@ -3,7 +3,7 @@
 
 Every non-preview capability of this project — validation, linting, diff,
 bundling, and draft migration — lives in pure, editor-independent modules. The
-**`json-schema-tools`** CLI is a second front end over that same core, so you
+**`json-schema-toolkit`** (command `jstk`) CLI is a second front end over that same core, so you
 can run the exact engine the VS Code extension uses in CI, pre-commit hooks, or
 any terminal. No VS Code, no Python.
 
@@ -13,9 +13,9 @@ so a fix in the engine fixes both front ends — the CLI never forks the logic.
 ## Install
 
 ```sh
-npm install -g json-schema-tools
+npm install -g json-schema-toolkit
 # or, without installing:
-npx json-schema-tools --help
+npx json-schema-toolkit --help
 ```
 
 ## Commands
@@ -27,7 +27,7 @@ the same draft-aware Ajv pipeline as the editor. Exits `0` when valid, `1` when
 there is at least one violation (each printed with its line when locatable).
 
 ```sh
-json-schema-tools validate config.yaml --schema config.schema.json
+jstk validate config.yaml --schema config.schema.json
 ```
 
 ### `lint <schema-file>`
@@ -44,7 +44,7 @@ them to a backward-compatibility verdict and adopt CI-friendly exit codes; add
 
 ```sh
 # Fail the build on a breaking (or, with --strict, unprovable) change
-json-schema-tools diff api.v1.json api.v2.json --check --strict
+jstk diff api.v1.json api.v2.json --check --strict
 ```
 
 ### `bundle <schema-file>`
@@ -54,7 +54,7 @@ self-contained schema, collected under `$defs`. `--dereference` inlines the
 targets instead.
 
 ```sh
-json-schema-tools bundle api/root.schema.json > api.bundled.json
+jstk bundle api/root.schema.json > api.bundled.json
 ```
 
 ### `migrate <schema-file> --to <draft>`
@@ -64,7 +64,7 @@ schema is written to stdout and the list of changes to stderr, so stdout stays a
 clean, pipeable schema.
 
 ```sh
-json-schema-tools migrate legacy.schema.json --to 2020-12 > modern.schema.json
+jstk migrate legacy.schema.json --to 2020-12 > modern.schema.json
 ```
 
 ## Global options & exit codes

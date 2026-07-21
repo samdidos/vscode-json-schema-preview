@@ -1,7 +1,7 @@
 {
-  "name": "json-schema-tools",
+  "name": "json-schema-toolkit",
   "version": "0.1.0",
-  "description": "Standalone CLI for JSON Schema: validate, lint, diff (with backward-compat gate), bundle & migrate drafts. The editor-free front end of the json-schema-preview core.",
+  "description": "Standalone CLI (jstk) for JSON Schema: validate, lint, diff (with backward-compat gate), bundle & migrate drafts. The editor-free front end of the json-schema-preview core.",
   "keywords": [
     "json-schema",
     "jsonschema",
@@ -26,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/samdidos/vscode-json-schema-preview.git",
+    "url": "git+https://github.com/samdidos/vscode-json-schema-preview.git",
     "directory": "cli"
   },
   "engines": {
@@ -34,7 +34,7 @@
   },
   "type": "commonjs",
   "bin": {
-    "json-schema-tools": "dist/cli.js"
+    "jstk": "dist/cli.js"
   },
   "files": [
     "dist/cli.js",
