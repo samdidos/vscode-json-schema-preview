@@ -34,6 +34,12 @@ the problem shows up:
 - **Status bar** — a `🔒` / `🔓` indicator reflects auth status for the current
   file's schema; click it to configure.
 
+For a private **GitHub** repo specifically, an unauthenticated fetch gets a plain
+`404` instead of `401`/`403` — GitHub does this deliberately so a repo's existence
+can't be inferred without access. This extension recognises that case for GitHub
+hosts and offers *Configure Auth* the same as it would for a `401`/`403`, so you
+don't need to work around it by hand (e.g. pasting a temporary token into the URL).
+
 <!-- spec:F08 start -->
 ## Eliminating the red squiggle
 

@@ -762,6 +762,13 @@
       ],
       "note": "Warn once per host per session on plain-http credential use; never blocks."
     },
+    "F07-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaAuthManager.ts"
+      ],
+      "note": "isAuthRequiredStatus() treats an unauthenticated GitHub 404 as auth-required"
+    },
     "F07-NFR-01": {
       "status": "manual",
       "impl": [
