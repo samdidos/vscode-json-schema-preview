@@ -2,6 +2,20 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.14.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.13.0...v0.14.0) (2026-07-22)
+
+
+### Features
+
+* **F27:** add infer, sample, types, coverage, workspace & graph CLI commands ([52278b3](https://github.com/samdidos/vscode-json-schema-preview/commit/52278b34f20468a934f007d13d65a1cf1f25d96c))
+* **F27:** standalone json-schema-tools CLI over the pure core ([e321139](https://github.com/samdidos/vscode-json-schema-preview/commit/e32113974c7366d65029c1c78ddd85bda7f5c5c7))
+
+
+### Bug Fixes
+
+* **deps:** patch high-severity brace-expansion & js-yaml advisories; refresh maturity ([08ad77f](https://github.com/samdidos/vscode-json-schema-preview/commit/08ad77f4502ed40657495f49c04eaa03df941b7e))
+* **deps:** patch high-severity fast-uri & linkify-it advisories ([fcd90c0](https://github.com/samdidos/vscode-json-schema-preview/commit/fcd90c0e0b4e2aa8628dd886ad0c1ec1f7a16ff4))
+
 ## [0.13.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.12.0...v0.13.0) (2026-07-20)
 
 
