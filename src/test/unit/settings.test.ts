@@ -10,9 +10,11 @@ import {
   getLintRuleSeverities,
   getPreviewRenderer,
   getWorkspaceValidationMaxFiles,
+  getRefGraphMaxDepth,
   SCHEMASTORE_CATALOG_URL,
   DEFAULT_RENDER_TIMEOUT_MS,
   DEFAULT_REMOTE_FETCH_TIMEOUT_MS,
+  DEFAULT_REF_GRAPH_MAX_DEPTH,
   MIN_TIMEOUT_MS,
 } from '../../settings';
 
@@ -157,5 +159,24 @@ suite('[F20-FR-03] getWorkspaceValidationMaxFiles()', () => {
     assert.strictEqual(getWorkspaceValidationMaxFiles(), 2000);
     setConfig('jsonschema.workspaceValidation', 'maxFiles', 'lots');
     assert.strictEqual(getWorkspaceValidationMaxFiles(), 2000);
+  });
+});
+
+suite('[F24-FR-10] getRefGraphMaxDepth()', () => {
+  setup(() => resetAll());
+  test('defaults to 3 when unset', () => {
+    assert.strictEqual(getRefGraphMaxDepth(), DEFAULT_REF_GRAPH_MAX_DEPTH);
+  });
+  test('returns the configured integer value', () => {
+    setConfig('jsonschema.refGraph', 'maxDepth', 5);
+    assert.strictEqual(getRefGraphMaxDepth(), 5);
+  });
+  test('floors fractional values and rejects non-positive/non-numeric ones', () => {
+    setConfig('jsonschema.refGraph', 'maxDepth', 2.9);
+    assert.strictEqual(getRefGraphMaxDepth(), 2);
+    setConfig('jsonschema.refGraph', 'maxDepth', 0);
+    assert.strictEqual(getRefGraphMaxDepth(), DEFAULT_REF_GRAPH_MAX_DEPTH);
+    setConfig('jsonschema.refGraph', 'maxDepth', 'deep');
+    assert.strictEqual(getRefGraphMaxDepth(), DEFAULT_REF_GRAPH_MAX_DEPTH);
   });
 });

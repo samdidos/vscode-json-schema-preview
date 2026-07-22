@@ -2397,6 +2397,42 @@
       ],
       "note": "layoutGraph assigns BFS layers from the root"
     },
+    "F24-FR-08": {
+      "status": "manual",
+      "impl": [
+        "src/RefGraphPanel.ts"
+      ],
+      "note": "prompts before opening when external nodes exist; skipped in untrusted workspaces"
+    },
+    "F24-FR-09": {
+      "status": "manual",
+      "impl": [
+        "src/RefGraphPanel.ts"
+      ],
+      "note": "cancellable progress via the F14 makeResolver/trackProgress pair (auth/cache/timeout)"
+    },
+    "F24-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "expandRefGraph walks fetched docs up to maxDepth; beyond it, unfetched terminal nodes"
+    },
+    "F24-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "docNodeIdByCanonical reuses an already-fetched doc; detectCycle covers cross-doc cycles"
+    },
+    "F24-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts",
+        "src/RefGraphPanel.ts"
+      ],
+      "note": "a failed doc becomes an error node (refGraph.ts); panel offers Configure Auth per host"
+    },
     "F24-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -2417,6 +2453,20 @@
         "src/refGraph.ts"
       ],
       "note": "no fetching of external refs; never throws on malformed schemas"
+    },
+    "F24-NFR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "expandRefGraph caps fetched docs (default 100); the rest left unfetched"
+    },
+    "F24-NFR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts"
+      ],
+      "note": "expandRefGraph takes a caller-supplied DocResolver; unit-tested with a mock resolver"
     },
     "F25-FR-01": {
       "status": "implemented",
