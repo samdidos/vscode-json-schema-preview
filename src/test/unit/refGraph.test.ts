@@ -8,6 +8,7 @@ const {
   renderGraphSvg,
   renderAdjacencyList,
   summarizeGraph,
+  expandRefGraph,
 } = require('../../refGraph');
 
 const nodeIds = (g: { nodes: { id: string }[] }): string[] => g.nodes.map((n) => n.id).sort();
@@ -149,5 +150,142 @@ suite('[F24-NFR-03] property: buildRefGraph never throws', () => {
         return Array.isArray(g.nodes) && Array.isArray(g.edges);
       }),
     );
+  });
+});
+
+suite('[F24-FR-10][F24-NFR-05] expandRefGraph() — fetch and recurse', () => {
+  test('fetches an external node and adds its own $defs under it', async () => {
+    const local = buildRefGraph({ allOf: [{ $ref: './child.json' }] });
+    const resolve = async (uri: string) => {
+      assert.strictEqual(uri, './child.json');
+      return { id: '/abs/child.json', schema: { $defs: { A: {} }, properties: { p: { $ref: '#/$defs/A' } } } };
+    };
+    const g = await expandRefGraph(local, resolve, { maxDepth: 3 });
+    assert.ok(g.nodes.some((n: any) => n.id === './child.json' && n.kind === 'relative'));
+    const def = g.nodes.find((n: any) => n.id === '/abs/child.json#/$defs/A');
+    assert.ok(def && def.kind === 'definition');
+    assert.ok(g.edges.some((e: any) => e.from === './child.json' && e.to === '/abs/child.json#/$defs/A'));
+  });
+
+  test('stops at maxDepth and leaves the deeper ref as an unfetched terminal node', async () => {
+    let calls = 0;
+    const resolve = async (uri: string) => {
+      calls++;
+      if (uri === './child.json') { return { id: '/abs/child.json', schema: { $ref: './grandchild.json' } }; }
+      throw new Error(`unexpected fetch of ${uri}`);
+    };
+    const local = buildRefGraph({ $ref: './child.json' });
+    const g = await expandRefGraph(local, resolve, { maxDepth: 1 });
+    assert.strictEqual(calls, 1, 'grandchild.json must not be fetched beyond maxDepth');
+    const terminal = g.nodes.find((n: any) => n.id === '/abs/child.json::./grandchild.json');
+    assert.ok(terminal, 'unfetched terminal node is still present');
+    assert.strictEqual(terminal.kind, 'relative');
+  });
+});
+
+suite('[F24-FR-11] expandRefGraph() — document reuse and cross-document cycles', () => {
+  test('a document reached via a second ref is not re-walked', async () => {
+    const local = buildRefGraph({
+      properties: { x: { $ref: './a.json' }, y: { $ref: './b.json' } },
+    });
+    const resolve = async () => ({ id: 'CANON', schema: { $defs: { Shared: {} } } });
+    const g = await expandRefGraph(local, resolve, { maxDepth: 3 });
+    const shared = g.nodes.filter((n: any) => n.label === 'Shared');
+    assert.strictEqual(shared.length, 1, 'the same canonical document contributes definitions only once');
+  });
+
+  test('a reference cycle spanning two fetched documents is detected', async () => {
+    const local = buildRefGraph({ $ref: './b.json' });
+    const resolve = async (uri: string) => {
+      if (uri === './b.json') { return { id: 'B', schema: { $ref: './c.json' } }; }
+      if (uri === './c.json') { return { id: 'C', schema: { $ref: './b.json' } }; }
+      throw new Error(`unexpected fetch of ${uri}`);
+    };
+    const g = await expandRefGraph(local, resolve, { maxDepth: 5 });
+    const cycle = detectCycle(g);
+    assert.ok(cycle, 'a cross-document cycle is reported');
+  });
+});
+
+suite('[F24-FR-12] expandRefGraph() — a failed document does not abort the pass', () => {
+  test('records an error node and message, other branches still resolve', async () => {
+    const local = buildRefGraph({
+      properties: { a: { $ref: './ok.json' }, b: { $ref: './bad.json' } },
+    });
+    const resolve = async (uri: string) => {
+      if (uri === './ok.json') { return { id: 'OK', schema: { $defs: { X: {} } } }; }
+      throw new Error('network down');
+    };
+    const g = await expandRefGraph(local, resolve, { maxDepth: 3 });
+    assert.ok(g.nodes.some((n: any) => n.id === 'OK#/$defs/X'), 'the unrelated ok.json branch still resolves');
+    const bad = g.nodes.find((n: any) => n.id === './bad.json');
+    assert.strictEqual(bad.kind, 'error');
+    assert.ok(g.errors.some((e: any) => e.ref === './bad.json' && e.message === 'network down'));
+  });
+
+  test('an auth-shaped failure carries the challenged URL for the caller to offer configuration', async () => {
+    class FakeAuthError extends Error {
+      constructor(public readonly url: string) {
+        super('HTTP 401');
+        this.name = 'AuthRequiredError';
+      }
+    }
+    const local = buildRefGraph({ $ref: 'https://example.com/private.json' });
+    const resolve = async () => { throw new FakeAuthError('https://example.com/private.json'); };
+    const g = await expandRefGraph(local, resolve, { maxDepth: 3 });
+    assert.strictEqual(g.errors[0].authUrl, 'https://example.com/private.json');
+  });
+});
+
+suite('[F24-FR-10][F24-FR-12] expandRefGraph() — nested document detail', () => {
+  test('walks an array of $refs, a bare "#" self-ref, and records a nested fetch failure', async () => {
+    const local = buildRefGraph({ $ref: './parent.json' });
+    const resolve = async (uri: string, baseId: string) => {
+      if (uri === './parent.json') {
+        return {
+          id: 'PARENT',
+          schema: { allOf: [{ $ref: '#' }, { $ref: './child-bad.json' }] },
+        };
+      }
+      if (uri === './child-bad.json') {
+        assert.strictEqual(baseId, 'PARENT');
+        throw new Error('boom');
+      }
+      throw new Error(`unexpected fetch of ${uri}`);
+    };
+    const g = await expandRefGraph(local, resolve, { maxDepth: 3 });
+    assert.ok(g.edges.some((e: any) => e.from === './parent.json' && e.to === 'PARENT' && e.ref === '#'));
+    const errNode = g.nodes.find((n: any) => n.id === 'PARENT::err:./child-bad.json');
+    assert.ok(errNode && errNode.kind === 'error');
+    assert.ok(g.errors.some((e: any) => e.ref === './child-bad.json' && e.message === 'boom'));
+  });
+});
+
+suite('[F24-FR-09] expandRefGraph() — cancellation aborts the whole pass', () => {
+  test('a "Canceled" resolver rejection propagates instead of becoming an error node', async () => {
+    const local = buildRefGraph({ $ref: './child.json' });
+    const resolve = async () => {
+      const e = new Error('Canceled');
+      e.name = 'Canceled';
+      throw e;
+    };
+    await assert.rejects(() => expandRefGraph(local, resolve, { maxDepth: 3 }), /Canceled/);
+  });
+});
+
+suite('[F24-NFR-04] expandRefGraph() — document cap', () => {
+  test('stops fetching once the cap is reached, leaving the rest unresolved', async () => {
+    let calls = 0;
+    const local = buildRefGraph({
+      properties: { a: { $ref: './a.json' }, b: { $ref: './b.json' } },
+    });
+    const resolve = async (uri: string) => {
+      calls++;
+      return { id: uri, schema: { $defs: { Def: {} } } };
+    };
+    const g = await expandRefGraph(local, resolve, { maxDepth: 3, maxDocs: 1 });
+    assert.strictEqual(calls, 1, 'only one document is fetched once the cap is hit');
+    const bNode = g.nodes.find((n: any) => n.id === './b.json');
+    assert.strictEqual(bNode.kind, 'relative', 'the capped node is left exactly as the local graph had it');
   });
 });

@@ -194,6 +194,12 @@
           "minimum": 1000,
           "markdownDescription": "Milliseconds to wait for an outbound remote-schema HTTP request before it is aborted. Values below 1000 ms are clamped."
         },
+        "jsonschema.refGraph.maxDepth": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "markdownDescription": "When resolving external `$ref`s in the **$ref dependency graph** view (opt-in, prompted per invocation), how many documents deep to fetch and follow further refs before showing the remainder as unfetched endpoint nodes. Values below 1 are clamped."
+        },
         "jsonschema.workspaceValidation.maxFiles": {
           "type": "number",
           "default": 2000,

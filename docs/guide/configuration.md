@@ -112,6 +112,24 @@ Milliseconds to wait for any outbound remote-schema HTTP request — authenticat
 
 ---
 
+<!-- spec:F24 start -->
+## `jsonschema.refGraph.maxDepth`
+
+| Type | Default | Minimum |
+|------|---------|---------|
+| `number` | `3` | `1` |
+
+When you opt into resolving external `$ref`s in the [**$ref dependency graph**](/guide/commands#json-schema-view-ref-dependency-graph) view, how many documents deep to fetch and follow further refs before showing the remainder as unfetched endpoint nodes.
+
+```json
+{
+  "jsonschema.refGraph.maxDepth": 5
+}
+```
+<!-- spec:F24 end -->
+
+---
+
 <!-- spec:F20 start -->
 ## `jsonschema.workspaceValidation.maxFiles`
 
