@@ -3769,6 +3769,15 @@
         "docs/.vitepress/config.ts"
       ],
       "note": "Delivery view: four tiles + bands, lead-time trend, per-release table, dora.dev link"
+    },
+    "S09-SR-06": {
+      "status": "manual",
+      "impl": [
+        "scripts/lint-workflows.sh",
+        "package.json",
+        "scripts/check-consistency.mjs"
+      ],
+      "note": "lint:workflows wired into npm run verify (Husky pre-commit + CI); PATH/go-run/docker fallback chain; check:consistency asserts the pinned version matches ci.yml's actionlint container tag"
     }
   }
 }

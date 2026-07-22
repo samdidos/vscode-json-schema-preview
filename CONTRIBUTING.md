@@ -55,6 +55,7 @@ runs in CI.
 |---|---|
 | `npm run verify` | Full gate: lint + type-check + tests + coverage |
 | `npm run lint` | ESLint over `src/**/*.ts` |
+| `npm run lint:workflows` | actionlint over `.github/workflows/*.yml` (needs `actionlint`, Go, or Docker) |
 | `npx tsc --noEmit` | TypeScript strict type-check |
 | `npm test` | Unit tests (mocha + sinon; `vscode` is mocked, no VS Code download) |
 | `npm run test:coverage` | Unit tests with c8 coverage (all four axes must stay **≥ 80 %**) |

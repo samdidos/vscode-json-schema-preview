@@ -58,6 +58,13 @@ drift on the PRs most likely to introduce it.
   pull request, and MUST NOT add an unpinned action reference (use a
   version-pinned container image, which is exempt from the SHA-pin rule the
   security metric enforces).
+- **S09-SR-06** The same actionlint check MUST also be runnable locally
+  (`npm run lint:workflows`) and MUST be part of `npm run verify`, so the
+  Husky pre-commit hook catches a broken workflow before it reaches CI —
+  `AGENTS.md`'s "Full local gate ... CI reaches the same checks" claim MUST
+  hold for this check too, not only for lint/`tsc`/tests. The local script
+  and CI's container image MUST pin the identical actionlint version; a
+  consistency check (`npm run check:consistency`) MUST fail if they drift.
 
 ## Non-Functional Requirements
 
@@ -110,3 +117,10 @@ drift on the PRs most likely to introduce it.
   it's specified here anyway since the design (job-level `if:` vs.
   workflow-level path triggers) has a real correctness trade-off worth
   recording, not just a mechanical config tweak.
+
+## History
+
+- 2026-07-22 — Added S09-SR-06: actionlint must also run locally via
+  `npm run verify`, not only in CI, closing a local/CI parity gap (the
+  Husky pre-commit hook ran `npm run verify`, which did not include the
+  workflow-lint check CI already enforced).
