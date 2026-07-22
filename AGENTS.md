@@ -14,12 +14,13 @@
   (the `canvas` dependency, demo-GIF pipeline only, compiles native code and
   fails in minimal containers; bootstrap installs with `--ignore-scripts`).
   Regenerating GIFs (`npm run make-gifs`) does need a full `npm install`.
-- **Full local gate**: `npm run verify` (lint + type-check + traceability +
-  doc-traceability + consistency + coverage). This is the single gate: the
-  `.husky/pre-commit` hook runs it, and CI reaches the same checks.
+- **Full local gate**: `npm run verify` (lint + workflow-lint + type-check +
+  traceability + doc-traceability + consistency + coverage). This is the
+  single gate: the `.husky/pre-commit` hook runs it, and CI reaches the same
+  checks.
 - Everything else is in `package.json` `scripts` — notable entries:
-  `compile`, `test:coverage`, `lint`, `check:traceability`, `test:mutation`,
-  `knip`, `schema:compat`, `test:integration`, `maturity`.
+  `compile`, `test:coverage`, `lint`, `lint:workflows`, `check:traceability`,
+  `test:mutation`, `knip`, `schema:compat`, `test:integration`, `maturity`.
 - **Run one test file**: `npx tsc -p tsconfig.test.json && npx mocha --ui tdd
   --require ./out/test/mocks/setup.js out/test/unit/<name>.test.js`.
 
@@ -67,6 +68,9 @@
   `src/test/mocks/vscode.ts` — call `resetAll()` in `setup()`.
 - Extension entry point: `src/extension.ts`. Docs site: VitePress under
   `docs/` (deployed by `.github/workflows/docs.yml`).
+- **`lint:workflows` needs `actionlint` on PATH, Go, or Docker** (tries each in
+  that order — `scripts/lint-workflows.sh`); it's part of `npm run verify`, so
+  a machine with none of the three fails the local gate on that step alone.
 
 ## Agnosticity & standardization (project principle)
 
