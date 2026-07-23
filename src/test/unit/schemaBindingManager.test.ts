@@ -1198,9 +1198,9 @@ suite('[F04-FR-15] SchemaBindingManager — native schema detection', () => {
   });
 });
 
-// ─── hasSchemaBinding context key (F06-FR-02) ────────────────────────────────
+// ─── Generate Schema wand is never gated by binding state (F06-FR-02) ────────
 
-suite('[F06-FR-02] SchemaBindingManager — hasSchemaBinding context key', () => {
+suite('[F06-FR-02] SchemaBindingManager — no hasSchemaBinding context key', () => {
   setup(() => vscode.resetAll());
 
   function withActive(doc: any, catalog?: any) {
@@ -1208,20 +1208,17 @@ suite('[F06-FR-02] SchemaBindingManager — hasSchemaBinding context key', () =>
     return new SchemaBindingManager(makeContext(), catalog);
   }
 
-  const lastHasBinding = () => {
-    const calls = vscode.commands.executeCommand.getCalls()
-      .filter((c: any) => c.args[0] === 'setContext' && c.args[1] === 'jsonschema.hasSchemaBinding');
-    return calls.length ? calls[calls.length - 1].args[2] : undefined;
-  };
+  const hasBindingCalls = () => vscode.commands.executeCommand.getCalls()
+    .filter((c: any) => c.args[0] === 'setContext' && c.args[1] === 'jsonschema.hasSchemaBinding');
 
-  test('is true when a settings binding exists', () => {
+  test('a settings binding does not publish a hasSchemaBinding context key', () => {
     setConfig('json', 'schemas', [{ url: './myschema.json', fileMatch: ['data.json'] }]);
     vscode.workspace.asRelativePath.callsFake(() => 'data.json');
     withActive(makeDoc('json', '/ws/data.json'));
-    assert.strictEqual(lastHasBinding(), true);
+    assert.strictEqual(hasBindingCalls().length, 0);
   });
 
-  test('is true when a schema is resolved natively (auto binding)', () => {
+  test('a natively-resolved (auto) schema does not publish a hasSchemaBinding context key', () => {
     vscode.workspace.asRelativePath.callsFake(() => '.commitlintrc.json');
     withActive(makeDoc('json', '/ws/.commitlintrc.json'), {
       browse: async () => undefined,
@@ -1232,17 +1229,12 @@ suite('[F06-FR-02] SchemaBindingManager — hasSchemaBinding context key', () =>
       }],
       warm: async () => {},
     });
-    assert.strictEqual(lastHasBinding(), true);
+    assert.strictEqual(hasBindingCalls().length, 0);
   });
 
-  test('is false when nothing is bound', () => {
+  test('no binding at all does not publish a hasSchemaBinding context key', () => {
     vscode.workspace.asRelativePath.callsFake(() => 'random-data.json');
     withActive(makeDoc('json', '/ws/random-data.json'));
-    assert.strictEqual(lastHasBinding(), false);
-  });
-
-  test('is false for an unsupported / non-data file', () => {
-    withActive(makeDoc('plaintext', '/ws/notes.txt'));
-    assert.strictEqual(lastHasBinding(), false);
+    assert.strictEqual(hasBindingCalls().length, 0);
   });
 });

@@ -71,7 +71,7 @@ Shows a Quick Pick list of all schema files in the workspace and binds the selec
 
 Also available via **right-click** in the editor and the **Explorer** context menu.
 
-When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. **Validate This File** uses that auto-resolved schema as well, and because the file already has a schema the **Generate Schema from This File** wand is hidden for it. Clicking still lets you set your own explicit binding.
+When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. **Validate This File** uses that auto-resolved schema as well. Clicking still lets you set your own explicit binding.
 
 | Toolbar | Command Palette | Context Menu |
 |---------|----------------|---|
@@ -113,7 +113,7 @@ For an `enum` mismatch the allowed values are **ranked by how close they are to 
 
 Infers a JSON Schema from the active JSON, JSONC, JSONL, YAML, or TOML data file using `genson-js`. Opens the generated schema in a new editor tab beside the original. A great starting point for adopting schema-first workflows.
 
-The wand appears only for data files that don't already have a schema. When the file has an inline `$schema`, a settings binding, or a natively-resolved **(auto)** schema, the toolbar icon is hidden — there is already a schema for it, so generating one from scratch would make little sense.
+The wand appears for any data file, regardless of whether it already has a schema bound (inline `$schema`, a settings binding, or a natively-resolved **(auto)** schema) — there's no reliable way to tell whether an existing binding means you'd never want to (re)generate a starting point from the file's current data, so the icon is always available.
 
 | Toolbar | Command Palette |
 |---------|----------------|

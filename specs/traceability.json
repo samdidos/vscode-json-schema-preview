@@ -592,7 +592,7 @@
         "package.json",
         "src/SchemaBindingManager.ts"
       ],
-      "note": "inferSchema editor/title icon, gated on !isJsonSchema && !hasSchemaBinding; hasSchemaBinding context key set in SchemaBindingManager.refresh()"
+      "note": "inferSchema editor/title icon, gated only on !isJsonSchema; never hidden for an existing binding"
     },
     "F06-FR-03": {
       "status": "implemented",
