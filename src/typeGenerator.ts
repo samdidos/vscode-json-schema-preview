@@ -167,8 +167,12 @@ export interface TargetLanguage {
 /**
  * The supported targets (F18-FR-10), TypeScript first as the default.
  * `just-types`-style options are passed wherever the backend supports them
- * so output is declarations rather than serializer scaffolding; Rust and C#
- * have no such option in this quicktype version and use backend defaults.
+ * so output is declarations rather than serializer scaffolding; Rust has no
+ * such option in this quicktype version and uses backend defaults. C# does
+ * have a serializer, so its framework is pinned to NewtonSoft (F18-FR-10):
+ * quicktype-core 26 made System.Text.Json the default, which would silently
+ * change which NuGet package a consumer of the generated code needs on a
+ * future dependency bump otherwise.
  */
 export const TARGET_LANGUAGES: readonly TargetLanguage[] = [
   {
@@ -189,7 +193,7 @@ export const TARGET_LANGUAGES: readonly TargetLanguage[] = [
   { id: 'java', label: 'Java', quicktypeLang: 'java', editorLanguageId: 'java',
     extension: 'java', lineComment: '//', rendererOptions: { 'just-types': 'true' } },
   { id: 'csharp', label: 'C#', quicktypeLang: 'cs', editorLanguageId: 'csharp',
-    extension: 'cs', lineComment: '//', rendererOptions: {} },
+    extension: 'cs', lineComment: '//', rendererOptions: { framework: 'NewtonSoft' } },
   { id: 'kotlin', label: 'Kotlin', quicktypeLang: 'kotlin', editorLanguageId: 'kotlin',
     extension: 'kt', lineComment: '//', rendererOptions: { 'just-types': 'true' } },
   { id: 'swift', label: 'Swift', quicktypeLang: 'swift', editorLanguageId: 'swift',
