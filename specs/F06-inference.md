@@ -18,14 +18,17 @@ JSONL, or YAML data file using the `genson-js` library.
 
 - **F06-FR-01** The command `jsonschema.inferSchema` MUST be available in the
   Command Palette.
-- **F06-FR-02** The **Generate Schema** toolbar icon (wand) MUST appear only when
-  `jsonschema.isJsonSchema` is `false` (data files, not schema files) **and
-  `jsonschema.hasSchemaBinding` is `false`** — when the active file already has
-  a schema (an inline `$schema`, a settings binding, or a natively-resolved
-  schema per F04-FR-15) there is no point offering to generate one from it, so
-  the icon MUST be hidden. The `jsonschema.hasSchemaBinding` context key is
-  maintained by the binding manager's status-bar refresh, alongside the state
-  it publishes for F04-FR-06/07/15.
+- **F06-FR-02** The **Generate Schema** toolbar icon (wand) MUST appear whenever
+  `jsonschema.isJsonSchema` is `false` (data files, not schema files),
+  regardless of whether the file already has a schema bound (inline `$schema`,
+  a settings binding, or a natively-resolved schema per F04-FR-15). An earlier
+  revision also hid the icon whenever any of those was present, on the theory
+  that generating a schema from a file that already has one is pointless; in
+  practice there is no reliable way to draw that line — an existing binding
+  (of any kind, including a natively-resolved one like a Helm chart's
+  `values.schema.json`) is not proof the user never wants to (re)generate a
+  starting point from the file's current data — so the icon is never hidden on
+  that basis.
 
 ### Parsing
 
