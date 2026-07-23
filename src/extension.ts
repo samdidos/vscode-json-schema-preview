@@ -173,7 +173,7 @@ export function activate(context: vscode.ExtensionContext) {
   registerSchemaCoverage(context, schemaCache);
 
   // ── $ref dependency graph view (F24) ────────────────────────────────────────
-  registerRefGraph(context);
+  registerRefGraph(context, authManager, schemaCache);
 
   // ── Commands ───────────────────────────────────────────────────────────────
   context.subscriptions.push(

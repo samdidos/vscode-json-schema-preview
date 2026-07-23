@@ -84,9 +84,9 @@ suite('[F06-FR-02] Generate Schema toolbar icon', () => {
     assert.match(when[0], /!jsonschema\.isJsonSchema/);
   });
 
-  test('is hidden when the file already has a schema (!hasSchemaBinding)', () => {
+  test('is never hidden on account of an existing binding', () => {
     const when = whenFor(editorTitle, 'jsonschema.inferSchema');
-    assert.match(when[0], /!jsonschema\.hasSchemaBinding/);
+    assert.doesNotMatch(when[0], /hasSchemaBinding/);
   });
 });
 

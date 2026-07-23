@@ -173,6 +173,35 @@ suite('[S03-SR-03][S03-SR-12] SchemaAuthManager.fetchText()', () => {
     );
   });
 
+  test('[F07-FR-15] an unauthenticated 404 on a GitHub host is AuthRequiredError, not a plain 404', async () => {
+    vscode.authentication.getSession.resolves(undefined);
+    fetchStub.resolves(mockResponse(404));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    await assert.rejects(
+      () => auth.fetchText('https://raw.githubusercontent.com/o/private-repo/main/s.json'),
+      (e: any) => e instanceof AuthRequiredError && e.status === 404,
+    );
+  });
+
+  test('[F07-FR-15] an authenticated 404 on a GitHub host stays a plain not-found', async () => {
+    vscode.authentication.getSession.resolves({ accessToken: 'gh-token' } as any);
+    fetchStub.resolves(mockResponse(404));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    await assert.rejects(
+      () => auth.fetchText('https://raw.githubusercontent.com/o/private-repo/main/s.json'),
+      (e: any) => e.name === 'HttpError' && e.status === 404,
+    );
+  });
+
+  test('[F07-FR-15] a 404 on a non-GitHub host stays a plain not-found even without credentials', async () => {
+    fetchStub.resolves(mockResponse(404));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    await assert.rejects(
+      () => auth.fetchText('https://example.com/s.json'),
+      (e: any) => e.name === 'HttpError' && e.status === 404,
+    );
+  });
+
   test('[S03-SR-14][F08-FR-13] throws a "Timed out" error when the request is aborted', async () => {
     fetchStub.callsFake((_url: string, opts: { signal: AbortSignal }) => new Promise((_resolve, reject) => {
       opts.signal.addEventListener('abort', () => {
@@ -275,6 +304,16 @@ suite('[F08-FR-15][F08-FR-16] SchemaAuthManager.fetchConditional()', () => {
     await assert.rejects(
       () => auth.fetchConditional('https://example.com/s.json'),
       (e: any) => e.name === 'HttpError' && e.status === 500,
+    );
+  });
+
+  test('[F07-FR-15] an unauthenticated 404 on a GitHub host is AuthRequiredError', async () => {
+    vscode.authentication.getSession.resolves(undefined);
+    fetchStub.resolves(conditionalResponse(404));
+    const auth = new SchemaAuthManager(makeContext() as any);
+    await assert.rejects(
+      () => auth.fetchConditional('https://raw.githubusercontent.com/o/private-repo/main/s.json'),
+      (e: any) => e instanceof AuthRequiredError && e.status === 404,
     );
   });
 

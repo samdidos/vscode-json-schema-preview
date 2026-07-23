@@ -112,6 +112,20 @@ export class SchemaAuthManager {
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Whether a response's status should be treated as authentication-required
+   * (F07-FR-09/15): a plain 401/403, or — only for a GitHub host, and only
+   * when the request carried no `Authorization` header — a 404. GitHub
+   * returns 404 (not 401/403) for private-repo content to an unauthenticated
+   * caller so existence can't be inferred without access; an *authenticated*
+   * 404 stays a plain not-found, since the credential may simply lack access
+   * to that particular path.
+   */
+  private static isAuthRequiredStatus(status: number, url: string, headers: Record<string, string>): boolean {
+    if (status === 401 || status === 403) { return true; }
+    return status === 404 && SchemaAuthManager.isGitHubUrl(url) && !headers.Authorization;
+  }
+
   async fetchText(url: string, timeoutMs = 30_000): Promise<string> {
     const headers = await this.getAuthHeaders(url);
     const controller = new AbortController();
@@ -127,7 +141,7 @@ export class SchemaAuthManager {
     } finally {
       clearTimeout(timer);
     }
-    if (res.status === 401 || res.status === 403) {throw new AuthRequiredError(url, res.status);}
+    if (SchemaAuthManager.isAuthRequiredStatus(res.status, url, headers)) {throw new AuthRequiredError(url, res.status);}
     if (!res.ok) {throw new HttpError(res.status, `HTTP ${res.status} fetching ${url}`);}
     return res.text();
   }
@@ -163,7 +177,7 @@ export class SchemaAuthManager {
       clearTimeout(timer);
     }
 
-    if (res.status === 401 || res.status === 403) { throw new AuthRequiredError(url, res.status); }
+    if (SchemaAuthManager.isAuthRequiredStatus(res.status, url, headers)) { throw new AuthRequiredError(url, res.status); }
     if (res.status === 304) {
       // Not modified — return the validators we sent so metadata is preserved.
       return { status: 304, etag: validators?.etag, lastModified: validators?.lastModified };

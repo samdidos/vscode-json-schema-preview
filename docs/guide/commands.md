@@ -71,7 +71,7 @@ Shows a Quick Pick list of all schema files in the workspace and binds the selec
 
 Also available via **right-click** in the editor and the **Explorer** context menu.
 
-When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. **Validate This File** uses that auto-resolved schema as well, and because the file already has a schema the **Generate Schema from This File** wand is hidden for it. Clicking still lets you set your own explicit binding.
+When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. **Validate This File** uses that auto-resolved schema as well. Clicking still lets you set your own explicit binding.
 
 | Toolbar | Command Palette | Context Menu |
 |---------|----------------|---|
@@ -113,7 +113,7 @@ For an `enum` mismatch the allowed values are **ranked by how close they are to 
 
 Infers a JSON Schema from the active JSON, JSONC, JSONL, YAML, or TOML data file using `genson-js`. Opens the generated schema in a new editor tab beside the original. A great starting point for adopting schema-first workflows.
 
-The wand appears only for data files that don't already have a schema. When the file has an inline `$schema`, a settings binding, or a natively-resolved **(auto)** schema, the toolbar icon is hidden — there is already a schema for it, so generating one from scratch would make little sense.
+The wand appears for any data file, regardless of whether it already has a schema bound (inline `$schema`, a settings binding, or a natively-resolved **(auto)** schema) — there's no reliable way to tell whether an existing binding means you'd never want to (re)generate a starting point from the file's current data, so the icon is always available.
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -244,7 +244,7 @@ A typical PR check diffs the proposed schema against its base-branch version and
 
 Opens a bird's-eye view of the active schema's `$ref` dependencies in a side panel: which `$defs`/`definitions` reference which, and every external file or URL the schema pulls in. It's the middle ground between [`$ref` go-to-definition](/guide/#ref-navigation) (one reference at a time) and [Bundle / Dereference](#json-schema-bundle-dereference-schema) (flatten them all) — a way to *see the shape* of a schema: unused definitions show up as isolated nodes, unresolved pointers are flagged, and reference cycles (a schema that can't be flattened trivially) are called out.
 
-The panel is a static, **script-free** rendering (locked-down CSP): a left-to-right layered diagram (nodes ordered by dependency depth from the root) plus a text adjacency list beside it, so it reads the same with or without the diagram. Nothing is fetched — external references are shown as endpoints by their URI; bundle first (F14) if you want to graph across files. A schema with no `$ref` reports "nothing to graph" and opens no panel.
+The panel is a static, **script-free** rendering (locked-down CSP): a left-to-right layered diagram (nodes ordered by dependency depth from the root) plus a text adjacency list beside it, so it reads the same with or without the diagram. By default nothing is fetched — external references are shown as endpoints by their URI. If the schema has any, you're asked (every time, never automatically) whether to resolve them over the network; accepting fetches each external document using the same credentials (F07) and cache (F08) as [Bundle / Dereference](#json-schema-bundle-dereference-schema), follows its own `$defs`/refs the same way, and recurses up to `jsonschema.refGraph.maxDepth` documents deep (default 3, configurable) before leaving the rest as unfetched endpoints. A document that fails to resolve shows up as an error node instead of aborting the whole graph. A schema with no `$ref` reports "nothing to graph" and opens no panel.
 
 | Toolbar | Command Palette |
 |---------|----------------|

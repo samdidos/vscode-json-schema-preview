@@ -46,6 +46,16 @@ tokens, and Basic auth.
 - **F07-FR-09** If a fetch returns 401 or 403 the extension MUST surface an
   `AuthRequiredError` with the URL so the caller can offer the Configure Auth
   flow.
+- **F07-FR-15** A **404** response from a GitHub host (`raw.githubusercontent.com`,
+  `api.github.com`, or any `*.github.com`/`*.githubusercontent.com` subdomain)
+  MUST also be surfaced as `AuthRequiredError` when the request carried no
+  `Authorization` header — GitHub returns 404, not 401/403, for private-repo
+  content when the caller is unauthenticated, specifically so existence can't
+  be inferred without access. A 404 on a request that *did* carry an
+  `Authorization` header MUST remain a plain not-found error (the credential
+  may simply lack access to that path, and re-offering Configure Auth would be
+  misleading). Non-GitHub hosts are unaffected: their 404s always stay
+  not-found, since this ambiguity is a GitHub-specific convention.
 - **F07-FR-14** When stored credentials are attached to a plain-`http://` URL
   the extension MUST warn the user that the credential is sent unencrypted,
   at most once per host per session. The request MUST still proceed — the
@@ -86,3 +96,7 @@ tokens, and Basic auth.
 
 - 2026-07-19 — Added F07-FR-14: warn (once per host per session, non-blocking)
   when credentials are sent over plain `http://`.
+- 2026-07-22 — Added F07-FR-15: an unauthenticated 404 from a GitHub host is
+  treated as authentication-required, since GitHub returns 404 (not 401/403)
+  for private-repo content without access — previously this silently produced
+  a plain not-found error with no Configure Auth offer.
