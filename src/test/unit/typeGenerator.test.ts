@@ -463,6 +463,7 @@ suite('[F18-FR-10] typeGenerator — additional target languages', function () {
       name: { type: 'string' },
       role: { enum: ['admin', 'user'] },
       address: { $ref: '#/$defs/address' },
+      tags: { type: 'array', items: { type: 'string' } },
     },
     additionalProperties: false,
     $defs: {
@@ -489,6 +490,51 @@ suite('[F18-FR-10] typeGenerator — additional target languages', function () {
       assert.strictEqual(first, second, 'output must be byte-identical across runs');
     });
   }
+
+  // F18-NFR-02: byte-stability across runs of the *same* quicktype-core
+  // install doesn't catch a version bump silently changing a target's
+  // type-shape defaults (collection type, mutability, serialization
+  // framework) — only a snapshot fragment survives that. These pin the
+  // specific defaults this project has settled on for each target that
+  // isn't fully covered by a `just-types`-style option (F18-FR-10).
+  const target = (id: string) => TARGET_LANGUAGES.find((t: any) => t.id === id);
+
+  test('[F18-NFR-02] Python — dataclass with PEP 585 generics', async () => {
+    const out = await generateCode(structuredClone(schema), 'person', target('python'));
+    assert.match(out, /@dataclass/);
+    assert.match(out, /tags: list\[str\]/);
+  });
+
+  test('[F18-NFR-02] Java — java.util.List, not a raw array', async () => {
+    const out = await generateCode(structuredClone(schema), 'person', target('java'));
+    assert.match(out, /import java\.util\.List;/);
+    assert.match(out, /List<String> tags;/);
+  });
+
+  test('[F18-NFR-02] Dart — immutable (final) fields', async () => {
+    const out = await generateCode(structuredClone(schema), 'person', target('dart'));
+    assert.match(out, /final int id;/);
+    assert.match(out, /final List<String>\? tags;/);
+  });
+
+  test('[F18-NFR-02] C++ — std::optional, no Boost dependency', async () => {
+    const out = await generateCode(structuredClone(schema), 'person', target('cpp'));
+    assert.match(out, /std::optional<Role> role;/);
+    assert.doesNotMatch(out, /boost::/);
+  });
+
+  test('[F18-NFR-02] Rust — derives Debug/Clone, public fields', async () => {
+    const out = await generateCode(structuredClone(schema), 'person', target('rust'));
+    assert.match(out, /#\[derive\(Debug, Clone, Serialize, Deserialize\)\]/);
+    assert.match(out, /pub id: i64,/);
+  });
+
+  test('[F18-NFR-02] C# — pinned to Newtonsoft.Json, not System.Text.Json', async () => {
+    const out = await generateCode(structuredClone(schema), 'person', target('csharp'));
+    assert.match(out, /Newtonsoft\.Json/);
+    assert.match(out, /\[JsonProperty\("id"\)\]/);
+    assert.doesNotMatch(out, /System\.Text\.Json/);
+  });
 });
 
 suite('[F18-FR-10][F18-FR-11] typeGenerator — multi-file output (Java)', function () {

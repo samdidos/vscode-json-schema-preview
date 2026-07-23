@@ -105,7 +105,17 @@ engine supporting them.
   in each language's own doc-comment idiom. Targets MAY emit **multiple
   source files** — Java does (one compilation unit per class, a language
   rule); every other offered target emits a single file — and the command
-  MUST handle both shapes per F18-FR-11.
+  MUST handle both shapes per F18-FR-11. Where quicktype's backend picks a
+  serialization framework by default (currently only C#), that framework
+  MUST be pinned explicitly in `TARGET_LANGUAGES` rather than left to the
+  backend's default — the framework choice determines which package a
+  consumer of the generated code must add (e.g. C# is pinned to
+  `NewtonSoft`; quicktype-core 26 made `SystemTextJson` the new unpinned
+  default, which would otherwise change the required NuGet package on a
+  future dependency bump with no signal to this project). Targets without a
+  serializer (plain data classes/structs, e.g. Rust) have no such pin and
+  use the backend's default type-shape conventions (collection types,
+  mutability, derived traits, etc.), per F18-NFR-02's snapshot coverage.
 
 ### Output Destination
 
@@ -143,8 +153,15 @@ engine supporting them.
   ≥ 80 % coverage on all axes (Article V); generated TypeScript snapshots
   MUST be validated by compiling them with the in-repo TypeScript compiler
   in tests. For the F18-FR-10 targets no in-repo compilers exist: tests
-  MUST instead assert that generation succeeds and is byte-stable for every
-  offered target.
+  MUST assert that generation succeeds and is byte-stable for every offered
+  target, **and** MUST additionally assert on literal fragments of known-good
+  output for each target's type-shape defaults (collection type, mutability,
+  serialization framework/attributes) that F18-FR-10's engine delegates to
+  quicktype rather than this project's own mapping rules — a same-version
+  cross-run byte-stability check alone does not catch a quicktype-core
+  version bump silently changing those defaults (this happened once,
+  unnoticed, in the 23→26 upgrade for Python/Java/Dart/C++/Rust/C# before
+  this requirement's wording was tightened in response).
 - **F18-NFR-03** The `quicktype-core` dependency MUST be pinned to an exact
   version in `package.json` (no `^`/`~` range). Determinism (F18-FR-09)
   depends on this library's output not changing silently between installs;

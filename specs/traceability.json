@@ -1916,7 +1916,7 @@
         "src/typeGenerator.ts",
         "src/GenerateTypesCommand.ts"
       ],
-      "note": "TARGET_LANGUAGES table (10 targets) with per-backend renderer options verified against quicktype-core 23.3.25; byte-stability tested per target; quicktypeMultiFile handles multi-file emitters (Java: one file per class), all other targets emit a single file"
+      "note": "TARGET_LANGUAGES table (10 targets) with per-backend renderer options verified against quicktype-core 26.0.0; byte-stability tested per target; quicktypeMultiFile handles multi-file emitters (Java: one file per class), all other targets emit a single file; C# pinned to framework: NewtonSoft (quicktype 26 defaulted to SystemTextJson)"
     },
     "F18-FR-11": {
       "status": "implemented",
@@ -1938,7 +1938,7 @@
       "impl": [
         "src/typeGenerator.ts"
       ],
-      "note": "tests compile every snapshot with the in-repo TypeScript compiler under --strict"
+      "note": "tests compile every snapshot with the in-repo TypeScript compiler under --strict; non-TS targets also assert literal fragments of each target's type-shape defaults (collection type, mutability, serialization framework/attributes) so a quicktype-core version bump that silently changes them fails tests instead of passing"
     },
     "F18-NFR-03": {
       "status": "implemented",
