@@ -160,7 +160,7 @@ export interface TargetLanguage {
   extension: string;
   /** Line-comment prefix, for the multi-file banner separators (F18-FR-11). */
   lineComment: string;
-  /** Per-language renderer options, verified against quicktype-core 23.3.25. */
+  /** Per-language renderer options, verified against quicktype-core 26.0.0. */
   rendererOptions: Readonly<Record<string, string>>;
 }
 
@@ -191,7 +191,7 @@ export const TARGET_LANGUAGES: readonly TargetLanguage[] = [
   { id: 'csharp', label: 'C#', quicktypeLang: 'cs', editorLanguageId: 'csharp',
     extension: 'cs', lineComment: '//', rendererOptions: {} },
   { id: 'kotlin', label: 'Kotlin', quicktypeLang: 'kotlin', editorLanguageId: 'kotlin',
-    extension: 'kt', lineComment: '//', rendererOptions: { framework: 'just-types' } },
+    extension: 'kt', lineComment: '//', rendererOptions: { 'just-types': 'true' } },
   { id: 'swift', label: 'Swift', quicktypeLang: 'swift', editorLanguageId: 'swift',
     extension: 'swift', lineComment: '//', rendererOptions: { 'just-types': 'true' } },
   { id: 'dart', label: 'Dart', quicktypeLang: 'dart', editorLanguageId: 'dart',
