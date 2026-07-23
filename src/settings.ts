@@ -107,3 +107,19 @@ export function getWorkspaceValidationMaxFiles(): number {
   if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) { return 2000; }
   return Math.floor(raw);
 }
+
+/** Default fetch depth for opt-in $ref graph resolution (F24-FR-10). */
+export const DEFAULT_REF_GRAPH_MAX_DEPTH = 3;
+
+/**
+ * How many documents deep the $ref graph's opt-in resolution step follows
+ * external refs before leaving the rest as unfetched terminal nodes
+ * (F24-FR-10). Missing, non-numeric, or non-positive values fall back to the
+ * default (3).
+ */
+export function getRefGraphMaxDepth(): number {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.refGraph');
+  const raw = cfg.get<number>('maxDepth');
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) { return DEFAULT_REF_GRAPH_MAX_DEPTH; }
+  return Math.floor(raw);
+}

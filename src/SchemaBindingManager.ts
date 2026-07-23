@@ -114,18 +114,13 @@ export class SchemaBindingManager {
 
   private refresh(doc?: vscode.TextDocument) {
     if (!doc || !isSupported(doc.languageId)) {
-      this.setHasSchemaBinding(false);
       this.statusBar.hide();
       return;
     }
     // An inline $schema field takes precedence over any settings-based binding (F10-FR-15).
     const inline = extractInlineSchemaUrl(doc);
     const settingsBinding = findBoundSchemaPath(doc);
-    // A schema resolved natively by VS Code (F04-FR-15) counts as "bound" for
-    // the purpose of hiding schema-generation affordances — there is already a
-    // schema for this file, so offering to generate one makes no sense (F06-FR-02).
     const native = (!inline && !settingsBinding) ? this.detectNativeSchema(doc) : undefined;
-    this.setHasSchemaBinding(Boolean(inline || settingsBinding || native));
     if (inline) {
       this.statusBar.text = `$(file-symlink-file) Schema: ${truncateStart(path.basename(inline))}`;
       this.statusBar.tooltip = settingsBinding
@@ -151,14 +146,6 @@ export class SchemaBindingManager {
       this.statusBar.tooltip = 'No JSON Schema bound to this file\nClick to bind one';
     }
     this.statusBar.show();
-  }
-
-  /** Publish whether the active file has any resolvable schema — inline,
-   *  settings, or native/auto (F04-FR-15) — so menus can hide the
-   *  "Generate Schema from This File" affordance when one already exists
-   *  (F06-FR-02). */
-  private setHasSchemaBinding(value: boolean): void {
-    vscode.commands.executeCommand('setContext', 'jsonschema.hasSchemaBinding', value);
   }
 
   /**
