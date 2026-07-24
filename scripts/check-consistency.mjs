@@ -10,7 +10,7 @@
 //  2. The per-file coverage exclusions (package.json `c8.exclude`) and the
 //     mutation exclusions (stryker.config.json `mutate` `!src/...` entries)
 //     name the same set of source files — one decision, two configs.
-//  3. The actionlint version pinned locally (scripts/lint-workflows.sh,
+//  3. The actionlint version pinned locally (scripts/lint-workflows.mjs,
 //     S09-SR-06) matches the version CI's actionlint job runs
 //     (.github/workflows/ci.yml, S09-SR-05) — one decision, two places.
 //
@@ -70,15 +70,15 @@ for (const name of strykerExcluded) {
 const ciYml = readFileSync(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf-8');
 const ciVersion = /docker:\/\/rhysd\/actionlint:([\d.]+)/.exec(ciYml)?.[1];
 
-const lintWorkflowsScript = readFileSync(join(ROOT, 'scripts', 'lint-workflows.sh'), 'utf-8');
-const localVersion = /^ACTIONLINT_VERSION=([\d.]+)/m.exec(lintWorkflowsScript)?.[1];
+const lintWorkflowsScript = readFileSync(join(ROOT, 'scripts', 'lint-workflows.mjs'), 'utf-8');
+const localVersion = /ACTIONLINT_VERSION\s*=\s*'([\d.]+)'/.exec(lintWorkflowsScript)?.[1];
 
 if (!ciVersion) {
   problems.push('.github/workflows/ci.yml: could not find the actionlint docker image tag (docker://rhysd/actionlint:X.Y.Z)');
 } else if (!localVersion) {
-  problems.push('scripts/lint-workflows.sh: could not find ACTIONLINT_VERSION=X.Y.Z');
+  problems.push("scripts/lint-workflows.mjs: could not find ACTIONLINT_VERSION = 'X.Y.Z'");
 } else if (ciVersion !== localVersion) {
-  problems.push(`actionlint version drift: CI pins ${ciVersion} (ci.yml) but the local script pins ${localVersion} (scripts/lint-workflows.sh)`);
+  problems.push(`actionlint version drift: CI pins ${ciVersion} (ci.yml) but the local script pins ${localVersion} (scripts/lint-workflows.mjs)`);
 }
 
 // ── Report ──────────────────────────────────────────────────────────────────
