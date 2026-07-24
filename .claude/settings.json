@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/session-bootstrap.sh"
+            "command": "node .claude/hooks/session-bootstrap.mjs"
           }
         ]
       }
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/spec-context.sh"
+            "command": "node .claude/hooks/spec-context.mjs"
           }
         ]
       }
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/pre-commit-gate.sh"
+            "command": "node .claude/hooks/pre-commit-gate.mjs"
           }
         ]
       }
@@ -59,11 +59,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/check-coverage.sh"
+            "command": "node .claude/hooks/check-coverage.mjs"
           },
           {
             "type": "command",
-            "command": ".claude/hooks/update-readme-badges.sh"
+            "command": "node .claude/hooks/update-readme-badges.mjs"
           }
         ]
       }

@@ -3821,9 +3821,16 @@
       "note": "exemption holds: both remain CI-only/optional-convenience, not part of npm run verify or bootstrap"
     },
     "S15-SR-05": {
-      "status": "planned",
-      "impl": [],
-      "note": "rewrite .claude/hooks/*.sh as .mjs, invoked via explicit node command in .claude/settings.json"
+      "status": "manual",
+      "impl": [
+        ".claude/hooks/session-bootstrap.mjs",
+        ".claude/hooks/pre-commit-gate.mjs",
+        ".claude/hooks/check-coverage.mjs",
+        ".claude/hooks/spec-context.mjs",
+        ".claude/hooks/update-readme-badges.mjs",
+        ".claude/settings.json"
+      ],
+      "note": "all five hooks rewritten as .mjs, invoked via explicit `node <path>.mjs` in .claude/settings.json instead of shebang + executable bit; agent-hook, no unit test"
     }
   }
 }

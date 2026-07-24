@@ -719,18 +719,18 @@
    }
   },
   "S15": {
-   "points": 2,
-   "basePoints": 1,
+   "points": 3,
+   "basePoints": 2,
    "tshirt": "S",
-   "hoursMin": 2,
-   "hoursMax": 4,
+   "hoursMin": 4,
+   "hoursMax": 8,
    "factors": ["INFRA"],
-   "justification": "bootstrap.sh and lint-workflows.sh rewritten as Node, preserving their PATH/go/docker fallback chain and exit-code semantics, plus a repo-wide no-bash-in-the-gate policy. Bumped one step above the small raw LOC for the manual PATH/PATHEXT probing and subprocess-management work a shell got for free.",
+   "justification": "bootstrap.sh/lint-workflows.sh and all five .claude/hooks/*.sh scripts rewritten as Node, preserving exact behavior (PATH/go/docker fallback chain, JSON-stdin parsing, subprocess exit-code propagation) plus a repo-wide no-bash-in-the-gate policy covering both the contributor gate and Claude Code's own hooks. Bumped one step above the LOC band for the manual PATH/PATHEXT probing and subprocess-management work a shell got for free.",
    "estimator": "the project's AI coding agent (Claude Code)",
    "estimatedAt": "2026-07-24",
    "evidence": {
-    "implFiles": 2,
-    "implLoc": 121,
+    "implFiles": 7,
+    "implLoc": 284,
     "taggedTests": 0,
     "requirements": 6
    }
