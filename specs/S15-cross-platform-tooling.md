@@ -54,13 +54,13 @@ reintroduce the gap the way `lint-workflows.sh` did.
 
 - **S15-SR-04** A script that only ever runs on the pinned GitHub-hosted
   runner image — never on a contributor's machine — is exempt from
-  S15-SR-01/03 (e.g. `scripts/ci-detect-source-changes.sh`, bash;
-  `scripts/sync-readme-badges.py`, python3, reached via `npm run
-  badges:sync` from both `maturity-refresh.yml` and the
-  `update-readme-badges` agent hook — see S15-SR-05 for why the *hook* is in
-  scope even though the script it calls stays exempt). If either script is
-  ever wired into `npm run verify` or another contributor-facing command, it
-  MUST first be ported per S15-SR-01/02's rules before that happens.
+  S15-SR-01/03 (e.g. `scripts/ci-detect-source-changes.sh`, bash). If such a
+  script is ever wired into `npm run verify` or another contributor-facing
+  command, it MUST first be ported per S15-SR-01/02's rules before that
+  happens. This exemption is narrower than it once was: `sync-readme-
+  badges.py` no longer qualifies (S15-SR-06) — it's reached from an agent
+  hook as well as CI, and a Python-only script is the wrong default for a
+  project this size regardless of exemption technicalities (S15-SR-03).
 
 ### Agent-Invoked Hooks
 
@@ -81,6 +81,21 @@ reintroduce the gap the way `lint-workflows.sh` did.
   failure path degrades gracefully (matches the pre-existing best-effort,
   never-blocks behavior) rather than breaking the hook itself.
 
+### Optional/Convenience Scripts
+
+- **S15-SR-06** `scripts/sync-readme-badges.py` MUST be rewritten as Node
+  (`.mjs`), preserving its exact behavior: reading `package.json` and (when
+  present) `coverage/coverage-summary.json`, and rewriting the coverage/VS
+  Code/Node/license shields.io badges in `README.md`, percent-encoding
+  values identically to Python's `urllib.parse.quote(s, safe='')` (not
+  `encodeURIComponent`, which leaves `!*'()` unescaped where Python doesn't).
+  `package.json`'s `badges:sync` script and `.claude/hooks/update-readme-
+  badges.mjs` MUST invoke it via `node`; `.github/workflows/maturity-
+  refresh.yml` needs no change since it already reaches the script through
+  `npm run badges:sync`. Unlike S15-SR-01/02's mandatory-gate scripts, this
+  one stays best-effort (never blocks a save or a build) — only the
+  interpreter changes, not the exit-code/error-handling contract.
+
 ## Non-Functional Requirements
 
 - **S15-NFR-01** (deployment, cross-reference — no new product requirement)
@@ -93,9 +108,8 @@ reintroduce the gap the way `lint-workflows.sh` did.
 
 ## Out of Scope
 
-- Rewriting `scripts/ci-detect-source-changes.sh` or
-  `scripts/sync-readme-badges.py` — covered by the S15-SR-04 exemption as
-  long as they stay CI-only/optional-convenience.
+- Rewriting `scripts/ci-detect-source-changes.sh` — covered by the
+  S15-SR-04 exemption as long as it stays CI-only.
 - Any change to the shipped extension's runtime behavior — this spec is
   about contributor tooling only; the product-side guarantee already exists
   (S15-NFR-01's cross-references).
@@ -119,6 +133,10 @@ reintroduce the gap the way `lint-workflows.sh` did.
    `command` entries invoke their `.mjs` replacements explicitly via `node`,
    and each hook's observable behavior (exit codes, stdout/stderr content,
    what triggers it) is unchanged from the bash version.
+6. `scripts/sync-readme-badges.py` no longer exists; running `npm run
+   badges:sync` (or the `update-readme-badges` hook, or
+   `maturity-refresh.yml`) produces byte-identical `README.md` badge output
+   to what the Python version produced for the same inputs.
 
 ## Relation to Existing Specs
 
@@ -145,3 +163,7 @@ reintroduce the gap the way `lint-workflows.sh` did.
   directly on a user's own machine (Windows included), where the same
   bash-shebang-doesn't-execute problem applies to hooks as much as to
   `bootstrap.sh`/`lint-workflows.sh`.
+- 2026-07-24 — Added S15-SR-06: extended scope to
+  `scripts/sync-readme-badges.py`, the project's only Python file. Narrowed
+  the S15-SR-04 exemption accordingly — a script reached from both CI and an
+  agent hook, and this simple to port, no longer earns the CI-only carve-out.

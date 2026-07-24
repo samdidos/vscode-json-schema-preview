@@ -3815,10 +3815,9 @@
     "S15-SR-04": {
       "status": "manual",
       "impl": [
-        "scripts/ci-detect-source-changes.sh",
-        "scripts/sync-readme-badges.py"
+        "scripts/ci-detect-source-changes.sh"
       ],
-      "note": "exemption holds: both remain CI-only/optional-convenience, not part of npm run verify or bootstrap"
+      "note": "exemption narrowed: sync-readme-badges.py no longer qualifies (S15-SR-06); ci-detect-source-changes.sh remains CI-only, not part of npm run verify or bootstrap"
     },
     "S15-SR-05": {
       "status": "manual",
@@ -3831,6 +3830,15 @@
         ".claude/settings.json"
       ],
       "note": "all five hooks rewritten as .mjs, invoked via explicit `node <path>.mjs` in .claude/settings.json instead of shebang + executable bit; agent-hook, no unit test"
+    },
+    "S15-SR-06": {
+      "status": "manual",
+      "impl": [
+        "scripts/sync-readme-badges.mjs",
+        "package.json",
+        ".claude/hooks/update-readme-badges.mjs"
+      ],
+      "note": "Python rewritten as Node: same regex/JSON logic, custom enc() matching urllib.parse.quote(s, safe='') exactly (unlike encodeURIComponent); badges:sync and the agent hook both invoke it via node; agent-hook/CI script, no unit test"
     }
   }
 }
