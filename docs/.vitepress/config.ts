@@ -38,12 +38,22 @@ export default defineConfig({
     logo: '/logo.svg',
     siteTitle: 'JSON Schema Preview',
 
-    // Top nav is high-level destinations only; the individual guide pages live
-    // in the left sidebar (below) so the two never duplicate each other. GitHub
-    // is reachable via the social icon (socialLinks) rather than a second nav
-    // link to the same place.
+    // Top nav mirrors each section's sidebar entry point as a dropdown (Guide,
+    // Specs, Maturity all list their subpages) so a page is reachable without
+    // first landing on the section index. GitHub is reachable via the social
+    // icon (socialLinks) rather than a second nav link to the same place.
     nav: [
-      { text: 'Guide', link: '/guide/', activeMatch: '/guide/' },
+      {
+        text: 'Guide',
+        activeMatch: '/guide/',
+        items: [
+          { text: 'Introduction', link: '/guide/' },
+          { text: 'Commands', link: '/guide/commands' },
+          { text: 'CLI', link: '/guide/cli' },
+          { text: 'Authentication', link: '/guide/authentication' },
+          { text: 'Configuration', link: '/guide/configuration' },
+        ],
+      },
       {
         text: 'Specs',
         activeMatch: '/specs/',
