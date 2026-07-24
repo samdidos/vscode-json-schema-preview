@@ -3778,6 +3778,31 @@
         "scripts/check-consistency.mjs"
       ],
       "note": "lint:workflows wired into npm run verify (Husky pre-commit + CI); PATH/go-run/docker fallback chain; check:consistency asserts the pinned version matches ci.yml's actionlint container tag"
+    },
+    "S15-NFR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": "cross-reference only, satisfied by S08-SR-09's impl + specs/README.md Scope"
+    },
+    "S15-SR-01": {
+      "status": "planned",
+      "impl": [],
+      "note": "policy requirement, enforced by review; no automated checker yet"
+    },
+    "S15-SR-02": {
+      "status": "planned",
+      "impl": [],
+      "note": "rewrite scripts/bootstrap.sh and scripts/lint-workflows.sh as .mjs"
+    },
+    "S15-SR-03": {
+      "status": "planned",
+      "impl": [],
+      "note": "policy requirement, enforced by review; no automated checker yet"
+    },
+    "S15-SR-04": {
+      "status": "planned",
+      "impl": [],
+      "note": "exemption clause; no impl needed until ci-detect-source-changes.sh or sync-readme-badges.py enters the mandatory gate"
     }
   }
 }
