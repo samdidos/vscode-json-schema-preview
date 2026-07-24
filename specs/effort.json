@@ -718,6 +718,23 @@
     "requirements": 9
    }
   },
+  "S15": {
+   "points": 2,
+   "basePoints": 1,
+   "tshirt": "S",
+   "hoursMin": 2,
+   "hoursMax": 4,
+   "factors": ["INFRA"],
+   "justification": "Not yet implemented (planned): rewriting bootstrap.sh and lint-workflows.sh as Node, preserving their PATH/go/docker fallback chain, plus a repo-wide no-bash-in-the-gate policy. Bumped one step above the current zero-LOC evidence for the subprocess-management infra work the rewrite still has to do.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-24",
+   "evidence": {
+    "implFiles": 0,
+    "implLoc": 0,
+    "taggedTests": 0,
+    "requirements": 5
+   }
+  },
   "F27": {
    "points": 3,
    "basePoints": 3,
