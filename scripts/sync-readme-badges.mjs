@@ -55,18 +55,23 @@ if (existsSync(covPath)) {
     const pctStr = `${minPct.toFixed(1)}%`;
     const color = minPct >= 80 ? 'brightgreen' : minPct >= 70 ? 'yellow' : 'red';
     const newUrl = `https://img.shields.io/badge/coverage-${enc(pctStr)}-${color}`;
-    // The coverage badge has no ?params, so [^)]+ safely captures the full URL
-    applyBadge(/https:\/\/img\.shields\.io\/badge\/coverage-[^)]+/, newUrl, `coverage=${pctStr}`);
+    // The coverage badge has no ?params, so [^)]+ safely captures the full URL.
+    // Anchored to a preceding "(" (markdown image syntax, `![alt](url)`) so the
+    // match can't start mid-string against an arbitrary host (CodeQL
+    // js/regex/missing-regexp-anchor).
+    applyBadge(/(?<=\()https:\/\/img\.shields\.io\/badge\/coverage-[^)]+/, newUrl, `coverage=${pctStr}`);
   }
 }
 
 // ── VS Code engine badge ──────────────────────────────────────────────────────
 // URL-encoded engine strings (e.g. %5E1.96.0) contain no literal hyphens,
-// so [^-]+ safely matches the value up to the -blue colour segment.
+// so [^-]+ safely matches the value up to the -blue colour segment. Anchored
+// to a preceding "(" (markdown image syntax) per the coverage badge's comment
+// above (CodeQL js/regex/missing-regexp-anchor).
 const vscode = pkg.engines?.vscode ?? '';
 if (vscode) {
   applyBadge(
-    /(https:\/\/img\.shields\.io\/badge\/VS%20Code-)[^-]+(-blue)/,
+    /(?<=\()(https:\/\/img\.shields\.io\/badge\/VS%20Code-)[^-]+(-blue)/,
     `$1${enc(vscode)}$2`,
     `vscode=${vscode}`,
   );
@@ -76,7 +81,7 @@ if (vscode) {
 const nodeVer = pkg.engines?.node ?? '';
 if (nodeVer) {
   applyBadge(
-    /(https:\/\/img\.shields\.io\/badge\/node-)[^-]+(-brightgreen)/,
+    /(?<=\()(https:\/\/img\.shields\.io\/badge\/node-)[^-]+(-brightgreen)/,
     `$1${enc(nodeVer)}$2`,
     `node=${nodeVer}`,
   );
@@ -86,7 +91,7 @@ if (nodeVer) {
 const lic = pkg.license ?? '';
 if (lic) {
   applyBadge(
-    /(https:\/\/img\.shields\.io\/badge\/License-)[^-]+(-yellow)/,
+    /(?<=\()(https:\/\/img\.shields\.io\/badge\/License-)[^-]+(-yellow)/,
     `$1${enc(lic)}$2`,
     `license=${lic}`,
   );
