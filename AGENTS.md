@@ -10,7 +10,7 @@
 
 ## Commands
 
-- **Setup (fresh container)**: `bash scripts/bootstrap.sh` — **not** `npm ci`
+- **Setup (fresh container)**: `node scripts/bootstrap.mjs` — **not** `npm ci`
   (the `canvas` dependency, demo-GIF pipeline only, compiles native code and
   fails in minimal containers; bootstrap installs with `--ignore-scripts`).
   Regenerating GIFs (`npm run make-gifs`) does need a full `npm install`.
@@ -56,6 +56,12 @@
 - **Guarantees live below the agent**: anything that must hold is enforced in
   CI or a git hook. Agent hooks (`.claude/hooks/`) are in-session convenience
   only and are never the sole enforcement of a rule.
+- **No bash/Python in the mandatory local gate** (`specs/S15-cross-platform-tooling.md`):
+  every script `npm run verify` or the bootstrap step runs MUST be Node
+  (`.mjs`) — no shell or Python assumed beyond Node + git, so a bare Windows
+  checkout works. CI-only scripts that never run on a contributor's machine
+  (e.g. `scripts/ci-detect-source-changes.sh`) are exempt; a script crossing
+  into the mandatory gate must be ported to Node first.
 
 ## Gotchas (knowledge that lives only here)
 
@@ -69,7 +75,7 @@
 - Extension entry point: `src/extension.ts`. Docs site: VitePress under
   `docs/` (deployed by `.github/workflows/docs.yml`).
 - **`lint:workflows` needs `actionlint` on PATH, Go, or Docker** (tries each in
-  that order — `scripts/lint-workflows.sh`); it's part of `npm run verify`, so
+  that order — `scripts/lint-workflows.mjs`); it's part of `npm run verify`, so
   a machine with none of the three fails the local gate on that step alone.
 
 ## Agnosticity & standardization (project principle)

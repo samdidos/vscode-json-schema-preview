@@ -3773,36 +3773,52 @@
     "S09-SR-06": {
       "status": "manual",
       "impl": [
-        "scripts/lint-workflows.sh",
+        "scripts/lint-workflows.mjs",
         "package.json",
         "scripts/check-consistency.mjs"
       ],
       "note": "lint:workflows wired into npm run verify (Husky pre-commit + CI); PATH/go-run/docker fallback chain; check:consistency asserts the pinned version matches ci.yml's actionlint container tag"
     },
     "S15-NFR-01": {
-      "status": "planned",
-      "impl": [],
+      "status": "manual",
+      "impl": [
+        ".github/workflows/ci.yml"
+      ],
       "note": "cross-reference only, satisfied by S08-SR-09's impl + specs/README.md Scope"
     },
     "S15-SR-01": {
-      "status": "planned",
-      "impl": [],
-      "note": "policy requirement, enforced by review; no automated checker yet"
+      "status": "manual",
+      "impl": [
+        "AGENTS.md",
+        "scripts/bootstrap.mjs",
+        "scripts/lint-workflows.mjs"
+      ],
+      "note": "the mandatory local gate is now Node-only (bootstrap.mjs, lint-workflows.mjs); policy stated in AGENTS.md's Rules section, enforced by review, no automated checker"
     },
     "S15-SR-02": {
-      "status": "planned",
-      "impl": [],
-      "note": "rewrite scripts/bootstrap.sh and scripts/lint-workflows.sh as .mjs"
+      "status": "manual",
+      "impl": [
+        "scripts/bootstrap.mjs",
+        "scripts/lint-workflows.mjs",
+        "package.json",
+        "scripts/check-consistency.mjs"
+      ],
+      "note": "bootstrap.sh and lint-workflows.sh rewritten as .mjs, same behavior (npm install --ignore-scripts + npx husky; actionlint PATH/go-run/docker fallback chain, same pinned version)"
     },
     "S15-SR-03": {
-      "status": "planned",
-      "impl": [],
-      "note": "policy requirement, enforced by review; no automated checker yet"
+      "status": "manual",
+      "impl": [
+        "AGENTS.md"
+      ],
+      "note": "policy documented in AGENTS.md's Rules section (\"No bash/Python in the mandatory local gate\"); enforced by review, no automated checker"
     },
     "S15-SR-04": {
-      "status": "planned",
-      "impl": [],
-      "note": "exemption clause; no impl needed until ci-detect-source-changes.sh or sync-readme-badges.py enters the mandatory gate"
+      "status": "manual",
+      "impl": [
+        "scripts/ci-detect-source-changes.sh",
+        "scripts/sync-readme-badges.py"
+      ],
+      "note": "exemption holds: both remain CI-only/optional-convenience, not part of npm run verify or bootstrap"
     }
   }
 }

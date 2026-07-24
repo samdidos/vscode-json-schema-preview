@@ -345,7 +345,7 @@ const DIMENSIONS = [
         earn: () => exists('.claude/hooks/check-coverage.sh') },
       { id: 'session-bootstrap', points: 1, note: 'cold-session bootstrap (script + hook)',
         why: 'A cold container that cannot install dependencies wastes every subsequent agent action; bootstrap makes sessions productive from the first prompt. Equal weight by the checklist principle.',
-        earn: () => exists('scripts/bootstrap.sh') && exists('.claude/hooks/session-bootstrap.sh') },
+        earn: () => exists('scripts/bootstrap.mjs') && exists('.claude/hooks/session-bootstrap.sh') },
       { id: 'permissions-allowlist', points: 1, note: 'a permissions allowlist reduces prompts',
         why: 'Pre-approving known-safe commands keeps agents autonomous without widening what they may do. Equal weight by the checklist principle.',
         earn: () => (readJson('.claude/settings.json')?.permissions?.allow ?? []).length > 0 },
