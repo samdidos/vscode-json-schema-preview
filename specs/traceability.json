@@ -3369,6 +3369,15 @@
       ],
       "note": "actionlint job lints all workflow YAML on push/PR via version-pinned container image; CI-verified, no unit test"
     },
+    "S09-SR-06": {
+      "status": "manual",
+      "impl": [
+        "scripts/lint-workflows.mjs",
+        "package.json",
+        "scripts/check-consistency.mjs"
+      ],
+      "note": "lint:workflows wired into npm run verify (Husky pre-commit + CI); PATH/go-run/docker fallback chain; check:consistency asserts the pinned version matches ci.yml's actionlint container tag"
+    },
     "S10-NFR-01": {
       "status": "manual",
       "impl": [
@@ -3770,15 +3779,6 @@
       ],
       "note": "Delivery view: four tiles + bands, lead-time trend, per-release table, dora.dev link"
     },
-    "S09-SR-06": {
-      "status": "manual",
-      "impl": [
-        "scripts/lint-workflows.mjs",
-        "package.json",
-        "scripts/check-consistency.mjs"
-      ],
-      "note": "lint:workflows wired into npm run verify (Husky pre-commit + CI); PATH/go-run/docker fallback chain; check:consistency asserts the pinned version matches ci.yml's actionlint container tag"
-    },
     "S15-NFR-01": {
       "status": "manual",
       "impl": [
@@ -3819,6 +3819,11 @@
         "scripts/sync-readme-badges.py"
       ],
       "note": "exemption holds: both remain CI-only/optional-convenience, not part of npm run verify or bootstrap"
+    },
+    "S15-SR-05": {
+      "status": "planned",
+      "impl": [],
+      "note": "rewrite .claude/hooks/*.sh as .mjs, invoked via explicit node command in .claude/settings.json"
     }
   }
 }
