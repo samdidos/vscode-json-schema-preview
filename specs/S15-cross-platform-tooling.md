@@ -55,12 +55,31 @@ reintroduce the gap the way `lint-workflows.sh` did.
 - **S15-SR-04** A script that only ever runs on the pinned GitHub-hosted
   runner image — never on a contributor's machine — is exempt from
   S15-SR-01/03 (e.g. `scripts/ci-detect-source-changes.sh`, bash;
-  `scripts/sync-readme-badges.py`, python3, invoked by
-  `maturity-refresh.yml` and the optional `.claude/hooks/` badge-sync
-  convenience — the latter is agent-session tooling, not the enforced gate,
-  per `AGENTS.md`'s "guarantees live below the agent" rule). If either script
-  is ever wired into `npm run verify` or another contributor-facing command,
-  it MUST first be ported per S15-SR-01/02's rules before that happens.
+  `scripts/sync-readme-badges.py`, python3, reached via `npm run
+  badges:sync` from both `maturity-refresh.yml` and the
+  `update-readme-badges` agent hook — see S15-SR-05 for why the *hook* is in
+  scope even though the script it calls stays exempt). If either script is
+  ever wired into `npm run verify` or another contributor-facing command, it
+  MUST first be ported per S15-SR-01/02's rules before that happens.
+
+### Agent-Invoked Hooks
+
+- **S15-SR-05** Claude Code runs directly on a contributor's own machine as
+  often as it runs in a managed container — nothing about `.claude/hooks/`
+  is inherently container-only — so every script Claude Code's harness
+  invokes as a hook (`.claude/settings.json`'s `SessionStart`, `PreToolUse`,
+  `PostToolUse`, `UserPromptSubmit` entries) MUST be Node (`.mjs`), invoked
+  via an explicit `node <path>.mjs` command rather than relying on a shebang
+  and the executable bit — the latter doesn't run on Windows without a POSIX
+  layer, defeating the point. `AGENTS.md`'s "guarantees live below the
+  agent" rule still holds — none of these hooks becomes the sole
+  enforcement of anything — but "convenience only" MUST NOT mean "broken on
+  Windows"; a hook that silently never fires is a worse experience than not
+  having it. A hook MAY still shell out to a script that keeps a documented
+  exemption (S15-SR-04) — e.g. `update-readme-badges.mjs` calling `npm run
+  badges:sync`, which reaches `sync-readme-badges.py` — as long as that
+  failure path degrades gracefully (matches the pre-existing best-effort,
+  never-blocks behavior) rather than breaking the hook itself.
 
 ## Non-Functional Requirements
 
@@ -96,6 +115,10 @@ reintroduce the gap the way `lint-workflows.sh` did.
    `bash scripts/*.sh`.
 4. `npm run check:traceability` passes with S15's requirement IDs present in
    `specs/traceability.json`.
+5. `.claude/hooks/*.sh` no longer exist; `.claude/settings.json`'s hook
+   `command` entries invoke their `.mjs` replacements explicitly via `node`,
+   and each hook's observable behavior (exit codes, stdout/stderr content,
+   what triggers it) is unchanged from the bash version.
 
 ## Relation to Existing Specs
 
@@ -116,3 +139,9 @@ reintroduce the gap the way `lint-workflows.sh` did.
 
 - 2026-07-24 — Initial spec, prompted by `lint-workflows.sh` (S09-SR-06)
   landing as bash inside the mandatory local gate.
+- 2026-07-24 — Added S15-SR-05: extended scope to `.claude/hooks/*.sh`.
+  Initially left as bash on the reasoning that Claude Code sessions run in a
+  managed Linux container; a contributor pointed out Claude Code also runs
+  directly on a user's own machine (Windows included), where the same
+  bash-shebang-doesn't-execute problem applies to hooks as much as to
+  `bootstrap.sh`/`lint-workflows.sh`.
