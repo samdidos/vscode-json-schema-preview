@@ -725,14 +725,14 @@
    "hoursMin": 4,
    "hoursMax": 8,
    "factors": ["INFRA"],
-   "justification": "bootstrap.sh/lint-workflows.sh and all five .claude/hooks/*.sh scripts rewritten as Node, preserving exact behavior (PATH/go/docker fallback chain, JSON-stdin parsing, subprocess exit-code propagation) plus a repo-wide no-bash-in-the-gate policy covering both the contributor gate and Claude Code's own hooks. Bumped one step above the LOC band for the manual PATH/PATHEXT probing and subprocess-management work a shell got for free.",
+   "justification": "bootstrap.sh/lint-workflows.sh, all five .claude/hooks/*.sh scripts, and the project's one Python file (sync-readme-badges.py) rewritten as Node, preserving exact behavior (PATH/go/docker fallback chain, JSON-stdin parsing, subprocess exit-code propagation, byte-for-byte percent-encoding parity with Python's urllib.parse.quote) plus a repo-wide no-bash/Python-in-the-gate policy covering the contributor gate, Claude Code's own hooks, and the last non-Node dev script. Bumped one step above the LOC band for the manual PATH/PATHEXT probing and subprocess-management work a shell got for free.",
    "estimator": "the project's AI coding agent (Claude Code)",
    "estimatedAt": "2026-07-24",
    "evidence": {
-    "implFiles": 7,
-    "implLoc": 284,
+    "implFiles": 8,
+    "implLoc": 385,
     "taggedTests": 0,
-    "requirements": 6
+    "requirements": 7
    }
   },
   "F27": {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // PostToolUse hook: sync README engine/node/license badges after package.json edits.
-// Thin convenience wrapper — the actual logic lives in scripts/sync-readme-badges.py
+// Thin convenience wrapper — the actual logic lives in scripts/sync-readme-badges.mjs
 // and is reached via `npm run badges:sync`, the same command CI uses (the coverage
 // badge is refreshed and committed by .github/workflows/maturity-refresh.yml, so
 // it's a real pipeline guarantee, not only synced when an agent runs).
