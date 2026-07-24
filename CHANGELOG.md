@@ -2,6 +2,26 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.15.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.14.0...v0.15.0) (2026-07-24)
+
+
+### Features
+
+* **ref-graph:** resolve remote $refs in the $ref dependency graph ([f0c88eb](https://github.com/samdidos/vscode-json-schema-preview/commit/f0c88eb0e48c31f39005f038b036c239bad07666))
+* **S09:** run actionlint locally too, closing the CI/local parity gap ([096341d](https://github.com/samdidos/vscode-json-schema-preview/commit/096341db4de8a4fc0f5835de8975c18b9e6e5074))
+* **S15:** rewrite .claude/hooks/*.sh as Node (S15-SR-05) ([c5bee30](https://github.com/samdidos/vscode-json-schema-preview/commit/c5bee308d88c7c32ae5067c56dfa0bba2f8194c8))
+* **S15:** rewrite bootstrap.sh and lint-workflows.sh as Node ([584aa1a](https://github.com/samdidos/vscode-json-schema-preview/commit/584aa1a2ec54b13f3501b750e8f3724feeede1de))
+* **S15:** rewrite sync-readme-badges.py as Node (S15-SR-06) ([11ead20](https://github.com/samdidos/vscode-json-schema-preview/commit/11ead2031ffff3648c8aaf2daad82f412920f6d3))
+
+
+### Bug Fixes
+
+* **auth:** treat an unauthenticated GitHub 404 as auth-required ([c0d2269](https://github.com/samdidos/vscode-json-schema-preview/commit/c0d2269dade7faaf069555765fb94b3fd009bb17))
+* **binding:** never hide the Generate Schema wand for an existing binding ([3a71cdc](https://github.com/samdidos/vscode-json-schema-preview/commit/3a71cdc838755f99ff3546f45638f0d466a223c1))
+* **security:** anchor badge-URL regexes against arbitrary hosts ([2dae412](https://github.com/samdidos/vscode-json-schema-preview/commit/2dae4127e7d9be0c4f44e13d3e7b7d5435de6cf6))
+* stop exporting refGraph's internal ExternalError type ([502518a](https://github.com/samdidos/vscode-json-schema-preview/commit/502518abf5e2acbe36c99d67b9217e96771d9c34))
+* **typegen:** pin C# to Newtonsoft.Json and pin non-just-types defaults with snapshot tests ([#129](https://github.com/samdidos/vscode-json-schema-preview/issues/129)) ([d9cd38c](https://github.com/samdidos/vscode-json-schema-preview/commit/d9cd38cdb6ea0b9fe1a3d20c81d070b7c1f68918))
+
 ## [0.14.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.13.0...v0.14.0) (2026-07-22)
 
 
