@@ -222,3 +222,23 @@
   .spark-layer--2 { --parallax-x: 16px; --parallax-y: 12px; --parallax-scroll: 0.03; }
   .spark-layer--3 { --parallax-x: 8px; --parallax-y: 6px; --parallax-scroll: 0.015; }
 }
+
+/* ── Sidebar advisory-metric badges (S10-SR-11) ───────────────────────────── */
+/* Injected into the sidebar label markup by config.ts, so they can't be
+   scoped to a component. Dimmed and pushed right so they read as annotation
+   on the spec name rather than part of it. */
+.VPSidebarItem .text .spec-nav-badge {
+  float: right;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background-color: var(--vp-c-default-soft);
+  color: var(--vp-c-text-3);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+}
+.VPSidebarItem .text .spec-nav-rice {
+  color: var(--vp-c-brand-1);
+}

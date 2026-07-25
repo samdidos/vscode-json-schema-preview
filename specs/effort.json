@@ -630,22 +630,20 @@
    }
   },
   "S10": {
-   "points": 5,
-   "basePoints": 3,
-   "tshirt": "M",
-   "hoursMin": 8,
-   "hoursMax": 16,
-   "factors": [
-    "UI"
-   ],
-   "justification": "Filterable matrix UI, dynamic per-spec routes, and multi-select dropdowns — interactive surface beyond LOC.",
+   "points": 8,
+   "basePoints": 8,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [],
+   "justification": "Matrix with filters and column control, generated spec pages, insights KPIs, and four build-time data loaders — sized by its band.",
    "estimator": "the project's AI coding agent (Claude Code)",
-   "estimatedAt": "2026-07-20",
+   "estimatedAt": "2026-07-25",
    "evidence": {
-    "implFiles": 10,
-    "implLoc": 751,
-    "taggedTests": 0,
-    "requirements": 10
+    "implFiles": 14,
+    "implLoc": 1705,
+    "taggedTests": 10,
+    "requirements": 15
    }
   },
   "S11": {

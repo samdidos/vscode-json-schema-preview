@@ -3480,6 +3480,47 @@
       ],
       "note": "\"Documented in\" list on each spec page: heading links to page#anchor or repo blob; expected-words gap shown when untagged"
     },
+    "S10-SR-09": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecMatrix.vue",
+        "docs/.vitepress/specs.data.ts"
+      ],
+      "note": "effort (points + T-shirt), value (score + tier) and RICE columns joined from effort.json/value.json; unscored specs render an explicit placeholder, never a zero"
+    },
+    "S10-SR-10": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecMatrix.vue",
+        "docs/.vitepress/theme/SpecFilterDropdown.vue"
+      ],
+      "note": "Columns multi-select reusing the filter dropdown with an \"N of M\" summary; spec id omitted from the options so it can never be hidden"
+    },
+    "S10-SR-11": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/config.ts",
+        "docs/.vitepress/theme/style.css"
+      ],
+      "note": "compact T-shirt + RICE badges injected into sidebar labels (VitePress renders them with v-html) from the same committed JSON the matrix reads"
+    },
+    "S10-SR-12": {
+      "status": "implemented",
+      "impl": [
+        "docs/specs/insights.md",
+        "docs/.vitepress/theme/SpecInsights.vue",
+        "docs/.vitepress/specs.data.ts"
+      ],
+      "note": "corpus KPIs: spec/requirement totals, status breakdown, test-tag and doc coverage, effort and value aggregates, RICE ranking — all build-time derived"
+    },
+    "S10-SR-13": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecInsights.vue",
+        "docs/specs/insights.md"
+      ],
+      "note": "counted facts and advisory estimates in separate sections, advisory block carries a warning callout and dashed KPI cards"
+    },
     "S11-NFR-01": {
       "status": "implemented",
       "impl": [

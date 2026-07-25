@@ -17,6 +17,23 @@ const selectedStatuses = ref<string[]>([])
 
 const kindOptions = ['feature', 'system']
 
+// Column visibility (S10-SR-10). The spec id is deliberately absent from the
+// options: a row must stay identifiable, so it can never be switched off.
+const COLUMN_LABELS: Record<string, string> = {
+  title: 'Title',
+  kind: 'Kind',
+  requirements: 'Requirements',
+  effort: 'Effort',
+  value: 'Value',
+  rice: 'RICE',
+}
+const columnOptions = Object.keys(COLUMN_LABELS)
+const visibleColumns = ref<string[]>([...columnOptions])
+const shows = (c: string) => visibleColumns.value.includes(c)
+const columnSummary = computed(() => `${visibleColumns.value.length} of ${columnOptions.length}`)
+// Spec id + every visible column, for the empty-state row's colspan.
+const columnCount = computed(() => visibleColumns.value.length + 1)
+
 // Only offer statuses that actually occur in the matrix, in the order
 // traceability.json declares them.
 const presentStatuses = computed(() =>
@@ -68,6 +85,13 @@ const totalRequirements = computed(() =>
         :options="presentStatuses"
         :descriptions="data.statuses"
       />
+      <SpecFilterDropdown
+        v-model="visibleColumns"
+        label="Columns"
+        :options="columnOptions"
+        :labels="COLUMN_LABELS"
+        :summary="columnSummary"
+      />
       <button v-if="hasActiveFilter" type="button" class="spec-matrix-reset" @click="resetFilters">
         Reset
       </button>
@@ -83,9 +107,12 @@ const totalRequirements = computed(() =>
         <thead>
           <tr>
             <th>Spec</th>
-            <th>Title</th>
-            <th>Kind</th>
-            <th>Requirements</th>
+            <th v-if="shows('title')">Title</th>
+            <th v-if="shows('kind')">Kind</th>
+            <th v-if="shows('requirements')">Requirements</th>
+            <th v-if="shows('effort')" title="Advisory effort estimate (S13)">Effort</th>
+            <th v-if="shows('value')" title="Advisory customer-value estimate (S16)">Value</th>
+            <th v-if="shows('rice')" title="Advisory value ÷ effort points (S16)">RICE</th>
           </tr>
         </thead>
         <tbody>
@@ -93,13 +120,13 @@ const totalRequirements = computed(() =>
             <td>
               <a :href="withBase(`/specs/${spec.id}`)">{{ spec.id }}</a>
             </td>
-            <td>
+            <td v-if="shows('title')">
               <a class="spec-title-link" :href="withBase(`/specs/${spec.id}`)">{{
                 spec.title
               }}</a>
             </td>
-            <td>{{ spec.kind }}</td>
-            <td class="spec-matrix-badges">
+            <td v-if="shows('kind')">{{ spec.kind }}</td>
+            <td v-if="shows('requirements')" class="spec-matrix-badges">
               <SpecStatusBadge
                 v-for="(count, status) in spec.counts"
                 :key="status"
@@ -107,9 +134,35 @@ const totalRequirements = computed(() =>
                 :count="count"
               />
             </td>
+            <td v-if="shows('effort')" class="spec-matrix-metric">
+              <template v-if="spec.metrics.points !== null">
+                {{ spec.metrics.points }}<small> pts</small>
+                <span class="spec-matrix-tshirt">{{ spec.metrics.tshirt }}</span>
+              </template>
+              <span v-else class="spec-matrix-unscored" title="No estimate">—</span>
+            </td>
+            <td v-if="shows('value')" class="spec-matrix-metric">
+              <template v-if="spec.metrics.value !== null">
+                {{ spec.metrics.value.toFixed(1) }}
+                <span class="spec-matrix-tier" :data-tier="spec.metrics.tier">{{
+                  spec.metrics.tier
+                }}</span>
+              </template>
+              <span v-else class="spec-matrix-unscored" title="System specs are not scored for customer value (S16-SR-06)">
+                not scored
+              </span>
+            </td>
+            <td v-if="shows('rice')" class="spec-matrix-metric">
+              <template v-if="spec.metrics.rice !== null">{{
+                spec.metrics.rice.toFixed(2)
+              }}</template>
+              <span v-else class="spec-matrix-unscored" title="No value estimate to divide">—</span>
+            </td>
           </tr>
           <tr v-if="filtered.length === 0">
-            <td colspan="4" class="spec-matrix-empty">No spec matches the current filters.</td>
+            <td :colspan="columnCount" class="spec-matrix-empty">
+              No spec matches the current filters.
+            </td>
           </tr>
         </tbody>
       </table>
@@ -176,5 +229,44 @@ const totalRequirements = computed(() =>
 .spec-matrix-empty {
   text-align: center;
   color: var(--vp-c-text-2);
+}
+/* Advisory columns (S10-SR-09) — dimmer than the counted facts beside them,
+   so an estimate never reads with the same authority as a status count. */
+.spec-matrix-metric {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.spec-matrix-metric small {
+  color: var(--vp-c-text-3);
+}
+.spec-matrix-tshirt {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background-color: var(--vp-c-default-soft);
+  color: var(--vp-c-text-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+.spec-matrix-tier {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background-color: var(--vp-c-default-soft);
+  color: var(--vp-c-text-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+.spec-matrix-tier[data-tier='Critical'] {
+  background-color: var(--vp-c-danger-soft);
+  color: var(--vp-c-danger-1);
+}
+.spec-matrix-tier[data-tier='High'] {
+  background-color: var(--vp-c-warning-soft);
+  color: var(--vp-c-warning-1);
+}
+.spec-matrix-unscored {
+  color: var(--vp-c-text-3);
+  font-size: 12px;
 }
 </style>

@@ -1,13 +1,36 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { defineConfig } from 'vitepress'
-import { listSpecFiles } from './specsSource'
+import { SPECS_DIR, listSpecFiles } from './specsSource'
 import { readMaturityScore } from './maturitySource'
 
-// Sidebar entries for the generated spec pages (S10-SR-01): built from the
-// spec files themselves so a new spec shows up with no config edit.
+const readSpecJson = (name: string) =>
+  JSON.parse(readFileSync(resolve(SPECS_DIR, name), 'utf-8'))
+
+/** Compact advisory-metric indicator for a sidebar entry (S10-SR-11):
+ *  T-shirt size, plus RICE where a value estimate exists. VitePress renders
+ *  sidebar labels with `v-html`, so this markup is live — every interpolated
+ *  value comes from the project's own committed JSON (a T-shirt enum and a
+ *  number formatted here), never from user input. */
 function specSidebarItems(kind: 'feature' | 'system') {
+  const effort = readSpecJson('effort.json')
+  const value = readSpecJson('value.json')
   return listSpecFiles()
     .filter((spec) => spec.kind === kind)
-    .map((spec) => ({ text: `${spec.id} · ${spec.title}`, link: `/specs/${spec.id}` }))
+    .map((spec) => {
+      const tshirt: string | undefined = effort.specs?.[spec.id]?.tshirt
+      const points: number | undefined = effort.specs?.[spec.id]?.points
+      const score: number | undefined = value.features?.[spec.id]?.score
+      const rice = score && points ? (score / points).toFixed(2) : null
+      const badges = [
+        tshirt ? `<span class="spec-nav-badge">${tshirt}</span>` : '',
+        rice ? `<span class="spec-nav-badge spec-nav-rice">${rice}</span>` : '',
+      ].join('')
+      return {
+        text: `${spec.id} · ${spec.title}${badges}`,
+        link: `/specs/${spec.id}`,
+      }
+    })
 }
 
 // Sidebar entries for the generated maturity criteria pages (S12-SR-03):
@@ -60,6 +83,7 @@ export default defineConfig({
         items: [
           { text: 'How it works', link: '/specs/' },
           { text: 'Requirement matrix', link: '/specs/matrix' },
+          { text: 'Insights', link: '/specs/insights' },
         ],
       },
       {
@@ -104,6 +128,7 @@ export default defineConfig({
           items: [
             { text: 'How it works', link: '/specs/' },
             { text: 'Requirement matrix', link: '/specs/matrix' },
+            { text: 'Insights', link: '/specs/insights' },
           ],
         },
         { text: 'Feature specs', collapsed: true, items: specSidebarItems('feature') },
