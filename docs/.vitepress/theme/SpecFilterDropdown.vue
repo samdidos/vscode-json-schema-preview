@@ -11,6 +11,12 @@ const props = defineProps<{
   modelValue: string[]
   /** Optional per-option tooltip text (e.g. status descriptions). */
   descriptions?: Record<string, string>
+  /** Optional per-option display text; the option itself is the value. */
+  labels?: Record<string, string>
+  /** Overrides the button summary. Column selection reads "4 of 6", where an
+   *  empty selection means "none shown" rather than the filters' "no
+   *  constraint" — so the default wording would be actively wrong there. */
+  summary?: string
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [string[]] }>()
@@ -18,7 +24,8 @@ const emit = defineEmits<{ 'update:modelValue': [string[]] }>()
 const open = ref(false)
 const root = ref<HTMLElement | null>(null)
 
-const summary = computed(() => {
+const summaryText = computed(() => {
+  if (props.summary !== undefined) return props.summary
   const n = props.modelValue.length
   if (n === 0) return 'All'
   if (n === 1) return props.modelValue[0]
@@ -62,7 +69,7 @@ onBeforeUnmount(() => {
       @click="open = !open"
     >
       <span class="spec-filter-label">{{ label }}:</span>
-      <span class="spec-filter-summary">{{ summary }}</span>
+      <span class="spec-filter-summary">{{ summaryText }}</span>
       <span class="spec-filter-caret" aria-hidden="true">▾</span>
     </button>
 
@@ -78,7 +85,7 @@ onBeforeUnmount(() => {
           :checked="modelValue.includes(option)"
           @change="toggle(option)"
         />
-        <span>{{ option }}</span>
+        <span>{{ labels?.[option] ?? option }}</span>
       </label>
       <p v-if="options.length === 0" class="spec-filter-empty">No options</p>
     </div>

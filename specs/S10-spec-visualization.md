@@ -52,6 +52,35 @@ top of the existing artifacts.
   **empty** dropdown applies no constraint for that dimension (all values
   pass), and the control MUST show how many values are active.
 - **S10-SR-05** Each spec listed in the table MUST link to that spec's page.
+- **S10-SR-09** The matrix table MUST show the advisory estimates alongside
+  the status breakdown as columns: effort points and T-shirt size (S13), and
+  for feature specs the customer-value score, tier and RICE ratio (S16). A
+  spec with no such estimate MUST render an explicit placeholder rather than a
+  blank or a zero, so "not scored" is never read as "scored low".
+- **S10-SR-10** Column visibility MUST be user-controllable through a
+  multi-select dropdown listing every column except the spec id, which MUST
+  remain visible at all times so a row is always identifiable. The control
+  MUST show how many columns are visible, and the choice applies to the table
+  only — it MUST NOT change which specs the filters match.
+
+### Sidebar
+
+- **S10-SR-11** Each spec's sidebar entry MUST carry a compact advisory-metric
+  indicator (T-shirt size, and RICE where one exists), so the estimates are
+  comparable while browsing without opening each page. The indicator MUST be
+  built from the same build-time data as the matrix, never hand-maintained.
+
+### Insights Page
+
+- **S10-SR-12** The Specs section MUST include an **insights** page reporting
+  corpus-level KPIs derived from the spec artifacts: requirement and spec
+  totals, the status breakdown, documentation and test-tag coverage, total and
+  mean effort, the value-tier distribution, and a ranking of feature specs by
+  RICE. Every figure MUST be derived at build time from `specs/` (S10-NFR-01).
+- **S10-SR-13** The insights page MUST label the effort- and value-derived
+  figures as **advisory estimates** and visually separate them from the
+  counted facts (requirements, statuses, coverage), so a judgement is never
+  presented as a measurement.
 
 ### Spec Pages
 
@@ -94,7 +123,7 @@ top of the existing artifacts.
 ## Acceptance Criteria
 
 1. `npm run build` in `docs/` succeeds and emits `/specs/` (guidelines),
-   `/specs/matrix`, and one page per `specs/[FS]*.md` file.
+   `/specs/matrix`, `/specs/insights`, and one page per `specs/[FS]*.md` file.
 2. Adding a requirement to a spec and its entry to `traceability.json`
    changes the matrix table on the next build with no edit under `docs/`.
 3. Selecting the `planned` status filter hides every spec whose requirements
@@ -104,3 +133,7 @@ top of the existing artifacts.
 5. `npm run check:doc-traceability` passes with the new pages tagged
    `<!-- spec:S10 -->` (and the guidelines page additionally tagged for the
    traceability conventions it documents).
+6. Unchecking a column in the matrix's column dropdown removes it from the
+   table while the spec id column stays; the row count is unchanged.
+7. The insights page's requirement total equals the matrix's, and its RICE
+   ranking matches `npm run spec-value:report`.
