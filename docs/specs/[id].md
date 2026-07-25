@@ -13,3 +13,5 @@
 <SpecTraceability />
 
 <SpecDocSections />
+
+<SpecHistory />

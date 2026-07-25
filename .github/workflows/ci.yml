@@ -91,7 +91,7 @@ jobs:
         run: npm run lint
 
       - name: Type check
-        run: npx tsc --noEmit
+        run: npm run type-check
 
       - name: Build extension bundle
         run: npm run compile
@@ -111,7 +111,7 @@ jobs:
         run: npm run maturity:check
 
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        run: npm run check:audit
 
   security:
     needs: changes

@@ -3338,6 +3338,30 @@
       ],
       "note": "e2e-smoke uses --grep-invert mouse; refresh-gifs job uses --grep mouse; each variant runs in exactly one place, both jobs now live in refresh-gifs.yml; e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
+    "S08-SR-12": {
+      "status": "manual",
+      "impl": [
+        ".github/workflows/refresh-gifs.yml",
+        "scripts/detect-changed-features.mjs"
+      ],
+      "note": "release-workflow requirement: verified by running refresh-gifs.yml, not unit-taggable end to end; the diff/mapping logic it depends on is unit-tested (detectChangedFeatures.test.ts)"
+    },
+    "S08-SR-13": {
+      "status": "implemented",
+      "impl": [
+        "scripts/demo-registry.mjs",
+        "scripts/detect-changed-features.mjs",
+        "scripts/make-gifs.mjs"
+      ],
+      "note": "demo<->spec mapping and its consumers; unit-tested (demoRegistry.test.ts, detectChangedFeatures.test.ts)"
+    },
+    "S08-SR-14": {
+      "status": "manual",
+      "impl": [
+        "package.json"
+      ],
+      "note": "policy requirement (test:integration stays unscoped) verified by inspection of package.json/ci.yml, not unit-taggable"
+    },
     "S09-NFR-01": {
       "status": "manual",
       "impl": [
@@ -3520,6 +3544,23 @@
         "docs/specs/insights.md"
       ],
       "note": "counted facts and advisory estimates in separate sections, advisory block carries a warning callout and dashed KPI cards"
+    },
+    "S10-SR-14": {
+      "status": "manual",
+      "impl": [
+        "docs/.vitepress/specHistory.data.ts",
+        "docs/.vitepress/theme/SpecHistory.vue",
+        "docs/specs/[id].md"
+      ],
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
+    },
+    "S10-SR-15": {
+      "status": "manual",
+      "impl": [
+        "docs/.vitepress/specHistory.data.ts",
+        "docs/.vitepress/theme/SpecHistory.vue"
+      ],
+      "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
     "S11-NFR-01": {
       "status": "implemented",
@@ -3982,6 +4023,65 @@
         "docs/specs/[id].md"
       ],
       "note": "advisory-labelled value box on each feature spec page with provenance, linking to S16"
+    },
+    "S17-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/verify.mjs"
+      ],
+      "note": "spawns npm directly (no shell), platform-specific tree-kill (POSIX process-group SIGTERM vs Windows taskkill /T)"
+    },
+    "S17-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/verify.mjs"
+      ],
+      "note": "each step is an unmodified `npm run <script>` child process"
+    },
+    "S17-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/verify.mjs",
+        "package.json"
+      ],
+      "note": "package.json's verify script only invokes the Node orchestrator"
+    },
+    "S17-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/verify.mjs"
+      ],
+      "note": "renderSummary()/run() — unit-tested (verifyGate.test.ts)"
+    },
+    "S17-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "scripts/verify.mjs"
+      ],
+      "note": "renderSummary() dumps captured output for failed (non-cancelled) steps only — unit-tested"
+    },
+    "S17-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "scripts/verify.mjs"
+      ],
+      "note": "--fail-fast kills the remaining steps' process trees; unit-tested for the cancelled/summary reporting, manually verified for the actual process-tree kill (no automated cross-platform process-tree test)"
+    },
+    "S17-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "scripts/verify.mjs",
+        "package.json"
+      ],
+      "note": "STEPS array is the sole declaration; unit-tested (verifyGate.test.ts)"
+    },
+    "S17-SR-06": {
+      "status": "implemented",
+      "impl": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "note": "check:audit script shared by scripts/verify.mjs's STEPS and ci.yml's build job"
     }
   }
 }

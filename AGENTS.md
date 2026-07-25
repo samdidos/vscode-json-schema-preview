@@ -14,10 +14,14 @@
   (the `canvas` dependency, demo-GIF pipeline only, compiles native code and
   fails in minimal containers; bootstrap installs with `--ignore-scripts`).
   Regenerating GIFs (`npm run make-gifs`) does need a full `npm install`.
-- **Full local gate**: `npm run verify` (lint + workflow-lint + type-check +
-  traceability + doc-traceability + consistency + coverage). This is the
-  single gate: the `.husky/pre-commit` hook runs it, and CI reaches the same
-  checks.
+- **Full local gate**: `npm run verify` (lint, workflow-lint, type-check,
+  traceability, doc-traceability, consistency, spec-effort, spec-value,
+  dependency audit, coverage — `scripts/verify.mjs`). Steps run concurrently
+  and, by default, all run to completion with one summary at the end
+  regardless of which step(s) failed; pass `npm run verify -- --fail-fast`
+  (or `npm run verify:fail-fast`) to cancel the rest on the first failure
+  instead. This is the single gate: the `.husky/pre-commit` hook runs it, and
+  CI reaches the same checks (including the audit, via `npm run check:audit`).
 - Everything else is in `package.json` `scripts` — notable entries:
   `compile`, `test:coverage`, `lint`, `lint:workflows`, `check:traceability`,
   `test:mutation`, `knip`, `schema:compat`, `test:integration`, `maturity`.

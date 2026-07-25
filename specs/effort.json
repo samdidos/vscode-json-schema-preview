@@ -594,22 +594,22 @@
    }
   },
   "S08": {
-   "points": 13,
-   "basePoints": 8,
-   "tshirt": "XL",
-   "hoursMin": 32,
-   "hoursMax": 80,
+   "points": 21,
+   "basePoints": 13,
+   "tshirt": "XXL",
+   "hoursMin": 80,
+   "hoursMax": null,
    "factors": [
     "INFRA"
    ],
-   "justification": "Real-VS-Code E2E: harness download, xvfb, CI wiring, flake management — infrastructure effort invisible in LOC.",
+   "justification": "Real-VS-Code E2E: harness download, xvfb, CI wiring, flake management — infrastructure effort invisible in LOC. Re-estimated after release-scoped demo selection (S08-SR-12..14: demo<->spec registry, change-detection script, refresh-gifs.yml rewiring) moved the live LOC into the next band.",
    "estimator": "the project's AI coding agent (Claude Code)",
-   "estimatedAt": "2026-07-20",
+   "estimatedAt": "2026-07-25",
    "evidence": {
-    "implFiles": 14,
-    "implLoc": 1781,
-    "taggedTests": 34,
-    "requirements": 13
+    "implFiles": 18,
+    "implLoc": 2656,
+    "taggedTests": 44,
+    "requirements": 16
    }
   },
   "S09": {
@@ -767,6 +767,25 @@
     "implLoc": 1985,
     "taggedTests": 13,
     "requirements": 10
+   }
+  },
+  "S17": {
+   "points": 8,
+   "basePoints": 5,
+   "tshirt": "L",
+   "hoursMin": 16,
+   "hoursMax": 32,
+   "factors": [
+    "INFRA"
+   ],
+   "justification": "Concurrent orchestrator plus cross-platform process-tree cancellation (POSIX process-group SIGTERM vs Windows taskkill /T) for --fail-fast — subprocess-tree management a shell's job control gets for free, similar to S15's rationale for its own subprocess-management bump.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25",
+   "evidence": {
+    "implFiles": 3,
+    "implLoc": 846,
+    "taggedTests": 4,
+    "requirements": 8
    }
   }
  }
