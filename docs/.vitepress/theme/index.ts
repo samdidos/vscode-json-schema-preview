@@ -13,6 +13,7 @@ import SpecMatrix from './SpecMatrix.vue'
 import SpecSourceLink from './SpecSourceLink.vue'
 import SpecStatusTable from './SpecStatusTable.vue'
 import SpecTraceability from './SpecTraceability.vue'
+import SpecValue from './SpecValue.vue'
 import type { Theme } from 'vitepress'
 
 export default {
@@ -33,5 +34,6 @@ export default {
     app.component('SpecSourceLink', SpecSourceLink)
     app.component('SpecStatusTable', SpecStatusTable)
     app.component('SpecTraceability', SpecTraceability)
+    app.component('SpecValue', SpecValue)
   },
 } satisfies Theme

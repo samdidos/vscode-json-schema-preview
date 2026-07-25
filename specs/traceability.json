@@ -3862,6 +3862,85 @@
         ".claude/hooks/update-readme-badges.mjs"
       ],
       "note": "Python rewritten as Node: same regex/JSON logic, custom enc() matching urllib.parse.quote(s, safe='') exactly (unlike encodeURIComponent); badges:sync and the agent hook both invoke it via node; agent-hook/CI script, no unit test"
+    },
+    "S16-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs",
+        "scripts/spec-value.mjs"
+      ],
+      "note": "scorer has no reference to value.json; estimates fenced as advisory"
+    },
+    "S16-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-value.mjs",
+        "specs/value.json"
+      ],
+      "note": "plain Node core imports only; tool-neutral JSON"
+    },
+    "S16-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-value.mjs",
+        "specs/S16-feature-value-estimation.md"
+      ],
+      "note": "reach is a banded judgement, not a telemetry count; no network access in the validator"
+    },
+    "S16-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-value.mjs",
+        "specs/value.json"
+      ],
+      "note": "reach/impact/confidence authored; score + tier derived from the calibration chart; validator rejects contradictions"
+    },
+    "S16-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "specs/value.json",
+        "scripts/spec-value.mjs"
+      ],
+      "note": "factor codes, justification, estimator, date, rubricVersion per estimate"
+    },
+    "S16-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-value.mjs",
+        "package.json"
+      ],
+      "note": "check:spec-value in verify: fails on structural violations, warns on clamped factors, 0.5 confidence and missing effort"
+    },
+    "S16-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-value.mjs"
+      ],
+      "note": "REACH, IMPACT, CONFIDENCE, FACTORS, TIERS, STEP_WEIGHT, MAX_FACTOR_STEPS declared once; chart in the spec mirrors them"
+    },
+    "S16-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-value.mjs",
+        "docs/.vitepress/specValue.data.ts"
+      ],
+      "note": "RICE derived from effort.json at report and build time, never stored in value.json"
+    },
+    "S16-SR-06": {
+      "status": "implemented",
+      "impl": [
+        "scripts/spec-value.mjs"
+      ],
+      "note": "featureSpecIds() restricts scoring to F## specs; a scored system spec is an error"
+    },
+    "S16-SR-07": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecValue.vue",
+        "docs/.vitepress/specValue.data.ts",
+        "docs/specs/[id].md"
+      ],
+      "note": "advisory-labelled value box on each feature spec page with provenance, linking to S16"
     }
   }
 }

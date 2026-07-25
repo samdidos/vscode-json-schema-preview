@@ -37,6 +37,7 @@
 | Integration/E2E testing | `specs/S08-e2e-testing.md` <!-- spec:S08 --> |
 | Maturity scoring | `MATURITY.md` (scores computed by `scripts/maturity-score.mjs` — never hand-edit) |
 | Spec effort estimates (advisory, never in the maturity score) | `specs/effort.json` (rubric: `specs/S13-spec-effort-estimation.md`, validated by `npm run check:spec-effort`) <!-- spec:S13 --> |
+| Feature customer-value estimates (advisory, never in the maturity score) | `specs/value.json` (rubric: `specs/S16-feature-value-estimation.md`, validated by `npm run check:spec-value`; `npm run spec-value:report` ranks by value and RICE) <!-- spec:S16 --> |
 | Project constitution | `.specify/memory/constitution.md` |
 
 ## Rules that gate your change

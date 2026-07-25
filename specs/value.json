@@ -1,0 +1,350 @@
+{
+ "$comment": "Advisory customer-value estimates per feature spec (S16) — reach/impact/confidence are the authored values; score and tier derive from the calibration chart in specs/S16-feature-value-estimation.md. RICE is computed from specs/effort.json at report time and deliberately not stored here. Validated by npm run check:spec-value. NEVER read by the maturity scorer.",
+ "rubricVersion": 1,
+ "features": {
+  "F01": {
+   "reach": 5,
+   "impact": 5,
+   "confidence": 1,
+   "factors": [
+    "GATEWAY",
+    "DEP"
+   ],
+   "score": 25,
+   "tier": "Critical",
+   "justification": "The namesake surface and a headline reason to install; gateway to F02, but its richest renderer wants Python on PATH, so the zero-setup path is the built-in fallback.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F02": {
+   "reach": 4,
+   "impact": 3,
+   "confidence": 1,
+   "factors": [
+    "ZEROCONF"
+   ],
+   "score": 13.2,
+   "tier": "High",
+   "justification": "Everyone who opens the preview gets live refresh with no action; high polish per unit of user effort, but it only matters once F01 is in use.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F03": {
+   "reach": 5,
+   "impact": 5,
+   "confidence": 1,
+   "factors": [
+    "ZEROCONF"
+   ],
+   "score": 27.5,
+   "tier": "Critical",
+   "justification": "Co-headline capability and the one that runs passively on every open file — the extension earns its keep here without the user asking.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F04": {
+   "reach": 4,
+   "impact": 4,
+   "confidence": 1,
+   "factors": [
+    "GATEWAY"
+   ],
+   "score": 17.6,
+   "tier": "High",
+   "justification": "Binding is the precondition that makes validation and preview point at the right schema; invisible when right, blocking when absent.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F05": {
+   "reach": 2,
+   "impact": 3,
+   "confidence": 0.8,
+   "factors": [
+    "UNIQUE"
+   ],
+   "score": 5.28,
+   "tier": "Niche",
+   "justification": "A form-based schema editor has no VS Code equivalent, but authoring schemas visually is a minority workflow next to reading and validating them.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F06": {
+   "reach": 3,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "UNIQUE"
+   ],
+   "score": 10.56,
+   "tier": "Moderate",
+   "justification": "Bootstrapping a schema from existing data removes an entire manual authoring session; used occasionally but decisively when it is.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F07": {
+   "reach": 2,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "NARROW"
+   ],
+   "score": 5.76,
+   "tier": "Niche",
+   "justification": "Decisive for teams on private schema registries and irrelevant to everyone else — high impact inside a narrow workflow.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F08": {
+   "reach": 4,
+   "impact": 3,
+   "confidence": 0.8,
+   "factors": [
+    "ZEROCONF"
+   ],
+   "score": 10.56,
+   "tier": "Moderate",
+   "justification": "Invisible infrastructure that most users benefit from without knowing: faster repeat loads and offline resilience, with no configuration.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F09": {
+   "reach": 3,
+   "impact": 2,
+   "confidence": 1,
+   "factors": [],
+   "score": 6,
+   "tier": "Moderate",
+   "justification": "Settings are touched by a fair share of users but usually once, and the panel mostly saves a trip to settings.json rather than enabling anything new.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F10": {
+   "reach": 4,
+   "impact": 3,
+   "confidence": 1,
+   "factors": [
+    "ZEROCONF"
+   ],
+   "score": 13.2,
+   "tier": "High",
+   "justification": "The `$schema` key is the idiomatic binding most JSON authors already write; honouring it means the extension works with no setup on files that already exist.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F11": {
+   "reach": 2,
+   "impact": 3,
+   "confidence": 0.8,
+   "factors": [
+    "UNIQUE"
+   ],
+   "score": 5.28,
+   "tier": "Niche",
+   "justification": "TOML schema validation is genuinely rare tooling, but TOML is a minority of the data files this extension sees.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F12": {
+   "reach": 4,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "ZEROCONF",
+    "GATEWAY"
+   ],
+   "score": 15.36,
+   "tier": "High",
+   "justification": "SchemaStore auto-binding makes the extension do useful work on package.json, tsconfig.json and workflow files the user already has, with zero action — the widest no-effort reach in the set.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F13": {
+   "reach": 3,
+   "impact": 4,
+   "confidence": 1,
+   "factors": [],
+   "score": 12,
+   "tier": "High",
+   "justification": "Go-to-definition across $ref turns multi-file schemas from a chore into navigation; matters most to the subset authoring large schemas.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F14": {
+   "reach": 2,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "CI"
+   ],
+   "score": 7.04,
+   "tier": "Moderate",
+   "justification": "Bundling is the publishing step for schema authors and runs in CI as well as the editor, but only authors who distribute schemas need it.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F15": {
+   "reach": 2,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "UNIQUE"
+   ],
+   "score": 7.04,
+   "tier": "Moderate",
+   "justification": "Breaking-change detection between schema versions is a capability few tools offer; its audience is schema owners with downstream consumers.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F16": {
+   "reach": 3,
+   "impact": 3,
+   "confidence": 0.8,
+   "factors": [],
+   "score": 7.2,
+   "tier": "Moderate",
+   "justification": "Sample data is a reliable time-saver for testing and documentation, though usually replaceable by hand-writing a short fixture.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F17": {
+   "reach": 3,
+   "impact": 3,
+   "confidence": 0.8,
+   "factors": [],
+   "score": 7.2,
+   "tier": "Moderate",
+   "justification": "Quality linting catches real schema smells for a substantial share of authors; advisory rather than blocking, so impact is moderate.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F18": {
+   "reach": 3,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "OVERLAP"
+   ],
+   "score": 8.64,
+   "tier": "Moderate",
+   "justification": "Schema-to-TypeScript removes a whole manual sync burden, but quicktype and json-schema-to-typescript already serve this need well outside the editor.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F19": {
+   "reach": 2,
+   "impact": 3,
+   "confidence": 0.8,
+   "factors": [
+    "UNIQUE"
+   ],
+   "score": 5.28,
+   "tier": "Niche",
+   "justification": "Completions and hover for TOML against a schema is unusual tooling, bounded by the same TOML minority as F11.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F20": {
+   "reach": 3,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "CI"
+   ],
+   "score": 10.56,
+   "tier": "Moderate",
+   "justification": "A workspace-wide report turns per-file validation into an auditable sweep, and the same answer is useful in CI.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F21": {
+   "reach": 3,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "ZEROCONF"
+   ],
+   "score": 10.56,
+   "tier": "Moderate",
+   "justification": "Quick fixes convert F03 diagnostics from information into one-keystroke repair, offered automatically wherever validation already runs.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F22": {
+   "reach": 2,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "UNIQUE"
+   ],
+   "score": 7.04,
+   "tier": "Moderate",
+   "justification": "Draft migration is a rare but genuinely painful task to do by hand, and few tools automate the 07 ↔ 2019-09 ↔ 2020-12 moves.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F23": {
+   "reach": 1,
+   "impact": 3,
+   "confidence": 0.5,
+   "factors": [
+    "NARROW"
+   ],
+   "score": 1.35,
+   "tier": "Marginal",
+   "justification": "An unused-in-data coverage report is the most speculative item in the set: the audience that would act on it is unclear, hence 0.5 confidence.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F24": {
+   "reach": 2,
+   "impact": 3,
+   "confidence": 0.8,
+   "factors": [],
+   "score": 4.8,
+   "tier": "Niche",
+   "justification": "A dependency graph makes large schema sets legible, but it is a diagnostic people reach for occasionally rather than a daily surface.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F25": {
+   "reach": 2,
+   "impact": 3,
+   "confidence": 0.8,
+   "factors": [
+    "ZEROCONF"
+   ],
+   "score": 5.28,
+   "tier": "Niche",
+   "justification": "Ranking enum suggestions by nearest match is a small, automatic delighter on top of F21 rather than a capability of its own.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F26": {
+   "reach": 1,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "CI"
+   ],
+   "score": 3.52,
+   "tier": "Niche",
+   "justification": "A CI compatibility gate is decisive for the few teams that publish versioned schemas and invisible to everyone else.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  },
+  "F27": {
+   "reach": 2,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "CI",
+    "UNIQUE"
+   ],
+   "score": 7.68,
+   "tier": "Moderate",
+   "justification": "The CLI takes the whole toolset outside VS Code into CI and scripting — a real differentiator, reaching the subset that automates schema work.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-07-25"
+  }
+ }
+}
