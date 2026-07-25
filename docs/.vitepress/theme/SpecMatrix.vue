@@ -5,6 +5,7 @@
 import { computed, ref } from 'vue'
 import { withBase } from 'vitepress'
 import { data } from '../specs.data'
+import type { SpecEntry } from '../specs.data'
 import SpecStatusBadge from './SpecStatusBadge.vue'
 import SpecFilterDropdown from './SpecFilterDropdown.vue'
 
@@ -66,6 +67,53 @@ const filtered = computed(() =>
 const totalRequirements = computed(() =>
   filtered.value.reduce((sum, spec) => sum + spec.requirements.length, 0),
 )
+
+// Column sort (S10-SR-16): id/title/kind sort as text, the rest as numbers.
+// A null metric (S10-SR-09's "not scored") always sorts after every scored
+// row so a descending sort never puts an unscored spec above a low one.
+type SortKey = 'id' | 'title' | 'kind' | 'requirements' | 'effort' | 'value' | 'rice'
+const SORT_VALUE: Record<SortKey, (spec: SpecEntry) => string | number | null> = {
+  id: (s) => s.id,
+  title: (s) => s.title,
+  kind: (s) => s.kind,
+  requirements: (s) => s.requirements.length,
+  effort: (s) => s.metrics.points,
+  value: (s) => s.metrics.value,
+  rice: (s) => s.metrics.rice,
+}
+const sortKey = ref<SortKey | null>(null)
+const sortDir = ref<'asc' | 'desc'>('asc')
+
+// Cycle: unsorted -> asc -> desc -> unsorted, matching a fresh column's asc-first click.
+function toggleSort(key: SortKey) {
+  if (sortKey.value !== key) {
+    sortKey.value = key
+    sortDir.value = 'asc'
+  } else if (sortDir.value === 'asc') {
+    sortDir.value = 'desc'
+  } else {
+    sortKey.value = null
+  }
+}
+
+function ariaSort(key: SortKey): 'none' | 'ascending' | 'descending' {
+  if (sortKey.value !== key) return 'none'
+  return sortDir.value === 'asc' ? 'ascending' : 'descending'
+}
+
+const sorted = computed(() => {
+  const key = sortKey.value
+  if (!key) return filtered.value
+  const dir = sortDir.value === 'asc' ? 1 : -1
+  const getValue = SORT_VALUE[key]
+  return [...filtered.value].sort((a, b) => {
+    const va = getValue(a)
+    const vb = getValue(b)
+    if (va === null || vb === null) return va === vb ? 0 : va === null ? 1 : -1
+    if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb) * dir
+    return ((va as number) - (vb as number)) * dir
+  })
+})
 </script>
 
 <template>
@@ -106,17 +154,59 @@ const totalRequirements = computed(() =>
       <table class="spec-matrix-table">
         <thead>
           <tr>
-            <th>Spec</th>
-            <th v-if="shows('title')">Title</th>
-            <th v-if="shows('kind')">Kind</th>
-            <th v-if="shows('requirements')">Requirements</th>
-            <th v-if="shows('effort')" title="Advisory effort estimate (S13)">Effort</th>
-            <th v-if="shows('value')" title="Advisory customer-value estimate (S16)">Value</th>
-            <th v-if="shows('rice')" title="Advisory value ÷ effort points (S16)">RICE</th>
+            <th :aria-sort="ariaSort('id')">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('id')">
+                Spec<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'id' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
+            <th v-if="shows('title')" :aria-sort="ariaSort('title')">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('title')">
+                Title<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'title' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
+            <th v-if="shows('kind')" :aria-sort="ariaSort('kind')">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('kind')">
+                Kind<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'kind' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
+            <th v-if="shows('requirements')" :aria-sort="ariaSort('requirements')">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('requirements')">
+                Requirements<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'requirements' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
+            <th v-if="shows('effort')" :aria-sort="ariaSort('effort')" title="Advisory effort estimate (S13)">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('effort')">
+                Effort<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'effort' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
+            <th v-if="shows('value')" :aria-sort="ariaSort('value')" title="Advisory customer-value estimate (S16)">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('value')">
+                Value<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'value' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
+            <th v-if="shows('rice')" :aria-sort="ariaSort('rice')" title="Advisory value ÷ effort points (S16)">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('rice')">
+                RICE<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'rice' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="spec in filtered" :key="spec.id">
+          <tr v-for="spec in sorted" :key="spec.id">
             <td>
               <a :href="withBase(`/specs/${spec.id}`)">{{ spec.id }}</a>
             </td>
@@ -212,6 +302,22 @@ const totalRequirements = computed(() =>
   width: 100%;
   margin: 8px 0 16px;
   display: table;
+}
+.spec-matrix-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+}
+.spec-matrix-sort:hover {
+  color: var(--vp-c-brand-1);
+}
+.spec-matrix-sort-icon {
+  font-size: 10px;
+  color: var(--vp-c-brand-1);
 }
 .spec-matrix-badges {
   display: flex;
