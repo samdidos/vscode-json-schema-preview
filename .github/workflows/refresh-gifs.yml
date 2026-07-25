@@ -44,8 +44,37 @@ jobs:
             echo "branch=$branch" >> "$GITHUB_OUTPUT"
           fi
 
-  refresh-gifs:
+  # S08-SR-12/13 — determines which demos need re-running: the specs that
+  # changed or were newly added since the previous release tag, cross-
+  # referenced against scripts/demo-registry.mjs. Needs the full tag history
+  # (fetch-depth: 0), so it's a separate job rather than a step reused by
+  # both consumers below.
+  detect-features:
     needs: find-pr
+    if: needs.find-pr.outputs.branch != ''
+    runs-on: ubuntu-latest
+    outputs:
+      all: ${{ steps.features.outputs.all }}
+      demos: ${{ steps.features.outputs.demos }}
+      mouse-grep: ${{ steps.features.outputs.mouse-grep }}
+      smoke-grep: ${{ steps.features.outputs.smoke-grep }}
+      changed-specs: ${{ steps.features.outputs.changed-specs }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.find-pr.outputs.branch }}
+          fetch-depth: 0 # need every tag reachable from HEAD, not just the tip
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Detect changed/new feature specs since the previous release
+        id: features
+        run: node scripts/detect-changed-features.mjs
+
+  refresh-gifs:
+    needs: [find-pr, detect-features]
     # Skip entirely if there is no open release-please PR (e.g. the release was
     # just merged — release-please closes the PR and won't have a new one yet).
     if: needs.find-pr.outputs.branch != ''
@@ -110,11 +139,26 @@ jobs:
       - name: Run E2E tests (capture screenshot frames + showcase recording)
         env:
           DISPLAY: ':99.0'
+          ALL: ${{ needs.detect-features.outputs.all }}
+          MOUSE_GREP: ${{ needs.detect-features.outputs.mouse-grep }}
         # Only the mouse demos feed GIFs (make-gifs.mjs consumes the *-mouse
         # frame dirs, make-showcase-gif.mjs consumes videos/showcase.mp4); the
         # non-mouse twins run as CI UI-smoke instead (ci.yml e2e-smoke,
-        # S08-SR-11), so don't run them here.
-        run: npx playwright test --config playwright.e2e.config.ts --grep mouse
+        # S08-SR-11), so don't run them here. S08-SR-12: only the demos mapped
+        # to specs that changed/were added since the previous release run —
+        # `detect-features` falls back to "mouse" (every mouse demo) when no
+        # previous release tag was resolvable.
+        run: |
+          if [ "$ALL" = "true" ]; then
+            GREP='mouse'
+          else
+            GREP="$MOUSE_GREP"
+          fi
+          if [ -z "$GREP" ]; then
+            echo "No changed/new feature specs since the previous release — skipping demo capture."
+          else
+            npx playwright test --config playwright.e2e.config.ts --grep "$GREP"
+          fi
 
       # Failure screenshots/error context and the raw showcase recording —
       # without these a demo timeout is just an opaque TimeoutError in the log.
@@ -130,9 +174,22 @@ jobs:
           retention-days: 7
 
       - name: Generate demo GIFs
-        run: node scripts/make-gifs.mjs
+        env:
+          ALL: ${{ needs.detect-features.outputs.all }}
+          DEMOS: ${{ needs.detect-features.outputs.demos }}
+        # `showcase` (no `dir` in scripts/demo-registry.mjs) is excluded here —
+        # it's produced by the next step instead.
+        run: |
+          if [ "$ALL" = "true" ]; then
+            node scripts/make-gifs.mjs
+          elif [ -n "$DEMOS" ]; then
+            node scripts/make-gifs.mjs --demos "$DEMOS"
+          else
+            echo "No demo GIFs need refreshing."
+          fi
 
       - name: Generate showcase GIF from the screen recording
+        if: needs.detect-features.outputs.all == 'true' || contains(needs.detect-features.outputs.demos, 'showcase')
         run: node scripts/make-showcase-gif.mjs
 
       - name: Commit and push refreshed GIFs
@@ -172,9 +229,10 @@ jobs:
 
   e2e-smoke:
     name: E2E UI smoke (Playwright, command-palette demos)
-    needs: find-pr
-    # Sibling of refresh-gifs (both need only find-pr, not each other) so the
-    # two run concurrently instead of one lengthening the other's critical path.
+    needs: [find-pr, detect-features]
+    # Sibling of refresh-gifs (both need only find-pr/detect-features, not each
+    # other) so the two run concurrently instead of one lengthening the
+    # other's critical path.
     if: needs.find-pr.outputs.branch != ''
     runs-on: ubuntu-latest
     # S08-SR-10/11 — the command-palette (non-mouse) demo scripts run the real
@@ -186,8 +244,10 @@ jobs:
     # timeouts rather than real failures. Moved to the same release cadence as
     # the GIF refresh it shares fixtures with — non-blocking (continue-on-error)
     # while flakiness is measured, same policy as the integration job
-    # (S08-SR-08). The mouse twins are excluded here (`--grep-invert mouse`) —
-    # they run only in the refresh-gifs job above.
+    # (S08-SR-08). S08-SR-12: only the demos mapped to specs that changed/were
+    # added since the previous release run — falls back to every non-mouse
+    # demo (`--grep-invert mouse`) when no previous release tag was
+    # resolvable.
     continue-on-error: true
 
     env:
@@ -220,7 +280,16 @@ jobs:
       - name: Run command-palette demo flows (no mouse twins)
         env:
           DISPLAY: ':99.0'
-        run: npx playwright test --config playwright.e2e.config.ts --grep-invert mouse
+          ALL: ${{ needs.detect-features.outputs.all }}
+          SMOKE_GREP: ${{ needs.detect-features.outputs.smoke-grep }}
+        run: |
+          if [ "$ALL" = "true" ]; then
+            npx playwright test --config playwright.e2e.config.ts --grep-invert mouse
+          elif [ -n "$SMOKE_GREP" ]; then
+            npx playwright test --config playwright.e2e.config.ts --grep "$SMOKE_GREP"
+          else
+            echo "No changed/new feature specs since the previous release — skipping UI smoke."
+          fi
 
       - name: Upload Playwright failure artifacts
         if: failure()

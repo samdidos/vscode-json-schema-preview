@@ -4,6 +4,7 @@
  *
  * Usage:  node scripts/make-gifs.mjs [--demo <name>]
  *         node scripts/make-gifs.mjs [--demo=<name>]
+ *         node scripts/make-gifs.mjs [--demos <name1>,<name2>,...]
  *
  * Prerequisites:  run `npm run test:e2e` first to populate screenshots/.
  */
@@ -14,6 +15,7 @@ import { existsSync, readdirSync, createWriteStream, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { DEMOS as REGISTRY } from './demo-registry.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -22,30 +24,20 @@ const ROOT = resolve(__dirname, '..');
 // show an animated cursor and character-by-character typing across many frames.
 // `delay` is the per-frame hold in ms — kept short so the dense frame sequences
 // play back smoothly and realistically. The output name stays demo-<name>.gif.
-// demo-showcase (README's hero GIF) is deliberately NOT in this list: it's a
-// real screen recording converted by scripts/make-showcase-gif.mjs, not a
-// screenshot-frame stitch — see that script and helpers/recorder.ts for why.
-const DEMOS = [
-  { name: 'preview',          dir: 'preview-mouse',         delay: 220, hold: 1_200 },
-  { name: 'validation',       dir: 'validation-mouse',      delay: 220, hold: 1_400 },
-  { name: 'inference',        dir: 'inference-mouse',       delay: 220, hold: 1_400 },
-  { name: 'binding',          dir: 'binding-mouse',         delay: 220, hold: 1_200 },
-  { name: 'live-update',      dir: 'live-update-mouse',     delay: 220, hold: 1_000 },
-  { name: 'visual-editor',    dir: 'visual-editor-mouse',   delay: 220, hold: 1_200 },
-  { name: 'workspace-trust',  dir: 'workspace-trust-mouse', delay: 220, hold: 1_400 },
-  { name: 'schema-auth',      dir: 'schema-auth-mouse',     delay: 220, hold: 1_200 },
-  { name: 'codegen',          dir: 'codegen-mouse',         delay: 220, hold: 1_400 },
-  { name: 'sample-data',      dir: 'sample-data-mouse',     delay: 220, hold: 1_400 },
-  { name: 'bundling',         dir: 'bundling-mouse',        delay: 220, hold: 1_400 },
-  { name: 'ref-navigation',   dir: 'ref-navigation-mouse',  delay: 220, hold: 1_200 },
-  { name: 'schema-linting',   dir: 'schema-linting-mouse',  delay: 220, hold: 1_400 },
-  { name: 'workspace-validation', dir: 'workspace-validation-mouse', delay: 220, hold: 1_400 },
-  { name: 'quick-fix',        dir: 'quick-fix-mouse',       delay: 220, hold: 1_400 },
-  { name: 'draft-migration',  dir: 'draft-migration-mouse', delay: 220, hold: 1_400 },
-];
+// The demo <-> spec mapping (and the full entry list) lives in
+// scripts/demo-registry.mjs (S08-SR-13); `showcase` has no `dir` there since
+// it's a real screen recording converted by scripts/make-showcase-gif.mjs, not
+// a screenshot-frame stitch, so it's filtered out of this file's loop below.
+const DEMOS = REGISTRY.filter((d) => d.dir);
 
-const { values: argv } = parseArgs({ options: { demo: { type: 'string' } }, strict: false });
+const { values: argv } = parseArgs({
+  options: { demo: { type: 'string' }, demos: { type: 'string' } },
+  strict: false,
+});
 const demoArg = argv.demo ?? null;
+// --demos (plural) selects several by name at once — S08-SR-12: at release
+// time only the demos mapped to changed/new specs are regenerated.
+const demosArg = argv.demos ? argv.demos.split(',').map((s) => s.trim()).filter(Boolean) : null;
 
 async function createGif(framePaths, outputPath, delayMs, holdMs = delayMs) {
   const first = await loadImage(framePaths[0]);
@@ -94,6 +86,7 @@ let built = 0;
 
 for (const { name, dir, delay, hold } of DEMOS) {
   if (demoArg && demoArg !== name) continue;
+  if (demosArg && !demosArg.includes(name)) continue;
 
   const frameDir = dir ?? name;
   const screenshotDir = join(ROOT, 'screenshots', frameDir);

@@ -99,13 +99,27 @@ top of the existing artifacts.
   hand-maintained, and a spec with no tagged section shows its expected word
   count as the gap to fill.
 
+### Changes Over Time
+
+- **S10-SR-14** Each spec page MUST render a **changes over time** section
+  listing every commit that has touched that spec's `specs/*.md` file, newest
+  first: short hash, date, and subject line, each linking to that commit on
+  the repository host. The list MUST be derived at build time from the file's
+  own `git log` history (following renames) — never a hand-maintained
+  changelog — so it can never drift from what actually happened to the file.
+- **S10-SR-15** A spec file with no history available at build time (e.g. a
+  shallow checkout with the commit outside the fetched depth) MUST render an
+  explicit "no history available" state rather than an empty or misleading
+  section.
+
 ## Non-Functional Requirements
 
 - **S10-NFR-01** All Specs-section content MUST be generated at build time
-  from `specs/*.md` and `specs/traceability.json` (VitePress data loaders /
-  dynamic routes). No spec text, requirement list, or status value may be
-  duplicated by hand into `docs/` — a change to `specs/` is reflected by the
-  next docs build with no manual step.
+  from `specs/*.md`, `specs/traceability.json`, and (for S10-SR-14) the git
+  history of each spec file (VitePress data loaders / dynamic routes). No
+  spec text, requirement list, status value, or change history may be
+  duplicated by hand into `docs/` — a change to `specs/` (or a new commit
+  touching it) is reflected by the next docs build with no manual step.
 - **S10-NFR-02** The section MUST build with the existing docs toolchain
   (VitePress, `docs.yml` workflow) with no new runtime services; pages are
   fully static and filtering runs client-side.
@@ -137,3 +151,14 @@ top of the existing artifacts.
    table while the spec id column stays; the row count is unchanged.
 7. The insights page's requirement total equals the matrix's, and its RICE
    ranking matches `npm run spec-value:report`.
+8. Each spec page shows a "Changes over time" list of commits touching that
+   spec's file, newest first, each linking to the commit on the repository
+   host; a spec file with no discoverable history shows the explicit empty
+   state instead.
+
+## History
+
+- 2026-07-25 — Added S10-SR-14/15: a per-spec "changes over time" section
+  sourced from `git log` on the spec file itself, so browsing a spec's page
+  shows its evolution without needing to leave the docs site for the
+  repository's commit history.

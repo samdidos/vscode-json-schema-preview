@@ -103,6 +103,33 @@ mechanism.
   test-title grep on `mouse`, which every mouse test title contains and no
   non-mouse title does.
 
+### Release-Scoped Demo Selection
+
+- **S08-SR-12** At release time, the GIF-refresh workflow's `refresh-gifs` job
+  and the UI-smoke job (`e2e-smoke`) MUST determine which specs changed or
+  were newly added since the previous release tag, and MUST run demo
+  Playwright scripts (both the mouse and command-palette twins) and
+  regenerate GIFs **only** for the demos mapped to those specs, instead of the
+  full set on every release. When no previous release tag is resolvable (the
+  first release, or a checkout too shallow to reach one) the run MUST default
+  to every demo, mirroring S09-SR-02's "no usable base → run everything"
+  fallback.
+- **S08-SR-13** The demo ↔ spec mapping MUST be declared in exactly one place
+  (`scripts/demo-registry.mjs`), consumed by both the GIF generator
+  (`scripts/make-gifs.mjs`) and the change-detection script
+  (`scripts/detect-changed-features.mjs`) — adding a demo for a new feature,
+  or reassigning one to a different spec, is a one-file edit. `demo-showcase`/
+  `demo-showcase-mouse` is mapped like any other entry, to every spec its
+  narrative touches (F01, F02, F06 per the 2026-07 History note above), even
+  though its GIF is produced by a different script
+  (`scripts/make-showcase-gif.mjs`) than the other demos.
+- **S08-SR-14** This selection applies only to the demo/GIF pipeline
+  (`refresh-gifs.yml`'s two jobs). The assertion-based integration suite
+  (`npm run test:integration`, S08-SR-08) is unaffected and continues to run
+  in full on every PR — it is not release-scoped and not keyed to which specs
+  changed, since it is regression coverage for the whole extension, not a
+  per-feature demo capture.
+
 ### Harness notes (implementation)
 
 - The `toml` language id and the `yaml.schemas` configuration key are not
@@ -152,6 +179,12 @@ mechanism.
 4. CI shows the E2E integration job (S08-SR-08) on PRs; its History note
    records when it became a required check. The UI-smoke job (S08-SR-10) shows
    on the "Refresh Demo GIFs" workflow run instead, per the History note below.
+5. A release whose diff since the previous tag touches only `specs/F06-*.md`
+   runs (and its GIF regenerates for) only `demo-inference`/
+   `demo-inference-mouse` and `demo-showcase`/`demo-showcase-mouse` (F06 is
+   one of showcase's constituent specs) — every other demo is skipped in both
+   `refresh-gifs` and `e2e-smoke`. A release with no resolvable previous tag
+   runs every demo, unchanged from prior behavior.
 
 ## Relation to Existing Specs
 
@@ -162,6 +195,13 @@ mechanism.
 
 ## History
 
+- **2026-07-25** — Added S08-SR-12..14: the GIF-refresh workflow now runs
+  demo Playwright scripts and regenerates GIFs only for the demos mapped to
+  specs that changed or were added since the previous release tag, instead of
+  the full 17-demo set every release. Scoped deliberately to the demo/GIF
+  pipeline only — `test:integration` (S08-SR-08) is whole-extension
+  regression coverage, not tied to a release's feature diff, and stays
+  unscoped.
 - **2026-07** — Added `demo-showcase`/`demo-showcase-mouse`, a sixth-ish demo
   pair that chains several features into one continuous session instead of
   one GIF per feature — the only demo GIF referenced from README.md, the

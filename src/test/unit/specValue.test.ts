@@ -75,10 +75,15 @@ suite('S16 — feature value estimation', () => {
     assert.equal(value.rubricVersion, 1);
   });
 
-  test('[S16-SR-03] the validator is wired into the mandatory verify gate', () => {
+  test('[S16-SR-03] the validator is wired into the mandatory verify gate', async () => {
     const pkg = JSON.parse(read('package.json'));
     assert.equal(pkg.scripts['check:spec-value'], 'node scripts/spec-value.mjs');
-    assert.match(pkg.scripts.verify, /npm run check:spec-value/);
+    // S17: `verify` runs scripts/verify.mjs's concurrent orchestrator rather
+    // than a `&&`-chain, so the wiring check is against its step list instead
+    // of pattern-matching the (now one-line) verify script string.
+    assert.equal(pkg.scripts.verify, 'node scripts/verify.mjs');
+    const { STEPS } = await (import('../../../scripts/verify.mjs') as Promise<{ STEPS: string[] }>);
+    assert.ok(STEPS.includes('check:spec-value'));
   });
 
   test('[S16-SR-04] the calibration constants are declared once in the validator', () => {
