@@ -1,5 +1,5 @@
 <!-- spec:S10 start -->
-# How specs work
+# How it works
 
 This project is **spec-driven**: every feature is specified *before* it is
 implemented (the project constitution makes this a MUST), and every code
