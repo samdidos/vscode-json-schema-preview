@@ -50,6 +50,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S13-spec-effort-estimation.md](S13-spec-effort-estimation.md) | Advisory per-spec effort estimates (points / T-shirt / hours) |
 | [S14-delivery-performance.md](S14-delivery-performance.md) | DORA delivery-performance metrics from git/release history |
 | [S15-cross-platform-tooling.md](S15-cross-platform-tooling.md) | OS-agnostic development tooling & deployment (Windows/macOS/Linux, no bash/Python assumed) |
+| [S16-feature-value-estimation.md](S16-feature-value-estimation.md) | Advisory per-feature customer-value estimates (RICE: reach/impact/confidence ÷ effort) |
 
 ## Scope
 

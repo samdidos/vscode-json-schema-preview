@@ -5,6 +5,9 @@
 <!-- spec:S13 -->
 <SpecEffort />
 
+<!-- spec:S16 -->
+<SpecValue />
+
 <!-- @content -->
 
 <SpecTraceability />
