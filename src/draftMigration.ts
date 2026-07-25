@@ -18,7 +18,7 @@ export interface MigrationResult {
   changes: MigrationChange[];
 }
 
-const META_SCHEMA: Record<TargetDraft, string> = {
+export const META_SCHEMA: Record<TargetDraft, string> = {
   '2020-12': 'https://json-schema.org/draft/2020-12/schema',
   '2019-09': 'https://json-schema.org/draft/2019-09/schema',
   'draft-07': 'http://json-schema.org/draft-07/schema#',

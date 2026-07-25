@@ -67,13 +67,16 @@ clean, pipeable schema.
 jstk migrate legacy.schema.json --to 2020-12 > modern.schema.json
 ```
 
-### `infer <data-file>`
+### `infer <data-file> [--to <draft>]`
 
-Infer a draft-07 schema from an existing data file (JSON/JSONC/JSONL/YAML/TOML).
-A JSONL file infers over the array of its records.
+Infer a schema from an existing data file (JSON/JSONC/JSONL/YAML/TOML). A JSONL
+file infers over the array of its records. `--to` selects the declared
+meta-schema (`2020-12`, `2019-09`, `draft-07`) and defaults to `2020-12`, the
+latest draft.
 
 ```sh
 jstk infer config.json > config.schema.json
+jstk infer config.json --to draft-07 > config.schema.json
 ```
 
 ### `sample <schema-file>`
@@ -97,14 +100,16 @@ generator runs on a self-contained document. `--lang` selects the target
 jstk types api.schema.json --lang go > api.go
 ```
 
-### `coverage <data-file> --schema <schema>`
+### `coverage <data-file...> --schema <schema>`
 
 Report which of a schema's declared properties the data actually exercises —
-a quick way to spot fields your fixtures never touch. JSONL data unions coverage
-across records.
+a quick way to spot fields your fixtures never touch. Accepts one or more data
+files of any supported format (including JSONL); coverage is unioned across
+every record of every file.
 
 ```sh
 jstk coverage sample-data.json --schema api.schema.json
+jstk coverage fixtures/*.json events.jsonl --schema api.schema.json
 ```
 
 ### `validate <dir> --workspace`

@@ -74,10 +74,13 @@ These extend the CLI toward parity with the extension's editor-free features.
 Each MUST reuse the same pure module the extension uses (F27-FR-01); none may
 re-implement the logic.
 
-- **F27-FR-11** `infer <data-file>` MUST infer a JSON Schema from a data file
-  (F06, `genson-js`), declaring the draft-07 meta-schema, and print it to
-  stdout. The data file MUST be parsed by its extension (JSON/JSONC/JSONL/YAML/
-  TOML); a JSONL file infers over the array of its records.
+- **F27-FR-11** `infer <data-file> [--to <2020-12|2019-09|draft-07>]` MUST infer
+  a JSON Schema from a data file (F06, `genson-js`), declaring the target
+  draft's meta-schema (F22's `META_SCHEMA` map), and print it to stdout.
+  `--to` defaults to `2020-12` (the latest draft); an unrecognised value is a
+  usage error (`64`). The data file MUST be parsed by its extension
+  (JSON/JSONC/JSONL/YAML/TOML); a JSONL file infers over the array of its
+  records.
 - **F27-FR-12** `sample <schema-file>` MUST generate a valid sample instance
   from a schema (F16) and print it to stdout, resolving same-document `$ref`s.
   When the schema is unsatisfiable or will not compile it MUST report the
@@ -88,9 +91,12 @@ re-implement the logic.
   runs on a self-contained document. `--lang` selects a target from F18's
   supported set (default `typescript`); an unknown target is a usage error
   (`64`). The generated code MUST be printed to stdout.
-- **F27-FR-14** `coverage <data-file> --schema <schema>` MUST report which of a
-  schema's declared properties the data exercises (F23) and print the coverage
-  report; JSONL data unions coverage across records.
+- **F27-FR-14** `coverage <data-file...> --schema <schema>` MUST report which
+  of a schema's declared properties the data exercises (F23) and print the
+  coverage report. It MUST accept one or more data files as positional
+  arguments (any supported format, including JSONL) and union coverage across
+  every record of every file, matching JSONL's existing per-file record
+  union.
 - **F27-FR-15** `validate <dir> --workspace` MUST scan a directory for supported
   data files, validate each file that carries an inline `$schema` binding (F10)
   against that schema (F03/F20), and print the F20 grouped Markdown report. It
@@ -148,3 +154,7 @@ re-implement the logic.
 - 2026-07-21 — Added F27-FR-11..16: `infer` (F06), `sample` (F16), `types`
   (F18), `coverage` (F23), `validate --workspace` (F20), and `graph` (F24),
   extending the CLI toward the extension's non-interactive surface.
+- 2026-07-25 — F27-FR-11: `infer` gained `--to <draft>` to select the
+  declared meta-schema, defaulting to `2020-12` instead of always draft-07.
+  F27-FR-14: `coverage` now accepts multiple data files, unioning coverage
+  across all of them.

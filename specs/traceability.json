@@ -2653,7 +2653,7 @@
       "impl": [
         "src/cli/cli.ts"
       ],
-      "note": "infer: genson-js createSchema + draft-07 $schema (F06); JSONL infers over records."
+      "note": "infer: genson-js createSchema + META_SCHEMA[--to] (F06/F22), default 2020-12; JSONL infers over records."
     },
     "F27-FR-12": {
       "status": "implemented",
@@ -2674,7 +2674,7 @@
       "impl": [
         "src/cli/cli.ts"
       ],
-      "note": "coverage: computeCoverage + renderCoverageReport (F23)."
+      "note": "coverage: computeCoverage + renderCoverageReport (F23); accepts multiple data-file positionals, instances concatenated."
     },
     "F27-FR-15": {
       "status": "implemented",
