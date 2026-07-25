@@ -2,6 +2,16 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.16.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.15.0...v0.16.0) (2026-07-25)
+
+
+### Features
+
+* **docs:** surface spec metrics in the matrix, sidebar and a new insights page ([8062968](https://github.com/samdidos/vscode-json-schema-preview/commit/80629687e06ea61cd12c3927a873a4cefec4e394))
+* **F24:** ref graph node detail + recovered bundle origin ([b060d92](https://github.com/samdidos/vscode-json-schema-preview/commit/b060d9219e03fde94e710d0371283ee8746a6c13))
+* **F27:** infer --to draft selection, coverage multi-file input ([19c8070](https://github.com/samdidos/vscode-json-schema-preview/commit/19c8070e14de8ce16a6c11402684fc8d90c412d9))
+* **specs:** add advisory customer-value estimates per feature (S16) ([0c74297](https://github.com/samdidos/vscode-json-schema-preview/commit/0c74297efe9fa621f7a7aa75956d11dc71d26db1))
+
 ## [0.15.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.14.0...v0.15.0) (2026-07-24)
 
 
