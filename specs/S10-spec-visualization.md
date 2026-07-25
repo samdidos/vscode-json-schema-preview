@@ -110,7 +110,14 @@ top of the existing artifacts.
 - **S10-SR-15** A spec file with no history available at build time (e.g. a
   shallow checkout with the commit outside the fetched depth) MUST render an
   explicit "no history available" state rather than an empty or misleading
-  section.
+  section. Note this is *not* the only failure mode a shallow checkout causes:
+  in a `--depth 1` clone, `git log --follow` on a file the tip commit never
+  touched can still report that tip commit as if it were part of the file's
+  history (a shallow-boundary quirk, not a bug in this feature's own code) —
+  silently wrong, not merely empty, and so not caught by this requirement's
+  fallback at all. `docs.yml`'s checkout MUST use `fetch-depth: 0` for exactly
+  this reason: it's a correctness requirement for S10-SR-14, not just a
+  convenience for completeness.
 
 ## Non-Functional Requirements
 
@@ -162,3 +169,11 @@ top of the existing artifacts.
   sourced from `git log` on the spec file itself, so browsing a spec's page
   shows its evolution without needing to leave the docs site for the
   repository's commit history.
+- 2026-07-25 — `docs.yml`'s checkout was still the default `fetch-depth: 1`
+  (shallow) when this shipped. Verified in a real `--depth 1` clone that this
+  is worse than S10-SR-15's "no history" fallback: `git log --follow` on a
+  file the tip commit never touched still reported that tip commit as the
+  file's history — every spec page would have shown the same one
+  build-time-irrelevant commit, not an empty/fallback state. Fixed by adding
+  `fetch-depth: 0` to `docs.yml`'s checkout step; S10-SR-15 amended to record
+  the failure mode so a future shallow-checkout regression is recognized.
