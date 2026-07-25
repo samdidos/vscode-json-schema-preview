@@ -20,7 +20,10 @@ const config = read('docs/.vitepress/config.ts');
 suite('S10 — matrix metrics, column control and insights page', () => {
   test('[S10-SR-09] the matrix renders effort, value and RICE columns', () => {
     for (const header of ['Effort', 'Value', 'RICE']) {
-      assert.ok(matrixVue.includes(`>${header}<`), `matrix is missing the ${header} column`);
+      assert.ok(
+        matrixVue.includes(`${header}<span`),
+        `matrix is missing the ${header} column`,
+      );
     }
     for (const field of ['metrics.points', 'metrics.tshirt', 'metrics.value', 'metrics.tier', 'metrics.rice']) {
       assert.ok(matrixVue.includes(field), `matrix does not read ${field}`);
@@ -55,8 +58,12 @@ suite('S10 — matrix metrics, column control and insights page', () => {
       assert.ok(block.includes(`${col}:`), `${col} must be toggleable`);
     }
     assert.ok(!/^\s*id:/m.test(block), 'the spec id column must not be toggleable');
-    // The id cell carries no v-if, so it always renders.
-    assert.match(matrixVue, /<th>Spec<\/th>/);
+    // The id header carries no v-if, so it always renders.
+    const idHeader = matrixVue.slice(
+      matrixVue.indexOf('<thead>'),
+      matrixVue.indexOf("toggleSort('id')"),
+    );
+    assert.ok(!idHeader.includes('v-if'), 'the spec id column must not be conditionally rendered');
   });
 
   test('[S10-SR-10] the column control reports how many columns are visible', () => {
@@ -77,6 +84,38 @@ suite('S10 — matrix metrics, column control and insights page', () => {
       !filterBlock.includes('visibleColumns'),
       'the row filter must not consider column visibility',
     );
+  });
+
+  test('[S10-SR-16] every column header is clickable and cycles through sort states', () => {
+    const sortKeys = ['id', 'title', 'kind', 'requirements', 'effort', 'value', 'rice'];
+    for (const key of sortKeys) {
+      assert.match(
+        matrixVue,
+        new RegExp(`@click="toggleSort\\('${key}'\\)"`),
+        `header for ${key} must call toggleSort`,
+      );
+      assert.match(
+        matrixVue,
+        new RegExp(`:aria-sort="ariaSort\\('${key}'\\)"`),
+        `header for ${key} must expose aria-sort`,
+      );
+    }
+    const toggle = matrixVue.slice(
+      matrixVue.indexOf('function toggleSort'),
+      matrixVue.indexOf('function ariaSort'),
+    );
+    // unsorted -> asc -> desc -> unsorted, per header.
+    assert.match(toggle, /sortDir\.value = 'asc'/);
+    assert.match(toggle, /sortDir\.value = 'desc'/);
+    assert.match(toggle, /sortKey\.value = null/);
+  });
+
+  test('[S10-SR-16] an unscored metric always sorts after every scored row', () => {
+    const sortedBlock = matrixVue.slice(matrixVue.indexOf('const sorted = computed'));
+    assert.match(sortedBlock, /va === null \|\| vb === null/);
+    assert.match(sortedBlock, /va === null \? 1 : -1/);
+    // Row order comes from the sorted list, not the raw filtered list.
+    assert.match(matrixVue, /v-for="spec in sorted"/);
   });
 
   test('[S10-SR-11] sidebar entries carry a compact T-shirt and RICE indicator', () => {

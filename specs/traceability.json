@@ -3564,6 +3564,13 @@
       ],
       "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
+    "S10-SR-16": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecMatrix.vue"
+      ],
+      "note": "click-to-sort headers cycling unsorted/asc/desc per column, aria-sort indicator; unscored metrics always sort after scored rows in either direction"
+    },
     "S11-NFR-01": {
       "status": "implemented",
       "impl": [

@@ -62,6 +62,15 @@ top of the existing artifacts.
   remain visible at all times so a row is always identifiable. The control
   MUST show how many columns are visible, and the choice applies to the table
   only — it MUST NOT change which specs the filters match.
+- **S10-SR-16** Every column, including the spec id, MUST be sortable by
+  clicking its header: the first click sorts ascending, a second click on the
+  same header sorts descending, and a third click returns the table to its
+  unsorted (spec-id source) order. The active column and direction MUST be
+  indicated visually and via the header's `aria-sort` attribute. Sorting MUST
+  NOT change which specs the filters match, only their order, and — echoing
+  S10-SR-09 — a row with no estimate for the sorted metric column MUST always
+  sort after every scored row, in both directions, so "not scored" is never
+  read as "scored low" by appearing at the top of a descending sort.
 
 ### Sidebar
 
@@ -162,6 +171,9 @@ top of the existing artifacts.
    spec's file, newest first, each linking to the commit on the repository
    host; a spec file with no discoverable history shows the explicit empty
    state instead.
+9. Clicking the "Effort" header sorts the table by effort points ascending
+   with unscored specs last; clicking it again reverses to descending with
+   unscored specs still last; a third click restores the original order.
 
 ## History
 
@@ -177,3 +189,6 @@ top of the existing artifacts.
   build-time-irrelevant commit, not an empty/fallback state. Fixed by adding
   `fetch-depth: 0` to `docs.yml`'s checkout step; S10-SR-15 amended to record
   the failure mode so a future shallow-checkout regression is recognized.
+- 2026-07-25 — Added S10-SR-16: click-to-sort matrix columns (asc/desc/
+  unsorted cycle, `aria-sort` indicator), with unscored effort/value/RICE
+  rows always sorting after scored ones regardless of direction.
