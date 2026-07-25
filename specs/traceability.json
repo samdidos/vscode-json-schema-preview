@@ -3550,7 +3550,8 @@
       "impl": [
         "docs/.vitepress/specHistory.data.ts",
         "docs/.vitepress/theme/SpecHistory.vue",
-        "docs/specs/[id].md"
+        "docs/specs/[id].md",
+        ".github/workflows/docs.yml"
       ],
       "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
@@ -3558,7 +3559,8 @@
       "status": "manual",
       "impl": [
         "docs/.vitepress/specHistory.data.ts",
-        "docs/.vitepress/theme/SpecHistory.vue"
+        "docs/.vitepress/theme/SpecHistory.vue",
+        ".github/workflows/docs.yml"
       ],
       "note": "docs-site visualization requirement: verified by the VitePress build and visual review, not unit-taggable"
     },
