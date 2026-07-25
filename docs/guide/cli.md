@@ -51,7 +51,9 @@ jstk diff api.v1.json api.v2.json --check --strict
 
 Resolve external `$ref`s — from the filesystem or over HTTP — into one
 self-contained schema, collected under `$defs`. `--dereference` inlines the
-targets instead.
+targets instead. Each embedded `$defs` entry records its source in a
+`$comment` (`Bundled from <id>`), so `graph` can still show where it came from
+after flattening.
 
 ```sh
 jstk bundle api/root.schema.json > api.bundled.json
@@ -126,7 +128,9 @@ jstk validate ./config --workspace
 
 Print the schema's `$ref` dependency graph — an adjacency list by default, or an
 SVG diagram with `--svg`. External and unresolved refs are shown without being
-fetched, and cycles are flagged.
+fetched, and cycles are flagged. Each node also shows its `type` and a
+truncated `description` when known; a `$defs` entry produced by `bundle`
+(carrying a `Bundled from <id>` `$comment`) shows that original source too.
 
 ```sh
 jstk graph api.schema.json          # adjacency list + summary
