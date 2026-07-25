@@ -56,7 +56,10 @@ top of the existing artifacts.
   the status breakdown as columns: effort points and T-shirt size (S13), and
   for feature specs the customer-value score, tier and RICE ratio (S16). A
   spec with no such estimate MUST render an explicit placeholder rather than a
-  blank or a zero, so "not scored" is never read as "scored low".
+  blank or a zero, so "not scored" is never read as "scored low". The RICE
+  cell MUST also carry a proportional bar scaled against the corpus's highest
+  RICE ratio, so relative value-per-effort is readable at a glance without
+  sorting — the matrix is the project's one RICE ranking surface (S10-SR-12).
 - **S10-SR-10** Column visibility MUST be user-controllable through a
   multi-select dropdown listing every column except the spec id, which MUST
   remain visible at all times so a row is always identifiable. The control
@@ -84,12 +87,30 @@ top of the existing artifacts.
 - **S10-SR-12** The Specs section MUST include an **insights** page reporting
   corpus-level KPIs derived from the spec artifacts: requirement and spec
   totals, the status breakdown, documentation and test-tag coverage, total and
-  mean effort, the value-tier distribution, and a ranking of feature specs by
-  RICE. Every figure MUST be derived at build time from `specs/` (S10-NFR-01).
+  mean effort, and the value-tier and effort-size distributions. Every figure
+  MUST be derived at build time from `specs/` (S10-NFR-01). The page MUST NOT
+  reproduce the per-spec metric listing the matrix page already serves:
+  ranking feature specs by RICE is the matrix's job (its RICE column sorts,
+  per S10-SR-16, and carries the proportional bar, per S10-SR-09), and a
+  second rendering of the same list would be two tables to keep in step.
 - **S10-SR-13** The insights page MUST label the effort- and value-derived
   figures as **advisory estimates** and visually separate them from the
   counted facts (requirements, statuses, coverage), so a judgement is never
   presented as a measurement.
+- **S10-SR-17** The insights page MUST present the corpus graphically, not
+  only as numbers: the counted-facts section MUST include a per-spec stacked
+  bar chart of requirements by status, using the same status colors as the
+  status badges so the two read as one system; the advisory section MUST
+  include a value-versus-effort scatter plot of the scored feature specs,
+  with the S16 tier bands marked on the value axis and constant-RICE guide
+  lines so value-per-effort is readable as slope; and the value-tier and
+  effort-size distributions MUST be rendered as labelled count bars. Charts
+  MUST be built from the same build-time data as the rest of the page
+  (S10-NFR-01) with no new runtime dependency or chart library (S10-NFR-02).
+  Every mark MUST expose its exact values (tooltip or visible label) so a
+  graphic never replaces the numbers with an impression, and marks that would
+  sit at identical coordinates MUST merge into one mark naming all of them
+  rather than overplot.
 
 ### Spec Pages
 
@@ -165,8 +186,10 @@ top of the existing artifacts.
    traceability conventions it documents).
 6. Unchecking a column in the matrix's column dropdown removes it from the
    table while the spec id column stays; the row count is unchanged.
-7. The insights page's requirement total equals the matrix's, and its RICE
-   ranking matches `npm run spec-value:report`.
+7. The insights page's requirement total equals the matrix's, and sorting the
+   matrix's RICE column descending yields the same order as
+   `npm run spec-value:report`; the insights page itself contains no per-spec
+   RICE listing.
 8. Each spec page shows a "Changes over time" list of commits touching that
    spec's file, newest first, each linking to the commit on the repository
    host; a spec file with no discoverable history shows the explicit empty
@@ -174,6 +197,11 @@ top of the existing artifacts.
 9. Clicking the "Effort" header sorts the table by effort points ascending
    with unscored specs last; clicking it again reverses to descending with
    unscored specs still last; a third click restores the original order.
+10. The insights page renders the requirements-by-status stacked chart and the
+    value-versus-effort scatter; every scored feature appears in the scatter
+    exactly once (co-located features share one labelled mark), and adding a
+    requirement to `traceability.json` changes the status chart on the next
+    build with no edit under `docs/`.
 
 ## History
 
@@ -192,3 +220,10 @@ top of the existing artifacts.
 - 2026-07-25 — Added S10-SR-16: click-to-sort matrix columns (asc/desc/
   unsorted cycle, `aria-sort` indicator), with unscored effort/value/RICE
   rows always sorting after scored ones regardless of direction.
+- 2026-07-25 — Amended S10-SR-09/12 and added S10-SR-17: the insights page's
+  RICE ranking table duplicated the matrix once S10-SR-16 made the RICE
+  column sortable, so the list moved out — the matrix's RICE cell gained the
+  proportional bar the table alone had — and the insights page now carries
+  charts instead: per-spec requirements-by-status stacked bars, a
+  value-versus-effort scatter with S16 tier bands and constant-RICE guides,
+  and count bars for the tier and effort-size distributions.

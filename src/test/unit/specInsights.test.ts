@@ -1,5 +1,6 @@
-// S10-SR-09..13 — the docs-site metric columns, the column-visibility control,
-// the sidebar indicator and the insights page. These surfaces are Vue/config
+// S10-SR-09..13 and S10-SR-17 — the docs-site metric columns, the
+// column-visibility control, the sidebar indicator and the insights page
+// (KPIs and charts). These surfaces are Vue/config
 // files outside the extension bundle, so they are asserted structurally here:
 // the guarantee that matters is that every figure comes from the committed
 // spec artifacts and that advisory estimates stay visibly separated from
@@ -39,6 +40,19 @@ suite('S10 — matrix metrics, column control and insights page', () => {
       (matrixVue.match(/v-else/g) ?? []).length >= 3,
       'each optional metric needs an explicit unscored branch',
     );
+  });
+
+  test('[S10-SR-09] the RICE cell carries a bar proportional to the corpus best', () => {
+    assert.match(matrixVue, /const maxRice = computed/);
+    assert.match(matrixVue, /spec-matrix-rice-bar/);
+    assert.match(matrixVue, /\(spec\.metrics\.rice \?\? 0\) \/ maxRice/);
+    // Scaled against the full corpus, not the filtered rows, so filtering
+    // never rescales the bars.
+    const block = matrixVue.slice(
+      matrixVue.indexOf('const maxRice'),
+      matrixVue.indexOf('const sorted'),
+    );
+    assert.ok(block.includes('data.specs'), 'maxRice must scale to the full data set');
   });
 
   test('[S10-SR-09] metrics are joined from the committed estimate files, not hand-copied', () => {
@@ -136,11 +150,63 @@ suite('S10 — matrix metrics, column control and insights page', () => {
     assert.match(insightsVue, /docCoverage\.data/);
   });
 
-  test('[S10-SR-12] the RICE ranking covers every scored feature spec, best first', () => {
+  test('[S10-SR-12] per-spec RICE is not listed here — the matrix owns the ranking', () => {
+    assert.ok(
+      !insightsVue.includes('<table'),
+      'the insights page must not render a per-spec table',
+    );
+    // The best-RICE KPI still derives from the sorted list, but only its head
+    // is shown; the full ranking is the matrix RICE column (S10-SR-09/16).
     const block = insightsVue.slice(insightsVue.indexOf('const byRice'));
-    assert.match(block, /kind === 'feature'|features\.value/);
     assert.match(block, /metrics\.rice !== null/);
-    assert.match(block, /\(b\.metrics\.rice \?\? 0\) - \(a\.metrics\.rice \?\? 0\)/);
+  });
+
+  test('[S10-SR-17] the counted section charts requirements by status per spec', () => {
+    assert.match(insightsVue, /insights-status-chart/);
+    assert.match(insightsVue, /s\.counts\[st\]/);
+    // Fill colors follow the badge hues via per-status selectors.
+    for (const status of ['implemented', 'manual', 'planned', 'untracked', 'deferred']) {
+      assert.ok(
+        insightsVue.includes(`data-status='${status}'`),
+        `${status} segments need a badge-matching fill`,
+      );
+    }
+    // Every segment exposes its exact count (tooltip), never only a length.
+    assert.match(insightsVue, /:title="`\$\{row\.id\}/);
+  });
+
+  test('[S10-SR-17] the advisory section plots value against effort with tier bands and RICE guides', () => {
+    assert.match(insightsVue, /insights-scatter/);
+    assert.match(insightsVue, /TIER_BANDS/);
+    assert.match(insightsVue, /RICE_GUIDES/);
+    // Tier bands mirror the S16 chart's boundaries.
+    const bands = insightsVue.slice(
+      insightsVue.indexOf('const TIER_BANDS'),
+      insightsVue.indexOf('const RICE_GUIDES'),
+    );
+    for (const bound of ['2.5', '6', '12', '20']) {
+      assert.ok(bands.includes(bound), `tier boundary ${bound} must match S16`);
+    }
+  });
+
+  test('[S10-SR-17] co-located features merge into one labelled mark', () => {
+    assert.match(insightsVue, /\$\{s\.metrics\.points\}\|\$\{s\.metrics\.value\}/);
+    assert.match(insightsVue, /ids\.join/);
+  });
+
+  test('[S10-SR-17] distributions render as labelled count bars', () => {
+    assert.match(insightsVue, /insights-dist-bar/);
+    assert.match(insightsVue, /tierBars/);
+    assert.match(insightsVue, /sizeBars/);
+  });
+
+  test('[S10-SR-17] the charts introduce no runtime chart dependency', () => {
+    const docsPkg = JSON.parse(read('docs/package.json'));
+    const deps = Object.keys({ ...docsPkg.dependencies, ...docsPkg.devDependencies });
+    assert.ok(
+      !deps.some((d) => /chart|\bd3\b|echarts|plotly|vega/i.test(d)),
+      'insights charts must stay hand-rolled SVG/CSS (S10-NFR-02)',
+    );
   });
 
   test('[S10-SR-13] advisory estimates are separated from counted facts', () => {
