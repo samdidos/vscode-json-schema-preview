@@ -17,7 +17,7 @@ import { lintSchema } from '../schemaLinter';
 import { diffSchemas, summarise, renderReport } from '../schemaDiff';
 import { compatibilityVerdict, verdictExitCode, renderCompatReport } from '../schemaCompat';
 import { bundleSchema, dereferenceSchema, type ResolvedDoc } from '../schemaBundler';
-import { migrateSchema, type TargetDraft } from '../draftMigration';
+import { migrateSchema, META_SCHEMA, type TargetDraft } from '../draftMigration';
 import { generateAndValidate } from '../sampleDataGenerator';
 import { computeCoverage, renderCoverageReport } from '../schemaCoverage';
 import { TARGET_LANGUAGES, generateCode } from '../typeGenerator';
@@ -67,10 +67,10 @@ const USAGE = [
   '      [--check] [--strict]                  …and gate on backward-compatibility',
   '  bundle <schema-file> [--dereference]      Produce one self-contained schema',
   '  migrate <schema-file> --to <draft>        Convert to 2020-12 | 2019-09 | draft-07',
-  '  infer <data-file>                         Infer a draft-07 schema from data',
+  '  infer <data-file> [--to <draft>]          Infer a schema from data (default 2020-12)',
   '  sample <schema-file>                      Generate a valid sample instance',
   '  types <schema-file> [--lang <id>]         Generate typed code (default typescript)',
-  '  coverage <data-file> --schema <schema>    Report schema coverage from data',
+  '  coverage <data-file...> --schema <schema> Report schema coverage from one or more data files',
   '  graph <schema-file> [--svg]               Print the $ref dependency graph',
   '',
   'Global options:',
@@ -335,6 +335,10 @@ function cmdInfer(args: ParsedArgs, io: CliIO): CliResult {
   if (!dataFile) {
     return err(`infer requires a data file.\n\n${USAGE}\n`, EXIT.usage);
   }
+  const target = (args.values.to ?? '2020-12') as TargetDraft;
+  if (!TARGET_DRAFTS.includes(target)) {
+    return err(`infer's --to must be one of <${TARGET_DRAFTS.join(' | ')}>.\n\n${USAGE}\n`, EXIT.usage);
+  }
   const abs = path.resolve(io.cwd, dataFile);
   let text: string;
   try {
@@ -353,8 +357,8 @@ function cmdInfer(args: ParsedArgs, io: CliIO): CliResult {
     return err(`Cannot parse ${dataFile}: ${(e as Error).message}\n`, EXIT.data);
   }
   const schema = createSchema(data as object) as Record<string, unknown>;
-  // Declare the draft the inferred shape targets (F06), matching the extension.
-  const withDraft = { $schema: 'http://json-schema.org/draft-07/schema#', ...schema };
+  // Declare the target draft's meta-schema (F06/F22), default 2020-12 (latest).
+  const withDraft = { $schema: META_SCHEMA[target], ...schema };
   if (args.flags.has('json')) { return jsonOut({ schema: withDraft }, EXIT.ok); }
   return out(`${JSON.stringify(withDraft, null, 2)}\n`);
 }
@@ -416,23 +420,25 @@ async function cmdTypes(args: ParsedArgs, io: CliIO): Promise<CliResult> {
 // ── coverage (F27-FR-14) ──────────────────────────────────────────────────────
 
 function cmdCoverage(args: ParsedArgs, io: CliIO): CliResult {
-  const [dataFile] = args.positionals;
+  const dataFiles = args.positionals;
   const schemaFile = args.values.schema;
-  if (!dataFile || !schemaFile) {
-    return err(`coverage requires a data file and --schema <schema>.\n\n${USAGE}\n`, EXIT.usage);
+  if (!dataFiles.length || !schemaFile) {
+    return err(`coverage requires one or more data files and --schema <schema>.\n\n${USAGE}\n`, EXIT.usage);
   }
   const loaded = loadSchema(io, schemaFile);
   if ('fail' in loaded) { return loaded.fail; }
 
-  const dataAbs = path.resolve(io.cwd, dataFile);
-  let instances: unknown[];
-  try {
-    instances = parseDataText(io.readFile(dataAbs), languageIdForPath(dataAbs) ?? 'json');
-  } catch (e) {
-    return err(`Cannot read or parse ${dataFile}: ${(e as Error).message}\n`, EXIT.data);
+  const instances: unknown[] = [];
+  for (const dataFile of dataFiles) {
+    const dataAbs = path.resolve(io.cwd, dataFile);
+    try {
+      instances.push(...parseDataText(io.readFile(dataAbs), languageIdForPath(dataAbs) ?? 'json'));
+    } catch (e) {
+      return err(`Cannot read or parse ${dataFile}: ${(e as Error).message}\n`, EXIT.data);
+    }
   }
   const result = computeCoverage(loaded.schema, instances);
-  const header = `${path.basename(dataFile)} vs ${path.basename(schemaFile)}`;
+  const header = `${dataFiles.map((f) => path.basename(f)).join(', ')} vs ${path.basename(schemaFile)}`;
   if (args.flags.has('json')) {
     return jsonOut({
       total: result.total,

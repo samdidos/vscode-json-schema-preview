@@ -325,14 +325,36 @@ suite('[F27-FR-08] runCli migrate', () => {
 // ── infer (F27-FR-11) ─────────────────────────────────────────────────────────
 
 suite('[F27-FR-11] runCli infer', () => {
-  test('infers a draft-07 schema from a JSON data file', async () => {
+  test('infers a 2020-12 schema by default from a JSON data file', async () => {
     const io = makeIO({ '/w/d.json': '{"name":"Ada","age":36}' });
     const r = await runCli(['infer', 'd.json'], io);
     assert.strictEqual(r.code, EXIT.ok);
     const schema = JSON.parse(r.stdout);
-    assert.strictEqual(schema.$schema, 'http://json-schema.org/draft-07/schema#');
+    assert.strictEqual(schema.$schema, 'https://json-schema.org/draft/2020-12/schema');
     assert.strictEqual(schema.type, 'object');
     assert.ok(schema.properties.name && schema.properties.age);
+  });
+
+  test('--to draft-07 declares the draft-07 meta-schema', async () => {
+    const io = makeIO({ '/w/d.json': '{"a":1}' });
+    const r = await runCli(['infer', 'd.json', '--to', 'draft-07'], io);
+    assert.strictEqual(r.code, EXIT.ok);
+    const schema = JSON.parse(r.stdout);
+    assert.strictEqual(schema.$schema, 'http://json-schema.org/draft-07/schema#');
+  });
+
+  test('--to 2019-09 declares the 2019-09 meta-schema', async () => {
+    const io = makeIO({ '/w/d.json': '{"a":1}' });
+    const r = await runCli(['infer', 'd.json', '--to', '2019-09'], io);
+    assert.strictEqual(r.code, EXIT.ok);
+    const schema = JSON.parse(r.stdout);
+    assert.strictEqual(schema.$schema, 'https://json-schema.org/draft/2019-09/schema');
+  });
+
+  test('an unknown --to draft is a usage error', async () => {
+    const r = await runCli(['infer', 'd.json', '--to', 'draft-99'], makeIO({ '/w/d.json': '{"a":1}' }));
+    assert.strictEqual(r.code, EXIT.usage);
+    assert.match(r.stderr, /--to/);
   });
 
   test('infers over the records of a JSONL file (array schema)', async () => {
@@ -347,7 +369,7 @@ suite('[F27-FR-11] runCli infer', () => {
     const r = await runCli(['infer', 'd.json', '--json'], makeIO({ '/w/d.json': '{"a":1}' }));
     const parsed = JSON.parse(r.stdout);
     assert.strictEqual(parsed.exitCode, EXIT.ok);
-    assert.strictEqual(parsed.schema.$schema, 'http://json-schema.org/draft-07/schema#');
+    assert.strictEqual(parsed.schema.$schema, 'https://json-schema.org/draft/2020-12/schema');
   });
 
   test('an unparseable data file is a data error', async () => {
@@ -478,9 +500,25 @@ suite('[F27-FR-14] runCli coverage', () => {
     assert.strictEqual(r.code, EXIT.usage);
   });
 
+  test('missing data files is a usage error', async () => {
+    const r = await runCli(['coverage', '--schema', 's.json'], makeIO({ '/w/s.json': SCH }));
+    assert.strictEqual(r.code, EXIT.usage);
+  });
+
   test('an unreadable data file is a data error', async () => {
     const r = await runCli(['coverage', 'gone.json', '--schema', 's.json'], makeIO({ '/w/s.json': SCH }));
     assert.strictEqual(r.code, EXIT.data);
+  });
+
+  test('unions coverage across multiple data files, including JSONL', async () => {
+    const io = makeIO({
+      '/w/s.json': SCH,
+      '/w/a.json': '{"name":"Ada"}',
+      '/w/b.jsonl': '{"age":36}\n{"role":"admin"}\n',
+    });
+    const r = await runCli(['coverage', 'a.json', 'b.jsonl', '--schema', 's.json'], io);
+    assert.strictEqual(r.code, EXIT.ok);
+    assert.match(r.stdout, /3 \/ 3 declared properties exercised/);
   });
 });
 
