@@ -3571,6 +3571,13 @@
       ],
       "note": "click-to-sort headers cycling unsorted/asc/desc per column, aria-sort indicator; unscored metrics always sort after scored rows in either direction"
     },
+    "S10-SR-17": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/SpecInsights.vue"
+      ],
+      "note": "insights-page charts: status stacked bars, value-vs-effort scatter, distribution bars"
+    },
     "S11-NFR-01": {
       "status": "implemented",
       "impl": [

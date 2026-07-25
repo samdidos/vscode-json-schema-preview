@@ -101,6 +101,13 @@ function ariaSort(key: SortKey): 'none' | 'ascending' | 'descending' {
   return sortDir.value === 'asc' ? 'ascending' : 'descending'
 }
 
+// RICE cell bar (S10-SR-09): proportional to the corpus's best RICE, so
+// relative value-per-effort reads at a glance without sorting. Scaled to the
+// full data set, not the filtered one, so a filter never rescales the bars.
+const maxRice = computed(
+  () => Math.max(...data.specs.map((s) => s.metrics.rice ?? 0), 0) || 1,
+)
+
 const sorted = computed(() => {
   const key = sortKey.value
   if (!key) return filtered.value
@@ -243,9 +250,15 @@ const sorted = computed(() => {
               </span>
             </td>
             <td v-if="shows('rice')" class="spec-matrix-metric">
-              <template v-if="spec.metrics.rice !== null">{{
-                spec.metrics.rice.toFixed(2)
-              }}</template>
+              <template v-if="spec.metrics.rice !== null">
+                {{ spec.metrics.rice.toFixed(2) }}
+                <span class="spec-matrix-rice-track">
+                  <span
+                    class="spec-matrix-rice-bar"
+                    :style="{ width: `${((spec.metrics.rice ?? 0) / maxRice) * 100}%` }"
+                  />
+                </span>
+              </template>
               <span v-else class="spec-matrix-unscored" title="No value estimate to divide">—</span>
             </td>
           </tr>
@@ -374,5 +387,18 @@ const sorted = computed(() => {
 .spec-matrix-unscored {
   color: var(--vp-c-text-3);
   font-size: 12px;
+}
+.spec-matrix-rice-track {
+  display: inline-block;
+  width: 64px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.spec-matrix-rice-bar {
+  display: block;
+  height: 8px;
+  border-radius: 0 4px 4px 0;
+  background-color: var(--vp-c-brand-1);
+  opacity: 0.65;
 }
 </style>
