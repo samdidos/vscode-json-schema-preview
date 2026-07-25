@@ -52,6 +52,13 @@ into a single committable file.
 - **F14-FR-08** An unresolvable ref MUST abort the operation with an error
   naming the ref and its source location; a 401/403 MUST surface the standard
   *Configure Auth* offer (F07).
+- **F14-FR-10** In bundle mode, each embedded external document's copy under
+  `$defs` MUST record the resolved source identifier it came from in a
+  `$comment` (`Bundled from <id>`), appended to any pre-existing `$comment`
+  rather than overwriting it. This lets a tool that later inspects the bundled
+  output on its own (e.g. F24's `$ref` graph, F24-FR-14) recover where a
+  folded-in definition originally came from. Dereference mode does not add
+  this — inlined content is not collected into `$defs` keyed by source.
 
 ### Feedback
 

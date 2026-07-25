@@ -66,7 +66,9 @@ suite('[F14-FR-03][F14-FR-05] bundleSchemaCommand — bundle', () => {
     assert.strictEqual(arg.language, 'json');
     const out = JSON.parse(arg.content);
     assert.strictEqual(out.properties.home.$ref, '#/$defs/address');
-    assert.deepStrictEqual(out.$defs.address, { type: 'object', properties: { city: { type: 'string' } } });
+    const { $comment, ...address } = out.$defs.address;
+    assert.deepStrictEqual(address, { type: 'object', properties: { city: { type: 'string' } } });
+    assert.match($comment, /^Bundled from .*address\.json$/);
   });
 
   // Regression: makeResolver used to call fetch/read + parse once per $ref

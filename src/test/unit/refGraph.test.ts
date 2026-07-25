@@ -10,6 +10,7 @@ const {
   summarizeGraph,
   expandRefGraph,
 } = require('../../refGraph');
+const { bundleSchema } = require('../../schemaBundler');
 
 const nodeIds = (g: { nodes: { id: string }[] }): string[] => g.nodes.map((n) => n.id).sort();
 const edgePairs = (g: { edges: { from: string; to: string }[] }): string[] =>
@@ -72,6 +73,86 @@ suite('[F24-FR-05] buildRefGraph() — unresolved refs', () => {
     const missing = g.nodes.find((n: any) => n.id === '#/$defs/Missing');
     assert.strictEqual(missing.kind, 'unresolved');
     assert.deepStrictEqual(g.unresolved, ['#/$defs/Missing']);
+  });
+});
+
+suite('[F24-FR-13] buildRefGraph() — node type & description', () => {
+  test('the root and every $defs entry carry their type and description when present', () => {
+    const schema = {
+      type: 'object',
+      description: 'The root document.',
+      $defs: {
+        A: { type: 'string', description: 'A short string.' },
+        B: {},
+      },
+    };
+    const g = buildRefGraph(schema);
+    const root = g.nodes.find((n: any) => n.id === '#');
+    const a = g.nodes.find((n: any) => n.id === '#/$defs/A');
+    const b = g.nodes.find((n: any) => n.id === '#/$defs/B');
+    assert.strictEqual(root.type, 'object');
+    assert.strictEqual(root.description, 'The root document.');
+    assert.strictEqual(a.type, 'string');
+    assert.strictEqual(a.description, 'A short string.');
+    assert.strictEqual(b.type, undefined);
+    assert.strictEqual(b.description, undefined);
+  });
+
+  test('joins a type array with " | "', () => {
+    const g = buildRefGraph({ $defs: { A: { type: ['string', 'null'] } } });
+    const a = g.nodes.find((n: any) => n.id === '#/$defs/A');
+    assert.strictEqual(a.type, 'string | null');
+  });
+
+  test('a $ref-only reference to a $defs entry also gets its details', () => {
+    const g = buildRefGraph({
+      properties: { u: { $ref: '#/$defs/A' } },
+      $defs: { A: { type: 'integer', description: 'An id.' } },
+    });
+    const a = g.nodes.find((n: any) => n.id === '#/$defs/A');
+    assert.strictEqual(a.type, 'integer');
+    assert.strictEqual(a.description, 'An id.');
+  });
+
+  test('renderGraphSvg and renderAdjacencyList surface the detail', () => {
+    const g = buildRefGraph({ $defs: { A: { type: 'string', description: 'A short string.' } } });
+    const svg = renderGraphSvg(layoutGraph(g));
+    assert.match(svg, /string/);
+    const adj = renderAdjacencyList(g);
+    assert.match(adj, /A \[definition\] \(string — A short string\.\) → \(no references\)/);
+  });
+});
+
+suite('[F24-FR-14] buildRefGraph() — recovers a bundled origin', () => {
+  test('extracts the source id from a "Bundled from <id>" $comment', () => {
+    const g = buildRefGraph({
+      $defs: { role: { type: 'string', $comment: 'Bundled from https://example.com/role.json' } },
+    });
+    const role = g.nodes.find((n: any) => n.id === '#/$defs/role');
+    assert.strictEqual(role.sourceUrl, 'https://example.com/role.json');
+  });
+
+  test('an unrelated $comment does not produce a sourceUrl', () => {
+    const g = buildRefGraph({ $defs: { A: { $comment: 'hand-authored note' } } });
+    const a = g.nodes.find((n: any) => n.id === '#/$defs/A');
+    assert.strictEqual(a.sourceUrl, undefined);
+  });
+
+  test('renderAdjacencyList shows the recovered origin', () => {
+    const g = buildRefGraph({
+      $defs: { role: { $comment: 'Bundled from https://example.com/role.json' } },
+    });
+    const adj = renderAdjacencyList(g);
+    assert.match(adj, /role \[definition\] \[via https:\/\/example\.com\/role\.json\] → \(no references\)/);
+  });
+
+  test('end-to-end: graphing a schema bundleSchema() just produced still shows its external source', async () => {
+    const root = { properties: { role: { $ref: 'https://example.com/role.json' } } };
+    const resolve = async (uri: string) => ({ id: uri, schema: { type: 'string', enum: ['admin', 'user'] } });
+    const { schema: bundled } = await bundleSchema(root, resolve);
+    const g = buildRefGraph(bundled);
+    const role = g.nodes.find((n: any) => n.id === '#/$defs/role');
+    assert.strictEqual(role.sourceUrl, 'https://example.com/role.json');
   });
 });
 
@@ -165,6 +246,18 @@ suite('[F24-FR-10][F24-NFR-05] expandRefGraph() — fetch and recurse', () => {
     const def = g.nodes.find((n: any) => n.id === '/abs/child.json#/$defs/A');
     assert.ok(def && def.kind === 'definition');
     assert.ok(g.edges.some((e: any) => e.from === './child.json' && e.to === '/abs/child.json#/$defs/A'));
+  });
+
+  test('[F24-FR-13] a fetched document\'s own $defs entries carry their type/description too', async () => {
+    const local = buildRefGraph({ $ref: './child.json' });
+    const resolve = async () => ({
+      id: '/abs/child.json',
+      schema: { $defs: { A: { type: 'string', description: 'A fetched def.' } } },
+    });
+    const g = await expandRefGraph(local, resolve, { maxDepth: 3 });
+    const a = g.nodes.find((n: any) => n.id === '/abs/child.json#/$defs/A');
+    assert.strictEqual(a.type, 'string');
+    assert.strictEqual(a.description, 'A fetched def.');
   });
 
   test('stops at maxDepth and leaves the deeper ref as an unfetched terminal node', async () => {

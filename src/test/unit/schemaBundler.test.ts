@@ -42,8 +42,18 @@ suite('[F14-FR-05][F14-NFR-02] bundleSchema()', () => {
     assert.strictEqual(schema.$id, 'root');
     assert.strictEqual(schema.properties.a.$ref, '#/$defs/a');
     assert.strictEqual(schema.properties.b.$ref, '#/$defs/b/$defs/inner');
-    assert.deepStrictEqual(schema.$defs.a, { type: 'string' });
-    assert.deepStrictEqual(schema.$defs.b, { $defs: { inner: { type: 'number' } } });
+    assert.deepStrictEqual(schema.$defs.a, { type: 'string', $comment: 'Bundled from a.json' });
+    assert.deepStrictEqual(schema.$defs.b, {
+      $defs: { inner: { type: 'number' } },
+      $comment: 'Bundled from b.json',
+    });
+  });
+
+  test('[F14-FR-10] appends to, rather than overwrites, an existing $comment', async () => {
+    const root = { properties: { a: { $ref: 'a.json' } } };
+    const docs = { 'a.json': { type: 'string', $comment: 'hand-authored note' } };
+    const { schema } = await bundleSchema(root, resolverFrom(docs)) as any;
+    assert.strictEqual(schema.$defs.a.$comment, 'hand-authored note — Bundled from a.json');
   });
 
   test('embeds each distinct document exactly once (dedup)', async () => {

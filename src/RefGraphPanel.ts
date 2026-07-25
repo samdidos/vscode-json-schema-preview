@@ -164,7 +164,7 @@ ${csp}
   ${unresolvedNote}
   ${errorsNote}
   <div class="diagram">${svg}</div>
-  <p class="legend"><span>▭ definition</span><span>▤ file</span><span>⌾ remote</span><span>⚠ unresolved / error</span></p>
+  <p class="legend"><span>▭ definition</span><span>▤ file</span><span>⌾ remote</span><span>⚠ unresolved / error</span><span>gray text: type / description / bundled origin</span></p>
   <h2>Adjacency</h2>
   <pre>${adjacency}</pre>
 </body></html>`;

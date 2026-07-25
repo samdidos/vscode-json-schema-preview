@@ -49,6 +49,21 @@ references, reference cycles, and every external dependency the schema carries.
 - **F24-FR-07** The layout MUST assign nodes to layers by breadth-first distance
   from the root (nodes unreachable from the root placed in a trailing layer), so
   the rendered diagram reads left-to-right by dependency depth.
+- **F24-FR-13** Every node representing an actual subschema (the root and each
+  `$defs`/`definitions` entry) MUST carry that subschema's `type` (a string, or
+  its `type` array joined with `' | '`) and `description` when the subschema
+  declares them, so the diagram and adjacency list can show more than the bare
+  name. A node reached only through an unfetched external `$ref` carries none
+  of this (F24-NFR-03: never fetched automatically) until expansion resolves
+  it (F24-FR-08–12), at which point the fetched document's own root and
+  `$defs`/`definitions` entries get the same treatment.
+- **F24-FR-14** When a `$defs`/`definitions` entry's subschema carries a
+  `$comment` recording a bundled origin (F14-FR-10's `Bundled from <id>`
+  convention), the graph builder MUST recover that origin and expose it on the
+  node; both the SVG rendering and the adjacency list MUST display it. This
+  lets a schema that has already been bundled (F14) still show, per folded-in
+  definition, the external source it came from — information bundling would
+  otherwise erase.
 
 ### External Resolution (opt-in)
 
@@ -96,8 +111,9 @@ command has always made.
   (Article V). Only the webview panel shell (`RefGraphPanel`) is VS Code-bound;
   like the other custom webview panels it is excluded from coverage and mutation
   and its requirements are tracked `manual`.
-- **F24-NFR-02** All node labels and ref strings rendered into HTML/SVG MUST be
-  escaped (S01) — a `$ref` value is untrusted schema content.
+- **F24-NFR-02** All node labels, ref strings, and any rendered `type`,
+  `description`, or recovered bundled-origin text (F24-FR-13/14) MUST be
+  escaped (S01) — all of it is untrusted schema content.
 - **F24-NFR-03** The core builder (`buildRefGraph`) MUST NOT fetch anything
   itself: external nodes are shown as endpoints by their URI; their contents
   are not resolved. It MUST NOT throw on malformed schemas. Fetching only ever
@@ -142,13 +158,21 @@ command has always made.
 8. A resolution failure on one external document (network error) renders an
    error node with the failure reason; the rest of the graph — including other
    branches unaffected by that failure — still renders.
+9. A `$defs` entry with `type: "object"` and a `description` renders both,
+   truncated, under its name; a node with neither shows only the name, as
+   before.
+10. Graphing a schema previously produced by `bundle` (F14), whose `$defs`
+    entries carry a `Bundled from <id>` `$comment`, shows that origin on the
+    corresponding node instead of just the folded-in definition's key name.
 
 ## Relation to Existing Specs
 
 - Reuses **F13**'s ref classification (`refKind`, `parseRef`) and pointer
   resolution; complements **F14** (bundle) — the opt-in expansion step reuses
   F14's `DocResolver` contract (and, transitively, F07 auth and F08 cache)
-  rather than a second resolution stack.
+  rather than a second resolution stack. F24-FR-14 also reads F14-FR-10's
+  `$comment` convention, so a schema round-tripped through bundling still
+  shows its external provenance in the graph.
 - **S01/S06** govern the webview surface; **S02**: the opt-in expansion reads
   the network and MUST be refused in untrusted workspaces, same as F14; **S05**:
   by default nothing is fetched or sent anywhere — the local-only graph is

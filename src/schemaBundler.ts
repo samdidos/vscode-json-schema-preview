@@ -115,10 +115,21 @@ export async function bundleSchema(
   const defs: Record<string, unknown> = isObject(newRoot.$defs) ? { ...newRoot.$defs } : {};
   while (queue.length) {
     const { schema, key, id } = queue.shift()!;
-    defs[key] = await transform(clone(schema), id, key, true);
+    defs[key] = withOriginComment(await transform(clone(schema), id, key, true), id);
   }
   if (Object.keys(defs).length) { newRoot.$defs = defs; }
   return { schema: newRoot, strippedIds: [...new Set(strippedIds)] };
+}
+
+/** F14-FR-10: record where an embedded `$defs` entry came from in a
+ *  `$comment`, so a tool inspecting the bundled output later (F24's `$ref`
+ *  graph) can recover it — bundling otherwise erases the source entirely.
+ *  Appends to, rather than overwrites, an existing `$comment`. */
+function withOriginComment(schema: unknown, sourceId: string): unknown {
+  if (!isObject(schema)) { return schema; }
+  const note = `Bundled from ${sourceId}`;
+  const existing = typeof schema.$comment === 'string' ? schema.$comment : undefined;
+  return { ...schema, $comment: existing ? `${existing} — ${note}` : note };
 }
 
 // ── Dereference: inline refs, cycles hoisted into $defs ──────────────────────

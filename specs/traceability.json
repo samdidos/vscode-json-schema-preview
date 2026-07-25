@@ -1549,6 +1549,13 @@
       ],
       "note": "withProgress reports the fetched uri and is cancellable"
     },
+    "F14-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaBundler.ts"
+      ],
+      "note": "withOriginComment() appends 'Bundled from <id>' to each embedded $defs entry's $comment."
+    },
     "F14-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -2439,6 +2446,22 @@
         "src/RefGraphPanel.ts"
       ],
       "note": "a failed doc becomes an error node (refGraph.ts); panel offers Configure Auth per host"
+    },
+    "F24-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts",
+        "src/RefGraphPanel.ts"
+      ],
+      "note": "detailsOf()/mergeDetails() attach type + description to every ensured node; rendered in SVG and adjacency list."
+    },
+    "F24-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/refGraph.ts",
+        "src/RefGraphPanel.ts"
+      ],
+      "note": "originOf() recovers F14-FR-10's 'Bundled from <id>' $comment convention onto node.sourceUrl."
     },
     "F24-NFR-01": {
       "status": "implemented",
