@@ -58,7 +58,7 @@ export default defineConfig({
         text: 'Specs',
         activeMatch: '/specs/',
         items: [
-          { text: 'How specs work', link: '/specs/' },
+          { text: 'How it works', link: '/specs/' },
           { text: 'Requirement matrix', link: '/specs/matrix' },
         ],
       },
@@ -66,8 +66,8 @@ export default defineConfig({
         text: 'Maturity',
         activeMatch: '/maturity/',
         items: [
-          { text: 'Scorecard', link: '/maturity/' },
           { text: 'How it works', link: '/maturity/how-it-works' },
+          { text: 'Scorecard', link: '/maturity/' },
         ],
       },
       { text: 'Delivery', link: '/delivery/', activeMatch: '/delivery/' },
@@ -102,7 +102,7 @@ export default defineConfig({
         {
           text: 'Specs',
           items: [
-            { text: 'How specs work', link: '/specs/' },
+            { text: 'How it works', link: '/specs/' },
             { text: 'Requirement matrix', link: '/specs/matrix' },
           ],
         },
@@ -113,8 +113,8 @@ export default defineConfig({
         {
           text: 'Maturity',
           items: [
-            { text: 'Scorecard', link: '/maturity/' },
             { text: 'How it works', link: '/maturity/how-it-works' },
+            { text: 'Scorecard', link: '/maturity/' },
           ],
         },
         { text: 'Dimensions', items: maturitySidebarItems() },
