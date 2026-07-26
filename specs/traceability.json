@@ -4127,9 +4127,10 @@
         ".claude/hooks/check-coverage.mjs",
         ".claude/hooks/spec-context.mjs",
         ".claude/hooks/update-readme-badges.mjs",
+        ".claude/hooks/pr-branch-check.mjs",
         ".claude/settings.json"
       ],
-      "note": "all five hooks rewritten as .mjs, invoked via explicit `node <path>.mjs` in .claude/settings.json instead of shebang + executable bit; agent-hook, no unit test"
+      "note": "all hooks are .mjs, invoked via explicit `node <path>.mjs` in .claude/settings.json instead of shebang + executable bit; agent-hook, no unit test. pr-branch-check.mjs (SessionStart) added: on a non-default branch, reminds the agent to keep an open PR rebased on the default branch and its checks green, using only git (no GitHub API/token needed)"
     },
     "S15-SR-06": {
       "status": "manual",
