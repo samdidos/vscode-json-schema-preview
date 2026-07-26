@@ -73,6 +73,15 @@ jobs:
       - name: Documentation traceability (no stale doc tags)
         run: npm run check:doc-traceability
 
+      - name: Coverage/mutation exclusion consistency
+        run: npm run check:consistency
+
+      - name: Spec effort estimates valid against the S13 rubric
+        run: npm run check:spec-effort
+
+      - name: Feature value estimates valid against the S16 rubric
+        run: npm run check:spec-value
+
   build:
     needs: changes
     if: needs.changes.outputs.src == 'true'

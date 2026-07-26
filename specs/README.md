@@ -53,6 +53,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S16-feature-value-estimation.md](S16-feature-value-estimation.md) | Advisory per-feature customer-value estimates (RICE: reach/impact/confidence ÷ effort) |
 | [S17-concurrent-verify-gate.md](S17-concurrent-verify-gate.md) | Concurrent local verify gate (`npm run verify`): parallel steps, full-summary reporting, `--fail-fast` option, dependency audit |
 | [S18-mutation-score.md](S18-mutation-score.md) | Publishing the mutation score as a committed per-file artifact, so test strength can be compared where line coverage (gated at 80%, so flat) cannot |
+| [S19-defect-attribution.md](S19-defect-attribution.md) | Attributing each fix to the requirement it repaired via a `Fixes:` commit trailer, so defect counts are recorded rather than inferred |
 
 ## Scope
 

@@ -1,2 +1,6 @@
 # Enforce Conventional Commits (required by release-please).
 npx --no-install commitlint --edit "$1"
+# Enforce defect attribution on fix commits (S19-SR-02): a `fix:` must name the
+# requirement it repaired via a `Fixes:` trailer. Plain Node, no dependencies,
+# so a bare checkout enforces it too.
+node scripts/check-fix-trailer.mjs "$1"

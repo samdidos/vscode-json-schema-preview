@@ -26,6 +26,36 @@ the size of that code today, which surfaces the estimates that have aged out
 of their band, and the [S08](./S08) demo registry against the value ranking,
 which surfaces the features nothing demonstrates.
 
+<!-- spec:S19 start -->
+## Recording what broke
+
+Conventional Commits already marks which commits are fixes; what it never
+captured is *what they fixed*. Every `fix:` commit now names the requirement it
+repaired in a trailer, checked by the same `commit-msg` hook that runs
+commitlint:
+
+```
+fix(auth): treat an unauthenticated GitHub 404 as auth-required
+
+Fixes: F07-FR-03
+```
+
+The hook rejects a `fix:` with no trailer, a malformed id, or an id that is not
+in the traceability matrix. Dependency patches are exempt — use the `deps`
+scope, since patching an advisory repairs no requirement of this project. There
+is no other escape hatch: if a fix repairs behaviour no requirement describes,
+the requirement gets written first, because behaviour here is specified before
+it is built.
+
+Attribution was **not** backfilled onto existing history, and it is not
+inferred from the files a commit touched. That inference was tried and
+measured: the 8 fix commits in the history touch files claimed by 29 different
+specs, correlating 0.89 with raw commit churn — it measures which files are
+shared, not which requirements break. Counts come from `git log` on each docs
+build, and the count of unattributed fixes is always shown beside them so an
+empty column reads as "not recorded yet" rather than "never breaks".
+<!-- spec:S19 end -->
+
 <!-- spec:S18 start -->
 ## Test strength
 

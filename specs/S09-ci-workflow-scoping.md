@@ -19,6 +19,13 @@ drift on the PRs most likely to introduce it.
 
 ### Always-On Traceability
 
+- **S09-SR-07** Every step of the mandatory local gate (`npm run verify`) MUST
+  also be reachable in CI, so a commit that bypasses the git hook — `--no-verify`,
+  a fresh clone whose hooks are not installed, an edit made through the
+  repository host's web UI — still meets the same bar. The unconditional
+  spec-checks job is where the cheap plain-Node checkers belong;
+  `lint:workflows` is satisfied by `ci.yml`'s own `actionlint` job (S09-SR-05)
+  rather than a duplicate step.
 - **S09-SR-01** `check:traceability` and `check:doc-traceability` MUST run in
   CI (`ci.yml`) on every push and pull request, independent of which paths
   changed — these are the checks a docs/spec-only PR is most likely to need
