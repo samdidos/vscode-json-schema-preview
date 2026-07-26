@@ -4031,6 +4031,25 @@
       ],
       "note": "Delivery view: four tiles + bands, lead-time trend, per-release table, dora.dev link"
     },
+    "S14-SR-08": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/maturity-refresh.yml",
+        "dora.json"
+      ],
+      "note": "refresh triggered by workflow_run after Release Please, guarded on success; weekly cron kept as backstop",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S14-SR-09": {
+      "status": "implemented",
+      "impl": [
+        "scripts/dora-metrics.mjs"
+      ],
+      "note": "--check reports a tagless checkout as a checkout problem before comparing for staleness",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
     "S15-NFR-01": {
       "status": "manual",
       "impl": [

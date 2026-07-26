@@ -14,6 +14,13 @@ name: Refresh maturity score & bundle size
 on:
   schedule:
     - cron: '0 9 * * 2'
+  # Also after every release (S14-SR-08). The DORA metrics are a pure function
+  # of the release-tag set, so a new tag is the one moment dora.json can go
+  # stale — and releases land far more often than this weekly cron, which left
+  # the published Delivery view three releases behind.
+  workflow_run:
+    workflows: ["Release Please"]
+    types: [completed]
   workflow_dispatch:
 
 # Top-level token is read-only (OSSF Token-Permissions); the write scopes the
@@ -23,6 +30,10 @@ permissions:
 
 jobs:
   refresh:
+    # On the release hook, only refresh after Release Please actually succeeded
+    # — a failed release produced no tag, so there is nothing new to compute.
+    # Schedule and manual runs are unconditional.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write # push the refresh branch

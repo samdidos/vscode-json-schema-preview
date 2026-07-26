@@ -178,6 +178,18 @@ function printSummary(r) {
 
 if (process.argv.includes('--check')) {
   printSummary(result);
+  // S14-SR-09: a checkout with no tags computes zero releases, which compares
+  // unequal to any committed timeline — reporting that as "stale" would blame
+  // the data for a broken checkout. actions/checkout fetches no tags by
+  // default, so this is the likely failure, not the unlikely one.
+  if (result.releaseCount === 0) {
+    console.log(
+      '\n✗ No release tags are visible, so dora.json cannot be verified — this is a ' +
+      'checkout problem, not stale data.\n' +
+      '  Fetch tags first (`git fetch --tags`, or `fetch-depth: 0` on actions/checkout).',
+    );
+    process.exit(1);
+  }
   let committed;
   try {
     committed = JSON.parse(readFileSync(OUT_PATH, 'utf-8'));
