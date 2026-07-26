@@ -3434,6 +3434,17 @@
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     },
+    "S09-SR-08": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/refresh-gifs.yml",
+        "scripts/maturity-score.mjs"
+      ],
+      "note": "no workflow uses continue-on-error; non-blocking is a branch-protection setting. Scorer predicate ignores YAML comments so prose about it does not trip the check.",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
     "S10-NFR-01": {
       "status": "manual",
       "impl": [

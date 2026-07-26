@@ -242,13 +242,14 @@ jobs:
     # but the ~6-minute run was contending for shared runner capacity alongside
     # a dozen other PR jobs, which manifested as spurious Quick-Open-search
     # timeouts rather than real failures. Moved to the same release cadence as
-    # the GIF refresh it shares fixtures with — non-blocking (continue-on-error)
-    # while flakiness is measured, same policy as the integration job
-    # (S08-SR-08). S08-SR-12: only the demos mapped to specs that changed/were
-    # added since the previous release run — falls back to every non-mouse
-    # demo (`--grep-invert mouse`) when no previous release tag was
-    # resolvable.
-    continue-on-error: true
+    # the GIF refresh it shares fixtures with. Non-blocking while flakiness is
+    # measured — but this workflow runs after a release, not on a pull request,
+    # so it cannot block a merge anyway; swallowing the result with
+    # `continue-on-error` would buy nothing and destroy the only signal the
+    # job exists to produce (S09-SR-08). S08-SR-12: only the demos mapped to
+    # specs that changed/were added since the previous release run — falls back
+    # to every non-mouse demo (`--grep-invert mouse`) when no previous release
+    # tag was resolvable.
 
     env:
       TARGET_BRANCH: ${{ needs.find-pr.outputs.branch }}

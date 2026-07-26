@@ -19,6 +19,19 @@ drift on the PRs most likely to introduce it.
 
 ### Always-On Traceability
 
+- **S09-SR-08** No workflow may use `continue-on-error: true`. A job that
+  should not block merging MUST be left out of branch protection's **required
+  status checks** instead — that is the setting that decides whether a red
+  check blocks the merge button, and it does so without falsifying the check's
+  result. `continue-on-error` reports success for a job that failed, so the
+  failure is invisible in the checks list, in the API, and to any policy built
+  on either; green stops meaning green, and every other check on the run loses
+  value with it.
+
+  The cost is not hypothetical. The maturity step carried it, and that is why
+  five checks scoring a silent zero went unnoticed (S12-SR-15). The
+  integration job carried it, which made S08-SR-08's "clean for 2 consecutive
+  weeks" promotion criterion permanently unmeasurable.
 - **S09-SR-07** Every step of the mandatory local gate (`npm run verify`) MUST
   also be reachable in CI, so a commit that bypasses the git hook — `--no-verify`,
   a fresh clone whose hooks are not installed, an edit made through the

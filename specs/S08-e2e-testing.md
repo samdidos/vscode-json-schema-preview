@@ -63,6 +63,15 @@ the mock necessarily lies.
   measured, but MUST be promoted to a required check once it has run clean
   for 2 consecutive weeks; the promotion MUST be recorded in this spec's
   History.
+
+  **Non-blocking MUST mean "not a required status check", never
+  `continue-on-error: true`.** The two are not interchangeable: branch
+  protection decides whether a red job blocks the merge button, while
+  `continue-on-error` makes the job *report green when it failed*. The second
+  does not just hide the failure — it destroys the evidence this requirement
+  depends on, because a job that always reports success can never be observed
+  running "clean for 2 consecutive weeks", so the promotion criterion can
+  never be evaluated and the job stays provisional forever.
 - **S08-SR-09** The suite MUST run on both Linux and **Windows** runners —
   path-separator and drive-letter handling (absolute paths embedded by
   F04-FR-13/F10-FR-05, TOML string escaping) are platform bugs the unit
@@ -94,8 +103,12 @@ mechanism.
   (the GIF-refresh workflow, `on: workflow_run` after Release Please), not on
   every PR/push — see the History note on why — as a job parallel to (not
   dependent on) the GIF-refresh job, so neither lengthens the other's critical
-  path. It MUST start **non-blocking** (`continue-on-error`) like the
-  integration job (S08-SR-08) while flakiness is measured.
+  path. It MUST start **non-blocking** while flakiness is measured, in the
+  same sense S08-SR-08 defines: excluded from the required status checks, and
+  never via `continue-on-error: true`. It runs after a release rather than on
+  a pull request, so nothing about it can block a merge in the first place —
+  swallowing its result would buy nothing and cost the only signal it exists
+  to produce.
 - **S08-SR-11** The mouse demo scripts MUST NOT run in the smoke job, and the
   GIF-refresh workflow's `refresh-gifs` job MUST run **only** the mouse scripts
   (the non-mouse frames it never consumes) — so each Playwright variant runs in

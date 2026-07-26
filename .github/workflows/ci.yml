@@ -166,11 +166,17 @@ jobs:
     needs: changes
     if: needs.changes.outputs.src == 'true'
     runs-on: ${{ matrix.os }}
-    # S08 — real VS Code via @vscode/test-electron, per S08-SR-08/09. Runs
-    # non-blocking (continue-on-error) while flakiness is measured; promote to
-    # a required check only after 2 consecutive clean weeks (S08-SR-08), and
-    # record the promotion in specs/S08-e2e-testing.md's History.
-    continue-on-error: true
+    # S08 — real VS Code via @vscode/test-electron, per S08-SR-08/09.
+    #
+    # Non-blocking while flakiness is measured, but that is a branch-protection
+    # setting (this job is not in the required status checks), NOT
+    # `continue-on-error` — see S09-SR-08. A red run here shows red and does
+    # not block the merge button. Reporting it green would have made
+    # S08-SR-08's own promotion criterion ("clean for 2 consecutive weeks")
+    # impossible to observe, so the job could never have been promoted.
+    #
+    # Promote to a required check after 2 consecutive clean weeks and record
+    # it in specs/S08-e2e-testing.md's History.
     strategy:
       fail-fast: false
       matrix:

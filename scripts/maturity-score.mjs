@@ -37,6 +37,11 @@ const abs = (p) => join(ROOT, p);
 const exists = (p) => existsSync(abs(p));
 const read = (p) => { try { return readFileSync(abs(p), 'utf-8'); } catch { return ''; } };
 const readJson = (p) => { try { return JSON.parse(read(p)); } catch { return undefined; } };
+/** Drop whole-line YAML comments so a check reads directives, not prose. A
+ *  `#` inside a quoted string is not a comment, so only leading-`#` lines are
+ *  stripped — enough for the directive checks here, and never wrong. */
+const withoutYamlComments = (s) =>
+  s.split(/\r?\n/).filter((l) => !l.trim().startsWith('#')).join('\n');
 const has = (p, re) => re.test(read(p));
 
 function listFiles(dir, filter, acc = []) {
@@ -253,7 +258,9 @@ const DIMENSIONS = [
         earn: () => exists('.github/workflows/ci.yml') },
       { id: 'no-continue-on-error', points: 2, note: 'no CI job silently swallows failures',
         why: 'A swallowed failure rots the signal of every other check CI runs — green must actually mean green.',
-        earn: () => !workflowFiles().some((f) => /continue-on-error:\s*true/.test(read(f))) },
+        // Comments are not configuration (S12-SR-15): a workflow explaining
+        // why it does NOT use continue-on-error must not trip this check.
+        earn: () => !workflowFiles().some((f) => /continue-on-error:\s*true/.test(withoutYamlComments(read(f)))) },
       { id: 'release-automation', points: 2, note: 'release-please configured',
         why: 'Removes human error from versioning and changelogs, making releases reproducible decisions instead of rituals.',
         earn: () => exists('.github/workflows/release-please.yml') },
