@@ -64,6 +64,23 @@ not ground truth. The site states this next to the number.
   committed `dora.json`, regenerable with `npm run dora`. Because the source
   is git history itself, regeneration reconstructs the full timeline — there
   is no separate backfill step and no hand-maintained history file.
+- **S14-SR-08** `dora.json` MUST be refreshed **when a release happens**, not
+  only on a periodic schedule. Every metric here is a pure function of the
+  release-tag set — `perWeek` divides by the span between the first and last
+  tag, never by wall-clock now — so the file goes stale at exactly one moment:
+  a new tag. Refreshing it on an unrelated weekly clock while releases land at
+  a median interval of ~1.3 days leaves the published Delivery view stale for
+  most of its life; it sat three releases behind (ending at v0.13.0 while the
+  extension shipped v0.16.0) when this requirement was written.
+- **S14-SR-09** `npm run dora:check` MUST distinguish **"no release tags are
+  visible"** from **"`dora.json` is stale"**, and MUST say which. The two are
+  indistinguishable by value — a checkout with no tags computes zero releases,
+  which compares unequal to any committed timeline and so reports staleness —
+  but they demand opposite responses: one is a broken checkout (the
+  shallow-clone hazard S10-SR-15 records, since `actions/checkout` fetches no
+  tags by default), the other is a missing refresh. A check that cannot see
+  the data it validates MUST NOT claim the data is wrong.
+
 - **S14-SR-07** The docs site MUST present a **Delivery** view rendering
   `dora.json`: the four metrics as labelled tiles with their bands and the
   repository-context caveat, plus a per-release trend (lead time and release
