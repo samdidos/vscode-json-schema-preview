@@ -111,12 +111,17 @@ jobs:
       - name: Build size budget (S03-SR-15..S03-SR-18)
         run: npm run package && npm run check:bundle-size
 
-      - name: Maturity score is current
-        # Recomputes the scorecard from repo facts (coverage now exists from the
-        # step above) and warns if the committed maturity-score.json is stale.
-        # Non-blocking (continue-on-error): drift here is a prompt to re-run
-        # `npm run maturity` locally, not a reason to fail the build.
-        continue-on-error: true
+      - name: Maturity scorer is healthy
+        # Blocking, but asymmetric (S12-SR-16): fails only when the scorer is
+        # BROKEN — the artifact is unreadable, or a check probes a path that no
+        # longer exists and so scores a silent 0. A score that has merely
+        # MOVED, in either direction, warns and passes: it changes with
+        # coverage and with every requirement added, so failing on it would
+        # redden unrelated pull requests and tie the build's health to keeping
+        # the number flattering.
+        #
+        # This used to be `continue-on-error: true`, which is exactly why the
+        # five stale `.sh` predicates went unnoticed for so long.
         run: npm run maturity:check
 
       - name: Audit dependencies

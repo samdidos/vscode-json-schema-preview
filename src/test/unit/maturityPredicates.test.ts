@@ -56,6 +56,38 @@ suite('S12 — maturity scorer detection predicates', () => {
     }
   });
 
+  test('[S12-SR-16] a moved score warns; a broken scorer fails', () => {
+    const block = scorer.slice(scorer.indexOf("process.argv.includes('--check')"));
+    // Breakage exits non-zero: unreadable artifact, or a predicate that has
+    // stopped resolving (the silent-zero condition S12-SR-15 describes).
+    assert.match(block, /missing or unreadable[\s\S]*?process\.exit\(1\)/);
+    assert.match(block, /unresolvablePredicatePaths\(\)/);
+    assert.match(block, /score a silent 0[\s\S]*?process\.exit\(1\)/);
+    // Drift warns and falls through — no exit between the warning and the end.
+    const drift = block.slice(block.indexOf('const stale ='));
+    assert.match(drift, /out of date/);
+    assert.ok(
+      !/process\.exit\(1\)/.test(drift),
+      'a score that merely moved must not fail the build',
+    );
+  });
+
+  test('[S12-SR-16] the CI step is blocking, not continue-on-error', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const step = ci.slice(ci.indexOf('Maturity scorer is healthy'), ci.indexOf('Audit dependencies'));
+    assert.match(step, /npm run maturity:check/);
+    // Comments are not configuration: the step's own comment says what it used
+    // to be, and matching that text would be a false positive.
+    const directives = step
+      .split(/\r?\n/)
+      .filter((l) => !l.trim().startsWith('#'))
+      .join('\n');
+    assert.ok(
+      !/continue-on-error:\s*true/.test(directives),
+      'the maturity step must block on breakage — swallowing it is what hid the stale predicates',
+    );
+  });
+
   test('[S12-SR-15] the verify-gate check follows the npm script to the runner', () => {
     // `scripts.verify` is `node scripts/verify.mjs`, so matching the npm
     // script text alone finds nothing — the check has to open the runner.

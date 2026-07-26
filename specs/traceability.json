@@ -3885,6 +3885,16 @@
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     },
+    "S12-SR-16": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "note": "--check fails on breakage (unreadable artifact, unresolvable predicate) and warns on score movement; CI step no longer continue-on-error",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
     "S13-NFR-01": {
       "status": "implemented",
       "impl": [

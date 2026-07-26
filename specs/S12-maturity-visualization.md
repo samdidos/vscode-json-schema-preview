@@ -46,9 +46,25 @@ script alongside the checks they explain** and emitted into
   agent hooks were ported from shell to Node (S15 requires `.mjs`, not
   `.sh`), five predicates kept looking for the `.sh` names and quietly scored
   0, so the scorer penalised the project **for complying with another of its
-  own specs** — and because `maturity:check` is deliberately non-blocking in
-  CI (S12-SR-12), nothing failed. A test MUST assert that every path-based
-  predicate resolves against the repository as it stands.
+  own specs** — and because `maturity:check` was `continue-on-error` in CI,
+  nothing failed. A test MUST assert that every path-based predicate resolves
+  against the repository as it stands.
+- **S12-SR-16** `maturity:check` MUST distinguish a **broken scorer** from a
+  **moved score**, and CI MUST run it as a blocking step rather than
+  `continue-on-error`:
+  - **Breakage MUST fail** (exit non-zero): `maturity-score.json` missing or
+    unreadable, or any scoring check whose path predicate no longer resolves
+    (S12-SR-15's silent-zero condition). These mean the number is wrong, not
+    merely old.
+  - **Score movement MUST NOT fail** (exit 0, reported as a warning), in
+    either direction. The score legitimately moves with coverage and with
+    every requirement added, so failing on drift would redden pull requests
+    that changed nothing about maturity, and — worse — would put the build's
+    health behind keeping the number flattering. Refreshing the committed
+    snapshot is a prompt, never a gate.
+
+  The asymmetry is the point: CI should stop a scorer that has stopped
+  measuring, and stay out of the way of a score that has simply changed.
 - **S12-SR-02** The weight justifications MUST live only in
   `scripts/maturity-score.mjs` (flowing into the generated
   `maturity-score.json`); no page under `docs/` may restate a weight, score,

@@ -203,7 +203,7 @@
       "slug": "docs",
       "description": "Whether the project explains itself: the standard community files exist (README, CONTRIBUTING, code of conduct, security policy, license), a docs site is published, maturity is tracked over time, and — the depth signal — guide pages actually keep up with the feature specs.",
       "score": 4.1,
-      "earned": 8.24,
+      "earned": 8.23,
       "possible": 10,
       "checks": [
         {
@@ -251,7 +251,7 @@
         {
           "id": "doc-coverage",
           "points": 3,
-          "earned": 1.24,
+          "earned": 1.23,
           "note": "mean per-spec documentation depth: tagged doc words vs words expected from each spec’s evaluated complexity (S07-SR-10..12)",
           "why": "The only depth signal in the dimension: it measures how much of each spec is actually documented (words attributed via spec: tags, against a complexity-derived expectation), not whether files exist — replacing the old page-count ratio, which a stub page could satisfy. It moves with every requirement and every paragraph written, so it outweighs any single presence check."
         },
@@ -398,9 +398,9 @@
       "branches": 88.69
     },
     "requirements": {
-      "total": 581,
+      "total": 584,
       "byStatus": {
-        "implemented": 414,
+        "implemented": 417,
         "manual": 167
       }
     },

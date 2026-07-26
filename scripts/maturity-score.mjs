@@ -497,8 +497,26 @@ function comparable(r) {
   });
 }
 
+/** Paths this file probes via exists()/read()/readJson() with a literal
+ *  argument. A predicate naming a path that no longer exists scores a silent
+ *  zero (S12-SR-15), which is breakage rather than drift — so `--check` fails
+ *  on it even though it never fails on a moved score (S12-SR-16). */
+function unresolvablePredicatePaths() {
+  const self = read('scripts/maturity-score.mjs');
+  const paths = new Set();
+  for (const m of self.matchAll(/\b(?:exists|readJson|read)\(\s*'([^']+)'\s*\)/g)) paths.add(m[1]);
+  return [...paths].filter((p) => !exists(p));
+}
+
 if (process.argv.includes('--check')) {
   printTable(result);
+  const broken = unresolvablePredicatePaths();
+  if (broken.length) {
+    console.log('\n✗ These checks probe paths that no longer exist, so they score a silent 0:');
+    for (const p of broken) console.log(`  - ${p}`);
+    console.log('Fix the predicate to match the artifact it measures (S12-SR-15).');
+    process.exit(1);
+  }
   let committed;
   try {
     committed = JSON.parse(readFileSync(OUT_PATH, 'utf-8'));
@@ -506,9 +524,16 @@ if (process.argv.includes('--check')) {
     console.log('\n✗ maturity-score.json missing or unreadable. Run `npm run maturity` and commit it.');
     process.exit(1);
   }
-  if (comparable(committed) !== comparable(result)) {
-    console.log('\n✗ maturity-score.json scores are stale. Run `npm run maturity` and commit the result.');
-    process.exit(1);
+  // S12-SR-16: a moved score is a prompt, not a gate. The score changes with
+  // coverage and with every requirement added, so failing here would redden
+  // pull requests that changed nothing about maturity — and would put the
+  // build's health behind keeping the number flattering.
+  const stale = comparable(committed) !== comparable(result);
+  if (stale) {
+    console.log(
+      `\n⚠ maturity-score.json is out of date (committed ${committed.overall}, ` +
+      `recomputed ${result.overall}). Run \`npm run maturity\` and commit the result.`,
+    );
   }
   // Dates are excluded from the drift comparison above (they change every run),
   // but MATURITY.md's snapshot should still track the committed score's date —
@@ -520,7 +545,12 @@ if (process.argv.includes('--check')) {
       `(${committed.generatedAt}). Run \`npm run maturity\` and commit MATURITY.md.`,
     );
   }
-  console.log('\n✓ maturity-score.json scores are up to date.');
+  // Exit 0 either way (S12-SR-16) — but never claim "up to date" when it isn't.
+  console.log(
+    stale
+      ? '\n✓ Scorer is healthy; the committed snapshot just needs refreshing (not a failure).'
+      : '\n✓ maturity-score.json scores are up to date.',
+  );
 } else {
   writeFileSync(OUT_PATH, serialized);
   const prev = syncDocSnapshot(result.generatedAt);
