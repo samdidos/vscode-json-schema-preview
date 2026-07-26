@@ -15,7 +15,7 @@ import { DEMOS } from '../../scripts/demo-registry.mjs'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — plain-Node .mjs generator shared with scripts/, no declarations
 import { scoreOf } from '../../scripts/mutation-score.mjs'
-import { readSpecHistory, buildReleaseResolver, type SpecRelease } from './gitHistory'
+import { readSpecHistory, buildReleaseResolver, type SpecRelease, type SpecCommit } from './gitHistory'
 // Types generated from specs/traceability.schema.json by the project's own F18
 // generator (S11) — the matrix shape is never re-declared by hand here.
 import type { TraceabilityMatrix, Status } from './traceability.types'
@@ -84,6 +84,10 @@ export interface SpecEntry {
   /** S10-SR-23: the first release that shipped this spec, derived from the
    *  spec file's own oldest git-history commit — never a hand-edited field. */
   release: SpecRelease
+  /** S10-SR-24: oldest and newest commit touching this spec's file — null
+   *  when no history is reachable in this checkout (S10-SR-15's fallback). */
+  created: SpecCommit | null
+  updated: SpecCommit | null
 }
 
 export interface SpecsData {
@@ -205,10 +209,12 @@ export default defineLoader({
       const liveLoc = live[id]?.implLoc ?? 0
       const recordedBase = e?.basePoints ?? null
       const liveBase = basePointsForLoc(liveLoc)
-      // Oldest history entry = the commit that created this spec file
-      // (S10-SR-23); readSpecHistory is newest-first, same as S10-SR-14.
+      // readSpecHistory is newest-first (S10-SR-14): history[0] is the most
+      // recent touch ("Updated"), the last entry is the file's oldest commit
+      // ("Created" — S10-SR-24 — and the commit S10-SR-23 resolves a release for).
       const history = readSpecHistory(file)
-      const creationSha = history.length ? history[history.length - 1].sha : undefined
+      const created = history.length ? history[history.length - 1] : null
+      const updated = history.length ? history[0] : null
       return {
         id,
         file,
@@ -228,7 +234,9 @@ export default defineLoader({
         },
         hasDemo: demoSpecs.has(id),
         mutationScore: mutationFor(new Set(requirements.flatMap((r) => r.impl))),
-        release: resolveRelease(creationSha),
+        release: resolveRelease(created?.sha),
+        created,
+        updated,
       }
     })
 
