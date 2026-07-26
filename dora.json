@@ -160,9 +160,9 @@
     {
       "tag": "v0.11.0",
       "date": "2026-07-17",
-      "commits": 6,
+      "commits": 9,
       "intervalDays": 0.9,
-      "leadTimeDays": 0.1,
+      "leadTimeDays": 0.3,
       "isPatch": false,
       "failure": false,
       "restoreDays": null
@@ -180,9 +180,9 @@
     {
       "tag": "v0.13.0",
       "date": "2026-07-20",
-      "commits": 4,
+      "commits": 16,
       "intervalDays": 2.1,
-      "leadTimeDays": 0.1,
+      "leadTimeDays": 1.2,
       "isPatch": false,
       "failure": false,
       "restoreDays": null
