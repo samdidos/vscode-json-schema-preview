@@ -8,6 +8,10 @@ import { data } from '../specs.data'
 import type { SpecEntry } from '../specs.data'
 import SpecStatusBadge from './SpecStatusBadge.vue'
 import SpecFilterDropdown from './SpecFilterDropdown.vue'
+import { REPO_BLOB_URL } from './repo'
+
+// S10-SR-23: link a shipped version to its CHANGELOG.md entry on the repo host.
+const CHANGELOG_URL = `${REPO_BLOB_URL}/CHANGELOG.md`
 
 const query = ref('')
 // Both filters are multi-select (S10-SR-04): an empty array means "no
@@ -27,6 +31,7 @@ const COLUMN_LABELS: Record<string, string> = {
   effort: 'Effort',
   value: 'Value',
   rice: 'RICE',
+  release: 'Release',
 }
 const columnOptions = Object.keys(COLUMN_LABELS)
 const visibleColumns = ref<string[]>([...columnOptions])
@@ -71,7 +76,18 @@ const totalRequirements = computed(() =>
 // Column sort (S10-SR-16): id/title/kind sort as text, the rest as numbers.
 // A null metric (S10-SR-09's "not scored") always sorts after every scored
 // row so a descending sort never puts an unscored spec above a low one.
-type SortKey = 'id' | 'title' | 'kind' | 'requirements' | 'effort' | 'value' | 'rice'
+type SortKey = 'id' | 'title' | 'kind' | 'requirements' | 'effort' | 'value' | 'rice' | 'release'
+
+// A released version sorts by its numeric parts (semver text compares wrong,
+// e.g. "0.10.0" < "0.9.0" lexically); either placeholder state (S10-SR-23)
+// falls through the same null handling as an unscored metric (S10-SR-09).
+function releaseSortValue(spec: SpecEntry): number | null {
+  const { state, version } = spec.release
+  if (state !== 'released' || !version) return null
+  const [major, minor, patch] = version.split('.').map(Number)
+  return major * 1_000_000 + minor * 1_000 + patch
+}
+
 const SORT_VALUE: Record<SortKey, (spec: SpecEntry) => string | number | null> = {
   id: (s) => s.id,
   title: (s) => s.title,
@@ -80,6 +96,7 @@ const SORT_VALUE: Record<SortKey, (spec: SpecEntry) => string | number | null> =
   effort: (s) => s.metrics.points,
   value: (s) => s.metrics.value,
   rice: (s) => s.metrics.rice,
+  release: releaseSortValue,
 }
 const sortKey = ref<SortKey | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
@@ -210,6 +227,13 @@ const sorted = computed(() => {
                 }}</span>
               </button>
             </th>
+            <th v-if="shows('release')" :aria-sort="ariaSort('release')" title="First release that shipped this spec">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('release')">
+                Release<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'release' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -260,6 +284,27 @@ const sorted = computed(() => {
                 </span>
               </template>
               <span v-else class="spec-matrix-unscored" title="No value estimate to divide">—</span>
+            </td>
+            <td v-if="shows('release')" class="spec-matrix-metric">
+              <a
+                v-if="spec.release.state === 'released'"
+                :href="CHANGELOG_URL"
+                target="_blank"
+                rel="noreferrer"
+                >{{ spec.release.version }}</a
+              >
+              <span
+                v-else-if="spec.release.state === 'unreleased'"
+                class="spec-matrix-unscored"
+                title="Not yet in a published release"
+                >unreleased</span
+              >
+              <span
+                v-else
+                class="spec-matrix-unscored"
+                title="No history available for this spec file in this checkout"
+                >no history</span
+              >
             </td>
           </tr>
           <tr v-if="filtered.length === 0">

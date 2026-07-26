@@ -3633,6 +3633,15 @@
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     },
+    "S10-SR-23": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/gitHistory.ts",
+        "docs/.vitepress/specs.data.ts",
+        "docs/.vitepress/theme/SpecMatrix.vue"
+      ],
+      "note": "Release column resolves each spec's oldest git-history commit against chore(main): release X.Y.Z commits; unreleased/no-history render distinct placeholders that always sort after a released row"
+    },
     "S11-NFR-01": {
       "status": "implemented",
       "impl": [

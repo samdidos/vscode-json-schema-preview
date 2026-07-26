@@ -1,4 +1,4 @@
-// S10-SR-09..13 and S10-SR-17 — the docs-site metric columns, the
+// S10-SR-09..13, S10-SR-17 and S10-SR-23 — the docs-site metric columns, the
 // column-visibility control, the sidebar indicator and the insights page
 // (KPIs and charts). These surfaces are Vue/config
 // files outside the extension bundle, so they are asserted structurally here:
@@ -17,6 +17,7 @@ const dropdownVue = read('docs/.vitepress/theme/SpecFilterDropdown.vue');
 const insightsVue = read('docs/.vitepress/theme/SpecInsights.vue');
 const specsLoader = read('docs/.vitepress/specs.data.ts');
 const config = read('docs/.vitepress/config.ts');
+const gitHistory = read('docs/.vitepress/gitHistory.ts');
 
 suite('S10 — matrix metrics, column control and insights page', () => {
   test('[S10-SR-09] the matrix renders effort, value and RICE columns', () => {
@@ -130,6 +131,32 @@ suite('S10 — matrix metrics, column control and insights page', () => {
     assert.match(sortedBlock, /va === null \? 1 : -1/);
     // Row order comes from the sorted list, not the raw filtered list.
     assert.match(matrixVue, /v-for="spec in sorted"/);
+  });
+
+  test('[S10-SR-23] the matrix renders a Release column joined from the spec\'s own git history', () => {
+    assert.ok(matrixVue.includes('Release<span'), 'matrix is missing the Release column');
+    const block = matrixVue.slice(
+      matrixVue.indexOf('const COLUMN_LABELS'),
+      matrixVue.indexOf('const columnOptions'),
+    );
+    assert.ok(block.includes('release:'), 'release must be toggleable');
+    assert.match(matrixVue, /release: releaseSortValue/);
+    // Never a hand-edited field: resolved from the spec's oldest commit
+    // against release-please's release commits, same infra as S10-SR-14.
+    assert.match(specsLoader, /readSpecHistory/);
+    assert.match(specsLoader, /buildReleaseResolver/);
+    assert.match(specsLoader, /release: resolveRelease/);
+    assert.match(gitHistory, /chore\(main\): release/);
+  });
+
+  test('[S10-SR-23] unreleased and no-history specs render distinct explicit placeholders', () => {
+    assert.match(matrixVue, /state === 'unreleased'/);
+    assert.match(matrixVue, /unreleased</);
+    assert.match(matrixVue, /no history</);
+    assert.match(matrixVue, /No history available for this spec file in this checkout/);
+    // Both placeholder states must fall through the same null-sorts-last path
+    // as an unscored metric (S10-SR-09) — never a real version number.
+    assert.match(matrixVue, /if \(state !== 'released' \|\| !version\) return null/);
   });
 
   test('[S10-SR-11] sidebar entries carry a compact T-shirt and RICE indicator', () => {

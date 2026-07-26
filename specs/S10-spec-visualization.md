@@ -74,6 +74,20 @@ top of the existing artifacts.
   S10-SR-09 — a row with no estimate for the sorted metric column MUST always
   sort after every scored row, in both directions, so "not scored" is never
   read as "scored low" by appearing at the top of a descending sort.
+- **S10-SR-23** The matrix table MUST show a **Release** column: the version
+  of the first published release that shipped that spec. It is derived at
+  build time by joining the spec file's own git history (the same commits
+  S10-SR-14 lists) against the repository's `chore(main): release X.Y.Z`
+  commits — never hand-maintained, and never read from a hand-edited field. A
+  spec whose file predates the oldest commit reachable in the build's checkout
+  MUST render the same explicit "no history available" state as S10-SR-15,
+  distinct from a spec that has history but has not shipped yet, which MUST
+  render an explicit "unreleased" placeholder — neither case may render a
+  blank or fall back to a version number. The column follows the same
+  column-visibility control (S10-SR-10) and header-click sort (S10-SR-16) as
+  every other column; a row in either placeholder state MUST always sort
+  after every released row, in both directions, echoing S10-SR-09's "not
+  scored" guarantee.
 
 ### Sidebar
 
@@ -266,9 +280,21 @@ top of the existing artifacts.
 12. Adding a demo to `scripts/demo-registry.mjs` moves that spec from the
     "no demo" to the "has demo" state on the next docs build, with no edit
     under `docs/`.
+13. The matrix's Release column shows, for each spec, the version of the
+    first release whose `chore(main): release X.Y.Z` commit is reachable from
+    that spec file's oldest git-history commit; a spec added after the latest
+    release shows "unreleased", and a spec with no discoverable history shows
+    the same "no history available" state as its spec page (S10-SR-15).
+    Sorting by Release always places both placeholder states after every
+    released row, in both directions.
 
 ## History
 
+- 2026-07-26 — Added S10-SR-23: a Release column on the matrix showing the
+  first published version that shipped each spec, joining the spec file's own
+  git history (S10-SR-14) against `chore(main): release X.Y.Z` commits, with
+  "unreleased" and "no history available" (S10-SR-15) as distinct explicit
+  placeholder states rather than a blank cell.
 - 2026-07-25 — Added S10-SR-14/15: a per-spec "changes over time" section
   sourced from `git log` on the spec file itself, so browsing a spec's page
   shows its evolution without needing to leave the docs site for the
