@@ -28,6 +28,10 @@
           {
             "type": "command",
             "command": "node .claude/hooks/session-bootstrap.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pr-branch-check.mjs"
           }
         ]
       }
