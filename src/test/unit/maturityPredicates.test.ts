@@ -9,6 +9,7 @@
 // another of its own specs — and `maturity:check` is non-blocking in CI
 // (S12-SR-12), so nothing failed. This test is the mechanical guard.
 import * as assert from 'assert';
+import { execFileSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -26,14 +27,43 @@ function probedPaths(): string[] {
   return [...paths];
 }
 
+/** Paths some commit contains. A generated artifact is in no commit, so this
+ *  separates "must be there" from "may not have been produced yet". */
+function committedPaths(): Set<string> {
+  return new Set(
+    execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 32 << 20 })
+      .split('\n')
+      .filter(Boolean),
+  );
+}
+
 suite('S12 — maturity scorer detection predicates', () => {
-  test('[S12-SR-15] every path a check probes exists in the repository', () => {
-    const missing = probedPaths().filter((p) => !existsSync(resolve(ROOT, p)));
+  test('[S12-SR-15] every committed path a check probes exists in the repository', () => {
+    // Only committed paths. A generated artifact may legitimately be absent —
+    // coverage/coverage-summary.json is written by c8 during the very run that
+    // evaluates this test, so it does not exist yet on a clean CI checkout.
+    const committed = committedPaths();
+    const missing = probedPaths().filter(
+      (p) => committed.has(p) && !existsSync(resolve(ROOT, p)),
+    );
     assert.deepEqual(
       missing,
       [],
-      `the scorer probes paths that no longer exist, so their checks score a silent 0:\n  ${missing.join('\n  ')}`,
+      `the scorer probes committed paths that no longer exist, so their checks score a silent 0:\n  ${missing.join('\n  ')}`,
     );
+  });
+
+  test('[S12-SR-15] an absent generated artifact is announced, not silently zeroed', () => {
+    // The exemption above is only safe while the generated case still warns.
+    // If it stopped warning, a missing artifact would be as invisible as a
+    // renamed one — the exact failure this requirement exists to prevent.
+    const generated = probedPaths().filter((p) => !committedPaths().has(p));
+    assert.deepEqual(
+      generated,
+      ['coverage/coverage-summary.json'],
+      'a new generated probe needs its own "absence is announced" evidence here',
+    );
+    assert.match(scorer, /warnings\.push\('coverage-summary\.json missing/);
   });
 
   test('[S12-SR-15] the agent-hook checks point at the ported .mjs hooks', () => {

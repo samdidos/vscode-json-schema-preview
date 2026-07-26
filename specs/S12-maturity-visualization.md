@@ -47,8 +47,16 @@ script alongside the checks they explain** and emitted into
   `.sh`), five predicates kept looking for the `.sh` names and quietly scored
   0, so the scorer penalised the project **for complying with another of its
   own specs** — and because `maturity:check` was `continue-on-error` in CI,
-  nothing failed. A test MUST assert that every path-based predicate resolves
-  against the repository as it stands.
+  nothing failed.
+
+  A test MUST assert that every predicate naming a **committed** path resolves
+  against the repository as it stands. Predicates naming a **generated**
+  artifact (one no commit contains, e.g. `coverage/coverage-summary.json`,
+  which c8 writes during the test run that evaluates this) are exempt: their
+  absence is an expected state the scorer already announces with a warning,
+  not a rename it fails to notice. The distinction is exactly "silent versus
+  announced" — a committed path that has moved is invisible, and that is the
+  only thing this requirement is guarding against.
 - **S12-SR-16** `maturity:check` MUST distinguish a **broken scorer** from a
   **moved score**, and CI MUST run it as a blocking step rather than
   `continue-on-error`:
