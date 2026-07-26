@@ -201,6 +201,13 @@
       ],
       "note": "jsonschema.preview.renderer setting; getPreviewRenderer() (auto|builtin, default auto) unit-tested in settings.test.ts; PreviewWebPanel.generateDocHTML short-circuits to the already-tested renderFallbackHTML when builtin, skipping the Python probe"
     },
+    "F01-FR-28": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "getSettingsConfig()/resolveConfigSource() unit-tested in preview.test.ts"
+    },
     "F01-NFR-01": {
       "status": "manual",
       "impl": [
@@ -1010,6 +1017,28 @@
         "src/ConfigWebPanel.ts"
       ],
       "note": "VS Code API-bound; verified by manual / E2E testing"
+    },
+    "F09-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "package.json",
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "jsonschema.config declared under contributes.configuration; getSettingsConfig() unit-tested in preview.test.ts"
+    },
+    "F09-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "resolveConfigSource() precedence unit-tested in preview.test.ts"
+    },
+    "F09-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/ConfigWebPanel.ts"
+      ],
+      "note": "pickConfigScope() (private) exercised via configurePreview() unit tests in configWebPanel.test.ts"
     },
     "F10-FR-01": {
       "status": "implemented",

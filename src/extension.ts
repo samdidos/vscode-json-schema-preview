@@ -9,7 +9,7 @@ import {
   scheduleLiveUpdate,
   disposeAllPanels,
 } from './PreviewWebPanel';
-import { openConfigFile } from './ConfigWebPanel';
+import { openConfigFile, configurePreview } from './ConfigWebPanel';
 import { openSchemaEditor } from './SchemaEditorPanel';
 import {
   SchemaBindingManager,
@@ -184,7 +184,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (target) { openSchemaEditor(context, target); }
     }),
 
-    vscode.commands.registerCommand('jsonschema.configure',          () => openConfigFile()),
+    vscode.commands.registerCommand('jsonschema.configure',          () => configurePreview()),
     vscode.commands.registerCommand('jsonschema.openConfig',         () => openConfigFile()),
     vscode.commands.registerCommand('jsonschema.bindToCurrentFile',  (uri?: vscode.Uri) => bindingManager.bindToCurrentFile(uri)),
     vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager, schemaCache, validationFixProvider, doc => bindingManager.detectNativeSchema(doc))),

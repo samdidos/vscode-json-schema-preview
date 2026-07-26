@@ -41,7 +41,7 @@ Opens a form-based editor panel for the active schema file. Edit the most common
 
 **ID:** `jsonschema.configure`
 
-Opens the preview configuration panel for the current workspace, letting you select a `json-schema-for-humans` template and toggle options through a UI form. Saves the result to `.json-schema-preview-config.json` in your workspace root.
+Prompts for a settings scope (User, Workspace, or Workspace Folder), then opens that scope's `settings.json` with the `jsonschema.config` key ready to edit — creating it if the scope doesn't already have one. See [Preview Configuration](/guide/configuration#preview-configuration-file-or-settings) for how this setting relates to `.json-schema-preview-config.json` (the file always wins when both are present).
 
 | Toolbar | Command Palette |
 |---------|----------------|

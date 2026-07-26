@@ -1,7 +1,9 @@
 import * as assert from 'assert';
 import * as vscode from '../mocks/vscode';
 
-const { isJsonSchemaFile, findConfigFile, CONFIG_FILENAME } = require('../../PreviewWebPanel');
+const {
+  isJsonSchemaFile, findConfigFile, CONFIG_FILENAME, getSettingsConfig, resolveConfigSource,
+} = require('../../PreviewWebPanel');
 
 suite('[F01-FR-02] isJsonSchemaFile()', () => {
   setup(() => vscode.resetAll());
@@ -139,6 +141,70 @@ suite('[F01-FR-10] findConfigFile()', () => {
         { uri: { fsPath: tmp } },
       ];
       assert.strictEqual(findConfigFile(), cfg);
+    } finally {
+      fs.unlinkSync(cfg);
+      fs.rmdirSync(tmp);
+    }
+  });
+});
+
+// json-schema-for-humans config keys are snake_case (external wire format);
+// parsed from JSON rather than written as object literals to avoid tripping
+// the naming-convention lint rule on ordinary test fixtures.
+const mdTemplateConfig: Record<string, unknown> = JSON.parse('{"template_name":"md"}');
+
+suite('[F09-FR-12] getSettingsConfig()', () => {
+  setup(() => vscode.resetAll());
+
+  test('returns undefined when the setting is unset', () => {
+    assert.strictEqual(getSettingsConfig(), undefined);
+  });
+
+  test('returns undefined for an empty object', () => {
+    vscode.setConfig('jsonschema', 'config', {});
+    assert.strictEqual(getSettingsConfig(), undefined);
+  });
+
+  test('returns undefined for a non-object value', () => {
+    vscode.setConfig('jsonschema', 'config', 'not-an-object');
+    assert.strictEqual(getSettingsConfig(), undefined);
+  });
+
+  test('returns undefined for an array value', () => {
+    vscode.setConfig('jsonschema', 'config', ['flat']);
+    assert.strictEqual(getSettingsConfig(), undefined);
+  });
+
+  test('returns the object when non-empty', () => {
+    vscode.setConfig('jsonschema', 'config', mdTemplateConfig);
+    assert.deepStrictEqual(getSettingsConfig(), mdTemplateConfig);
+  });
+});
+
+suite('[F01-FR-28][F09-FR-13] resolveConfigSource()', () => {
+  setup(() => vscode.resetAll());
+
+  test('returns undefined when neither a file nor a setting is present', () => {
+    assert.strictEqual(resolveConfigSource(), undefined);
+  });
+
+  test('falls back to the jsonschema.config setting when no file is found', () => {
+    vscode.workspace.workspaceFolders = [{ uri: { fsPath: '/nonexistent-workspace-xyz' } }];
+    vscode.setConfig('jsonschema', 'config', mdTemplateConfig);
+    assert.deepStrictEqual(resolveConfigSource(), { inline: mdTemplateConfig });
+  });
+
+  test('the config file always wins over the jsonschema.config setting', () => {
+    const fs  = require('fs');
+    const os  = require('os');
+    const pth = require('path');
+    const tmp = fs.mkdtempSync(pth.join(os.tmpdir(), 'jspreview-'));
+    const cfg = pth.join(tmp, CONFIG_FILENAME);
+    fs.writeFileSync(cfg, '{}');
+    try {
+      vscode.workspace.workspaceFolders = [{ uri: { fsPath: tmp } }];
+      vscode.setConfig('jsonschema', 'config', mdTemplateConfig);
+      assert.deepStrictEqual(resolveConfigSource(), { filePath: cfg });
     } finally {
       fs.unlinkSync(cfg);
       fs.rmdirSync(tmp);

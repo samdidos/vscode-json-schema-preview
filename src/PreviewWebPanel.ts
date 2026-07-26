@@ -241,6 +241,34 @@ export function findConfigFile(forUri?: vscode.Uri): string | undefined {
   return undefined;
 }
 
+/**
+ * Reads the `jsonschema.config` setting (F09-FR-12) resolved for `forUri` —
+ * VS Code's native Workspace Folder > Workspace > User precedence applies
+ * automatically. Returns `undefined` for a missing, non-object, or empty
+ * value so callers can fall through to the next default.
+ */
+export function getSettingsConfig(forUri?: vscode.Uri): Record<string, unknown> | undefined {
+  const value = vscode.workspace.getConfiguration('jsonschema', forUri).get<Record<string, unknown>>('config');
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length === 0) {
+    return undefined;
+  }
+  return value;
+}
+
+/**
+ * Resolves the effective `json-schema-for-humans` config source (F01-FR-28,
+ * F09-FR-13): the standalone workspace file always wins over the
+ * `jsonschema.config` setting, which is only consulted when no file is found.
+ */
+export function resolveConfigSource(
+  forUri?: vscode.Uri
+): { filePath: string } | { inline: Record<string, unknown> } | undefined {
+  const configFile = findConfigFile(forUri);
+  if (configFile) {return { filePath: configFile };}
+  const settingsConfig = getSettingsConfig(forUri);
+  return settingsConfig ? { inline: settingsConfig } : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // HTML generation
 // ---------------------------------------------------------------------------
@@ -273,9 +301,17 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
 
   const args: string[] = ['-m', 'json_schema_for_humans.cli'];
 
-  const configFile = findConfigFile(forUri);
-  if (configFile) {
-    args.push('--config-file', configFile);
+  const source = resolveConfigSource(forUri);
+  let tempConfigFile: string | undefined;
+  if (source && 'filePath' in source) {
+    args.push('--config-file', source.filePath);
+  } else if (source && 'inline' in source) {
+    // The CLI only accepts a config *file*, so the jsonschema.config setting
+    // (which may hold nested objects the `--config key=value` form can't
+    // express) is serialised to a throwaway temp file for this render.
+    tempConfigFile = path.join(os.tmpdir(), `jspreview-settings-config-${Date.now()}.json`);
+    fs.writeFileSync(tempConfigFile, JSON.stringify(source.inline), 'utf-8');
+    args.push('--config-file', tempConfigFile);
   } else {
     // Default to the flat template which works in VS Code's sandboxed webview
     args.push('--config', 'template_name=flat');
@@ -291,6 +327,8 @@ async function generateDocHTML(schemaPath: string, forUri?: vscode.Uri): Promise
       return renderFallbackHTML(schemaPath, forUri);
     }
     throw new Error(`Generation failed (interpreter: ${python}): ${msg}`);
+  } finally {
+    if (tempConfigFile) { try { fs.unlinkSync(tempConfigFile); } catch { /* ignore */ } }
   }
 
   const html = fs.readFileSync(outFile, 'utf-8');
@@ -321,15 +359,19 @@ function renderFallbackHTML(schemaPath: string, forUri?: vscode.Uri): string {
 // HTML helpers
 // ---------------------------------------------------------------------------
 
-/** Returns { ext, isHtml } by reading template_name from the config file. */
-async function detectOutputFmt(configFile?: string): Promise<{ ext: string; isHtml: boolean }> {
-  if (configFile) {
+/** Returns { ext, isHtml } by reading template_name from the effective config source (file or setting). */
+async function detectOutputFmt(forUri?: vscode.Uri): Promise<{ ext: string; isHtml: boolean }> {
+  const source = resolveConfigSource(forUri);
+  let templateName: string | undefined;
+  if (source && 'filePath' in source) {
     try {
-      const raw = await fs.promises.readFile(configFile, 'utf-8');
-      const cfg = JSON.parse(raw) as { template_name?: string };
-      if (/^md/i.test(cfg.template_name ?? '')) {return { ext: 'md', isHtml: false };}
+      const raw = await fs.promises.readFile(source.filePath, 'utf-8');
+      templateName = (JSON.parse(raw) as { template_name?: string }).template_name;
     } catch { /* fall through */ }
+  } else if (source && 'inline' in source) {
+    templateName = source.inline.template_name as string | undefined;
   }
+  if (/^md/i.test(templateName ?? '')) {return { ext: 'md', isHtml: false };}
   return { ext: 'html', isHtml: true };
 }
 
@@ -448,7 +490,7 @@ async function buildWebviewContent(
 ): Promise<string> {
   try {
     const content = await generateDocHTML(schemaPath, forUri);
-    const fmt = await detectOutputFmt(findConfigFile(forUri));
+    const fmt = await detectOutputFmt(forUri);
     rawOutputCache.set(forUri.fsPath, { content, ext: fmt.ext });
     const nonce = getNonce();
     const rendered = fmt.isHtml ? content : wrapAsHtml(content, fmt.ext);

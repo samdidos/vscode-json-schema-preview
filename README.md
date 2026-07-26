@@ -102,7 +102,7 @@ npx json-schema-toolkit diff api.v1.json api.v2.json --check --strict
 <!-- spec:F09 start -->
 ## Configuration
 
-All settings live under the `jsonschema.*` namespace (User, Workspace, or Folder scope). Drop a `.json-schema-preview-config.json` in your workspace root to customise the [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) renderer.
+All settings live under the `jsonschema.*` namespace (User, Workspace, or Folder scope). Customise the [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans) renderer either by dropping a `.json-schema-preview-config.json` in your workspace root, or via the `jsonschema.config` setting — run **JSON Schema: Configure Preview** to jump straight to it. The file always wins when both are present.
 
 **[Full settings reference →](https://samdidos.github.io/vscode-json-schema-preview/guide/configuration)**
 <!-- spec:F09 end -->
