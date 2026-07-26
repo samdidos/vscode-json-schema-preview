@@ -6,6 +6,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineLoader } from 'vitepress'
 import { SPECS_DIR, listSpecFiles } from './specsSource'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — plain-Node .mjs rubric shared with scripts/, no declarations
+import { computeEvidence, basePointsForLoc } from '../../scripts/spec-effort.mjs'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — plain-Node .mjs registry shared with scripts/, no declarations
+import { DEMOS } from '../../scripts/demo-registry.mjs'
 // Types generated from specs/traceability.schema.json by the project's own F18
 // generator (S11) — the matrix shape is never re-declared by hand here.
 import type { TraceabilityMatrix, Status } from './traceability.types'
@@ -31,6 +37,22 @@ export interface SpecMetrics {
   rice: number | null
 }
 
+/** Estimate-ageing evidence for the insights chart (S10-SR-18). The recorded
+ *  snapshot comes from specs/effort.json; the live figures come from S13's own
+ *  exported extractor, so the chart's "drifted" set is by construction the set
+ *  `npm run check:spec-effort` warns about. */
+export interface SpecEvidence {
+  /** Implementation LOC when the estimate was written (effort.json snapshot). */
+  recordedLoc: number | null
+  /** Implementation LOC across the spec's impl[] files today. */
+  liveLoc: number
+  /** S13 band the estimate recorded, and the band the live LOC implies now. */
+  recordedBase: number | null
+  liveBase: number
+  /** The two bands disagree — the estimate has aged out of its band. */
+  drifts: boolean
+}
+
 export interface SpecEntry {
   /** Spec id, e.g. "F01" or "S07". */
   id: string
@@ -45,6 +67,9 @@ export interface SpecEntry {
   /** Requirements carrying at least one [ID] test tag. */
   tagged: number
   metrics: SpecMetrics
+  evidence: SpecEvidence
+  /** An E2E demo in scripts/demo-registry.mjs exercises this spec (S08-SR-13). */
+  hasDemo: boolean
 }
 
 export interface SpecsData {
@@ -78,11 +103,15 @@ function taggedRequirementIds(): Set<string> {
 }
 
 export default defineLoader({
+  // Implementation LOC is read from src/ on every load rather than watched:
+  // the dev server does not need to redraw the ageing chart mid-edit, and
+  // watching the whole source tree from a docs loader would be wasteful.
   watch: [
     `${SPECS_DIR}/*.md`,
     `${SPECS_DIR}/traceability.json`,
     `${SPECS_DIR}/effort.json`,
     `${SPECS_DIR}/value.json`,
+    `${SPECS_DIR}/../scripts/demo-registry.mjs`,
   ],
   load(): SpecsData {
     const matrix = JSON.parse(
@@ -91,6 +120,10 @@ export default defineLoader({
     const effort = JSON.parse(readFileSync(resolve(SPECS_DIR, 'effort.json'), 'utf-8'))
     const value = JSON.parse(readFileSync(resolve(SPECS_DIR, 'value.json'), 'utf-8'))
     const tagged = taggedRequirementIds()
+    // S13's own extractor and band table (S10-SR-18) — never reimplemented here.
+    const repoRoot = resolve(SPECS_DIR, '..')
+    const live: Record<string, { implLoc: number }> = computeEvidence(repoRoot)
+    const demoSpecs = new Set<string>(DEMOS.flatMap((d: { specs: string[] }) => d.specs))
 
     // Group matrix requirements by their spec prefix (F01, S07, …).
     const bySpec = new Map<string, SpecRequirement[]>()
@@ -115,6 +148,10 @@ export default defineLoader({
         tier: v?.tier ?? null,
         rice: v && points ? Math.round((v.score / points) * 100) / 100 : null,
       }
+      const recordedLoc = e?.evidence?.implLoc ?? null
+      const liveLoc = live[id]?.implLoc ?? 0
+      const recordedBase = e?.basePoints ?? null
+      const liveBase = basePointsForLoc(liveLoc)
       return {
         id,
         file,
@@ -124,6 +161,15 @@ export default defineLoader({
         counts,
         tagged: requirements.filter((r) => tagged.has(r.id)).length,
         metrics,
+        evidence: {
+          recordedLoc,
+          liveLoc,
+          recordedBase,
+          liveBase,
+          // Same condition scripts/spec-effort.mjs warns on (S10-SR-18).
+          drifts: recordedLoc !== null && recordedBase !== null && liveBase !== recordedBase,
+        },
+        hasDemo: demoSpecs.has(id),
       }
     })
 

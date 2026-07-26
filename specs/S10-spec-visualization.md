@@ -111,6 +111,30 @@ top of the existing artifacts.
   graphic never replaces the numbers with an impression, and marks that would
   sit at identical coordinates MUST merge into one mark naming all of them
   rather than overplot.
+- **S10-SR-18** The insights page MUST include an **estimate-ageing** chart
+  plotting each spec's recorded evidence LOC snapshot (`specs/effort.json`,
+  S13-SR-02) against its implementation size today, with the S13 LOC band
+  boundaries drawn and the equality diagonal marked. A spec whose live LOC has
+  crossed into a different band MUST be visually distinguished and named,
+  because that is precisely the condition `npm run check:spec-effort` warns
+  on — the chart and the checker MUST derive it from the same exported rubric
+  helpers (`computeEvidence`, `basePointsForLoc`) rather than reimplementing
+  the bands, so the two can never disagree.
+
+  The chart MUST NOT instead plot effort points against implementation LOC as
+  evidence that the rubric is calibrated: `basePoints` is *derived* from LOC by
+  the band table, so any such correlation is circular by construction and
+  would present a tautology as a finding. Ageing of a committed snapshot is
+  the non-circular question, and the page MUST say so where it could mislead.
+- **S10-SR-19** The insights page MUST include a **demo coverage** chart
+  listing feature specs ranked by customer value and marking, for each,
+  whether an end-to-end demo exercises it. The mapping MUST come from
+  `scripts/demo-registry.mjs` — S08-SR-13's single source of truth for which
+  demo covers which spec — never a hand-maintained list, and specs with no
+  demo MUST be distinguishable by more than colour alone. Because the ranking
+  is value-derived it belongs in the advisory section (S10-SR-13), and the
+  page MUST note that demo presence itself is a counted fact while only the
+  ordering is an estimate.
 
 ### Spec Pages
 
@@ -202,6 +226,12 @@ top of the existing artifacts.
     exactly once (co-located features share one labelled mark), and adding a
     requirement to `traceability.json` changes the status chart on the next
     build with no edit under `docs/`.
+11. Every spec the estimate-ageing chart marks as drifted is also warned about
+    by `npm run check:spec-effort`, and vice versa — the two lists match
+    because both call `basePointsForLoc` on the same evidence.
+12. Adding a demo to `scripts/demo-registry.mjs` moves that spec from the
+    "no demo" to the "has demo" state on the next docs build, with no edit
+    under `docs/`.
 
 ## History
 
@@ -220,6 +250,13 @@ top of the existing artifacts.
 - 2026-07-25 — Added S10-SR-16: click-to-sort matrix columns (asc/desc/
   unsorted cycle, `aria-sort` indicator), with unscored effort/value/RICE
   rows always sorting after scored ones regardless of direction.
+- 2026-07-25 — Added S10-SR-18/19, two charts built from artifacts the
+  repository already had but never joined: the S13 evidence snapshot against
+  live implementation size (estimate ageing), and the S08 demo registry
+  against the S16 value ranking (demo coverage). S10-SR-18 also records a
+  rejected design — points-versus-LOC as a "the rubric is calibrated" chart —
+  because `basePoints` is derived from LOC and the correlation is therefore
+  circular; the drift of a committed snapshot is the question that is not.
 - 2026-07-25 — Amended S10-SR-09/12 and added S10-SR-17: the insights page's
   RICE ranking table duplicated the matrix once S10-SR-16 made the RICE
   column sortable, so the list moved out — the matrix's RICE cell gained the

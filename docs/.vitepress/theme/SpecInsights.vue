@@ -222,6 +222,84 @@ const markTip = (m: ScatterMark) =>
     m.rice === null ? '—' : m.rice.toFixed(2)
   }`
 
+// ---- Estimate ageing (S10-SR-18) ---------------------------------------
+// Recorded evidence snapshot against implementation size today. Deliberately
+// NOT points-vs-LOC: `basePoints` is derived from LOC by the S13 band table,
+// so that correlation is circular by construction and would dress a tautology
+// up as a finding. Whether a committed snapshot has aged out of its band is
+// the question the band table cannot answer for itself.
+const LOC_BOUNDS = [150, 400, 800, 1500, 2500, 4000]
+const AGE = { w: 720, h: 400, left: 56, right: 96, top: 16, bottom: 44 }
+
+const ageing = computed(() => {
+  const scored = specs.filter((s) => s.evidence.recordedLoc !== null)
+  const max = Math.max(
+    5600,
+    ...scored.map((s) => Math.max(s.evidence.liveLoc, s.evidence.recordedLoc ?? 0)),
+  )
+  // Square root keeps the dense sub-1000 cluster readable without the
+  // false precision a log axis implies at zero.
+  const pos = (v: number) => Math.sqrt(v / max)
+  const x = (v: number) => AGE.left + pos(v) * (AGE.w - AGE.left - AGE.right)
+  const y = (v: number) => AGE.h - AGE.bottom - pos(v) * (AGE.h - AGE.top - AGE.bottom)
+
+  const marks = scored.map((s) => ({
+    id: s.id,
+    title: s.title,
+    recorded: s.evidence.recordedLoc ?? 0,
+    live: s.evidence.liveLoc,
+    recordedBase: s.evidence.recordedBase,
+    liveBase: s.evidence.liveBase,
+    drifts: s.evidence.drifts,
+    cx: x(s.evidence.recordedLoc ?? 0),
+    cy: y(s.evidence.liveLoc),
+  }))
+  const bounds = LOC_BOUNDS.filter((b) => b <= max).map((b) => ({ v: b, y: y(b) }))
+  const ticks = [0, 500, 1500, 3000, 5000].filter((t) => t <= max).map((t) => ({ v: t, x: x(t), y: y(t) }))
+  return {
+    marks,
+    bounds,
+    ticks,
+    drifted: marks.filter((m) => m.drifts),
+    diagonal: { x1: x(0), y1: y(0), x2: x(max), y2: y(max) },
+    x0: x(0),
+    y0: y(0),
+  }
+})
+
+// ---- Demo coverage (S10-SR-19) -----------------------------------------
+// Demo presence is a counted fact; only the value ordering is an estimate,
+// which is why the whole chart sits in the advisory section (S10-SR-13).
+const DEMO = { w: 720, left: 46, right: 96, rowH: 19, top: 22, bottom: 34 }
+
+const demoCoverage = computed(() => {
+  const rows = features.value
+    .filter((s) => s.metrics.value !== null)
+    .slice()
+    .sort((a, b) => (b.metrics.value ?? 0) - (a.metrics.value ?? 0))
+  const max = Math.max(...rows.map((s) => s.metrics.value ?? 0), 1)
+  const x = (v: number) => DEMO.left + (v / max) * (DEMO.w - DEMO.left - DEMO.right)
+  const covered = specs.filter((s) => s.hasDemo).length
+  const missing = rows.filter((s) => !s.hasDemo)
+  return {
+    rows: rows.map((s, i) => ({
+      id: s.id,
+      title: s.title,
+      value: s.metrics.value ?? 0,
+      hasDemo: s.hasDemo,
+      x2: x(s.metrics.value ?? 0),
+      cy: DEMO.top + i * DEMO.rowH + 6,
+    })),
+    x0: x(0),
+    height: DEMO.top + rows.length * DEMO.rowH + DEMO.bottom,
+    ticks: [0, 10, 20, 30].filter((t) => t <= max).map((t) => ({ v: t, x: x(t) })),
+    covered,
+    total: specs.length,
+    // The gap worth acting on: unshown features people would actually miss.
+    topMissing: missing.filter((s) => (s.metrics.value ?? 0) >= 10),
+  }
+})
+
 // ---- Distribution bars (S10-SR-17) -------------------------------------
 const tierBars = computed(() => {
   const rows = value.value.tiers.map((t) => ({ label: t, count: value.value.byTier[t] }))
@@ -412,6 +490,207 @@ const sizeBars = computed(() => {
         </text>
       </g>
     </svg>
+
+    <h3>Are the effort estimates still current?</h3>
+    <p class="insights-note">
+      Each estimate committed the implementation size it was written against
+      (<a :href="withBase('/specs/S13')">S13</a>). Plotted against the size
+      today, anything on the diagonal has not moved; anything above it has
+      grown since. The horizontal lines are the rubric's own LOC band
+      boundaries, so a dot that has crossed one is an estimate whose band no
+      longer matches its code — the same specs
+      <code>npm run check:spec-effort</code> warns about, from the same
+      function.
+    </p>
+    <p class="insights-note">
+      This chart deliberately does <em>not</em> plot effort points against
+      implementation size: points are derived <em>from</em> that size by the
+      band table, so the two cannot help but agree, and reading the agreement
+      as calibration would be circular.
+    </p>
+    <svg
+      class="insights-scatter"
+      :viewBox="`0 0 ${AGE.w} ${AGE.h}`"
+      role="img"
+      aria-label="Recorded implementation-size snapshot against implementation size today, for every estimated spec"
+    >
+      <text class="insights-scatter-band" :x="AGE.w - AGE.right + 8" :y="AGE.top + 8">
+        S13 bands
+      </text>
+      <g v-for="b in ageing.bounds" :key="b.v">
+        <line
+          class="insights-scatter-grid"
+          :x1="AGE.left"
+          :x2="AGE.w - AGE.right"
+          :y1="b.y"
+          :y2="b.y"
+        />
+        <text class="insights-scatter-band" :x="AGE.w - AGE.right + 8" :y="b.y + 4">
+          {{ b.v.toLocaleString() }}
+        </text>
+      </g>
+      <line
+        class="insights-scatter-guide"
+        :x1="ageing.diagonal.x1"
+        :y1="ageing.diagonal.y1"
+        :x2="ageing.diagonal.x2"
+        :y2="ageing.diagonal.y2"
+      />
+      <text
+        class="insights-scatter-guide-label"
+        :x="ageing.diagonal.x2 - 6"
+        :y="ageing.diagonal.y2 + 14"
+        text-anchor="end"
+      >
+        unchanged since estimated
+      </text>
+      <line
+        class="insights-scatter-axis"
+        :x1="AGE.left"
+        :x2="AGE.w - AGE.right"
+        :y1="ageing.y0"
+        :y2="ageing.y0"
+      />
+      <g v-for="t in ageing.ticks" :key="`t${t.v}`">
+        <text class="insights-scatter-tick" :x="t.x" :y="ageing.y0 + 16" text-anchor="middle">
+          {{ t.v.toLocaleString() }}
+        </text>
+        <text class="insights-scatter-tick" :x="AGE.left - 8" :y="t.y + 4" text-anchor="end">
+          {{ t.v.toLocaleString() }}
+        </text>
+      </g>
+      <text
+        class="insights-scatter-tick"
+        :x="(AGE.left + AGE.w - AGE.right) / 2"
+        :y="AGE.h - 6"
+        text-anchor="middle"
+      >
+        lines when the estimate was written
+      </text>
+      <text
+        class="insights-scatter-tick"
+        :transform="`rotate(-90 12 ${(AGE.top + AGE.h - AGE.bottom) / 2})`"
+        :x="12"
+        :y="(AGE.top + AGE.h - AGE.bottom) / 2"
+        text-anchor="middle"
+      >
+        lines today
+      </text>
+      <g v-for="m in ageing.marks" :key="m.id">
+        <circle
+          class="insights-scatter-dot"
+          :class="{ 'insights-dot-drift': m.drifts }"
+          :cx="m.cx"
+          :cy="m.cy"
+          :r="m.drifts ? 6 : 4.5"
+        >
+          <title>
+            {{ m.id }} {{ m.title }} — estimated at {{ m.recorded.toLocaleString() }} lines
+            (band {{ m.recordedBase }}), {{ m.live.toLocaleString() }} today (band
+            {{ m.liveBase }}){{ m.drifts ? ' — consider re-estimating' : '' }}
+          </title>
+        </circle>
+        <text v-if="m.drifts" class="insights-scatter-label" :x="m.cx + 10" :y="m.cy + 4">
+          {{ m.id }}
+        </text>
+      </g>
+    </svg>
+    <p class="insights-note">
+      <template v-if="ageing.drifted.length">
+        <strong>{{ ageing.drifted.length }} of {{ ageing.marks.length }} estimates have aged
+        out of their band</strong> —
+        <template v-for="(m, i) in ageing.drifted" :key="m.id"
+          ><a :href="withBase(`/specs/${m.id}`)">{{ m.id }}</a
+          ><template v-if="i < ageing.drifted.length - 1">, </template></template
+        >. Drift is a prompt to re-estimate, never a failure: the checker warns
+        and the build stays green.
+      </template>
+      <template v-else>
+        Every estimate is still inside the band it was written against.
+      </template>
+    </p>
+
+    <h3>Which features have never been demonstrated</h3>
+    <p class="insights-note">
+      Feature specs by customer value, marked with whether an end-to-end demo
+      exercises them — read from
+      <a :href="withBase('/specs/S08')">S08</a>'s demo registry, the same file
+      the GIF pipeline and release-time change detection use. Whether a demo
+      exists is a counted fact; only the ordering is an estimate.
+      <strong>{{ demoCoverage.covered }} of {{ demoCoverage.total }} specs</strong>
+      carry one.
+    </p>
+    <svg
+      class="insights-scatter"
+      :viewBox="`0 0 ${DEMO.w} ${demoCoverage.height}`"
+      role="img"
+      aria-label="Feature specs ranked by customer value, marked by whether an end-to-end demo exists"
+    >
+      <g v-for="t in demoCoverage.ticks" :key="`d${t.v}`">
+        <line
+          class="insights-scatter-grid"
+          :x1="t.x"
+          :x2="t.x"
+          :y1="DEMO.top - 8"
+          :y2="demoCoverage.height - DEMO.bottom + 4"
+        />
+        <text class="insights-scatter-tick" :x="t.x" :y="DEMO.top - 13" text-anchor="middle">
+          {{ t.v }}
+        </text>
+      </g>
+      <g v-for="row in demoCoverage.rows" :key="row.id">
+        <text class="insights-scatter-label" :x="DEMO.left - 10" :y="row.cy + 4" text-anchor="end">
+          {{ row.id }}
+        </text>
+        <line
+          class="insights-demo-stem"
+          :class="{ 'insights-demo-stem-missing': !row.hasDemo }"
+          :x1="demoCoverage.x0"
+          :x2="row.x2"
+          :y1="row.cy"
+          :y2="row.cy"
+        />
+        <circle
+          class="insights-scatter-dot"
+          :class="{ 'insights-dot-hollow': !row.hasDemo }"
+          :cx="row.x2"
+          :cy="row.cy"
+          r="5"
+        >
+          <title>
+            {{ row.id }} {{ row.title }} — value {{ row.value.toFixed(1) }}·
+            {{ row.hasDemo ? 'demo recorded' : 'no demo' }}
+          </title>
+        </circle>
+        <text
+          v-if="!row.hasDemo && row.value >= 10"
+          class="insights-scatter-band"
+          :x="row.x2 + 11"
+          :y="row.cy + 4"
+        >
+          no demo
+        </text>
+      </g>
+      <text
+        class="insights-scatter-tick"
+        :x="(DEMO.left + DEMO.w - DEMO.right) / 2"
+        :y="demoCoverage.height - 8"
+        text-anchor="middle"
+      >
+        customer value (S16) — highest first
+      </text>
+    </svg>
+    <p class="insights-note">
+      <template v-if="demoCoverage.topMissing.length">
+        The gap is not evenly spread: <strong>{{ demoCoverage.topMissing.length }} features
+        scoring 10 or better have no demo</strong> —
+        <template v-for="(m, i) in demoCoverage.topMissing" :key="m.id"
+          ><a :href="withBase(`/specs/${m.id}`)">{{ m.id }}</a> ({{ m.metrics.value?.toFixed(1)
+          }})<template v-if="i < demoCoverage.topMissing.length - 1">, </template></template
+        >.
+      </template>
+      <template v-else>Every feature scoring 10 or better has a demo.</template>
+    </p>
 
     <div class="insights-dist-grid">
       <div>
@@ -622,6 +901,22 @@ const sizeBars = computed(() => {
   fill: var(--vp-c-text-2);
   font-size: 11px;
   font-weight: 600;
+}
+/* A drifted estimate and a missing demo are states, not series — both carry a
+   text label beside the mark so neither depends on colour alone. */
+.insights-dot-drift {
+  fill: var(--chart-planned);
+}
+.insights-dot-hollow {
+  fill: var(--vp-c-bg);
+  stroke: var(--chart-untracked);
+}
+.insights-demo-stem {
+  stroke: var(--chart-manual);
+  stroke-width: 2;
+}
+.insights-demo-stem-missing {
+  stroke: var(--vp-c-divider);
 }
 
 /* ---- distribution bars (S10-SR-17) ------------------------------------ */
