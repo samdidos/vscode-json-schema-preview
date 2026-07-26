@@ -74,9 +74,12 @@ suite('[S08-SR-06] Command smoke tests — one per contributed command', () => {
     assertNoErrors(errors, 'jsonschema.edit');
   });
 
-  test('[S08-SR-06] jsonschema.configure opens the render-config file', async () => {
-    const { errors } = await withCapturedMessages(
-      () => vscode.commands.executeCommand('jsonschema.configure') as Promise<void>,
+  test('[S08-SR-06][F09-FR-01] jsonschema.configure prompts for a settings scope and opens settings.json', async () => {
+    const { errors } = await withQuickPick(
+      items => items.find((i: any) => i.target === vscode.ConfigurationTarget.WorkspaceFolder),
+      () => withCapturedMessages(
+        () => vscode.commands.executeCommand('jsonschema.configure') as Promise<void>,
+      ),
     );
     assertNoErrors(errors, 'jsonschema.configure');
   });
