@@ -59,7 +59,7 @@ suite('S09 — CI workflow guarantees', () => {
 
   test('[S09-SR-01] the spec-checks job stays unconditional', () => {
     const ci = read('.github/workflows/ci.yml');
-    const job = ci.slice(ci.indexOf('  traceability:'), ci.indexOf('  build:'));
+    const job = ci.slice(ci.indexOf('  traceability:'), ci.indexOf('  lint:'));
     assert.ok(!/^\s*if:/m.test(job), 'the spec-checks job must not be path-scoped');
     for (const step of ['check:traceability', 'check:doc-traceability']) {
       assert.ok(job.includes(step), `${step} must run in the unconditional job`);
