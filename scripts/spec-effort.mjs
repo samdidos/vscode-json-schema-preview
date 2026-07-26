@@ -1,5 +1,9 @@
-#!/usr/bin/env node
 // Advisory spec-effort estimates — validator + evidence extractor (S13).
+//
+// No shebang: this file is imported by the docs-site loader (S10-SR-18) and
+// esbuild cannot parse one. It was never executable anyway — every call site
+// is `node scripts/spec-effort.mjs`, and doc-coverage-lib.mjs (the other
+// script shared with docs/) has no shebang for the same reason.
 //
 // specs/effort.json holds one estimate per spec: Fibonacci story points as
 // the single authored value, with T-shirt size and an hour band DERIVED from

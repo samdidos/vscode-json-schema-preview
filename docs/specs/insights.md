@@ -20,5 +20,11 @@ value-per-effort reads as slope. The per-spec RICE ranking itself lives on
 the [matrix](./matrix) page, whose RICE column sorts and carries a
 proportional bar — this page deliberately does not repeat it.
 
+Two further charts join artifacts the repository already keeps but never
+plotted together: each [S13](./S13) estimate's committed size snapshot against
+the size of that code today, which surfaces the estimates that have aged out
+of their band, and the [S08](./S08) demo registry against the value ranking,
+which surfaces the features nothing demonstrates.
+
 <SpecInsights />
 <!-- spec:S10 end -->

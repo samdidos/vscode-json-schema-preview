@@ -1,4 +1,6 @@
-#!/usr/bin/env node
+// No shebang: this is a pure library (no CLI), imported by scripts/ and by the
+// docs-site loader (S10-SR-19), whose bundler cannot parse one.
+//
 // Single source of truth for "which demo Playwright script/GIF belongs to
 // which spec" (S08-SR-13). Consumed by scripts/make-gifs.mjs (GIF generation)
 // and scripts/detect-changed-features.mjs (release-time change detection) so

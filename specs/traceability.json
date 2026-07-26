@@ -3578,6 +3578,22 @@
       ],
       "note": "insights-page charts: status stacked bars, value-vs-effort scatter, distribution bars"
     },
+    "S10-SR-18": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/specs.data.ts",
+        "docs/.vitepress/theme/SpecInsights.vue"
+      ],
+      "note": "estimate-ageing chart; drift derived from scripts/spec-effort.mjs exports so chart and checker agree"
+    },
+    "S10-SR-19": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/specs.data.ts",
+        "docs/.vitepress/theme/SpecInsights.vue"
+      ],
+      "note": "demo-coverage chart sourced from scripts/demo-registry.mjs (S08-SR-13)"
+    },
     "S11-NFR-01": {
       "status": "implemented",
       "impl": [

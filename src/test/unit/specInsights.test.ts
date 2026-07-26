@@ -200,6 +200,51 @@ suite('S10 — matrix metrics, column control and insights page', () => {
     assert.match(insightsVue, /sizeBars/);
   });
 
+  test('[S10-SR-18] the ageing chart reuses S13\'s rubric rather than restating the bands', () => {
+    assert.match(specsLoader, /from '\.\.\/\.\.\/scripts\/spec-effort\.mjs'/);
+    assert.match(specsLoader, /computeEvidence/);
+    assert.match(specsLoader, /basePointsForLoc/);
+    // The drift flag must be the comparison the checker makes, not a copy of
+    // the band table living in the loader or the component.
+    assert.match(specsLoader, /liveBase !== recordedBase/);
+    assert.ok(
+      !/LOC_BANDS/.test(specsLoader) && !/LOC_BANDS/.test(insightsVue),
+      'the band table must not be duplicated outside scripts/spec-effort.mjs',
+    );
+  });
+
+  test('[S10-SR-18] the ageing chart plots the recorded snapshot against live size', () => {
+    assert.match(insightsVue, /const ageing = computed/);
+    assert.match(insightsVue, /evidence\.recordedLoc/);
+    assert.match(insightsVue, /evidence\.liveLoc/);
+    // The equality diagonal is what makes "has not moved" readable.
+    assert.match(insightsVue, /diagonal/);
+    // Drifted specs are named, not only coloured.
+    assert.match(insightsVue, /insights-dot-drift/);
+    assert.match(insightsVue, /v-if="m\.drifts"/);
+  });
+
+  test('[S10-SR-18] the rejected circular chart is recorded, not built', () => {
+    // Points are derived from LOC, so points-vs-LOC cannot falsify the rubric.
+    const spec = read('specs/S10-spec-visualization.md');
+    assert.match(spec, /circular by construction/);
+    assert.match(insightsVue, /circular/);
+  });
+
+  test('[S10-SR-19] demo coverage is read from the S08 registry, never hand-listed', () => {
+    assert.match(specsLoader, /from '\.\.\/\.\.\/scripts\/demo-registry\.mjs'/);
+    assert.match(specsLoader, /DEMOS\.flatMap/);
+    assert.match(specsLoader, /hasDemo/);
+    assert.match(insightsVue, /const demoCoverage = computed/);
+  });
+
+  test('[S10-SR-19] a spec with no demo is distinguishable beyond colour', () => {
+    assert.match(insightsVue, /insights-dot-hollow/);
+    // A visible "no demo" label rides the high-value gaps.
+    assert.match(insightsVue, /no demo/);
+    assert.match(insightsVue, /!row\.hasDemo/);
+  });
+
   test('[S10-SR-17] the charts introduce no runtime chart dependency', () => {
     const docsPkg = JSON.parse(read('docs/package.json'));
     const deps = Object.keys({ ...docsPkg.dependencies, ...docsPkg.devDependencies });
