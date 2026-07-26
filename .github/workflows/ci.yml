@@ -82,7 +82,80 @@ jobs:
       - name: Feature value estimates valid against the S16 rubric
         run: npm run check:spec-value
 
-  build:
+  # The old `build` job ran lint/type-check/compile/bundle-size/coverage/audit
+  # as seven sequential steps in one runner, making that job's wall-clock time
+  # their sum. None of the six depend on each other except coverage → maturity
+  # (maturity:check reads coverage/coverage-summary.json, so those two stay
+  # sequential in one job); every other pair is independent, so each gets its
+  # own job below and they all fan out from `changes` in parallel instead
+  # (S09-SR-02 — same skip condition, same steps, just no longer serialised).
+
+  lint:
+    name: Lint
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+
+  type-check:
+    name: Type check
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run type-check
+
+  compile:
+    name: Build extension bundle
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run compile
+
+  bundle-size:
+    name: Build size budget (S03-SR-15..S03-SR-18)
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run package && npm run check:bundle-size
+
+  coverage:
+    name: Tests, coverage & maturity score
     needs: changes
     if: needs.changes.outputs.src == 'true'
     runs-on: ubuntu-latest
@@ -96,20 +169,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Type check
-        run: npm run type-check
-
-      - name: Build extension bundle
-        run: npm run compile
-
       - name: Run tests with coverage
         run: npm run test:coverage
-
-      - name: Build size budget (S03-SR-15..S03-SR-18)
-        run: npm run package && npm run check:bundle-size
 
       - name: Maturity scorer is healthy
         # Blocking, but asymmetric (S12-SR-16): fails only when the scorer is
@@ -122,10 +183,27 @@ jobs:
         #
         # This used to be `continue-on-error: true`, which is exactly why the
         # five stale `.sh` predicates went unnoticed for so long.
+        #
+        # Kept in this job rather than a separate one: the scorer reads
+        # coverage/coverage-summary.json, which only exists after the step
+        # above runs in the same workspace.
         run: npm run maturity:check
 
-      - name: Audit dependencies
-        run: npm run check:audit
+  audit:
+    name: Audit dependencies
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run check:audit
 
   security:
     needs: changes

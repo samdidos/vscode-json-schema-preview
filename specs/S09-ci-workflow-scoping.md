@@ -2,14 +2,20 @@
 
 ## Overview
 
-`ci.yml`'s `build`/`security`/`knip`/`integration` jobs and `codeql.yml`'s
-`analyze` job all exercise the TypeScript/JS build & test surface (lint,
-`tsc`, webpack, coverage, Trivy, knip, the two-OS integration suite, CodeQL).
-None of that can be broken by a docs-only or spec-only change, yet every PR —
-including one that only edits `specs/traceability.json` or a `docs/**` page —
-paid for all of it. Meanwhile the one check that *does* matter for exactly
-that kind of PR, requirement/documentation traceability drift, ran nowhere in
-CI at all — the opposite of what was needed.
+`ci.yml`'s `lint`/`type-check`/`compile`/`bundle-size`/`coverage`/`audit`/
+`security`/`knip`/`integration` jobs and `codeql.yml`'s `analyze` job all
+exercise the TypeScript/JS build & test surface (lint, `tsc`, webpack,
+coverage, maturity, Trivy, knip, the two-OS integration suite, CodeQL). The
+first six used to be sequential steps inside one `build` job; they're
+independent of each other (aside from `coverage`'s own two steps — the
+maturity scorer reads that job's coverage output, so those two stay
+sequential within the `coverage` job) and now run as separate jobs so they
+execute in parallel instead of paying for each other's wall-clock time in
+sequence. None of that can be broken by a docs-only or spec-only change, yet
+every PR — including one that only edits `specs/traceability.json` or a
+`docs/**` page — paid for all of it. Meanwhile the one check that *does*
+matter for exactly that kind of PR, requirement/documentation traceability
+drift, ran nowhere in CI at all — the opposite of what was needed.
 
 This spec scopes the expensive jobs to diffs that could plausibly break them,
 while keeping the cheap traceability checks unconditional so they still catch
@@ -47,8 +53,9 @@ drift on the PRs most likely to introduce it.
 
 ### Path-Scoped Jobs
 
-- **S09-SR-02** `ci.yml`'s `build` (lint, type-check, compile, coverage,
-  maturity check, dependency audit), `security` (Trivy), `knip`, and
+- **S09-SR-02** `ci.yml`'s `lint`, `type-check`, `compile`, `bundle-size`,
+  `coverage` (tests, coverage, and the maturity check, which depends on that
+  job's coverage output), `audit`, `security` (Trivy), `knip`, and
   `integration` jobs, and `codeql.yml`'s `analyze` job, MUST be skipped when
   the triggering diff touches none of: `src/**`, `scripts/**`,
   `package.json`, `package-lock.json`, `webpack.config.js`,
@@ -112,8 +119,9 @@ drift on the PRs most likely to introduce it.
 ## Acceptance Criteria
 
 1. A PR touching only `docs/**`, `specs/**`, or root `*.md` files shows the
-   `traceability` job passing and `build`/`security`/`knip`/`integration`
-   (and CodeQL's `analyze`) reporting as skipped, not pending.
+   `traceability` job passing and `lint`/`type-check`/`compile`/
+   `bundle-size`/`coverage`/`audit`/`security`/`knip`/`integration` (and
+   CodeQL's `analyze`) reporting as skipped, not pending.
 2. A PR touching `src/**` runs every job as before this spec.
 3. A PR that only edits `specs/traceability.json` still runs
    `check:traceability` and `check:doc-traceability`.
@@ -140,6 +148,13 @@ drift on the PRs most likely to introduce it.
 
 ## History
 
+- 2026-07-26 — Split `ci.yml`'s `build` job into six independent jobs
+  (`lint`, `type-check`, `compile`, `bundle-size`, `coverage`, `audit`) that
+  all fan out from `changes` in parallel, for maximum CI parallelism. Same
+  skip condition (S09-SR-02), same steps, same npm scripts — only the job
+  boundaries changed, since the six were already independent of each other
+  except `coverage`'s own two internal steps (test run → maturity check,
+  which reads that run's coverage output).
 - 2026-07-22 — Added S09-SR-06: actionlint must also run locally via
   `npm run verify`, not only in CI, closing a local/CI parity gap (the
   Husky pre-commit hook ran `npm run verify`, which did not include the
