@@ -96,7 +96,7 @@ export interface SpecsData {
   statuses: Record<string, string>
   /** S18 mutation-score provenance, or null when the artifact is absent —
    *  "not measured", never zero (S18-SR-04). */
-  mutation: { generatedAt: string; overall: number | null } | null
+  mutation: { generatedAt: string; overall: number | null; breakThreshold: number | null } | null
 }
 
 declare const data: SpecsData
@@ -152,6 +152,7 @@ export default defineLoader({
     const mutationPath = resolve(repoRoot, 'mutation-score.json')
     const mutationReport: {
       generatedAt: string
+      breakThreshold: number | null
       overall: { score: number | null }
       files: Record<string, { mutants: number; tallies: Record<string, number>; score: number | null }>
     } | null = existsSync(mutationPath)
@@ -244,7 +245,11 @@ export default defineLoader({
       specs,
       statuses: matrix.statuses,
       mutation: mutationReport
-        ? { generatedAt: mutationReport.generatedAt, overall: mutationReport.overall.score }
+        ? {
+            generatedAt: mutationReport.generatedAt,
+            overall: mutationReport.overall.score,
+            breakThreshold: mutationReport.breakThreshold,
+          }
         : null,
     }
   },
