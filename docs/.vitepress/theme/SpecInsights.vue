@@ -388,7 +388,9 @@ const strength = computed(() => {
   const x = (v: number) => STRENGTH.left + (v / xMax) * (STRENGTH.w - STRENGTH.left - STRENGTH.right)
   const y = (v: number) =>
     STRENGTH.h - STRENGTH.bottom - (v / 100) * (STRENGTH.h - STRENGTH.top - STRENGTH.bottom)
-  const gate = specsData.mutation ? 60 : null
+  // The project's own declared floor, not an invented cutoff: a spec below it
+  // is one the mutation gate would fail if it were scored alone.
+  const gate = specsData.mutation?.breakThreshold ?? null
   const marks = scored.map((s) => ({
     id: s.id,
     title: s.title,
@@ -396,8 +398,10 @@ const strength = computed(() => {
     score: s.mutationScore ?? 0,
     cx: x(s.metrics.value ?? 0),
     cy: y(s.mutationScore ?? 0),
-    // The quadrant worth acting on: worth a lot, tested thinly.
-    exposed: (s.metrics.value ?? 0) >= 10 && (s.mutationScore ?? 100) < 70,
+    // The quadrant worth acting on: worth a lot, and below the gate's own
+    // floor. Labelling everything under an invented cutoff would put a dozen
+    // colliding labels on the chart and name nothing in particular.
+    exposed: (s.metrics.value ?? 0) >= 10 && (s.mutationScore ?? 100) < (gate ?? 0),
   }))
   return {
     marks,
@@ -929,15 +933,18 @@ const sizeBars = computed(() => {
       <p class="insights-note">
         <template v-if="strength.exposed.length">
           <strong>{{ strength.exposed.length }} feature<template
-            v-if="strength.exposed.length !== 1">s</template> scoring 10 or better sit under a
-          70% mutation score</strong> —
+            v-if="strength.exposed.length !== 1">s</template> scoring 10 or better fall<template
+            v-if="strength.exposed.length === 1">s</template> below the
+          {{ strength.gate }}% break threshold</strong> —
           <template v-for="(m, i) in strength.exposed" :key="m.id"
             ><a :href="withBase(`/specs/${m.id}`)">{{ m.id }}</a> ({{ m.score }}%)<template
               v-if="i < strength.exposed.length - 1">, </template></template
-          >.
+          >. The gate measures the whole suite at once, so a spec below the line
+          is invisible to it while the total stays above.
         </template>
         <template v-else>
-          No feature scoring 10 or better falls below a 70% mutation score.
+          No feature scoring 10 or better falls below the
+          {{ strength.gate }}% break threshold.
         </template>
         <template v-if="strength.unmeasured.length">
           {{ strength.unmeasured.length }} scored feature<template

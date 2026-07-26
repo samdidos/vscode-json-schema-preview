@@ -167,7 +167,15 @@ const DIMENSIONS = [
         earn: () => traceabilityCounts().untracked === 0 },
       { id: 'verify-runs-traceability', points: 2, note: 'the local/CI gate runs check:traceability',
         why: 'Enforcement placement: a checker that passes today is worth little unless the shared gate forces it on every commit for any agent or human.',
-        earn: () => /check:traceability/.test(readJson('package.json')?.scripts?.verify ?? '') },
+        // Follows `scripts.verify` to whatever it runs (S12-SR-15): the gate
+        // moved out of package.json into scripts/verify.mjs, and matching only
+        // the npm script silently zeroed this the day that happened.
+        earn: () => {
+          const script = readJson('package.json')?.scripts?.verify ?? '';
+          if (/check:traceability/.test(script)) return true;
+          const runner = /node\s+(\S+\.mjs)/.exec(script)?.[1];
+          return !!runner && exists(runner) && /check:traceability/.test(read(runner));
+        } },
       { id: 'constitution-present', points: 1, note: '.specify/memory/constitution.md exists',
         why: 'Presence of the governing document matters, but presence alone proves little about practice — minimal weight.',
         earn: () => exists('.specify/memory/constitution.md') },
@@ -336,16 +344,16 @@ const DIMENSIONS = [
         earn: () => has('CLAUDE.md', /@AGENTS\.md/) },
       { id: 'spec-prompt-hook', points: 1, note: 'a prompt hook injects the spec workflow',
         why: 'Puts the spec-driven workflow in front of the agent on every prompt, instead of relying on it re-reading docs. Equal weight by the checklist principle.',
-        earn: () => exists('.claude/hooks/spec-context.sh') },
+        earn: () => exists('.claude/hooks/spec-context.mjs') },
       { id: 'precommit-agent-hook', points: 1, note: 'an agent pre-commit hook reaches the shared gate',
         why: 'Fast in-session feedback that delegates to the vendor-neutral git hook, so the check logic lives in one place. Equal weight by the checklist principle.',
-        earn: () => exists('.claude/hooks/pre-commit-gate.sh') },
+        earn: () => exists('.claude/hooks/pre-commit-gate.mjs') },
       { id: 'coverage-agent-hook', points: 1, note: 'an agent hook checks coverage after edits',
         why: 'Surfaces coverage regressions right after an edit instead of at commit time. Equal weight by the checklist principle.',
-        earn: () => exists('.claude/hooks/check-coverage.sh') },
+        earn: () => exists('.claude/hooks/check-coverage.mjs') },
       { id: 'session-bootstrap', points: 1, note: 'cold-session bootstrap (script + hook)',
         why: 'A cold container that cannot install dependencies wastes every subsequent agent action; bootstrap makes sessions productive from the first prompt. Equal weight by the checklist principle.',
-        earn: () => exists('scripts/bootstrap.mjs') && exists('.claude/hooks/session-bootstrap.sh') },
+        earn: () => exists('scripts/bootstrap.mjs') && exists('.claude/hooks/session-bootstrap.mjs') },
       { id: 'permissions-allowlist', points: 1, note: 'a permissions allowlist reduces prompts',
         why: 'Pre-approving known-safe commands keeps agents autonomous without widening what they may do. Equal weight by the checklist principle.',
         earn: () => (readJson('.claude/settings.json')?.permissions?.allow ?? []).length > 0 },

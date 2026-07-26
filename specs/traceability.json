@@ -3876,6 +3876,15 @@
       ],
       "note": "per-spec words-vs-expected chart on the Docs dimension page, least-covered first, linking to spec pages"
     },
+    "S12-SR-15": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs"
+      ],
+      "note": "detection predicates track the artifact they measure; a test asserts every path-based predicate resolves",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
     "S13-NFR-01": {
       "status": "implemented",
       "impl": [

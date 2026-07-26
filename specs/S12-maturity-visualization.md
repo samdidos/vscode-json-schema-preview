@@ -39,6 +39,16 @@ script alongside the checks they explain** and emitted into
   dimension measures, and every check MUST declare a `why` string justifying
   its point weight relative to its dimension's other checks. All three MUST be
   emitted into `maturity-score.json` by `npm run maturity`.
+- **S12-SR-15** A check's detection predicate MUST track the artifact it
+  measures, and a check that can no longer find that artifact MUST be
+  detectable mechanically rather than scoring a silent zero. A check whose
+  predicate names a specific path is a standing hostage to renames: when the
+  agent hooks were ported from shell to Node (S15 requires `.mjs`, not
+  `.sh`), five predicates kept looking for the `.sh` names and quietly scored
+  0, so the scorer penalised the project **for complying with another of its
+  own specs** — and because `maturity:check` is deliberately non-blocking in
+  CI (S12-SR-12), nothing failed. A test MUST assert that every path-based
+  predicate resolves against the repository as it stands.
 - **S12-SR-02** The weight justifications MUST live only in
   `scripts/maturity-score.mjs` (flowing into the generated
   `maturity-score.json`); no page under `docs/` may restate a weight, score,
