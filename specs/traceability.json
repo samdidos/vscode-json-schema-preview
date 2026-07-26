@@ -3425,6 +3425,15 @@
       ],
       "note": "lint:workflows wired into npm run verify (Husky pre-commit + CI); PATH/go-run/docker fallback chain; check:consistency asserts the pinned version matches ci.yml's actionlint container tag"
     },
+    "S09-SR-07": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/ci.yml"
+      ],
+      "note": "every verify step reachable in CI; consistency/spec-effort/spec-value added to the unconditional job",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
     "S10-NFR-01": {
       "status": "manual",
       "impl": [
@@ -3611,6 +3620,16 @@
         "docs/.vitepress/theme/SpecInsights.vue"
       ],
       "note": "requirement lifecycle from S11 stamps; unstamped requirements counted apart, never drawn as zero-day",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S10-SR-22": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/defects.data.ts",
+        "docs/.vitepress/theme/SpecInsights.vue"
+      ],
+      "note": "defect attribution panel with the unattributed count alongside",
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     },
@@ -4225,6 +4244,71 @@
         "scripts/mutation-score.mjs"
       ],
       "note": "files stryker does not mutate are absent, not zeroed",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S19-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-fix-trailer.mjs"
+      ],
+      "note": "plain Node, no dependencies",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S19-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-fix-trailer.mjs"
+      ],
+      "note": "reads only the commit message and the matrix",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S19-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-fix-trailer.mjs"
+      ],
+      "note": "Fixes: trailer required on fix commits, comma-separated ids",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S19-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-fix-trailer.mjs",
+        ".husky/commit-msg"
+      ],
+      "note": "commit-msg hook rejects missing/malformed/unknown ids",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S19-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-fix-trailer.mjs"
+      ],
+      "note": "fix(deps) exempt; no escape hatch for other scopes",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S19-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/defects.data.ts"
+      ],
+      "note": "counts derived from git log at build time, no committed tally",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S19-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/defects.data.ts",
+        "docs/.vitepress/theme/SpecInsights.vue"
+      ],
+      "note": "unattributed fixes counted and shown, never inferred from impl paths",
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     }

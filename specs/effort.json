@@ -804,6 +804,23 @@
         "taggedTests": 8,
         "requirements": 7
       }
+    },
+    "S19": {
+      "points": 8,
+      "basePoints": 8,
+      "tshirt": "L",
+      "hoursMin": 16,
+      "hoursMax": 32,
+      "factors": [],
+      "justification": "Commit-msg trailer checker with its exemption rule, the build-time git loader, and the insights panel — sized by its band, no adjustment.",
+      "estimator": "the project's AI coding agent (Claude Code)",
+      "estimatedAt": "2026-07-26",
+      "evidence": {
+        "implFiles": 4,
+        "implLoc": 1535,
+        "taggedTests": 14,
+        "requirements": 7
+      }
     }
   }
 }

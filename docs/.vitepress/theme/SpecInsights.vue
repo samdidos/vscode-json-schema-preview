@@ -17,6 +17,7 @@ import { withBase } from 'vitepress'
 import { data as specsData } from '../specs.data'
 import type { SpecEntry } from '../specs.data'
 import { data as docData } from '../docCoverage.data'
+import { data as defectData } from '../defects.data'
 import SpecStatusBadge from './SpecStatusBadge.vue'
 
 const specs = specsData.specs
@@ -351,6 +352,29 @@ const lifecycle = computed(() => {
   }
 })
 
+// ---- Defect attribution (S10-SR-22) ------------------------------------
+// From the S19 `Fixes:` trailers, read out of git at build time. The
+// unattributed count travels with the attributed ones on purpose: the
+// convention starts with an empty history, so a spec showing no defects has
+// almost certainly not been exonerated — it has just not been recorded yet.
+const defects = computed(() => {
+  const rows = Object.entries(defectData.bySpec)
+    .map(([id, count]) => ({
+      id,
+      count,
+      title: specs.find((s) => s.id === id)?.title ?? id,
+    }))
+    .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id))
+  return {
+    rows,
+    max: Math.max(...rows.map((r) => r.count), 1),
+    attributed: defectData.totalFixes - defectData.unattributed,
+    unattributed: defectData.unattributed,
+    total: defectData.totalFixes,
+    recent: defectData.fixes.slice(0, 8),
+  }
+})
+
 // ---- Test strength (S10-SR-20) -----------------------------------------
 // Value against mutation score. Line coverage is deliberately not the axis:
 // the 80% gate compresses every spec into a 90–99% band, so it ranks nothing.
@@ -523,6 +547,56 @@ const sizeBars = computed(() => {
       No requirement has completed the specified → implemented cycle under
       stamping yet. Stamps are only written for requirements added from now on,
       so this fills in as the corpus grows rather than starting full.
+    </p>
+
+    <h3>Where the fixes land</h3>
+    <p class="insights-note">
+      Every <code>fix:</code> commit names the requirement it repaired in a
+      <code>Fixes:</code> trailer (<a :href="withBase('/specs/S19')">S19</a>),
+      enforced by the commit hook. Counts are read from
+      <code>git log</code> on each build, so they cannot drift from the
+      history.
+    </p>
+    <div class="insights-grid">
+      <div class="insights-kpi">
+        <span class="insights-kpi-value">{{ defects.attributed }}</span>
+        <span class="insights-kpi-label">attributed fixes</span>
+        <span class="insights-kpi-sub">of {{ defects.total }} fix commits</span>
+      </div>
+      <div class="insights-kpi">
+        <span class="insights-kpi-value">{{ defects.unattributed }}</span>
+        <span class="insights-kpi-label">unattributed</span>
+        <span class="insights-kpi-sub">predate the convention, or exempt</span>
+      </div>
+      <div class="insights-kpi">
+        <span class="insights-kpi-value">{{ defects.rows.length }}</span>
+        <span class="insights-kpi-label">specs with a recorded fix</span>
+        <span class="insights-kpi-sub">of {{ totals.specs }}</span>
+      </div>
+    </div>
+    <template v-if="defects.rows.length">
+      <div class="insights-dist">
+        <div v-for="row in defects.rows" :key="row.id" class="insights-dist-row">
+          <a class="insights-tier" :href="withBase(`/specs/${row.id}`)">{{ row.id }}</a>
+          <span class="insights-dist-track">
+            <span
+              class="insights-dist-bar insights-bar-defect"
+              :style="{ width: `${(row.count / defects.max) * 100}%` }"
+              :title="`${row.id} ${row.title} — ${row.count} attributed fix${
+                row.count === 1 ? '' : 'es'
+              }`"
+            />
+          </span>
+          <span class="insights-dist-count">{{ row.count }}</span>
+        </div>
+      </div>
+    </template>
+    <p v-else class="insights-note insights-empty">
+      No fix has been attributed yet — all {{ defects.total }} fix commits in
+      the history predate the trailer. They are deliberately left unattributed
+      rather than inferred from the files they touched: those 8 commits touch
+      files claimed by 29 different specs, so file-based attribution would
+      measure code sharing, not defects.
     </p>
 
     <hr class="insights-divider" />
@@ -1226,6 +1300,17 @@ const sizeBars = computed(() => {
   border-radius: 0 4px 4px 0;
   background-color: var(--vp-c-brand-1);
   opacity: 0.65;
+}
+/* A defect is not a neutral quantity like a tier count — it wears the same
+   hue as the untracked status, the page's existing "needs attention" mark. */
+.insights-bar-defect {
+  background-color: var(--chart-untracked);
+  opacity: 0.75;
+}
+a.insights-tier {
+  text-align: center;
+  text-decoration: none;
+  font-weight: 500;
 }
 .insights-dist-count {
   font-size: 12px;

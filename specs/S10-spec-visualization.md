@@ -161,6 +161,15 @@ top of the existing artifacts.
   all, and a chart that looked broken until data accumulated would be a
   standing invitation to delete it.
 
+- **S10-SR-22** The insights page MUST report **defect attribution** from the
+  S19 `Fixes:` trailers: which specs have accumulated fixes, and how many fix
+  commits carry no attribution. The unattributed count MUST be shown wherever
+  the attributed counts are (S19-SR-05) — the convention starts with an empty
+  history, so a low defect count means "not yet recorded" far more than it
+  means "not fragile", and showing the former without the latter would invert
+  the reading. Counts MUST come from the build-time git loader, never a
+  committed tally.
+
 ### Spec Pages
 
 - **S10-SR-06** Each spec page MUST render the full content of the
