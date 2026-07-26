@@ -15,6 +15,7 @@ import { DEMOS } from '../../scripts/demo-registry.mjs'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — plain-Node .mjs generator shared with scripts/, no declarations
 import { scoreOf } from '../../scripts/mutation-score.mjs'
+import { readSpecHistory, buildReleaseResolver, type SpecRelease } from './gitHistory'
 // Types generated from specs/traceability.schema.json by the project's own F18
 // generator (S11) — the matrix shape is never re-declared by hand here.
 import type { TraceabilityMatrix, Status } from './traceability.types'
@@ -80,6 +81,9 @@ export interface SpecEntry {
   /** Mutant-weighted mutation score across this spec's impl files (S10-SR-20),
    *  or null when no impl file of this spec was mutated. */
   mutationScore: number | null
+  /** S10-SR-23: the first release that shipped this spec, derived from the
+   *  spec file's own oldest git-history commit — never a hand-edited field. */
+  release: SpecRelease
 }
 
 export interface SpecsData {
@@ -149,6 +153,7 @@ export default defineLoader({
     } | null = existsSync(mutationPath)
       ? JSON.parse(readFileSync(mutationPath, 'utf-8'))
       : null
+    const resolveRelease = buildReleaseResolver()
 
     // Group matrix requirements by their spec prefix (F01, S07, …).
     const bySpec = new Map<string, SpecRequirement[]>()
@@ -200,6 +205,10 @@ export default defineLoader({
       const liveLoc = live[id]?.implLoc ?? 0
       const recordedBase = e?.basePoints ?? null
       const liveBase = basePointsForLoc(liveLoc)
+      // Oldest history entry = the commit that created this spec file
+      // (S10-SR-23); readSpecHistory is newest-first, same as S10-SR-14.
+      const history = readSpecHistory(file)
+      const creationSha = history.length ? history[history.length - 1].sha : undefined
       return {
         id,
         file,
@@ -219,6 +228,7 @@ export default defineLoader({
         },
         hasDemo: demoSpecs.has(id),
         mutationScore: mutationFor(new Set(requirements.flatMap((r) => r.impl))),
+        release: resolveRelease(creationSha),
       }
     })
 
