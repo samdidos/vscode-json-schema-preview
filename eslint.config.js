@@ -16,6 +16,11 @@ module.exports = [
       '.vscode-test/**',
       'coverage/**',
       'reports/**',
+      // Stryker's instrumented copy of src/, live only while a mutation run is
+      // in progress (and left behind if one crashes). Its generated mutation
+      // switches break every naming rule, so linting it fails the gate for as
+      // long as `npm run test:mutation` is running — see S18.
+      '.stryker-tmp/**',
       'test-results/**',
       'playwright-report/**',
       // docs/ is a separate VitePress project (own devDependencies, own build

@@ -33,9 +33,24 @@ export interface Requirement {
    */
   impl?: string[];
   /**
+   * Day this requirement's status first reached implemented or manual (S11-SR-07). Only
+   * stamped for entries that carry specifiedAt.
+   *
+   * Unrepresented in the generated type: pattern: "^\\d{4}-\\d{2}-\\d{2}$".
+   */
+  implementedAt?: string;
+  /**
    * Free-text clarification for this entry.
    */
   note?: string;
+  /**
+   * Day this requirement entered the matrix (S11-SR-07), stamped by check-traceability.mjs
+   * --init. Absent means the requirement predates lifecycle stamping and MUST NOT be assigned
+   * a date (S11-SR-09).
+   *
+   * Unrepresented in the generated type: pattern: "^\\d{4}-\\d{2}-\\d{2}$".
+   */
+  specifiedAt?: string;
   /**
    * Implementation status of the requirement.
    */

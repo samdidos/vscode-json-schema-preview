@@ -73,4 +73,93 @@ suite('S11 — traceability matrix schema & generated types', () => {
     ]);
     assert.equal(a, b);
   });
+
+  // --- lifecycle stamps (S11-SR-07/08/09) ---------------------------------
+
+  const checker = read('scripts/check-traceability.mjs');
+  const entries = Object.entries(matrix.requirements) as [string, Record<string, string>][];
+
+  test('[S11-SR-07] the schema declares both lifecycle stamps as optional ISO dates', () => {
+    const props = schema.$defs.requirement.properties;
+    for (const field of ['specifiedAt', 'implementedAt']) {
+      assert.ok(props[field], `schema must declare ${field}`);
+      assert.equal(props[field].type, 'string');
+      assert.match(props[field].pattern, /\\d\{4\}/);
+      assert.ok(
+        !(schema.$defs.requirement.required ?? []).includes(field),
+        `${field} must stay optional — most entries predate stamping`,
+      );
+    }
+  });
+
+  test('[S11-SR-07] the --init rewrite carries the stamps through', () => {
+    // saveMatrix() rebuilds every entry from scratch, so a field it does not
+    // copy is a field it deletes. This is the guard against that.
+    const save = checker.slice(checker.indexOf('function saveMatrix'), checker.indexOf('// --- main'));
+    assert.match(save, /e\.specifiedAt/);
+    assert.match(save, /e\.implementedAt/);
+  });
+
+  test('[S11-SR-08] --init stamps the dates and validation never writes them', () => {
+    const initBlock = checker.slice(checker.indexOf('if (init) {'), checker.indexOf('const errors = []'));
+    assert.match(initBlock, /specifiedAt: today\(\)/);
+    assert.match(initBlock, /entry\.implementedAt = today\(\)/);
+    // Everything after the --init branch is the read-only validation pass.
+    const validation = checker.slice(checker.indexOf('const errors = []'));
+    assert.ok(
+      !/writeFileSync|saveMatrix\(/.test(validation),
+      'validation must not write the matrix',
+    );
+    // A missing stamp is a warning, never an error.
+    assert.match(validation, /warnings\.push\([^)]*implementedAt/);
+  });
+
+  test('[S11-SR-08] an out-of-order or orphaned stamp is an error', () => {
+    const validation = checker.slice(checker.indexOf('const errors = []'));
+    assert.match(validation, /implementedAt.*precedes.*specifiedAt/);
+    assert.match(validation, /implementedAt but no specifiedAt/);
+  });
+
+  test('[S11-SR-08] an impossible calendar date is rejected, not just a bad shape', () => {
+    // The schema pattern accepts 2026-13-45; only a real date check rejects it,
+    // and this Ajv is built without ajv-formats so `format: "date"` would be
+    // silently ignored. The checker must carry the check itself.
+    assert.ok(
+      !JSON.stringify(schema).includes('"format":"date"'),
+      'an inert format keyword would imply a check that never runs',
+    );
+    assert.match(checker, /invalid \$\{field\} date/);
+    // An Invalid Date throws from toISOString(), so the checker must guard
+    // before round-tripping or it crashes instead of reporting.
+    assert.match(checker, /Number\.isNaN\(parsed\.getTime\(\)\)/);
+    const roundTrip = (v: string) => {
+      const d = new Date(`${v}T00:00:00Z`);
+      return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+    };
+    assert.ok(!roundTrip('2026-13-45'), 'the check must reject an impossible date');
+    assert.ok(!roundTrip('2026-02-30'), 'the check must reject a date that overflows its month');
+    assert.ok(roundTrip('2026-07-26'), 'the check must accept a real date');
+  });
+
+  test('[S11-SR-09] requirements predating stamping are left unstamped, never backfilled', () => {
+    const unstamped = entries.filter(([, e]) => !e.specifiedAt);
+    assert.ok(
+      unstamped.length > 0,
+      'the pre-stamping corpus must stay unstamped — a backfill would fabricate dates',
+    );
+    // Nothing may carry an end date without a start date.
+    for (const [id, e] of entries) {
+      if (e.implementedAt) {assert.ok(e.specifiedAt, `${id} has implementedAt without specifiedAt`);}
+    }
+  });
+
+  test('[S11-SR-09] every stamp that exists is a well-formed, ordered date pair', () => {
+    for (const [id, e] of entries) {
+      if (e.specifiedAt) {assert.match(e.specifiedAt, /^\d{4}-\d{2}-\d{2}$/, `${id} specifiedAt`);}
+      if (e.implementedAt) {
+        assert.match(e.implementedAt, /^\d{4}-\d{2}-\d{2}$/, `${id} implementedAt`);
+        assert.ok(e.implementedAt >= e.specifiedAt, `${id} implementedAt precedes specifiedAt`);
+      }
+    }
+  });
 });

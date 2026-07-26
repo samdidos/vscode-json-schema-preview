@@ -12,6 +12,9 @@ import { computeEvidence, basePointsForLoc } from '../../scripts/spec-effort.mjs
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — plain-Node .mjs registry shared with scripts/, no declarations
 import { DEMOS } from '../../scripts/demo-registry.mjs'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — plain-Node .mjs generator shared with scripts/, no declarations
+import { scoreOf } from '../../scripts/mutation-score.mjs'
 // Types generated from specs/traceability.schema.json by the project's own F18
 // generator (S11) — the matrix shape is never re-declared by hand here.
 import type { TraceabilityMatrix, Status } from './traceability.types'
@@ -21,6 +24,10 @@ export interface SpecRequirement {
   status: Status
   impl: string[]
   note?: string
+  /** S11 lifecycle stamps. Absent means the requirement predates stamping and
+   *  MUST NOT be treated as a zero-day cycle (S11-SR-09, S10-SR-21). */
+  specifiedAt?: string
+  implementedAt?: string
 }
 
 /** Advisory estimates joined onto a spec for the matrix and insights page
@@ -70,12 +77,18 @@ export interface SpecEntry {
   evidence: SpecEvidence
   /** An E2E demo in scripts/demo-registry.mjs exercises this spec (S08-SR-13). */
   hasDemo: boolean
+  /** Mutant-weighted mutation score across this spec's impl files (S10-SR-20),
+   *  or null when no impl file of this spec was mutated. */
+  mutationScore: number | null
 }
 
 export interface SpecsData {
   specs: SpecEntry[]
   /** Status name → human description, from traceability.json. */
   statuses: Record<string, string>
+  /** S18 mutation-score provenance, or null when the artifact is absent —
+   *  "not measured", never zero (S18-SR-04). */
+  mutation: { generatedAt: string; overall: number | null } | null
 }
 
 declare const data: SpecsData
@@ -112,6 +125,7 @@ export default defineLoader({
     `${SPECS_DIR}/effort.json`,
     `${SPECS_DIR}/value.json`,
     `${SPECS_DIR}/../scripts/demo-registry.mjs`,
+    `${SPECS_DIR}/../mutation-score.json`,
   ],
   load(): SpecsData {
     const matrix = JSON.parse(
@@ -125,13 +139,47 @@ export default defineLoader({
     const live: Record<string, { implLoc: number }> = computeEvidence(repoRoot)
     const demoSpecs = new Set<string>(DEMOS.flatMap((d: { specs: string[] }) => d.specs))
 
+    // S18 mutation score, if it has been published. Absent is "not measured"
+    // (S18-SR-04): the docs build must not depend on a mutation run.
+    const mutationPath = resolve(repoRoot, 'mutation-score.json')
+    const mutationReport: {
+      generatedAt: string
+      overall: { score: number | null }
+      files: Record<string, { mutants: number; tallies: Record<string, number>; score: number | null }>
+    } | null = existsSync(mutationPath)
+      ? JSON.parse(readFileSync(mutationPath, 'utf-8'))
+      : null
+
     // Group matrix requirements by their spec prefix (F01, S07, …).
     const bySpec = new Map<string, SpecRequirement[]>()
     for (const [id, entry] of Object.entries(matrix.requirements)) {
       const spec = id.split('-')[0]
       const list = bySpec.get(spec) ?? []
-      list.push({ id, status: entry.status, impl: entry.impl ?? [], note: entry.note })
+      list.push({
+        id,
+        status: entry.status,
+        impl: entry.impl ?? [],
+        note: entry.note,
+        specifiedAt: entry.specifiedAt,
+        implementedAt: entry.implementedAt,
+      })
       bySpec.set(spec, list)
+    }
+
+    /** Mutation score across a spec's impl files (S10-SR-20). The files' raw
+     *  tallies are merged and scored by S18's own `scoreOf`, which is both
+     *  exact — a per-file score is rounded, and its mutant count includes
+     *  statuses the score's denominator excludes, so re-weighting by it would
+     *  be wrong twice — and the single definition of the formula (S18-SR-02). */
+    const mutationFor = (implFiles: Set<string>): number | null => {
+      if (!mutationReport) return null
+      const merged: Record<string, number> = {}
+      for (const f of implFiles) {
+        for (const [status, n] of Object.entries(mutationReport.files[f]?.tallies ?? {})) {
+          merged[status] = (merged[status] ?? 0) + n
+        }
+      }
+      return scoreOf(merged)
     }
 
     const specs: SpecEntry[] = listSpecFiles().map(({ id, file, title, kind }) => {
@@ -170,9 +218,16 @@ export default defineLoader({
           drifts: recordedLoc !== null && recordedBase !== null && liveBase !== recordedBase,
         },
         hasDemo: demoSpecs.has(id),
+        mutationScore: mutationFor(new Set(requirements.flatMap((r) => r.impl))),
       }
     })
 
-    return { specs, statuses: matrix.statuses }
+    return {
+      specs,
+      statuses: matrix.statuses,
+      mutation: mutationReport
+        ? { generatedAt: mutationReport.generatedAt, overall: mutationReport.overall.score }
+        : null,
+    }
   },
 })

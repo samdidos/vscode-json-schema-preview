@@ -136,6 +136,31 @@ top of the existing artifacts.
   page MUST note that demo presence itself is a counted fact while only the
   ordering is an estimate.
 
+- **S10-SR-20** The insights page MUST include a **test-strength** chart
+  plotting each scored feature spec's customer value (S16) against its
+  mutation score (S18), so a valuable feature with weak tests is visible as a
+  position rather than something to be hunted for in a table. Per-spec scores
+  MUST be joined from `mutation-score.json` through the matrix's `impl` paths,
+  weighted by each file's mutant count so a large file cannot be outvoted by a
+  small one. Where `mutation-score.json` is absent or a spec has no mutated
+  file, the chart MUST render an explicit **not measured** state (S18-SR-04) —
+  never a zero — and MUST show the artifact's generation date beside it
+  (S18-SR-03), because the score is a snapshot that ages.
+
+  Line coverage MUST NOT be used as this chart's axis: the 80% gate compresses
+  every spec into a 90–99% band, so the axis would rank nothing. That the
+  measurement exists is not sufficient reason to plot it.
+- **S10-SR-21** The insights page MUST include a **requirement lifecycle**
+  chart built from the S11 stamps: for requirements that carry them, the time
+  from `specifiedAt` to `implementedAt`, and for those still open, how long
+  they have been waiting. Requirements with no stamp MUST be reported as
+  **predating lifecycle tracking** and counted separately rather than drawn as
+  zero-day (S11-SR-09) — a same-day requirement and an unmeasured one are
+  different facts and MUST NOT share a mark. The chart MUST render its own
+  empty state gracefully: the corpus begins with no tracked requirements at
+  all, and a chart that looked broken until data accumulated would be a
+  standing invitation to delete it.
+
 ### Spec Pages
 
 - **S10-SR-06** Each spec page MUST render the full content of the
@@ -250,6 +275,11 @@ top of the existing artifacts.
 - 2026-07-25 — Added S10-SR-16: click-to-sort matrix columns (asc/desc/
   unsorted cycle, `aria-sort` indicator), with unscored effort/value/RICE
   rows always sorting after scored ones regardless of direction.
+- 2026-07-25 — Added S10-SR-20/21: a test-strength chart over the new S18
+  mutation-score artifact (line coverage was tried first and rejected — the
+  80% gate flattens it to r ≈ 0.08 against value), and a requirement-lifecycle
+  chart over the new S11 stamps, which starts empty by design because those
+  stamps are deliberately not backfilled.
 - 2026-07-25 — Added S10-SR-18/19, two charts built from artifacts the
   repository already had but never joined: the S13 evidence snapshot against
   live implementation size (estimate ageing), and the S08 demo registry

@@ -44,6 +44,33 @@ code consumes, so neither can silently drift from it.
   `$schema` key (the F10 inline-binding convention) so the extension and other
   editors bind the two automatically.
 
+### Requirement Lifecycle Stamps
+
+- **S11-SR-07** A requirement entry MAY carry two optional ISO `YYYY-MM-DD`
+  date stamps recording its lifecycle: `specifiedAt`, the day the requirement
+  entered the matrix, and `implementedAt`, the day its status first became
+  `implemented` or `manual`. Both MUST be declared in the schema and preserved
+  by any rewrite of the matrix (`--init` rewrites every entry, so a naive
+  rewrite that reconstructs entries from `status`/`impl`/`note` alone would
+  silently erase them).
+- **S11-SR-08** The stamps MUST be maintained by `scripts/check-traceability.mjs`
+  rather than by hand: `--init` MUST stamp `specifiedAt` on each entry it
+  scaffolds, and MUST stamp `implementedAt` on any lifecycle-tracked entry
+  (one that already carries `specifiedAt`) whose status has reached
+  `implemented`/`manual` without one. Validation MUST remain read-only and
+  MUST NOT write stamps; where a lifecycle-tracked entry is missing a stamp it
+  owes, validation MUST **warn**, never fail — an absent date is a prompt to
+  run `--init`, not a broken build.
+- **S11-SR-09** Requirements that predate lifecycle stamping MUST be left
+  unstamped rather than backfilled. The matrix's own history cannot supply an
+  honest `specifiedAt`: 502 of the entries were introduced by a single
+  backfill commit on 2026-07-20, long after the requirements they describe
+  were written, so a git-derived date would record when the *matrix* learned
+  of a requirement and present it as when the requirement was *specified*.
+  Consumers MUST therefore treat an unstamped entry as "predates lifecycle
+  tracking" — the same honesty the `untracked` status already encodes — and
+  MUST NOT infer a date for it.
+
 ### Generated Types
 
 - **S11-SR-03** The matrix's TypeScript types MUST be generated from
@@ -91,3 +118,19 @@ code consumes, so neither can silently drift from it.
    of casting to an inline object type.
 5. A unit test fails if `traceability.json` violates the schema or if the
    committed generated file no longer matches a fresh generation.
+6. Running `--init` on a matrix containing a stamped entry leaves that entry's
+   `specifiedAt` unchanged and preserves it through the rewrite; a newly
+   scaffolded entry comes back carrying today's `specifiedAt`.
+7. Flipping a lifecycle-tracked entry to `implemented` and re-running `--init`
+   stamps `implementedAt`; running validation before that prints a warning and
+   still exits 0.
+8. Entries with no `specifiedAt` are reported as predating lifecycle tracking
+   and are never assigned a date by any tool.
+
+## History
+
+- 2026-07-25 — Added S11-SR-07/08/09: optional `specifiedAt`/`implementedAt`
+  stamps on requirement entries, maintained by `--init` and warned about (never
+  enforced) by validation. Backfilling them was explicitly rejected — replaying
+  the matrix's git history showed 502 of 557 entries appearing in one backfill
+  commit, so a derived date would misreport when requirements were specified.
