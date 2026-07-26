@@ -6,9 +6,7 @@
 import { computed } from 'vue'
 import { useData } from 'vitepress'
 import { data } from '../specHistory.data'
-import { REPO_BLOB_URL } from './repo'
-
-const REPO_COMMIT_URL = REPO_BLOB_URL.replace(/\/blob\/[^/]+$/, '/commit')
+import { REPO_COMMIT_URL } from './repo'
 
 const { params } = useData()
 const commits = computed(() => data[params.value?.id ?? ''] ?? [])

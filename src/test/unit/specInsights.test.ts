@@ -1,4 +1,4 @@
-// S10-SR-09..13, S10-SR-17 and S10-SR-23 — the docs-site metric columns, the
+// S10-SR-09..13, S10-SR-17, S10-SR-23 and S10-SR-24 — the docs-site metric columns, the
 // column-visibility control, the sidebar indicator and the insights page
 // (KPIs and charts). These surfaces are Vue/config
 // files outside the extension bundle, so they are asserted structurally here:
@@ -157,6 +157,31 @@ suite('S10 — matrix metrics, column control and insights page', () => {
     // Both placeholder states must fall through the same null-sorts-last path
     // as an unscored metric (S10-SR-09) — never a real version number.
     assert.match(matrixVue, /if \(state !== 'released' \|\| !version\) return null/);
+  });
+
+  test('[S10-SR-24] the matrix renders Created and Updated columns from the spec\'s own git history', () => {
+    for (const header of ['Created', 'Updated']) {
+      assert.ok(matrixVue.includes(`${header}<span`), `matrix is missing the ${header} column`);
+    }
+    const block = matrixVue.slice(
+      matrixVue.indexOf('const COLUMN_LABELS'),
+      matrixVue.indexOf('const columnOptions'),
+    );
+    assert.ok(block.includes('created:'), 'created must be toggleable');
+    assert.ok(block.includes('updated:'), 'updated must be toggleable');
+    // Updated is the newest history entry, created the oldest — same array
+    // S10-SR-14/23 already derive from readSpecHistory, never a second source.
+    assert.match(specsLoader, /const created = history\.length \? history\[history\.length - 1\] : null/);
+    assert.match(specsLoader, /const updated = history\.length \? history\[0\] : null/);
+    assert.match(matrixVue, /created: \(s\) => s\.created\?\.date \?\? null/);
+    assert.match(matrixVue, /updated: \(s\) => s\.updated\?\.date \?\? null/);
+    // Each dated cell links to that commit via the shared repo constant,
+    // never a re-derived URL.
+    assert.match(matrixVue, /import \{ REPO_BLOB_URL, REPO_COMMIT_URL \} from '\.\/repo'/);
+    assert.ok(
+      (matrixVue.match(/No history available for this spec file in this checkout/g) ?? []).length >= 3,
+      'Release, Created and Updated must each have their own no-history placeholder',
+    );
   });
 
   test('[S10-SR-11] sidebar entries carry a compact T-shirt and RICE indicator', () => {

@@ -8,7 +8,7 @@ import { data } from '../specs.data'
 import type { SpecEntry } from '../specs.data'
 import SpecStatusBadge from './SpecStatusBadge.vue'
 import SpecFilterDropdown from './SpecFilterDropdown.vue'
-import { REPO_BLOB_URL } from './repo'
+import { REPO_BLOB_URL, REPO_COMMIT_URL } from './repo'
 
 // S10-SR-23: link a shipped version to its CHANGELOG.md entry on the repo host.
 const CHANGELOG_URL = `${REPO_BLOB_URL}/CHANGELOG.md`
@@ -32,6 +32,8 @@ const COLUMN_LABELS: Record<string, string> = {
   value: 'Value',
   rice: 'RICE',
   release: 'Release',
+  created: 'Created',
+  updated: 'Updated',
 }
 const columnOptions = Object.keys(COLUMN_LABELS)
 const visibleColumns = ref<string[]>([...columnOptions])
@@ -76,7 +78,17 @@ const totalRequirements = computed(() =>
 // Column sort (S10-SR-16): id/title/kind sort as text, the rest as numbers.
 // A null metric (S10-SR-09's "not scored") always sorts after every scored
 // row so a descending sort never puts an unscored spec above a low one.
-type SortKey = 'id' | 'title' | 'kind' | 'requirements' | 'effort' | 'value' | 'rice' | 'release'
+type SortKey =
+  | 'id'
+  | 'title'
+  | 'kind'
+  | 'requirements'
+  | 'effort'
+  | 'value'
+  | 'rice'
+  | 'release'
+  | 'created'
+  | 'updated'
 
 // A released version sorts by its numeric parts (semver text compares wrong,
 // e.g. "0.10.0" < "0.9.0" lexically); either placeholder state (S10-SR-23)
@@ -97,6 +109,9 @@ const SORT_VALUE: Record<SortKey, (spec: SpecEntry) => string | number | null> =
   value: (s) => s.metrics.value,
   rice: (s) => s.metrics.rice,
   release: releaseSortValue,
+  // ISO YYYY-MM-DD dates sort correctly as plain strings.
+  created: (s) => s.created?.date ?? null,
+  updated: (s) => s.updated?.date ?? null,
 }
 const sortKey = ref<SortKey | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
@@ -234,6 +249,20 @@ const sorted = computed(() => {
                 }}</span>
               </button>
             </th>
+            <th v-if="shows('created')" :aria-sort="ariaSort('created')" title="Date of this spec file's oldest commit">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('created')">
+                Created<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'created' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
+            <th v-if="shows('updated')" :aria-sort="ariaSort('updated')" title="Date of this spec file's newest commit">
+              <button type="button" class="spec-matrix-sort" @click="toggleSort('updated')">
+                Updated<span class="spec-matrix-sort-icon" aria-hidden="true">{{
+                  sortKey === 'updated' ? (sortDir === 'asc' ? '▲' : '▼') : ''
+                }}</span>
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -299,6 +328,28 @@ const sorted = computed(() => {
                 title="Not yet in a published release"
                 >unreleased</span
               >
+              <span
+                v-else
+                class="spec-matrix-unscored"
+                title="No history available for this spec file in this checkout"
+                >no history</span
+              >
+            </td>
+            <td v-if="shows('created')" class="spec-matrix-metric">
+              <a v-if="spec.created" :href="`${REPO_COMMIT_URL}/${spec.created.sha}`" target="_blank" rel="noreferrer">{{
+                spec.created.date
+              }}</a>
+              <span
+                v-else
+                class="spec-matrix-unscored"
+                title="No history available for this spec file in this checkout"
+                >no history</span
+              >
+            </td>
+            <td v-if="shows('updated')" class="spec-matrix-metric">
+              <a v-if="spec.updated" :href="`${REPO_COMMIT_URL}/${spec.updated.sha}`" target="_blank" rel="noreferrer">{{
+                spec.updated.date
+              }}</a>
               <span
                 v-else
                 class="spec-matrix-unscored"

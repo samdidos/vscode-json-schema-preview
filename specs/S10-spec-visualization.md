@@ -88,6 +88,18 @@ top of the existing artifacts.
   every other column; a row in either placeholder state MUST always sort
   after every released row, in both directions, echoing S10-SR-09's "not
   scored" guarantee.
+- **S10-SR-24** The matrix table MUST show **Created** and **Updated**
+  columns: the date of the oldest and, respectively, newest commit in that
+  spec file's own git history (the same commits S10-SR-14 lists), each
+  linking to that commit on the repository host. A spec with no discoverable
+  history in the build's checkout MUST render both as the same explicit "no
+  history available" state as S10-SR-15 rather than a blank cell — this
+  includes the shallow-boundary case noted there, where the reported oldest
+  commit may not be the file's true first commit, so "Created" inherits that
+  same caveat. Both columns follow the same column-visibility control
+  (S10-SR-10) and header-click sort (S10-SR-16) as every other column,
+  sorting chronologically by date, with the no-history placeholder always
+  sorting after every dated row in both directions.
 
 ### Sidebar
 
@@ -287,9 +299,19 @@ top of the existing artifacts.
     the same "no history available" state as its spec page (S10-SR-15).
     Sorting by Release always places both placeholder states after every
     released row, in both directions.
+14. The matrix's Created and Updated columns show the oldest and newest
+    commit dates from each spec file's git history, each linking to that
+    commit on the repository host; a spec with no discoverable history shows
+    "no history available" for both, sorting after every dated row in either
+    direction.
 
 ## History
 
+- 2026-07-26 — Added S10-SR-24: Created and Updated columns on the matrix,
+  showing the oldest and newest commit dates from each spec file's own git
+  history (S10-SR-14's commit list), each linking to that commit — reusing
+  the same "no history available" fallback as S10-SR-15/23 rather than a
+  blank cell.
 - 2026-07-26 — Added S10-SR-23: a Release column on the matrix showing the
   first published version that shipped each spec, joining the spec file's own
   git history (S10-SR-14) against `chore(main): release X.Y.Z` commits, with

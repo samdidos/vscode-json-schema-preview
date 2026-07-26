@@ -3642,6 +3642,15 @@
       ],
       "note": "Release column resolves each spec's oldest git-history commit against chore(main): release X.Y.Z commits; unreleased/no-history render distinct placeholders that always sort after a released row"
     },
+    "S10-SR-24": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/specs.data.ts",
+        "docs/.vitepress/theme/SpecMatrix.vue",
+        "docs/.vitepress/theme/repo.ts"
+      ],
+      "note": "Created/Updated columns from the oldest/newest entry of the same per-spec git history as S10-SR-14/23, each linking to that commit via the shared REPO_COMMIT_URL; no-history rows share S10-SR-15's placeholder and sort last"
+    },
     "S11-NFR-01": {
       "status": "implemented",
       "impl": [
