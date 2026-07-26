@@ -3594,6 +3594,26 @@
       ],
       "note": "demo-coverage chart sourced from scripts/demo-registry.mjs (S08-SR-13)"
     },
+    "S10-SR-20": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/specs.data.ts",
+        "docs/.vitepress/theme/SpecInsights.vue"
+      ],
+      "note": "value x mutation-score quadrant; not-measured state when mutation-score.json is absent",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S10-SR-21": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/specs.data.ts",
+        "docs/.vitepress/theme/SpecInsights.vue"
+      ],
+      "note": "requirement lifecycle from S11 stamps; unstamped requirements counted apart, never drawn as zero-day",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
     "S11-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -3657,6 +3677,34 @@
         "specs/traceability.schema.json"
       ],
       "note": ""
+    },
+    "S11-SR-07": {
+      "status": "implemented",
+      "impl": [
+        "specs/traceability.schema.json",
+        "scripts/check-traceability.mjs"
+      ],
+      "note": "optional specifiedAt/implementedAt, preserved through the --init rewrite",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S11-SR-08": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-traceability.mjs"
+      ],
+      "note": "--init stamps; validation warns and never writes",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S11-SR-09": {
+      "status": "implemented",
+      "impl": [
+        "scripts/check-traceability.mjs"
+      ],
+      "note": "no backfill: unstamped means predates tracking",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
     },
     "S12-NFR-01": {
       "status": "implemented",
@@ -4114,6 +4162,71 @@
         ".github/workflows/ci.yml"
       ],
       "note": "check:audit script shared by scripts/verify.mjs's STEPS and ci.yml's build job"
+    },
+    "S18-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/mutation-score.mjs"
+      ],
+      "note": "plain Node, no dependencies",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S18-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/maturity-score.mjs"
+      ],
+      "note": "maturity scorer never reads mutation-score.json; it checks only that the gate exists",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S18-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "scripts/mutation-score.mjs"
+      ],
+      "note": "mutation-score.json generated from Stryker JSON report",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S18-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "scripts/mutation-score.mjs"
+      ],
+      "note": "tallies stored alongside the derived score; formula declared once in the script",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S18-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "scripts/mutation-score.mjs",
+        "docs/.vitepress/theme/SpecInsights.vue"
+      ],
+      "note": "generatedAt + break threshold recorded and shown beside the chart",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S18-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "scripts/mutation-score.mjs",
+        "docs/.vitepress/specs.data.ts"
+      ],
+      "note": "absent artifact degrades to not-measured; never in npm run verify",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
+    },
+    "S18-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "scripts/mutation-score.mjs"
+      ],
+      "note": "files stryker does not mutate are absent, not zeroed",
+      "specifiedAt": "2026-07-26",
+      "implementedAt": "2026-07-26"
     }
   }
 }

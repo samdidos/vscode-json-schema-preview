@@ -26,5 +26,30 @@ the size of that code today, which surfaces the estimates that have aged out
 of their band, and the [S08](./S08) demo registry against the value ranking,
 which surfaces the features nothing demonstrates.
 
+<!-- spec:S18 start -->
+## Test strength
+
+Line coverage is gated at 80% on all four axes and every spec clears it,
+sitting between 90% and 99% — the gate working, but also a measurement with no
+range left to rank anything by. The **mutation score** replaces it as the
+test-strength axis: it mutates the source and asks whether the tests notice,
+so it measures whether tests *assert* rather than merely execute.
+
+Because a full mutation run takes orders of magnitude longer than the commit
+gate, it is never part of `npm run verify`. Refresh it on demand:
+
+```bash
+npm run test:mutation   # runs Stryker, writes reports/mutation/mutation.json
+npm run mutation:score  # distils it into mutation-score.json
+```
+
+That committed artifact stores the mutant tallies per file alongside the
+derived score, so the number can be audited and recomputed rather than taken
+on trust, and it records the date it was generated — the score is a snapshot of
+code that keeps moving, so the charts show its age. If the artifact is absent
+the site reports the score as *not measured*; a missing measurement is never
+drawn as a zero.
+<!-- spec:S18 end -->
+
 <SpecInsights />
 <!-- spec:S10 end -->

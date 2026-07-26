@@ -22,10 +22,14 @@
   "reporters": [
     "html",
     "clear-text",
-    "progress"
+    "progress",
+    "json"
   ],
   "htmlReporter": {
     "fileName": "reports/mutation/index.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
   },
   "incremental": true,
   "incrementalFile": "reports/stryker-incremental.json",

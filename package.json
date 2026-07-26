@@ -432,6 +432,7 @@
     "test": "tsc -p tsconfig.test.json && c8 mocha --ui tdd --require ./out/test/mocks/setup.js 'out/test/unit/**/*.test.js'",
     "test:coverage": "npm test && node scripts/check-coverage.js",
     "test:mutation": "stryker run",
+    "mutation:score": "node scripts/mutation-score.mjs",
     "test:e2e": "npm run compile && playwright test --config playwright.e2e.config.ts",
     "test:integration": "npm run compile && tsc -p tsconfig.integration.json && node ./out/test/integration/runTest.js",
     "update:deps": "npx npm-check-updates -u && npm install",

@@ -107,6 +107,10 @@ function saveMatrix(matrix, specReqs) {
   for (const id of [...Object.keys(matrix.requirements)].sort(naturalCompare)) {
     const e = matrix.requirements[id];
     sorted[id] = { status: e.status, impl: e.impl ?? [], note: e.note ?? '' };
+    // Lifecycle stamps survive the rewrite (S11-SR-07): this function rebuilds
+    // every entry from scratch, so a field not copied here is a field deleted.
+    if (e.specifiedAt) sorted[id].specifiedAt = e.specifiedAt;
+    if (e.implementedAt) sorted[id].implementedAt = e.implementedAt;
   }
   const out = {
     // Inline binding to the matrix's JSON Schema (S11): kept first here so a
@@ -134,16 +138,30 @@ const testTags = collectTestTags();
 const matrix = loadMatrix();
 matrix.requirements ??= {};
 
+/** Statuses that mean the requirement is built (S11-SR-07). */
+const DONE_STATUSES = new Set(['implemented', 'manual']);
+const today = () => new Date().toISOString().slice(0, 10);
+
 if (init) {
   let added = 0;
+  let stamped = 0;
   for (const id of specReqs.keys()) {
     if (!matrix.requirements[id]) {
-      matrix.requirements[id] = { status: 'untracked', impl: [], note: '' };
+      // A requirement scaffolded now is one whose specification date we know
+      // first-hand; entries that predate stamping stay unstamped (S11-SR-09).
+      matrix.requirements[id] = { status: 'untracked', impl: [], note: '', specifiedAt: today() };
       added++;
+    }
+  }
+  for (const entry of Object.values(matrix.requirements)) {
+    if (entry.specifiedAt && !entry.implementedAt && DONE_STATUSES.has(entry.status)) {
+      entry.implementedAt = today();
+      stamped++;
     }
   }
   saveMatrix(matrix, specReqs);
   console.log(`Scaffolded ${added} new requirement(s) into ${relative(ROOT, MATRIX_PATH)}.`);
+  if (stamped) console.log(`Stamped implementedAt on ${stamped} requirement(s).`);
   console.log(`Matrix now tracks ${Object.keys(matrix.requirements).length} of ${specReqs.size} requirements.`);
   process.exit(0);
 }
@@ -195,6 +213,32 @@ for (const [id, entry] of Object.entries(matrix.requirements)) {
   if (entry.status === 'planned' && hasTest) {
     warnings.push(`${id} is "planned" but a [${id}] test tag already exists — promote to implemented?`);
   }
+  // 4b. Lifecycle stamps (S11-SR-08): validation never writes, so an owed
+  //     stamp is a prompt to run `npm run trace:init`, not a failure. Entries
+  //     with no specifiedAt predate stamping and are left alone (S11-SR-09).
+  if (entry.specifiedAt && !entry.implementedAt && DONE_STATUSES.has(entry.status)) {
+    warnings.push(`${id} is "${entry.status}" but has no implementedAt stamp — run \`npm run trace:init\``);
+  }
+  // The schema's pattern fixes the shape; only a real calendar check rejects
+  // 2026-13-45. Ajv is built here without ajv-formats, so `format: "date"`
+  // would be silently ignored — this is where the check actually runs.
+  for (const field of ['specifiedAt', 'implementedAt']) {
+    const v = entry[field];
+    if (!v) continue;
+    // Number.isNaN guard first: `new Date("2026-13-45T00:00:00Z")` is an
+    // Invalid Date whose toISOString() throws, so round-tripping it directly
+    // would crash the checker instead of reporting the bad value.
+    const parsed = new Date(`${v}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== v) {
+      errors.push(`${id} has an invalid ${field} date "${v}"`);
+    }
+  }
+  if (entry.implementedAt && !entry.specifiedAt) {
+    errors.push(`${id} has implementedAt but no specifiedAt — a lifecycle stamp cannot start mid-way`);
+  }
+  if (entry.implementedAt && entry.specifiedAt && entry.implementedAt < entry.specifiedAt) {
+    errors.push(`${id} implementedAt ${entry.implementedAt} precedes specifiedAt ${entry.specifiedAt}`);
+  }
 }
 
 // --- report ----------------------------------------------------------------
@@ -210,6 +254,11 @@ console.log('─'.repeat(48));
 console.log(`Requirements in specs : ${specReqs.size}`);
 console.log(`Tracked in matrix     : ${Object.keys(matrix.requirements).length}`);
 console.log(`With test coverage    : ${covered} (${Math.round((covered / specReqs.size) * 100)}%)`);
+const tracked = Object.values(matrix.requirements).filter((e) => e.specifiedAt);
+console.log(
+  `Lifecycle-tracked     : ${tracked.length} ` +
+  `(${Object.keys(matrix.requirements).length - tracked.length} predate stamping)`,
+);
 console.log('By status             :');
 for (const [s, n] of Object.entries(byStatus).sort()) {
   console.log(`  ${s.padEnd(13)} ${n}`);

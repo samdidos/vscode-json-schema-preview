@@ -300,6 +300,95 @@ const demoCoverage = computed(() => {
   }
 })
 
+// ---- Requirement lifecycle (S10-SR-21) ---------------------------------
+// Built from the S11 stamps. Requirements with no stamp predate lifecycle
+// tracking and are counted apart — an unmeasured requirement and a same-day
+// one are different facts, and drawing both at zero would merge them.
+const DAY = 86_400_000
+const today = new Date().toISOString().slice(0, 10)
+const daysBetween = (from: string, to: string) =>
+  Math.max(0, Math.round((Date.parse(to) - Date.parse(from)) / DAY))
+
+const lifecycle = computed(() => {
+  const all = specs.flatMap((s) => s.requirements.map((r) => ({ ...r, spec: s.id })))
+  const tracked = all.filter((r) => r.specifiedAt)
+  const closed = tracked
+    .filter((r) => r.implementedAt)
+    .map((r) => ({
+      id: r.id,
+      spec: r.spec,
+      days: daysBetween(r.specifiedAt as string, r.implementedAt as string),
+    }))
+  const open = tracked
+    .filter((r) => !r.implementedAt)
+    .map((r) => ({
+      id: r.id,
+      spec: r.spec,
+      days: daysBetween(r.specifiedAt as string, today),
+    }))
+  const buckets = [
+    { label: 'same day', min: 0, max: 0 },
+    { label: '1–3 days', min: 1, max: 3 },
+    { label: '4–7 days', min: 4, max: 7 },
+    { label: 'over a week', min: 8, max: Infinity },
+  ]
+    .map((b) => ({
+      label: b.label,
+      count: closed.filter((c) => c.days >= b.min && c.days <= b.max).length,
+    }))
+    .filter((b) => b.count > 0)
+  return {
+    total: all.length,
+    tracked: tracked.length,
+    untracked: all.length - tracked.length,
+    closed,
+    open: open.sort((a, b) => b.days - a.days),
+    buckets,
+    max: Math.max(...buckets.map((b) => b.count), 1),
+    medianDays: closed.length
+      ? closed.map((c) => c.days).sort((a, b) => a - b)[Math.floor(closed.length / 2)]
+      : null,
+  }
+})
+
+// ---- Test strength (S10-SR-20) -----------------------------------------
+// Value against mutation score. Line coverage is deliberately not the axis:
+// the 80% gate compresses every spec into a 90–99% band, so it ranks nothing.
+const STRENGTH = { w: 720, h: 360, left: 48, right: 96, top: 16, bottom: 44 }
+
+const strength = computed(() => {
+  const scored = features.value.filter(
+    (s) => s.metrics.value !== null && s.mutationScore !== null,
+  )
+  const xMax = Math.max(30, ...scored.map((s) => s.metrics.value ?? 0))
+  const x = (v: number) => STRENGTH.left + (v / xMax) * (STRENGTH.w - STRENGTH.left - STRENGTH.right)
+  const y = (v: number) =>
+    STRENGTH.h - STRENGTH.bottom - (v / 100) * (STRENGTH.h - STRENGTH.top - STRENGTH.bottom)
+  const gate = specsData.mutation ? 60 : null
+  const marks = scored.map((s) => ({
+    id: s.id,
+    title: s.title,
+    value: s.metrics.value ?? 0,
+    score: s.mutationScore ?? 0,
+    cx: x(s.metrics.value ?? 0),
+    cy: y(s.mutationScore ?? 0),
+    // The quadrant worth acting on: worth a lot, tested thinly.
+    exposed: (s.metrics.value ?? 0) >= 10 && (s.mutationScore ?? 100) < 70,
+  }))
+  return {
+    marks,
+    measured: specsData.mutation !== null,
+    provenance: specsData.mutation,
+    unmeasured: features.value.filter((s) => s.metrics.value !== null && s.mutationScore === null),
+    exposed: marks.filter((m) => m.exposed),
+    gateY: gate === null ? null : y(gate),
+    gate,
+    yTicks: [0, 25, 50, 75, 100].map((t) => ({ v: t, y: y(t) })),
+    xTicks: [0, 10, 20, 30].filter((t) => t <= xMax).map((t) => ({ v: t, x: x(t) })),
+    y0: y(0),
+  }
+})
+
 // ---- Distribution bars (S10-SR-17) -------------------------------------
 const tierBars = computed(() => {
   const rows = value.value.tiers.map((t) => ({ label: t, count: value.value.byTier[t] }))
@@ -376,6 +465,65 @@ const sizeBars = computed(() => {
         <span class="insights-status-total">{{ row.total }}</span>
       </div>
     </div>
+
+    <h3>Requirement lifecycle</h3>
+    <p class="insights-note">
+      How long requirements sit specified before they are built, from the
+      <a :href="withBase('/specs/S11')">S11</a> stamps. These are deliberately
+      <strong>not backfilled</strong>: the matrix was populated in one commit
+      long after most requirements were written, so a git-derived date would
+      record when the matrix learned of a requirement and pass it off as when
+      the requirement was specified.
+    </p>
+    <div class="insights-grid">
+      <div class="insights-kpi">
+        <span class="insights-kpi-value">{{ lifecycle.tracked }}</span>
+        <span class="insights-kpi-label">lifecycle-tracked</span>
+        <span class="insights-kpi-sub">
+          {{ lifecycle.untracked }} of {{ lifecycle.total }} predate stamping
+        </span>
+      </div>
+      <div class="insights-kpi">
+        <span class="insights-kpi-value">{{ lifecycle.open.length }}</span>
+        <span class="insights-kpi-label">specified, not yet built</span>
+        <span class="insights-kpi-sub">
+          <template v-if="lifecycle.open.length">
+            oldest waiting {{ lifecycle.open[0].days }} day<template
+              v-if="lifecycle.open[0].days !== 1"
+              >s</template
+            >
+          </template>
+          <template v-else>nothing outstanding</template>
+        </span>
+      </div>
+      <div class="insights-kpi">
+        <span class="insights-kpi-value">
+          <template v-if="lifecycle.medianDays !== null">{{ lifecycle.medianDays }}</template>
+          <template v-else>—</template>
+        </span>
+        <span class="insights-kpi-label">median days to build</span>
+        <span class="insights-kpi-sub">across {{ lifecycle.closed.length }} completed</span>
+      </div>
+    </div>
+    <template v-if="lifecycle.buckets.length">
+      <div class="insights-dist">
+        <div v-for="b in lifecycle.buckets" :key="b.label" class="insights-dist-row">
+          <span class="insights-tier">{{ b.label }}</span>
+          <span class="insights-dist-track">
+            <span
+              class="insights-dist-bar"
+              :style="{ width: `${(b.count / lifecycle.max) * 100}%` }"
+            />
+          </span>
+          <span class="insights-dist-count">{{ b.count }}</span>
+        </div>
+      </div>
+    </template>
+    <p v-else class="insights-note insights-empty">
+      No requirement has completed the specified → implemented cycle under
+      stamping yet. Stamps are only written for requirements added from now on,
+      so this fills in as the corpus grows rather than starting full.
+    </p>
 
     <hr class="insights-divider" />
 
@@ -608,6 +756,127 @@ const sizeBars = computed(() => {
       <template v-else>
         Every estimate is still inside the band it was written against.
       </template>
+    </p>
+
+    <h3>Value against test strength</h3>
+    <p class="insights-note">
+      Mutation score (<a :href="withBase('/specs/S18')">S18</a>) rather than
+      line coverage: every spec clears the 80% coverage gate and sits in a
+      90–99% band, so coverage ranks nothing. Mutation testing asks whether the
+      tests <em>assert</em>, which still varies. A feature toward the
+      bottom-right is worth a lot and thinly tested.
+      <template v-if="strength.provenance">
+        Scores measured {{ strength.provenance.generatedAt }}; they age as the
+        code moves.
+      </template>
+    </p>
+    <template v-if="strength.measured && strength.marks.length">
+      <svg
+        class="insights-scatter"
+        :viewBox="`0 0 ${STRENGTH.w} ${STRENGTH.h}`"
+        role="img"
+        aria-label="Customer value against mutation score for every scored feature spec"
+      >
+        <g v-for="t in strength.yTicks" :key="`sy${t.v}`">
+          <line
+            class="insights-scatter-grid"
+            :x1="STRENGTH.left"
+            :x2="STRENGTH.w - STRENGTH.right"
+            :y1="t.y"
+            :y2="t.y"
+          />
+          <text class="insights-scatter-tick" :x="STRENGTH.left - 8" :y="t.y + 4" text-anchor="end">
+            {{ t.v }}%
+          </text>
+        </g>
+        <template v-if="strength.gateY !== null">
+          <line
+            class="insights-scatter-guide"
+            :x1="STRENGTH.left"
+            :x2="STRENGTH.w - STRENGTH.right"
+            :y1="strength.gateY"
+            :y2="strength.gateY"
+          />
+          <text
+            class="insights-scatter-band"
+            :x="STRENGTH.w - STRENGTH.right + 8"
+            :y="strength.gateY + 4"
+          >
+            {{ strength.gate }}% break
+          </text>
+        </template>
+        <line
+          class="insights-scatter-axis"
+          :x1="STRENGTH.left"
+          :x2="STRENGTH.w - STRENGTH.right"
+          :y1="strength.y0"
+          :y2="strength.y0"
+        />
+        <g v-for="t in strength.xTicks" :key="`sx${t.v}`">
+          <text class="insights-scatter-tick" :x="t.x" :y="strength.y0 + 16" text-anchor="middle">
+            {{ t.v }}
+          </text>
+        </g>
+        <text
+          class="insights-scatter-tick"
+          :x="(STRENGTH.left + STRENGTH.w - STRENGTH.right) / 2"
+          :y="STRENGTH.h - 6"
+          text-anchor="middle"
+        >
+          customer value (S16)
+        </text>
+        <text
+          class="insights-scatter-tick"
+          :transform="`rotate(-90 12 ${(STRENGTH.top + STRENGTH.h - STRENGTH.bottom) / 2})`"
+          :x="12"
+          :y="(STRENGTH.top + STRENGTH.h - STRENGTH.bottom) / 2"
+          text-anchor="middle"
+        >
+          mutation score
+        </text>
+        <g v-for="m in strength.marks" :key="m.id">
+          <circle
+            class="insights-scatter-dot"
+            :class="{ 'insights-dot-drift': m.exposed }"
+            :cx="m.cx"
+            :cy="m.cy"
+            :r="m.exposed ? 6 : 4.5"
+          >
+            <title>
+              {{ m.id }} {{ m.title }} — value {{ m.value.toFixed(1) }}, mutation score
+              {{ m.score }}%
+            </title>
+          </circle>
+          <text v-if="m.exposed" class="insights-scatter-label" :x="m.cx + 10" :y="m.cy + 4">
+            {{ m.id }}
+          </text>
+        </g>
+      </svg>
+      <p class="insights-note">
+        <template v-if="strength.exposed.length">
+          <strong>{{ strength.exposed.length }} feature<template
+            v-if="strength.exposed.length !== 1">s</template> scoring 10 or better sit under a
+          70% mutation score</strong> —
+          <template v-for="(m, i) in strength.exposed" :key="m.id"
+            ><a :href="withBase(`/specs/${m.id}`)">{{ m.id }}</a> ({{ m.score }}%)<template
+              v-if="i < strength.exposed.length - 1">, </template></template
+          >.
+        </template>
+        <template v-else>
+          No feature scoring 10 or better falls below a 70% mutation score.
+        </template>
+        <template v-if="strength.unmeasured.length">
+          {{ strength.unmeasured.length }} scored feature<template
+            v-if="strength.unmeasured.length !== 1">s have</template><template v-else> has</template>
+          no mutated implementation file and so no score.
+        </template>
+      </p>
+    </template>
+    <p v-else class="insights-note insights-empty">
+      <strong>Not measured.</strong> Mutation testing is too slow for the commit
+      gate, so <code>mutation-score.json</code> is refreshed on demand — run
+      <code>npm run test:mutation &amp;&amp; npm run mutation:score</code> and
+      rebuild to populate this chart. A missing score is never drawn as a zero.
     </p>
 
     <h3>Which features have never been demonstrated</h3>
@@ -917,6 +1186,14 @@ const sizeBars = computed(() => {
 }
 .insights-demo-stem-missing {
   stroke: var(--vp-c-divider);
+}
+/* An empty or unmeasured chart is a legitimate state, not a broken one — it
+   reads as a quiet note rather than a gap where a graphic should be. */
+.insights-empty {
+  padding: 12px 14px;
+  border: 1px dashed var(--vp-c-divider);
+  border-radius: 6px;
+  background-color: var(--vp-c-bg-soft);
 }
 
 /* ---- distribution bars (S10-SR-17) ------------------------------------ */

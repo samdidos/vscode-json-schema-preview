@@ -245,6 +245,50 @@ suite('S10 — matrix metrics, column control and insights page', () => {
     assert.match(insightsVue, /!row\.hasDemo/);
   });
 
+  test('[S10-SR-20] test strength is plotted against value, not line coverage', () => {
+    assert.match(insightsVue, /const strength = computed/);
+    assert.match(insightsVue, /mutationScore/);
+    // Coverage was rejected as the axis: the 80% gate flattens it.
+    assert.match(insightsVue, /line coverage/);
+    assert.match(read('specs/S10-spec-visualization.md'), /Line coverage MUST NOT be used/);
+    // A spec's score comes from merging its files' raw tallies and scoring
+    // them with S18's own function — not from averaging the per-file scores,
+    // which are rounded and whose mutant counts include statuses the score's
+    // denominator excludes.
+    assert.match(specsLoader, /scoreOf\(merged\)/);
+    assert.match(specsLoader, /from '\.\.\/\.\.\/scripts\/mutation-score\.mjs'/);
+    assert.ok(
+      !/entry\.score \/ 100/.test(specsLoader),
+      'a per-spec score must not be reconstructed from rounded per-file scores',
+    );
+  });
+
+  test('[S10-SR-20] an unmeasured score renders as "not measured", never as zero', () => {
+    assert.match(insightsVue, /Not measured/);
+    assert.match(insightsVue, /strength\.measured/);
+    assert.match(specsLoader, /mutationScore: mutationFor/);
+    // The loader must not default a missing score to a number.
+    assert.ok(
+      !/mutationScore: [^n]*\?\? 0/.test(specsLoader),
+      'a missing mutation score must stay null',
+    );
+  });
+
+  test('[S10-SR-21] the lifecycle chart separates unstamped from same-day', () => {
+    assert.match(insightsVue, /const lifecycle = computed/);
+    assert.match(insightsVue, /specifiedAt/);
+    assert.match(insightsVue, /implementedAt/);
+    // "predates stamping" is its own count, not a zero-day bar.
+    assert.match(insightsVue, /predate stamping/);
+    assert.match(insightsVue, /untracked: all\.length - tracked\.length/);
+  });
+
+  test('[S10-SR-21] the lifecycle chart renders an explicit empty state', () => {
+    assert.match(insightsVue, /insights-empty/);
+    assert.match(insightsVue, /lifecycle\.buckets\.length/);
+    assert.match(insightsVue, /fills in as the corpus grows/);
+  });
+
   test('[S10-SR-17] the charts introduce no runtime chart dependency', () => {
     const docsPkg = JSON.parse(read('docs/package.json'));
     const deps = Object.keys({ ...docsPkg.dependencies, ...docsPkg.devDependencies });
