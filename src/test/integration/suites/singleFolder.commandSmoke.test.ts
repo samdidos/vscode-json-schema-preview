@@ -81,6 +81,14 @@ suite('[S08-SR-06] Command smoke tests — one per contributed command', () => {
         () => vscode.commands.executeCommand('jsonschema.configure') as Promise<void>,
       ),
     );
+    // Unlike every other command here, this one opens .vscode/settings.json
+    // itself — the same file resetWorkspaceFolderSettings() below rewrites
+    // with a raw fs write. Leaving that editor open across the raw write
+    // desyncs VS Code's file model and breaks the *next* test's config-API
+    // writes ("file has unsaved changes"), so revert-and-close it here,
+    // inside this test, before the shared teardown's raw write ever runs.
+    await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+    await closeAllEditors();
     assertNoErrors(errors, 'jsonschema.configure');
   });
 
