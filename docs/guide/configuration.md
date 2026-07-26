@@ -224,11 +224,18 @@ Per-rule severity overrides. Map a rule id to `off`, `hint`, `info`, or `warning
 ---
 
 <!-- spec:F09 start -->
-## `.json-schema-preview-config.json`
+## Preview Configuration: File or Settings
 
-The extension discovers a `.json-schema-preview-config.json` file in the workspace folder that contains the schema being rendered (with fallback to other workspace folders in order). The file controls the `json-schema-for-humans` renderer and the output template.
+`json-schema-for-humans` (the renderer behind the preview panel) is controlled by configuration that can live in either of two places, checked in this order:
 
-Example:
+1. **`.json-schema-preview-config.json`** — a standalone, git-committable file. If found, it is always used, and `jsonschema.config` (below) is ignored entirely.
+2. **`jsonschema.config`** — a VS Code setting, used only when no config file is found.
+
+This means a team can commit a config file for deterministic, machine-independent output, while an individual contributor without one can still configure the renderer through their own settings.
+
+### `.json-schema-preview-config.json`
+
+The extension discovers this file in the workspace folder that contains the schema being rendered (with fallback to other workspace folders in order). Create or edit it via **JSON Schema: Open Config File**.
 
 ```json
 {
@@ -237,15 +244,33 @@ Example:
 }
 ```
 
-All [json-schema-for-humans options](https://github.com/coveooss/json-schema-for-humans) are supported. Create or edit the file via **JSON Schema: Configure Preview** (visual UI) or **JSON Schema: Open Config File** (opens the raw JSON).
+### `jsonschema.config` setting
+
+The same configuration, set directly in `settings.json` instead of a file. Set at **User**, **Workspace**, or **Workspace Folder** scope — VS Code's native precedence applies, so a folder/workspace value always overrides a user value, exactly like a local file overriding a global default.
+
+```json
+// .vscode/settings.json
+{
+  "jsonschema.config": {
+    "template_name": "js",
+    "show_toc": true
+  }
+}
+```
+
+Run **JSON Schema: Configure Preview** and pick a scope (User / Workspace / Workspace Folder) — the extension creates the `jsonschema.config` key at that scope if it doesn't already have one, then opens the corresponding `settings.json` with the key revealed, so you land directly on the right setting instead of hunting for it.
+
+Unlike the standalone file, this setting's shape is validated and auto-completed directly in `settings.json` — the extension declares it (mirroring the well-known `json-schema-for-humans` options, e.g. `template_name` as an enum of the supported templates) via its `contributes.configuration` entry in `package.json`. A `$schema` key has no effect inside a nested settings value — VS Code resolves `$schema` at the document level, and `settings.json` is already validated against VS Code's own generated meta-schema — so this contributed schema is the only way to get that validation for a setting.
+
+Both the file and the setting accept the same [json-schema-for-humans options](https://github.com/coveooss/json-schema-for-humans#configuration).
 
 ### Output templates
 
-The `template_name` field controls the rendered format:
+The `template_name` field controls the rendered format, in either the file or the setting:
 
 | Value | Output | Notes |
 |-------|--------|-------|
-| `flat` | HTML | Default when no config file is present |
+| `flat` | HTML | Default when no config file and no `jsonschema.config` setting are present |
 | `js` | HTML | JavaScript-style collapsible tree |
 | `md` | Markdown | Markdown table; displayed as raw source in VS Code, downloadable as `.md` |
 | `md_nested` | Markdown | Nested Markdown structure |

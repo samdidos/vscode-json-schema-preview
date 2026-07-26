@@ -57,8 +57,17 @@ in a VS Code webview panel beside the editor. Rendering is delegated to the
 - **F01-FR-10** The extension MUST search for `.json-schema-preview-config.json`
   starting from the workspace folder that owns the schema file, falling back to
   other workspace folders in order.
-- **F01-FR-11** When no config file is found the extension MUST pass
+- **F01-FR-11** When no config file is found, and the `jsonschema.config`
+  setting (F01-FR-28) is unset or empty, the extension MUST pass
   `--config template_name=flat` to `json-schema-for-humans`.
+- **F01-FR-28** When no config file is found the extension MUST fall back to
+  the `jsonschema.config` setting (F09-FR-12), resolved for the schema file's
+  own resource so VS Code's native configuration precedence (Workspace Folder
+  \> Workspace > User) applies automatically. If that setting holds a
+  non-empty object it MUST be serialised and passed to `json-schema-for-humans`
+  as the effective config in place of `--config template_name=flat`. The
+  standalone config file (F01-FR-10) always takes precedence over this
+  setting when both are present.
 
 ### Download Button
 

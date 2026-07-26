@@ -53,7 +53,7 @@ features:
 
   - icon: ⚙️
     title: Configurable Rendering
-    details: Choose from multiple json-schema-for-humans templates (flat, JS, Markdown, RST, HTML). Config lives in .json-schema-preview-config.json, committed alongside your project.
+    details: Choose from multiple json-schema-for-humans templates (flat, JS, Markdown, RST, HTML). Config lives in .json-schema-preview-config.json committed alongside your project, or in the jsonschema.config VS Code setting.
 ---
 
 <!--
