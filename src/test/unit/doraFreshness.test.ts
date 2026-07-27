@@ -3,6 +3,7 @@
 import * as assert from 'assert';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { execFileSync } from 'child_process';
 
 const ROOT = resolve(__dirname, '../../../');
 const read = (rel: string) => readFileSync(resolve(ROOT, rel), 'utf-8');
@@ -10,7 +11,19 @@ const read = (rel: string) => readFileSync(resolve(ROOT, rel), 'utf-8');
 const script = read('scripts/dora-metrics.mjs');
 const refresh = read('.github/workflows/maturity-refresh.yml');
 const dora = JSON.parse(read('dora.json'));
-const pkg = JSON.parse(read('package.json'));
+
+/** Newest `vX.Y.Z` tag reachable from this checkout, oldest→newest by
+ *  creation date (mirrors scripts/dora-metrics.mjs's own ordering), or
+ *  undefined when no tags are visible (shallow-clone hazard, S14-SR-09). */
+function latestVisibleTag(): string | undefined {
+  const out = execFileSync(
+    'git',
+    ['for-each-ref', '--sort=creatordate', "--format=%(refname:short)", 'refs/tags/v*'],
+    { cwd: ROOT, encoding: 'utf-8' },
+  );
+  const tags = out.split('\n').filter(Boolean);
+  return tags[tags.length - 1];
+}
 
 suite('S14 — delivery-metric freshness', () => {
   test('[S14-SR-08] the refresh runs after a release, not only on a schedule', () => {
@@ -26,11 +39,22 @@ suite('S14 — delivery-metric freshness', () => {
   test('[S14-SR-08] the committed snapshot covers the released version', () => {
     // The reason this requirement exists: dora.json sat three releases behind
     // the shipped extension, so the published Delivery view under-reported.
-    const shipped = `v${pkg.version}`;
+    //
+    // Compared against the actual latest git tag, not package.json's version:
+    // a release-please PR bumps package.json ahead of tagging (the tag lands
+    // only once that PR merges), so package.json alone can't tell a release
+    // that's merely pending from a snapshot that's truly stale. When no tag
+    // is visible at all (the shallow-checkout hazard S14-SR-09 already
+    // handles for the CLI checker), there is nothing to compare against, so
+    // this check is skipped rather than blamed on the data.
+    const latestTag = latestVisibleTag();
+    if (!latestTag) {
+      return;
+    }
     const tags = (dora.perRelease as { tag: string }[]).map((r) => r.tag);
     assert.ok(
-      tags.includes(shipped),
-      `dora.json ends at ${tags[tags.length - 1]} but package.json is ${shipped} — run \`npm run dora\``,
+      tags.includes(latestTag),
+      `dora.json ends at ${tags[tags.length - 1]} but the latest release tag is ${latestTag} — run \`npm run dora\``,
     );
     assert.equal(dora.releaseCount, tags.length);
   });
