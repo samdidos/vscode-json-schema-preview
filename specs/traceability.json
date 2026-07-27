@@ -4064,9 +4064,10 @@
       "status": "implemented",
       "impl": [
         ".github/workflows/maturity-refresh.yml",
+        ".github/workflows/ci.yml",
         "dora.json"
       ],
-      "note": "refresh triggered by workflow_run after Release Please, guarded on success; weekly cron kept as backstop",
+      "note": "refresh triggered by workflow_run after Release Please, guarded on success; weekly cron kept as backstop; freshness test (S14-SR-08) compares against the latest visible git tag rather than package.json's version, since a release-please PR bumps the version ahead of tagging — ci.yml's coverage job now fetches full tag history (fetch-depth: 0) so that comparison isn't skipped there",
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     },
