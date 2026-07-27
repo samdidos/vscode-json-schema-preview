@@ -2,6 +2,33 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.17.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.16.0...v0.17.0) (2026-07-27)
+
+
+### Features
+
+* **docs:** add requirement lifecycle stamps and publish the mutation score ([c015639](https://github.com/samdidos/vscode-json-schema-preview/commit/c01563955a2631fe8e98c6ad4285ca03aac78607))
+* **docs:** chart estimate ageing and demo coverage on the insights page ([9d66f9b](https://github.com/samdidos/vscode-json-schema-preview/commit/9d66f9bb75c31d1b33ea045b1d1b2871a846c12c))
+* **docs:** make the spec matrix sortable by column ([f8b61ab](https://github.com/samdidos/vscode-json-schema-preview/commit/f8b61ab69a75865526a09601b38f39e0a9e7e664))
+* **docs:** replace the insights RICE table with charts, move the bar into the matrix ([862bd6a](https://github.com/samdidos/vscode-json-schema-preview/commit/862bd6a2f91485b6bb954733bfca6c1aa5f161d9))
+* **hooks:** add SessionStart reminder to keep PR branches rebased and green ([a67764b](https://github.com/samdidos/vscode-json-schema-preview/commit/a67764b779c80b24045f58b0b0beac5f4e462c7a))
+* **preview:** support jsonschema.config VS Code setting as config alternative ([8c17c6a](https://github.com/samdidos/vscode-json-schema-preview/commit/8c17c6ac35a6a499db4f0b9320d52bf93bb1aff1))
+* **S10:** add a Release column to the spec matrix ([6620c3a](https://github.com/samdidos/vscode-json-schema-preview/commit/6620c3a278f9078016f19bdcaabbc91d2cd88c40))
+* **S10:** add Created and Updated columns to the spec matrix ([92bd421](https://github.com/samdidos/vscode-json-schema-preview/commit/92bd42173ee2b1bca3239fdd4e7d6fb192a0761c))
+* **specs:** attribute defects via a Fixes: commit trailer, and close CI gaps ([efd676d](https://github.com/samdidos/vscode-json-schema-preview/commit/efd676d355170ba293cbffa3990495bc89c3861a))
+* **specs:** per-spec change history, release-scoped demo/GIF selection, concurrent verify gate ([a647c5d](https://github.com/samdidos/vscode-json-schema-preview/commit/a647c5dfbbfdf1e07ac35977ccf473d2a634be85))
+
+
+### Bug Fixes
+
+* **ci:** make the maturity step block on a broken scorer, not on a moved score ([a39344d](https://github.com/samdidos/vscode-json-schema-preview/commit/a39344de586c6efc6efc17ae97b149084f22640d))
+* **ci:** stop reporting failed jobs as green, and earn the check back ([451ae7b](https://github.com/samdidos/vscode-json-schema-preview/commit/451ae7b1d2d763414dd4c13e8caec565bf3bf9a2))
+* **docs:** fetch full git history so per-spec change history is correct ([4633cea](https://github.com/samdidos/vscode-json-schema-preview/commit/4633cea272abb942b698f046fe5c14204b0cf2ae))
+* **dora:** refresh delivery metrics on release, not on an unrelated weekly clock ([bb1fb76](https://github.com/samdidos/vscode-json-schema-preview/commit/bb1fb7661f0daf17e022b399ba2edf1840e33678))
+* **maturity:** stop five checks scoring a silent zero, and publish the score ([b4e0cee](https://github.com/samdidos/vscode-json-schema-preview/commit/b4e0cee298280282a721c37756551ca78b4f00d4))
+* **test:** compare dora.json freshness against the latest git tag, not package.json ([6615081](https://github.com/samdidos/vscode-json-schema-preview/commit/6615081af5c58457c04e5a635f7152fad8ce5deb))
+* **test:** exempt generated artifacts from the probed-path assertion ([4c94984](https://github.com/samdidos/vscode-json-schema-preview/commit/4c9498455cb35b90313b1122859faecdd6cf55e5))
+
 ## [0.16.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.15.0...v0.16.0) (2026-07-25)
 
 
