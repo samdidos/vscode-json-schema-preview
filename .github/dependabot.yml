@@ -5,6 +5,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # @types/vscode is a compatibility pin, not a vulnerability surface: it
+      # must stay aligned with engines.vscode (constitution Article I).
+      # Raising it is a deliberate minimum-VS-Code-version decision, not a
+      # routine bump — see PR #150/#155.
+      - dependency-name: "@types/vscode"
 
   - package-ecosystem: github-actions
     directory: /
