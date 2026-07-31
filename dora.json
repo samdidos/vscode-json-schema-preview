@@ -200,9 +200,9 @@
     {
       "tag": "v0.15.0",
       "date": "2026-07-24",
-      "commits": 16,
+      "commits": 24,
       "intervalDays": 2.5,
-      "leadTimeDays": 0.5,
+      "leadTimeDays": 1,
       "isPatch": false,
       "failure": false,
       "restoreDays": null
