@@ -578,7 +578,7 @@
     "@types/readable-stream": "^4.0.24",
     "@types/sinon": "^22.0.0",
     "@types/urijs": "^1.19.26",
-    "@types/vscode": "1.125.0",
+    "@types/vscode": "1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",
     "@vscode/test-electron": "^3.0.0",
