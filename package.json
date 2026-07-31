@@ -603,7 +603,7 @@
     "genson-js": "^0.0.8",
     "jsonc-parser": "^3.3.1",
     "quicktype-core": "26.0.0",
-    "smol-toml": "^1.7.0",
+    "smol-toml": "^1.7.1",
     "yaml": "^2.9.0"
   }
 }
