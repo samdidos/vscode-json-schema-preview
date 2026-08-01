@@ -1,0 +1,168 @@
+name: Consolidate Dependabot PRs
+
+# Weekly, fold every open Dependabot PR into one branch/PR instead of merging
+# them one at a time. Dependabot itself is pinned to open its batch Thursday
+# 06:00 UTC (.github/dependabot.yml), so this runs a few hours after — by
+# then the whole week's batch should already be open.
+#
+# This replaces the equivalent Claude Code Remote "Consolidate Dependabot
+# PRs" Routine set up 2026-08-01: same task, but committed to the repo,
+# versioned, and running on GitHub's infrastructure instead of depending on
+# an external session staying alive. Do not run both at once — either
+# disable/delete the Routine, or delete this workflow, but not both active,
+# or they can race each other onto the same package-lock.json.
+#
+# Unlike that Routine, this workflow cannot stay open to watch CI after
+# opening the PR (a scheduled Action run is one-shot, not a persistent
+# session) — the PR's own CI is the check, and next week's run will extend
+# the same PR with new bumps if it's still open.
+#
+# Also: PRs opened with the default GITHUB_TOKEN do not themselves trigger
+# further workflows (a GitHub anti-loop rule), so the consolidated PR opened
+# below will show no CI checks until someone re-runs/re-pushes. Swap
+# `github_token` for a PAT stored as a secret if you want CI to fire
+# automatically (same tradeoff noted in maturity-refresh.yml).
+on:
+  schedule:
+    - cron: '37 9 * * 4'
+  workflow_dispatch:
+
+# Top-level token is read-only (OSSF Token-Permissions); the write scopes
+# the job actually needs are granted at job level only.
+permissions:
+  contents: read
+
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the consolidation branch
+      pull-requests: write # open/update/close/comment on PRs
+      issues: write # PR comments are served by the issue-comments API
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Consolidate open Dependabot PRs
+        uses: anthropics/claude-code-action@c96dd0a84e0232ab86947fca5fe34f1caae8792f # v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(npm:*),Bash(node:*),Bash(gh:*),Bash(rm:*)"
+          prompt: |
+            Repo: ${{ github.repository }}. Use the `gh` CLI for all GitHub
+            operations (list/view/comment/close PRs) — there is no MCP
+            GitHub server here, only `gh` and `git` over Bash.
+
+            Task: consolidate any open Dependabot PRs into one validated PR.
+            Prior art for the exact pattern (from when this was done by
+            hand): PRs #155 and #162 in this repo, plus the "Superseded by
+            #NNN" comments they left on the individual Dependabot PRs.
+
+            Step 1 — find the work. `gh pr list --author app/dependabot
+            --state open --json number,title,headRefName`. If there are
+            none, stop here — do nothing else, open nothing, comment
+            nowhere.
+
+            Step 2 — check for an existing consolidation PR. `gh pr list
+            --state open --json number,headRefName` and look for a head
+            branch matching `claude/dependabot-prs-*`. If one is already
+            open and unmerged from a previous run, do NOT open a second one
+            — a second PR would touch the same package-lock.json and
+            conflict. Instead: `git fetch origin <that-branch>`, check it
+            out, rebase it onto latest `origin/main`, add this week's bumps
+            as an additional commit, force-push with `--force-with-lease`,
+            and update that PR's body to cover the new bumps too. The rest
+            of the steps below then apply to that PR.
+
+            Step 3 — prepare the working tree. `git fetch origin main`. If
+            starting fresh, branch off `origin/main` as
+            `claude/dependabot-prs-<short-random-suffix>`. `node_modules/`
+            will not exist on this runner — do NOT run `npm ci` or a bare
+            `npm install` for the initial install: per this repo's
+            AGENTS.md, the `canvas` dependency native-compiles and fails in
+            minimal containers. Run `node scripts/bootstrap.mjs` instead
+            (installs with --ignore-scripts).
+
+            Step 4 — apply the bumps. `gh pr diff <number>` for each
+            Dependabot PR to see the exact version bump.
+            - npm packages: `npm install <pkg>@<version>`. Plain `npm
+              install` preserves an existing `^`/`~` range correctly — do
+              NOT strip carets that were already there. Use `--save-exact`
+              ONLY when that dependency's current package.json entry is
+              already pinned exact with no prefix (e.g. `quicktype-core`).
+            - GitHub Actions (.github/workflows/*.yml): apply the exact SHA
+              + trailing version-comment change shown in that PR's diff.
+
+            Step 5 — validate locally.
+            - `npm run verify` (the full local gate: lint, type-check,
+              traceability, coverage, etc).
+            - Then SEPARATELY: `npm run package && npm run
+              check:bundle-size`. Bundle-size is NOT part of `npm run
+              verify` but IS a required CI check, and it has broken this
+              exact workflow before — a `@types/vscode` bump failed because
+              `vsce` requires `@types/vscode` <= `engines.vscode`.
+            - Afterwards: `rm -f __bundle-size-check.vsix`, and `git
+              checkout -- bundle-size.json` if the local build touched that
+              snapshot file — it's regenerated by a separate automated
+              workflow and must not ride along in this PR.
+
+            Step 6 — handle anything that doesn't fit. If one dependency's
+            bump breaks verify or bundle-size in a way that isn't a trivial
+            fix — especially if fixing it would mean raising
+            `engines.vscode`, a constitution-level minimum-VS-Code-version
+            decision (see .specify/memory/constitution.md Article I) — do
+            NOT include that bump:
+              (a) leave that dependency at its current version on the
+                  branch,
+              (b) add an `ignore` entry for it under the npm ecosystem in
+                  .github/dependabot.yml, with a one-line comment
+                  explaining why, mirroring the existing `@types/vscode`
+                  entry,
+              (c) say so in the consolidated PR body AND in a comment on
+                  that specific original PR,
+              (d) leave that original PR OPEN — don't close/supersede it —
+                  so a human decides later.
+
+            Step 7 — commit, push, open the PR. Conventional Commits
+            (`build(deps): consolidate open Dependabot bumps`, body listing
+            each package and its version bump — match PR #162's commit
+            style). A dependabot.yml ignore entry may be the same or a
+            separate `build(deps):` commit. Push with `git push -u origin
+            <branch>`. Open the PR against `main` with `gh pr create`,
+            following .github/pull_request_template.md's sections —
+            Summary / Requirement(s): "No requirement applies (dependency
+            bump only, no behavior change)." / Test plan checklist — using
+            PR #162's body as the template. End the body with:
+
+                ---
+                _Generated by [Claude Code](https://claude.ai/code)_
+
+            Step 8 — close the superseded originals. For every Dependabot
+            PR you folded in: `gh pr comment <number> --body "..."` with
+            "Superseded by #<new PR>, which consolidates this bump along
+            with the other open Dependabot PRs." plus the same footer as
+            above, then `gh pr close <number>`. Leave any Step-6 exclusions
+            open.
+
+            Step 9 — re-check for a refill. Closing PRs frees Dependabot's
+            open-PR slots, which can make it open queued bumps within a
+            minute. The limits were raised (npm 15, actions 10) so a normal
+            week should fit in one pass, but re-run the Step-1 search once
+            after closing. If a fresh batch did appear, fold it into the
+            SAME branch/PR (extra commit, re-run Step 5, update the PR
+            body) rather than opening a second PR.
+
+            This is a recurring weekly job — each run starts fresh, so
+            don't assume any state from a previous run beyond what's
+            actually in the repo and on GitHub.
