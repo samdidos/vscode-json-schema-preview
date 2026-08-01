@@ -2,6 +2,14 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.17.1](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.17.0...v0.17.1) (2026-08-01)
+
+
+### Bug Fixes
+
+* **dora:** refresh dora.json for the v0.17.0 release ([8922df2](https://github.com/samdidos/vscode-json-schema-preview/commit/8922df2edaf7570d9a0ebd62dedb1ab27ffe9e51))
+* refresh dora.json and reorder DORA recompute before tests ([e86670f](https://github.com/samdidos/vscode-json-schema-preview/commit/e86670fd4129e9545cdfd668a80928558aadd0a5))
+
 ## [0.17.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.16.0...v0.17.0) (2026-07-27)
 
 
