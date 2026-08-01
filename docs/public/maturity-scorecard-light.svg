@@ -3,7 +3,7 @@
   <text x="190" y="28" font-size="16" font-weight="600" fill="#0b0b0b"
         font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Project Maturity Scorecard</text>
   <text x="190" y="48" font-size="12" fill="#52514e"
-        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Snapshot: 2026-07-31 — scored out of 5</text>
+        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Snapshot: 2026-08-01 — scored out of 5</text>
   
     <line x1="268.8" y1="92" x2="268.8" y2="392"
           stroke="#e1e0d9" stroke-width="1" />
