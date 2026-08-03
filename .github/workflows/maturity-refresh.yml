@@ -18,6 +18,11 @@ on:
   # of the release-tag set, so a new tag is the one moment dora.json can go
   # stale — and releases land far more often than this weekly cron, which left
   # the published Delivery view three releases behind.
+  #
+  # Note this fires on *every* Release Please run, i.e. every push to main —
+  # the run succeeds whether it cut a release or merely opened/updated its
+  # release PR. The `gate` job below narrows that back down to actual
+  # releases; see the comment there.
   workflow_run:
     workflows: ["Release Please"]
     types: [completed]
@@ -29,11 +34,59 @@ permissions:
   contents: read
 
 jobs:
+  # Decide whether this run should refresh anything at all.
+  #
+  # Release Please runs on every push to main and reports success either way:
+  # the common case is that it just opened or updated its pending release PR
+  # and cut nothing. Keying the refresh off that alone turned a deliberately
+  # weekly job into a near-every-merge one, opening a fresh metrics PR whose
+  # only real delta was the `generatedAt` date. S14-SR-08 asks for a refresh
+  # "when a release happens", and a release is observable: release-please
+  # tags the released commit. So require a `v*` tag on the very commit
+  # Release Please ran against. Schedule and manual runs stay unconditional.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history + tags: the tag we are testing for is the whole point.
+          fetch-depth: 0
+
+      - id: check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" != "workflow_run" ]; then
+            echo "$EVENT_NAME run — refreshing unconditionally."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # A failed release produced no tag, so there is nothing new to compute.
+          if [ "$RUN_CONCLUSION" != "success" ]; then
+            echo "Release Please concluded '$RUN_CONCLUSION' — nothing to refresh."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -n "$(git tag --points-at "$RUN_HEAD_SHA" --list 'v*')" ]; then
+            echo "Release tag found on $RUN_HEAD_SHA — refreshing."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No release tag on $RUN_HEAD_SHA — Release Please only updated"
+            echo "its release PR, so the release-tag set is unchanged. Skipping."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   refresh:
-    # On the release hook, only refresh after Release Please actually succeeded
-    # — a failed release produced no tag, so there is nothing new to compute.
-    # Schedule and manual runs are unconditional.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write # push the refresh branch

@@ -32,8 +32,23 @@ suite('S14 — delivery-metric freshness', () => {
     assert.match(triggers, /workflow_run/, 'a release must trigger the refresh');
     assert.match(triggers, /Release Please/);
     assert.match(triggers, /schedule/, 'the periodic refresh stays as a backstop');
-    // A failed release produced no tag, so there is nothing to recompute.
-    assert.match(refresh, /workflow_run\.conclusion == 'success'/);
+    // A failed release produced no tag, so there is nothing to recompute —
+    // but neither does a *successful* run that only opened or updated the
+    // release PR. Release Please runs on every push to main and succeeds
+    // either way, so conclusion alone refreshes on essentially every merge.
+    // A release is observable by the tag it leaves on the released commit, so
+    // the gate must consult both, and the refresh must hang off that decision.
+    assert.match(refresh, /workflow_run\.conclusion/, 'a failed release must not refresh');
+    assert.match(
+      refresh,
+      /git tag --points-at/,
+      'a successful run that cut no release must not refresh',
+    );
+    assert.match(
+      refresh,
+      /needs\.gate\.outputs\.proceed == 'true'/,
+      'the refresh job must be gated on that decision',
+    );
   });
 
   test('[S14-SR-08] the committed snapshot covers the released version', () => {
