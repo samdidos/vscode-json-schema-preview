@@ -32,11 +32,12 @@ export const DEMOS = [
   { name: 'workspace-validation', dir: 'workspace-validation-mouse', delay: 220, hold: 1_400, specs: ['F20'] },
   { name: 'quick-fix', dir: 'quick-fix-mouse', delay: 220, hold: 1_400, specs: ['F21'] },
   { name: 'draft-migration', dir: 'draft-migration-mouse', delay: 220, hold: 1_400, specs: ['F22'] },
-  // Chains inference (F06) -> preview (F01) -> live-edit (F02); see the 2026-07
+  // Chains inference (F06) -> preview (F01) -> live-edit (F02) -> configure
+  // (F09) -> validate/bind (F03/F04/F10) -> code generation (F18); see the
   // History note in specs/S08-e2e-testing.md for the exact narrative. Captured
   // via scripts/make-showcase-gif.mjs (real screen recording), not this file's
   // screenshot-stitch pipeline, hence no `dir`/`delay`/`hold`.
-  { name: 'showcase', specs: ['F01', 'F02', 'F06'] },
+  { name: 'showcase', specs: ['F01', 'F02', 'F03', 'F04', 'F06', 'F09', 'F10', 'F18'] },
 ];
 
 export function findDemo(name) {

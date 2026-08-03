@@ -133,8 +133,8 @@ mechanism.
   (`scripts/detect-changed-features.mjs`) — adding a demo for a new feature,
   or reassigning one to a different spec, is a one-file edit. `demo-showcase`/
   `demo-showcase-mouse` is mapped like any other entry, to every spec its
-  narrative touches (F01, F02, F06 per the 2026-07 History note above), even
-  though its GIF is produced by a different script
+  narrative touches (F01, F02, F03, F04, F06, F09, F10, F18 per the History
+  notes above), even though its GIF is produced by a different script
   (`scripts/make-showcase-gif.mjs`) than the other demos.
 - **S08-SR-14** This selection applies only to the demo/GIF pipeline
   (`refresh-gifs.yml`'s two jobs). The assertion-based integration suite
@@ -208,6 +208,55 @@ mechanism.
 
 ## History
 
+- **2026-08** — Rewrote `demo-showcase`/`demo-showcase-mouse`'s narrative from
+  five steps to thirteen, widening its constituent specs from F01/F02/F06 to
+  F01/F02/F03/F04/F06/F09/F10/F18 (S08-SR-13). New narrative: open a good JSON
+  data file, generate a schema from it and save it (F06); hide the raw JSON
+  tabs so only the rendered schema viewer shows (F01); reopen the schema and
+  live-edit its title, watching the viewer refresh (F02); configure the
+  viewer (via `jsonschema.config`, F09) to show Expand all/Collapse all, and
+  use both buttons; close every tab and open a bad JSON example; validate it
+  (a "no schema bound" warning, F03) and inline-bind it to the generated
+  schema straight from the warning's own action (F04/F10); validate again to
+  show the binding doing real work; trigger IntelliSense and Ctrl+click the
+  inline `$schema` value to open the schema file (both built-in VS Code JSON
+  language features — this extension contributes no document-link/completion
+  provider of its own for a *data* file's `$schema` field, so nothing in this
+  repo's own code is exercised by those two beats); generate TypeScript types
+  from the schema (F18); and finish by flipping `jsonschema.preview.autoOpen`
+  in the Settings UI and reopening the schema file to show the preview open
+  on its own with no click.
+  The Expand all/Collapse all buttons required switching away from the
+  default "flat" `json-schema-for-humans` template (chosen specifically to
+  avoid a CDN fetch — see F01's History) to `js`, which loads jQuery/
+  Bootstrap from a CDN. This was verified directly before writing the demo,
+  not assumed: `js`'s template also references two local sibling files
+  (`schema_doc.css`/`schema_doc.min.js`) that `PreviewWebPanel.ts` never
+  serves (it reads only the single generated HTML file into a string,
+  discarding any sibling assets JSON-schema-for-humans writes alongside it),
+  but a headless-Chromium check against the tool's actual generated output
+  confirmed their absence only costs a cosmetic style pass and one harmless
+  `anchorOnLoad` console error — the buttons themselves are driven by
+  Bootstrap's `data-toggle="collapse"`, wired up once jQuery/Bootstrap load
+  from the CDN, and that still works. `js_offline` (the same template with
+  every asset bundled locally, no CDN) was considered first and is the
+  better long-term fit for this project's zero-network posture, but its
+  local relative asset paths (`css/…`, `js/…`) have no working code path in
+  `PreviewWebPanel.ts` at all — there is no `<base>`/`asWebviewUri` rewriting
+  and no mechanism to keep a per-panel asset directory alive for the
+  webview's lifetime, so unlike `js`'s CDN links (which at least resolve),
+  `js_offline`'s local links would 404 unconditionally. Properly supporting
+  `js_offline` would need webview-resource-serving work in `PreviewWebPanel.ts`
+  itself — real product scope, not a demo-script change — so this rewrite
+  deliberately took the already-working `js` template instead and left that
+  as a candidate future spec rather than building it under this task.
+  `demo-showcase` (command-palette twin) was extended to match — Configure
+  Preview, Validate, inline Bind, and Generate Types all now run there too,
+  as command-palette smoke coverage (S08-SR-10) — but continues to skip the
+  IntelliSense/Ctrl+click beats (no command of this extension's own is
+  behind them) and binds/generates against the pre-existing, hand-curated
+  `person.schema.json` rather than the just-generated file, unchanged from
+  its original simpler-on-purpose design (see the entry below).
 - **2026-07-25** — Added S08-SR-12..14: the GIF-refresh workflow now runs
   demo Playwright scripts and regenerates GIFs only for the demos mapped to
   specs that changed or were added since the previous release tag, instead of
