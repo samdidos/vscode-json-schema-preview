@@ -31,9 +31,9 @@
     <text x="174" y="113" font-size="13"
           font-weight="600" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Overall</text>
-    <rect x="190" y="98" width="378.24" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="578.24" y="113" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.8</text>
+    <rect x="190" y="98" width="370.36" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="570.36" y="113" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.7</text>
     <text x="174" y="161" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Spec &amp; process</text>
@@ -67,9 +67,9 @@
     <text x="174" y="341" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Security / supply chain</text>
-    <rect x="190" y="326" width="346.72" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="546.72" y="341" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.4</text>
+    <rect x="190" y="326" width="338.84" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="538.8399999999999" y="341" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.3</text>
     <text x="174" y="377" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Docs</text>

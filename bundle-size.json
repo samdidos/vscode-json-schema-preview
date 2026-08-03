@@ -3,9 +3,9 @@
   "generatedAt": "2026-08-03",
   "version": "0.17.1",
   "measurements": {
-    "extensionBundleBytes": 429064,
+    "extensionBundleBytes": 430940,
     "extensionBundleBudgetBytes": 1048576,
-    "vsixBytes": 562445,
+    "vsixBytes": 563481,
     "vsixBudgetBytes": 1572864
   }
 }
