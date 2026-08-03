@@ -21,7 +21,7 @@ import { createRealCursor } from './helpers/realCursor';
  * types from it (F18), and finish by flipping a VS Code setting
  * (`jsonschema.preview.autoOpen`) to show the preview opening on its own.
  *
- * Like every other demo, this one is NOT stitched from Playwright
+ * Unlike every other demo, this one is NOT stitched from Playwright
  * screenshots (a Playwright-dispatched mouse move never moves the real OS
  * pointer, so those recordings fake a cursor with an animated DOM overlay —
  * see helpers/mouse.ts). This test instead:
