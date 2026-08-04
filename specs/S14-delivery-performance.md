@@ -72,19 +72,6 @@ not ground truth. The site states this next to the number.
   a median interval of ~1.3 days leaves the published Delivery view stale for
   most of its life; it sat three releases behind (ending at v0.13.0 while the
   extension shipped v0.16.0) when this requirement was written.
-- **S14-SR-10** When generated on a branch that stages an as-yet-untagged
-  release, `dora.json` MUST include that **pending release**. The refresh
-  runs inside the release PR so the release ships with its own metrics
-  (S14-SR-08), but release-please only creates the tag when that PR merges —
-  so a tags-only computation would end one release short, and would be stale
-  the instant the tag landed. A pending release is identified by
-  `package.json`'s version having no matching `vX.Y.Z` tag **and** a
-  `CHANGELOG.md` entry carrying that version's release date; both must hold,
-  so a hand-edited version bump alone cannot invent a release. Its date comes
-  from that changelog entry — the same date release-please stamps on the
-  release — making the synthesised entry accurate to the day rather than to
-  the minute of tagging. When the version is already tagged, nothing is
-  synthesised and output is unchanged (S14-SR-06's determinism still holds).
 - **S14-SR-09** `npm run dora:check` MUST distinguish **"no release tags are
   visible"** from **"`dora.json` is stale"**, and MUST say which. The two are
   indistinguishable by value — a checkout with no tags computes zero releases,

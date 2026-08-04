@@ -69,70 +69,27 @@ function parseSemver(tag) {
   return m ? { major: +m[1], minor: +m[2], patch: +m[3] } : null;
 }
 
-/** Oldest → newest release tags with their commit dates. */
-function taggedReleases() {
+/**
+ * Oldest → newest release tags with their commit dates.
+ *
+ * Tags only, deliberately. An earlier revision also synthesised the release
+ * staged in an open release-please PR, reading its version from package.json
+ * and its date from the changelog — but that date is when release-please
+ * *wrote* the entry, not when the tag lands, so every figure derived from it
+ * (interval, lead time, restore time) was an estimate dressed up as a
+ * measurement. A tag is the only thing that actually marks a deploy here
+ * (S14-SR-06), so the refresh is triggered after tagging instead.
+ */
+function releases() {
   const lines = git("for-each-ref --sort=creatordate --format='%(refname:short)|%(creatordate:iso-strict)' refs/tags/v*")
     .split('\n')
     .filter(Boolean);
   return lines
     .map((l) => {
       const [tag, date] = l.replace(/'/g, '').split('|');
-      return { tag, date, ts: Date.parse(date), semver: parseSemver(tag), ref: tag };
+      return { tag, date, ts: Date.parse(date), semver: parseSemver(tag) };
     })
     .filter((r) => r.semver);
-}
-
-/**
- * S14-SR-10 — the release staged on this branch but not yet tagged, or null.
- *
- * This generator normally runs inside the release PR, where release-please has
- * already bumped package.json and written the changelog entry but creates the
- * tag only when that PR merges. Computing from tags alone would therefore end
- * one release short and go stale the instant the tag landed.
- *
- * Both signals are required: an untagged version *and* a changelog entry
- * dated for it. A hand-edited version bump alone leaves the changelog without
- * a matching entry and so synthesises nothing. Once the tag exists this
- * returns null and the output is byte-identical to a tags-only run.
- */
-function pendingRelease(tagged) {
-  const { version } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
-  const semver = parseSemver(version);
-  if (!semver) return null;
-
-  const tag = `v${version}`;
-  if (tagged.some((r) => r.tag === tag)) return null;
-
-  // release-please's heading, e.g.
-  // `## [0.17.2](…/compare/v0.17.1...v0.17.2) (2026-08-03)`
-  //
-  // Matched with a fixed pattern and compared by value. Interpolating the
-  // version into the pattern instead would mean escaping it, and escaping
-  // only the dots (as an earlier revision did) leaves backslashes and every
-  // other metacharacter unescaped — CodeQL js/incomplete-sanitization. There
-  // is nothing to gain from a dynamic pattern here.
-  const HEADING = /^#{2,3} \[?(\d+\.\d+\.\d+)\]?[^\n]*\((\d{4}-\d{2}-\d{2})\)\s*$/gm;
-  let dated = null;
-  for (const m of readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf-8').matchAll(HEADING)) {
-    if (m[1] === version) {
-      dated = m[2];
-      break;
-    }
-  }
-  if (!dated) return null;
-
-  // Midday UTC, not midnight: the changelog carries a date, not a time, and
-  // anchoring mid-day keeps the derived interval/lead-time figures from
-  // skewing a consistent half-day in either direction.
-  const date = `${dated}T12:00:00Z`;
-  return { tag, date, ts: Date.parse(date), semver, ref: 'HEAD', pending: true };
-}
-
-/** Oldest → newest releases, including the pending one when there is one. */
-function releases() {
-  const tagged = taggedReleases();
-  const pending = pendingRelease(tagged);
-  return pending ? [...tagged, pending] : tagged;
 }
 
 /** True when `b` is a semver patch bump over `a` (same major.minor, patch+). */
@@ -154,9 +111,7 @@ function compute() {
     // pre-existing history, whose ancient authoring dates aren't a delivery
     // signal — so it is excluded from lead time (its datapoint is null and its
     // commits don't enter the aggregate). It still counts as a deployment.
-    // `ref`, not `tag`: a pending release (S14-SR-10) has no tag to resolve,
-    // and its commits are the ones on this branch since the previous tag.
-    const range = prev ? `${prev.ref}..${rel.ref}` : rel.ref;
+    const range = prev ? `${prev.tag}..${rel.tag}` : rel.tag;
     const authorTs = git(`log --format=%aI ${range}`)
       .split('\n')
       .filter(Boolean)
