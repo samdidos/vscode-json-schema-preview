@@ -80,6 +80,14 @@ suite('S14 — delivery-metric freshness', () => {
       'an already-tagged version must synthesise nothing',
     );
     assert.match(fn, /if \(!dated\) return null;/, 'no changelog entry must synthesise nothing');
+    // The changelog heading must be matched with a fixed pattern and compared
+    // by value. Interpolating the version into a pattern needs escaping, and
+    // escaping only the dots leaves every other metacharacter live
+    // (CodeQL js/incomplete-sanitization).
+    assert.ok(
+      !/new RegExp/.test(fn),
+      'the heading pattern must be static, not built from the version string',
+    );
     // A synthesised release has no tag to resolve, so commit ranges must use
     // a ref (HEAD) rather than the tag name.
     assert.match(script, /prev\.ref\}\.\.\$\{rel\.ref\}/, 'ranges must resolve via ref, not tag');
