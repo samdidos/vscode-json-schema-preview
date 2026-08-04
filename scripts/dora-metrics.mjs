@@ -105,17 +105,26 @@ function pendingRelease(tagged) {
 
   // release-please's heading, e.g.
   // `## [0.17.2](…/compare/v0.17.1...v0.17.2) (2026-08-03)`
-  const heading = new RegExp(
-    `^#{2,3} \\[?${version.replace(/\./g, '\\.')}\\]?[^\\n]*\\((\\d{4}-\\d{2}-\\d{2})\\)\\s*$`,
-    'm',
-  );
-  const dated = heading.exec(readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf-8'));
+  //
+  // Matched with a fixed pattern and compared by value. Interpolating the
+  // version into the pattern instead would mean escaping it, and escaping
+  // only the dots (as an earlier revision did) leaves backslashes and every
+  // other metacharacter unescaped — CodeQL js/incomplete-sanitization. There
+  // is nothing to gain from a dynamic pattern here.
+  const HEADING = /^#{2,3} \[?(\d+\.\d+\.\d+)\]?[^\n]*\((\d{4}-\d{2}-\d{2})\)\s*$/gm;
+  let dated = null;
+  for (const m of readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf-8').matchAll(HEADING)) {
+    if (m[1] === version) {
+      dated = m[2];
+      break;
+    }
+  }
   if (!dated) return null;
 
   // Midday UTC, not midnight: the changelog carries a date, not a time, and
   // anchoring mid-day keeps the derived interval/lead-time figures from
   // skewing a consistent half-day in either direction.
-  const date = `${dated[1]}T12:00:00Z`;
+  const date = `${dated}T12:00:00Z`;
   return { tag, date, ts: Date.parse(date), semver, ref: 'HEAD', pending: true };
 }
 
