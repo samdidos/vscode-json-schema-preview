@@ -12,17 +12,17 @@ name: Refresh maturity score & bundle size
 # That's fine — the data was just computed here. Swap in a PAT if you want the
 # auto-PR to run CI too.
 on:
+  # Bi-weekly backstop (1st and 15th), and only when no release has already
+  # refreshed these files in the last fortnight — see the `plan` job. Releases
+  # are the primary refresh path now, so the periodic run exists to cover
+  # quiet stretches, not to be the main clock.
   schedule:
-    - cron: '0 9 * * 2'
-  # Also after every release (S14-SR-08). The DORA metrics are a pure function
-  # of the release-tag set, so a new tag is the one moment dora.json can go
-  # stale — and releases land far more often than this weekly cron, which left
-  # the published Delivery view three releases behind.
-  #
-  # Note this fires on *every* Release Please run, i.e. every push to main —
-  # the run succeeds whether it cut a release or merely opened/updated its
-  # release PR. The `gate` job below narrows that back down to actual
-  # releases; see the comment there.
+    - cron: '0 9 1,15 * *'
+  # The primary path (S14-SR-08): refresh *inside* release-please's own PR so
+  # the release ships with its own metrics, rather than trailing a separate
+  # catch-up PR behind every release. Same hook and the same reason as
+  # refresh-gifs.yml — `pull_request` does not fire for a PR release-please
+  # opened with GITHUB_TOKEN, so we hang off the Release Please run instead.
   workflow_run:
     workflows: ["Release Please"]
     types: [completed]
@@ -34,70 +34,119 @@ permissions:
   contents: read
 
 jobs:
-  # Decide whether this run should refresh anything at all.
+  # Work out *whether* to refresh and *where* the result should land.
   #
-  # Release Please runs on every push to main and reports success either way:
-  # the common case is that it just opened or updated its pending release PR
-  # and cut nothing. Keying the refresh off that alone turned a deliberately
-  # weekly job into a near-every-merge one, opening a fresh metrics PR whose
-  # only real delta was the `generatedAt` date. S14-SR-08 asks for a refresh
-  # "when a release happens", and a release is observable: release-please
-  # tags the released commit. So require a `v*` tag on the very commit
-  # Release Please ran against. Schedule and manual runs stay unconditional.
-  gate:
+  #   mode=release   commit straight onto release-please's open PR branch, so
+  #                  the release carries its own metrics and no catch-up PR is
+  #                  ever needed. Sibling of refresh-gifs.yml, which commits
+  #                  into the same PR from the same trigger.
+  #   mode=scheduled the bi-weekly backstop: commit to chore/refresh-repo-metrics
+  #                  and open a PR for it.
+  #   mode=skip      nothing to do.
+  #
+  # The scheduled run stands down when a release already refreshed these files
+  # inside the last fortnight — with the release path in place that run would
+  # otherwise re-open a PR whose only real delta is the `generatedAt` date,
+  # which is exactly the churn this job is meant to avoid.
+  plan:
     runs-on: ubuntu-latest
     outputs:
-      proceed: ${{ steps.check.outputs.proceed }}
+      mode: ${{ steps.decide.outputs.mode }}
+      branch: ${{ steps.decide.outputs.branch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Full history + tags: the tag we are testing for is the whole point.
+          # Full history + tags: "was there a release recently?" is a tag question.
           fetch-depth: 0
 
-      - id: check
+      - id: decide
         env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
           RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
 
-          if [ "$EVENT_NAME" != "workflow_run" ]; then
-            echo "$EVENT_NAME run — refreshing unconditionally."
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          emit() {
+            echo "mode=$1" >> "$GITHUB_OUTPUT"
+            echo "branch=${2:-}" >> "$GITHUB_OUTPUT"
+          }
+
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            # A failed release run leaves a PR we should not be committing onto.
+            if [ "$RUN_CONCLUSION" != "success" ]; then
+              echo "Release Please concluded '$RUN_CONCLUSION' — nothing to refresh."
+              emit skip
+              exit 0
+            fi
+
+            # An open release-please PR is what "a release is being prepared"
+            # looks like. When there is none, release-please merely had nothing
+            # to release (or the release just merged and its PR is closed).
+            branch=$(gh pr list --repo "$REPO" --state open --json headRefName \
+              --jq '[.[] | select(.headRefName | startswith("release-please--"))][0].headRefName // ""')
+            if [ -z "$branch" ]; then
+              echo "No open release-please PR — nothing staged to refresh."
+              emit skip
+            else
+              echo "Refreshing into the open release PR: $branch"
+              emit release "$branch"
+            fi
             exit 0
           fi
 
-          # A failed release produced no tag, so there is nothing new to compute.
-          if [ "$RUN_CONCLUSION" != "success" ]; then
-            echo "Release Please concluded '$RUN_CONCLUSION' — nothing to refresh."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          # Scheduled / manual. A release within the fortnight has already
+          # committed a full refresh into its own PR, so skip the backstop.
+          # Manual dispatch is deliberately exempt: asking for it is the point.
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            latest=$(git for-each-ref --sort=-creatordate --format='%(creatordate:unix)' 'refs/tags/v*' | head -1)
+            if [ -n "$latest" ] && [ "$(( ($(date +%s) - latest) / 86400 ))" -lt 14 ]; then
+              echo "A release landed $(( ($(date +%s) - latest) / 86400 ))d ago — it already refreshed these files. Skipping."
+              emit skip
+              exit 0
+            fi
           fi
 
-          if [ -n "$(git tag --points-at "$RUN_HEAD_SHA" --list 'v*')" ]; then
-            echo "Release tag found on $RUN_HEAD_SHA — refreshing."
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No release tag on $RUN_HEAD_SHA — Release Please only updated"
-            echo "its release PR, so the release-tag set is unchanged. Skipping."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo "$EVENT_NAME run — refreshing onto the backstop branch."
+          emit scheduled
 
   refresh:
-    needs: gate
-    if: needs.gate.outputs.proceed == 'true'
+    needs: plan
+    if: needs.plan.outputs.mode != 'skip'
     runs-on: ubuntu-latest
     permissions:
-      contents: write # push the refresh branch
-      pull-requests: write # open/update the refresh PR
+      contents: write # push the refresh branch / the release PR branch
+      pull-requests: write # open/update the backstop PR
+      statuses: write # post a "Repo metrics" status on the release PR
+    env:
+      MODE: ${{ needs.plan.outputs.mode }}
+      TARGET_BRANCH: ${{ needs.plan.outputs.branch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          # Empty on the scheduled path, which means "the default branch".
+          ref: ${{ env.TARGET_BRANCH }}
           # Full history + tags so the DORA metrics (S14) can read the whole
           # release timeline, not just the shallow default clone.
           fetch-depth: 0
+
+      # workflow_run is decoupled from the release PR's own check list, so
+      # without this the PR gives no sign a metrics refresh is even running.
+      # A commit status makes it show up like any other check (same treatment
+      # refresh-gifs.yml gives its "Demo GIFs" status).
+      - name: Mark the metrics refresh as pending on the release PR
+        if: env.MODE == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "START_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          gh api "repos/${{ github.repository }}/statuses/$(git rev-parse HEAD)" \
+            -f state=pending \
+            -f context="Repo metrics" \
+            -f description="Refreshing maturity score, DORA, and bundle size…" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -107,13 +156,18 @@ jobs:
       - run: npm ci
 
       # DORA delivery metrics are computed from git tags/commits (S14), so a
-      # new release since last week changes them — refresh here where the full
-      # history is available (fetch-depth: 0 on checkout above is required).
-      # This MUST run before the test suite below: this job is triggered
-      # right after a release tags, so the checkout already sees the new tag
-      # while the committed dora.json doesn't yet — the S14-SR-08 freshness
-      # test would otherwise fail every single time a release lands, before
-      # this job ever reached the step that fixes it.
+      # new release changes them — refresh here where the full history is
+      # available (fetch-depth: 0 on checkout above is required).
+      #
+      # On the release path the tag does not exist yet (release-please creates
+      # it when its PR merges), so the generator folds in the pending release
+      # from package.json + CHANGELOG.md per S14-SR-10. That is what lets the
+      # release commit carry metrics that are already correct the moment the
+      # tag lands, instead of going stale on the very next push to main.
+      #
+      # MUST run before the test suite below either way: the S14-SR-08
+      # freshness test compares dora.json against the release set, and would
+      # otherwise fail before this job reached the step that fixes it.
       - name: Recompute DORA delivery metrics
         run: npm run dora
 
@@ -146,9 +200,10 @@ jobs:
       - name: Refresh bundle-size snapshot
         run: npm run package && npm run check:bundle-size
 
-      - name: Open a PR if anything changed
+      - name: Commit the refreshed metrics
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           git add maturity-score.json MATURITY.md README.md docs/public/maturity-scorecard-light.svg docs/public/maturity-scorecard-dark.svg bundle-size.json dora.json
@@ -156,22 +211,57 @@ jobs:
 
           # --staged so newly-created files (a first-ever OSSF cache) count too.
           if git diff --staged --quiet; then
-            echo "Nothing changed — nothing to open."
+            echo "Nothing changed — nothing to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ "$MODE" = "release" ]; then
+            # Straight onto release-please's branch, so the release ships with
+            # its own metrics. No force-push: refresh-gifs.yml is committing to
+            # this same branch concurrently, and clobbering its GIF commit would
+            # silently undo it.
+            git commit --no-verify -m "chore: refresh repo metrics for the release"
+            git push origin "HEAD:$TARGET_BRANCH"
             exit 0
           fi
 
           BRANCH=chore/refresh-repo-metrics
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B "$BRANCH"
           # Data-only change; the verify gate already ran above, so skip the hook.
           git commit --no-verify -m "chore: refresh maturity score, OpenSSF grade, and bundle size"
           git push --force origin "$BRANCH"
 
-          if [ -z "$(gh pr list --repo "${{ github.repository }}" --head "$BRANCH" --state open --json number --jq '.[0].number // ""')" ]; then
-            gh pr create --repo "${{ github.repository }}" --base main --head "$BRANCH" \
+          if [ -z "$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // ""')" ]; then
+            gh pr create --repo "$REPO" --base main --head "$BRANCH" \
               --title "chore: refresh maturity score, OpenSSF grade, README badge, and bundle size" \
-              --body "Automated weekly refresh of the maturity score, the OpenSSF Scorecard cache, the scorecard chart, the README coverage badge, and the bundle-size snapshot (S03-SR-18), generated by \`.github/workflows/maturity-refresh.yml\`. Review the deltas and merge if they look right."
+              --body "Bi-weekly backstop refresh of the maturity score, the OpenSSF Scorecard cache, the scorecard chart, the README coverage badge, and the bundle-size snapshot (S03-SR-18), generated by \`.github/workflows/maturity-refresh.yml\`. Releases refresh these files in their own PR, so this runs only when no release has landed in the last fortnight. Review the deltas and merge if they look right."
           else
             echo "An open refresh PR already exists — it has been updated by the force-push."
           fi
+
+      # Mirrors refresh-gifs.yml: report the outcome back onto the release PR,
+      # which cannot see this workflow_run-triggered job otherwise.
+      - name: Mark the metrics refresh as successful
+        if: success() && env.MODE == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/$(git rev-parse HEAD)" \
+            -f state=success \
+            -f context="Repo metrics" \
+            -f description="Repo metrics refreshed" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Mark the metrics refresh as failed
+        if: failure() && env.MODE == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${{ env.START_SHA }}" \
+            -f state=failure \
+            -f context="Repo metrics" \
+            -f description="Repo metrics failed to refresh — see the workflow run for details" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
