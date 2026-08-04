@@ -19,7 +19,7 @@ is committed as [`maturity-score.json`](maturity-score.json).
 > signal directly; where none does (AI-agent integration) it is an explicit
 > presence checklist, documented below, not a vibe.
 
-**Snapshot: 2026-08-03**
+**Snapshot: 2026-08-04**
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/public/maturity-scorecard-dark.svg">
