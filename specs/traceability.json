@@ -4067,7 +4067,7 @@
         ".github/workflows/ci.yml",
         "dora.json"
       ],
-      "note": "refresh triggered by workflow_run after Release Please, gated on that run having actually tagged a release (a `v*` tag pointing at its head_sha) — success alone fires on every push to main, where release-please usually only opens/updates its release PR, which turned the weekly job into a near-every-merge one; weekly cron kept as backstop; freshness test (S14-SR-08) compares against the latest visible git tag rather than package.json's version, since a release-please PR bumps the version ahead of tagging — ci.yml's coverage job now fetches full tag history (fetch-depth: 0) so that comparison isn't skipped there",
+      "note": "refresh triggered by workflow_run after Release Please and committed *into* release-please's own open PR (same hook and pattern as refresh-gifs.yml, running alongside it), so the release ships carrying its own metrics instead of trailing a catch-up PR; the pending untagged release is folded in per S14-SR-10. A `plan` job resolves mode=release|scheduled|skip: skip when the release run failed or no release-please PR is open. The periodic backstop moved weekly -> bi-weekly (cron 0 9 1,15 * *) and stands down when a release landed inside the last fortnight, since that release already refreshed these files — previously the trigger fired on every push to main and re-opened a PR whose only real delta was the generatedAt date. Freshness test compares against the latest visible git tag rather than package.json's version, since a release-please PR bumps the version ahead of tagging — ci.yml's coverage job fetches full tag history (fetch-depth: 0) so that comparison isn't skipped there",
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     },
@@ -4079,6 +4079,16 @@
       "note": "--check reports a tagless checkout as a checkout problem before comparing for staleness",
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
+    },
+    "S14-SR-10": {
+      "status": "implemented",
+      "impl": [
+        "scripts/dora-metrics.mjs",
+        ".github/workflows/maturity-refresh.yml"
+      ],
+      "note": "pendingRelease() folds the staged-but-untagged release into the snapshot when package.json's version has no matching tag AND CHANGELOG.md carries a dated entry for it; both are required so a hand-edited bump cannot invent a release. Needed because the refresh now runs inside release-please's PR (S14-SR-08), where the tag does not exist until that PR merges — a tags-only computation would end one release short and be stale the moment the tag landed. Release objects carry a `ref` (the tag, or HEAD for the pending one) so commit ranges resolve without a tag. With no pending release the output is byte-identical to a tags-only run, preserving S14-SR-06 determinism.",
+      "specifiedAt": "2026-08-04",
+      "implementedAt": "2026-08-04"
     },
     "S15-NFR-01": {
       "status": "manual",

@@ -26,29 +26,63 @@ function latestVisibleTag(): string | undefined {
 }
 
 suite('S14 — delivery-metric freshness', () => {
-  test('[S14-SR-08] the refresh runs after a release, not only on a schedule', () => {
+  test('[S14-SR-08] the refresh runs on a release, not only on a schedule', () => {
     // The whole trigger block, before the first job.
     const triggers = refresh.slice(refresh.indexOf('on:'), refresh.indexOf('jobs:'));
     assert.match(triggers, /workflow_run/, 'a release must trigger the refresh');
     assert.match(triggers, /Release Please/);
     assert.match(triggers, /schedule/, 'the periodic refresh stays as a backstop');
-    // A failed release produced no tag, so there is nothing to recompute —
-    // but neither does a *successful* run that only opened or updated the
-    // release PR. Release Please runs on every push to main and succeeds
-    // either way, so conclusion alone refreshes on essentially every merge.
-    // A release is observable by the tag it leaves on the released commit, so
-    // the gate must consult both, and the refresh must hang off that decision.
+    // A failed release run leaves a PR we must not commit onto.
     assert.match(refresh, /workflow_run\.conclusion/, 'a failed release must not refresh');
+    // The release path commits into release-please's own open PR, so the
+    // release ships carrying its own metrics instead of trailing a catch-up
+    // PR behind it. An open release-please PR is the signal that a release is
+    // being prepared; without one there is nothing staged to refresh.
     assert.match(
       refresh,
-      /git tag --points-at/,
-      'a successful run that cut no release must not refresh',
+      /startswith\("release-please--"\)/,
+      'the release path must target the open release-please PR',
     );
     assert.match(
       refresh,
-      /needs\.gate\.outputs\.proceed == 'true'/,
-      'the refresh job must be gated on that decision',
+      /HEAD:\$TARGET_BRANCH/,
+      'the refresh must be committed onto that PR branch',
     );
+    assert.match(
+      refresh,
+      /needs\.plan\.outputs\.mode != 'skip'/,
+      'the refresh job must be gated on the planned mode',
+    );
+  });
+
+  test('[S14-SR-08] the scheduled backstop stands down after a recent release', () => {
+    // With releases refreshing these files in their own PR, a periodic run
+    // that fired anyway would re-open a PR whose only real delta is the
+    // generatedAt date — the exact churn this job exists to avoid.
+    assert.match(refresh, /cron: '0 9 1,15 \* \*'/, 'the backstop runs bi-weekly');
+    const plan = refresh.slice(refresh.indexOf('id: decide'), refresh.indexOf('refresh:'));
+    assert.match(plan, /refs\/tags\/v\*/, 'recency must be judged from release tags');
+    assert.match(plan, /-lt 14/, 'a release inside the fortnight must skip the backstop');
+  });
+
+  test('[S14-SR-10] a pending, untagged release is folded into the snapshot', () => {
+    // The release path computes inside the release PR, where release-please
+    // has bumped package.json and written the changelog but has NOT tagged —
+    // the tag lands only on merge. Tags alone would therefore end one release
+    // short and be stale the instant the tag appeared.
+    const fn = script.slice(script.indexOf('function pendingRelease'), script.indexOf('/** Oldest → newest releases,'));
+    assert.match(fn, /package\.json/, "the pending version comes from package.json");
+    assert.match(fn, /CHANGELOG\.md/, 'its date comes from the changelog entry');
+    // Both signals required, so a hand-edited bump cannot invent a release.
+    assert.match(
+      fn,
+      /if \(tagged\.some\(\(r\) => r\.tag === tag\)\) return null;/,
+      'an already-tagged version must synthesise nothing',
+    );
+    assert.match(fn, /if \(!dated\) return null;/, 'no changelog entry must synthesise nothing');
+    // A synthesised release has no tag to resolve, so commit ranges must use
+    // a ref (HEAD) rather than the tag name.
+    assert.match(script, /prev\.ref\}\.\.\$\{rel\.ref\}/, 'ranges must resolve via ref, not tag');
   });
 
   test('[S14-SR-08] the committed snapshot covers the released version', () => {
