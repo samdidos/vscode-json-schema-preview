@@ -18,12 +18,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # S10-SR-14: docs/.vitepress/specHistory.data.ts runs `git log --follow`
-      # on each spec file at build time. The default shallow checkout
-      # (fetch-depth: 1) only has the tip commit, so every spec's "changes
-      # over time" would silently show that one commit as if it were the
-      # file's whole history — full depth is required for the feature to be
-      # correct, not just to avoid an error.
+      # S10-SR-14: specHistory.data.ts runs `git log --follow` per spec file
+      # at build time; a shallow checkout would silently show only the tip
+      # commit as each file's whole history.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0

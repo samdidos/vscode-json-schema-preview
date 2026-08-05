@@ -1,9 +1,7 @@
 name: Refresh Demo GIFs
 
-# pull_request: opened/reopened does NOT fire when release-please creates its PR
-# via GITHUB_TOKEN (GitHub blocks cascading workflow triggers to prevent loops).
-# workflow_run fires after the Release Please workflow itself completes, which is
-# the correct hook regardless of which token release-please used internally.
+# workflow_run, not pull_request: a PR opened by release-please's own
+# GITHUB_TOKEN doesn't fire pull_request events (GitHub's anti-loop rule).
 on:
   workflow_run:
     workflows: ["Release Please"]
@@ -44,11 +42,9 @@ jobs:
             echo "branch=$branch" >> "$GITHUB_OUTPUT"
           fi
 
-  # S08-SR-12/13 — determines which demos need re-running: the specs that
-  # changed or were newly added since the previous release tag, cross-
-  # referenced against scripts/demo-registry.mjs. Needs the full tag history
-  # (fetch-depth: 0), so it's a separate job rather than a step reused by
-  # both consumers below.
+  # S08-SR-12/13 — which demos changed/are new since the previous release tag,
+  # cross-referenced against scripts/demo-registry.mjs. A separate job (needs
+  # fetch-depth: 0) since both consumers below share its output.
   detect-features:
     needs: find-pr
     if: needs.find-pr.outputs.branch != ''
@@ -92,10 +88,9 @@ jobs:
           ref: ${{ env.TARGET_BRANCH }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # workflow_run is decoupled from the release-please PR's own check list, so
-      # without this the PR shows no indication a GIF refresh is running at all.
-      # Posting a commit status makes it appear like any other check — pending
-      # now, success/failure once the job finishes below.
+      # workflow_run is decoupled from the release PR's own check list, so
+      # this status is the only sign a refresh is running (pending here,
+      # success/failure once the job finishes below).
       - name: Mark GIF refresh as pending on the PR
         env:
           GH_TOKEN: ${{ github.token }}
@@ -115,11 +110,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # canvas (used by make-gifs.mjs) ships prebuilt binaries but falls back to
-      # building from source when no prebuilt matches — install system headers so
-      # the build succeeds in that case. ffmpeg/xdotool are for demo-showcase-mouse
-      # only: it records the real X11 display instead of stitching screenshots
-      # (see helpers/recorder.ts, helpers/realCursor.ts, make-showcase-gif.mjs).
+      # canvas falls back to a from-source build when no prebuilt binary
+      # matches, hence the headers. ffmpeg/xdotool are for demo-showcase-mouse
+      # only, which records the real X11 display (helpers/recorder.ts).
       - name: Install system libraries for canvas, ffmpeg, xdotool
         run: |
           sudo apt-get update -q
@@ -141,13 +134,10 @@ jobs:
           DISPLAY: ':99.0'
           ALL: ${{ needs.detect-features.outputs.all }}
           MOUSE_GREP: ${{ needs.detect-features.outputs.mouse-grep }}
-        # Only the mouse demos feed GIFs (make-gifs.mjs consumes the *-mouse
-        # frame dirs, make-showcase-gif.mjs consumes videos/showcase.mp4); the
-        # non-mouse twins run as CI UI-smoke instead (ci.yml e2e-smoke,
-        # S08-SR-11), so don't run them here. S08-SR-12: only the demos mapped
-        # to specs that changed/were added since the previous release run —
-        # `detect-features` falls back to "mouse" (every mouse demo) when no
-        # previous release tag was resolvable.
+        # Only the mouse demos feed GIFs; non-mouse twins run as the e2e-smoke
+        # job below instead (S08-SR-11). S08-SR-12: only demos mapped to specs
+        # changed since the previous release — `detect-features` falls back to
+        # every mouse demo when no previous release tag was resolvable.
         run: |
           if [ "$ALL" = "true" ]; then
             GREP='mouse'
@@ -200,9 +190,6 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: refresh demo GIFs"
           git push origin HEAD:${{ env.TARGET_BRANCH }}
 
-      # Reached only if every prior step succeeded. HEAD is now whatever the PR's
-      # current tip actually is — the new GIF-refresh commit if one was pushed,
-      # or unchanged if the GIFs came out byte-identical and nothing was committed.
       - name: Mark GIF refresh as successful
         if: success()
         env:
@@ -214,8 +201,8 @@ jobs:
             -f description="Demo GIFs refreshed" \
             -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-      # Reached if any prior step failed. No GIF commit happens in that case, so
-      # the PR's head is still the original commit captured before the run.
+      # Posts to START_SHA (captured before any changes), not HEAD: a failure
+      # here means no GIF commit landed, so HEAD is still that same commit.
       - name: Mark GIF refresh as failed
         if: failure()
         env:
@@ -235,21 +222,11 @@ jobs:
     # other's critical path.
     if: needs.find-pr.outputs.branch != ''
     runs-on: ubuntu-latest
-    # S08-SR-10/11 — the command-palette (non-mouse) demo scripts run the real
-    # feature flows through the actual VS Code UI. No assertions: this is
-    # crash / broken-selector detection, so it passes when every demo completes
-    # without throwing or timing out. Previously ran in ci.yml on every PR/push,
-    # but the ~6-minute run was contending for shared runner capacity alongside
-    # a dozen other PR jobs, which manifested as spurious Quick-Open-search
-    # timeouts rather than real failures. Moved to the same release cadence as
-    # the GIF refresh it shares fixtures with. Non-blocking while flakiness is
-    # measured — but this workflow runs after a release, not on a pull request,
-    # so it cannot block a merge anyway; swallowing the result with
-    # `continue-on-error` would buy nothing and destroy the only signal the
-    # job exists to produce (S09-SR-08). S08-SR-12: only the demos mapped to
-    # specs that changed/were added since the previous release run — falls back
-    # to every non-mouse demo (`--grep-invert mouse`) when no previous release
-    # tag was resolvable.
+    # S08-SR-10/11 — runs the command-palette (non-mouse) demos through the
+    # real VS Code UI; crash/broken-selector detection, no assertions. Not
+    # `continue-on-error` (S09-SR-08): that would destroy the only signal this
+    # job produces. S08-SR-12: only demos mapped to specs changed since the
+    # previous release, falling back to every non-mouse demo otherwise.
 
     env:
       TARGET_BRANCH: ${{ needs.find-pr.outputs.branch }}
@@ -266,9 +243,7 @@ jobs:
 
       - run: npm ci
 
-      # The preview demo renders with json-schema-for-humans when present
-      # (otherwise it falls back to the built-in renderer); install it so the
-      # smoke run matches the GIF-refresh environment.
+      # Matches the GIF-refresh environment (preview renders with this when present).
       - name: Install Python renderer
         run: pip3 install json-schema-for-humans
 

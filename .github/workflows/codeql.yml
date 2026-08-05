@@ -13,9 +13,9 @@ permissions:
 
 jobs:
   changes:
-    # Skipped on the weekly schedule run (no diff to gate — that run always
-    # does a full scan); analyze's `if:` below handles the schedule case
-    # separately so this job being skipped doesn't skip analyze too.
+    # Skipped on the weekly schedule run — that run always does a full scan,
+    # so there's no diff to gate. analyze's `always()` below keeps it running
+    # even though this job (its `needs:`) was skipped.
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     outputs:
@@ -37,9 +37,6 @@ jobs:
   analyze:
     name: Analyze (javascript-typescript)
     needs: changes
-    # `always()` so a skipped `changes` job (the schedule case) doesn't skip
-    # this job too — analyze runs when scheduled, or when changes found a
-    # source-relevant diff.
     if: always() && (github.event_name == 'schedule' || needs.changes.outputs.src == 'true')
     runs-on: ubuntu-latest
     permissions:

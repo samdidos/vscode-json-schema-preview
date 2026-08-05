@@ -1,20 +1,12 @@
 name: Publish CLI
 
 # Publishes the standalone CLI (F27) — the `json-schema-toolkit` npm package,
-# command `jstk` — to the public npm registry, with npm build provenance.
+# command `jstk` — with npm build provenance. Independent of the extension's
+# release train: its own version (cli/package.json) and its own `cli-v*` tags.
 #
-# Independent of the extension's release train (publish.yml / release-please,
-# which drive `v*` tags for the Marketplace): the CLI has its own version in
-# cli/package.json and its own `cli-v*` tags, so the two ship on separate
-# cadences and never collide.
-#
-# Publishing is gated on the `npm` GitHub environment (add a required reviewer
-# to it for a manual approval step before anything reaches the registry). It
-# needs one secret — `NPM_TOKEN`, an npm automation token with publish rights.
-#
-# Test it without publishing: run it via "Run workflow" (workflow_dispatch)
-# with dry_run left on — the job builds and `npm publish --dry-run`s, printing
-# the exact tarball it would upload, and needs no token.
+# Gated on the `npm` GitHub environment (add a required reviewer for manual
+# approval) and needs `NPM_TOKEN`, an npm automation token with publish
+# rights. Test without publishing via "Run workflow" with dry_run left on.
 on:
   push:
     tags:
