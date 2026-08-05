@@ -1,68 +1,39 @@
 name: Refresh repo metrics
 
-# Refresh the cached OpenSSF Scorecard grade, the maturity score + chart, the
-# DORA delivery metrics, the README coverage badge, and the bundle-size
-# snapshot (S03-SR-18) — collecting all of them into a SINGLE standing pull
-# request rather than one per artefact or one per run.
+# Refreshes the OpenSSF Scorecard cache, maturity score, DORA metrics, README
+# coverage badge, and bundle-size snapshot (S03-SR-18) into ONE standing PR:
+# each artefact is skipped when it isn't due (see the `due` helper below), and
+# every run force-pushes the same branch and reuses the open PR if there is
+# one — that's what keeps this from becoming a stream of one-off PRs.
 #
-# Two things keep that PR quiet:
-#
-#   1. Each artefact is refreshed only when it is actually due — every
-#      generator stamps the file with the date it ran, so regenerating a
-#      still-fresh artefact produces a diff whose only content is that stamp.
-#      Recomputing everything on every run is what turned this job into a
-#      PR-noise machine. See the `due` helper in the refresh job.
-#   2. Whatever it produces is force-pushed onto one branch
-#      (chore/refresh-repo-metrics) and reuses the open PR if there is one, so
-#      repeated runs update a single PR instead of stacking new ones.
-#
-# Note: PRs opened with the default GITHUB_TOKEN do not themselves trigger
-# further workflows (a GitHub anti-loop rule), so CI won't re-run on this PR.
-# That's fine — the data was just computed here. Swap in a PAT if you want the
-# auto-PR to run CI too.
-#
-# Not folded in here, deliberately: scorecard.yml also runs on `push: main`
-# and `branch_protection_rule`, which do not belong on a periodic clock; the
-# maturity score awards points for that file *existing*
-# (scripts/maturity-score.mjs, `scorecard` check), so absorbing it would score
-# against us; and its OSSF publish is read back by `maturity:ossf` here, which
-# the API needs time to ingest. codeql.yml and snyk.yml stay on their own
-# weekly cadence too — they raise security alerts rather than committing
-# files, so they never contributed to the PR churn, and halving their
-# frequency would only slow vulnerability detection.
+# scorecard.yml, codeql.yml and snyk.yml are NOT folded in here even though
+# they're also periodic: scorecard.yml's presence earns points in the
+# maturity score itself and also runs on push/branch_protection_rule, which
+# don't belong on this clock; codeql.yml/snyk.yml raise alerts rather than
+# committing files, so they never contributed to the PR noise this fixes.
 on:
-  # Bi-weekly (1st and 15th). Deliberately not weekly: the artefacts here move
-  # slowly, and a fortnightly cadence plus the per-artefact `due` checks below
-  # keeps the standing PR from filling with date-stamp-only diffs.
+  # Bi-weekly backstop. The per-artefact `due` checks below are what actually
+  # keep the PR quiet; this cadence just bounds how stale things can get.
   schedule:
     - cron: '0 9 1,15 * *'
-  # Also after a release, because dora.json is computed from release tags
-  # (S14-SR-08) and a new tag is the one moment it can go stale. This runs
-  # *after* release-please has tagged, so the tag is visible — the metrics
-  # stay tag-only and measured rather than estimated. It force-pushes the
-  # same branch as the scheduled run, so this is still one standing PR.
+  # dora.json is a function of the release-tag set (S14-SR-08), so a release
+  # is the one moment it can go stale — this runs after Release Please has
+  # tagged, so the tag is already visible.
   workflow_run:
     workflows: ["Release Please"]
     types: [completed]
   workflow_dispatch:
 
-# Top-level token is read-only (OSSF Token-Permissions); the write scopes the
-# refresh job actually needs are granted at job level only.
+# Top-level token is read-only (OSSF Token-Permissions); write scopes are
+# granted at job level only.
 permissions:
   contents: read
 
 jobs:
-  # Decide whether this run has anything to do at all.
-  #
-  # Release Please runs on every push to main and succeeds whether it cut a
-  # release or merely opened/updated its pending release PR. Keying off that
-  # alone refreshed on essentially every merge, which is what filled the
-  # tracker with date-stamp-only PRs. A release is observable by the tag it
-  # leaves, so require a `v*` tag on the commit Release Please ran against.
-  #
-  # Scheduled runs stand down when a release already refreshed everything
-  # inside the last fortnight. Manual dispatch is exempt: asking for it is
-  # the point.
+  # Release Please succeeds on every push to main whether or not it cut a
+  # release, so gate on the tag it leaves rather than on that success alone.
+  # The scheduled run additionally stands down if a release refreshed
+  # everything within the last fortnight.
   plan:
     runs-on: ubuntu-latest
     outputs:
@@ -70,8 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Full history + tags: every question here is a tag question.
-          fetch-depth: 0
+          fetch-depth: 0 # every question below is a tag question
 
       - id: decide
         env:
@@ -88,8 +58,7 @@ jobs:
               exit 0
             fi
             if [ -z "$(git tag --points-at "$RUN_HEAD_SHA" --list 'v*')" ]; then
-              echo "No release tag on $RUN_HEAD_SHA — Release Please only updated"
-              echo "its release PR, so the release-tag set is unchanged. Skipping."
+              echo "No release tag on $RUN_HEAD_SHA — only the release PR was updated. Skipping."
               echo "proceed=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
@@ -116,20 +85,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          # Full history + tags so the DORA metrics (S14) can read the whole
-          # release timeline, not just the shallow default clone.
-          fetch-depth: 0
+          fetch-depth: 0 # DORA (S14) needs the full release-tag history
 
-      # Which artefacts are actually due? Every generator stamps the file with
-      # the date it ran, so regenerating a still-fresh one yields a diff whose
-      # only content is that stamp — recomputing everything unconditionally is
-      # what made this job noisy. `due <file> <field>` is true when the file is
-      # missing or its recorded date is 14+ days old.
-      #
-      # dora.json is the exception: it is a pure function of the release-tag
-      # set, not of elapsed time, so it is due exactly when it no longer covers
-      # the newest tag — which is the S14-SR-08 guarantee, and why a release
-      # triggers this workflow at all.
+      # `due <file> <field>` is true when the file is missing or its recorded
+      # date is 14+ days old. dora.json is the exception — it's checked
+      # against the tags themselves (`dora:check`), not elapsed time.
       - name: Decide which artefacts are due
         id: due
         run: |
@@ -146,19 +106,13 @@ jobs:
           if due maturity-score.json generatedAt; then echo "maturity=true" >> "$GITHUB_OUTPUT"; else echo "maturity=false" >> "$GITHUB_OUTPUT"; fi
           if due bundle-size.json generatedAt; then echo "bundle=true" >> "$GITHUB_OUTPUT"; else echo "bundle=false" >> "$GITHUB_OUTPUT"; fi
 
-          # `dora:check` exits non-zero when the snapshot no longer matches the
-          # tags. It also refuses to judge a checkout with no tags visible
-          # (S14-SR-09) — fetch-depth: 0 above means we do have them.
+          # S14-SR-09: refuses to judge a checkout with no tags visible —
+          # fetch-depth: 0 above means we do have them.
           if npm run --silent dora:check >/dev/null 2>&1; then
             echo "dora=false" >> "$GITHUB_OUTPUT"
           else
             echo "dora=true" >> "$GITHUB_OUTPUT"
           fi
-
-          # The maturity score reads coverage and the OSSF grade, so it has to
-          # be recomputed whenever either of those is refreshed, not only on
-          # its own clock.
-          cat "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -167,64 +121,38 @@ jobs:
 
       - run: npm ci
 
-      # DORA delivery metrics are computed from git tags (S14-SR-06) — tags
-      # only, never from package.json's version: on a release-please branch
-      # that version is bumped ahead of tagging, and dating a release from the
-      # changelog entry would make every derived figure (interval, lead time,
-      # restore time) an estimate rather than a measurement. So this runs
-      # after the tag exists, which is why a release triggers this workflow.
-      #
-      # MUST run before the test suite below: the S14-SR-08 freshness test
-      # compares dora.json against the visible tags and would otherwise fail
-      # before this job reached the step that fixes it.
+      # Tags only (S14-SR-06), never package.json's version — on a release PR
+      # that's bumped ahead of tagging, so dating from it would make every
+      # derived figure an estimate. MUST run before the coverage step below:
+      # the S14-SR-08 freshness test compares dora.json against the tags.
       - name: Recompute DORA delivery metrics
         if: steps.due.outputs.dora == 'true'
         run: npm run dora
 
-      # The one networked step, best-effort. If the API is unreachable or has no
-      # published run yet, the script writes nothing and we recompute with
-      # whatever cache already exists (or none — the OSSF check simply skips).
-      # Failure is swallowed in-shell (not via `continue-on-error:`, which the
-      # maturity metric itself flags as a silently-non-blocking job).
-      #
-      # The grade comes from the OpenSSF API, which scorecard.yml publishes to
-      # on every push to main — so whatever is published here is already
-      # current, and this only needs its own fortnightly cadence.
+      # Best-effort: scorecard.yml publishes the grade on every push to main,
+      # so this only needs its own fortnightly cadence to stay current.
       - name: Refresh OpenSSF Scorecard cache (best-effort)
         if: steps.due.outputs.ossf == 'true'
         run: npm run maturity:ossf || echo "OSSF fetch unavailable — recomputing without a fresh grade"
 
-      # The Testing dimension reads coverage/coverage-summary.json, so the
-      # score is only correct after a coverage run — run it only when the
-      # score (or the badge derived from the same summary) is actually due.
+      # Needed whenever the score or the OSSF grade is due — the score reads
+      # coverage, and the badge below reads the same summary.
       - name: Run tests with coverage
         if: steps.due.outputs.maturity == 'true' || steps.due.outputs.ossf == 'true'
         run: npm run test:coverage
 
-      # Recomputed whenever the score itself is due OR a fresh OSSF grade just
-      # landed, since the grade is one of its inputs.
       - name: Recompute maturity score and chart
         if: steps.due.outputs.maturity == 'true' || steps.due.outputs.ossf == 'true'
         run: npm run maturity
 
-      # Coverage ran above, so coverage-summary.json is on disk — refresh the
-      # static README coverage badge from it here (and commit it below) so the
-      # badge is a pipeline guarantee, not just synced when a Claude Code agent
-      # edits package.json. Best-effort: a missing summary leaves it untouched.
       - name: Sync README coverage badge
         if: steps.due.outputs.maturity == 'true' || steps.due.outputs.ossf == 'true'
         run: npm run badges:sync
 
-      # Build size budget check (S03-SR-15..S03-SR-18) — the snapshot this
-      # writes (bundle-size.json) is what gives the size trend a git history,
-      # independent of whether any PR happened to touch dist/ this fortnight.
       - name: Refresh bundle-size snapshot
         if: steps.due.outputs.bundle == 'true'
         run: npm run package && npm run check:bundle-size
 
-      # One standing branch, force-pushed, reusing the open PR if there is one.
-      # Every run therefore updates a single PR rather than stacking a new one
-      # per run — the scheduled and post-release paths share it.
       - name: Commit the refreshed metrics into the standing PR
         env:
           GH_TOKEN: ${{ github.token }}
@@ -234,9 +162,6 @@ jobs:
           git add -- maturity-score.json MATURITY.md README.md docs/public/maturity-scorecard-light.svg docs/public/maturity-scorecard-dark.svg bundle-size.json dora.json
           [ -f ossf-scorecard.json ] && git add -- ossf-scorecard.json
 
-          # --staged so newly-created files (a first-ever OSSF cache) count too.
-          # With the per-artefact `due` checks above, "nothing changed" is now
-          # the common outcome rather than the exception.
           if git diff --staged --quiet; then
             echo "Nothing was due — no commit, no PR."
             exit 0
@@ -247,7 +172,7 @@ jobs:
 
           BRANCH=chore/refresh-repo-metrics
           git checkout -B "$BRANCH"
-          # Data-only change; the verify gate already ran above, so skip the hook.
+          # Bot-authored data commit; skip the local pre-commit hook.
           git commit --no-verify -m "chore: refresh repo metrics"
           git push --force origin "$BRANCH"
 
