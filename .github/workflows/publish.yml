@@ -1,32 +1,18 @@
 name: Publish
 
-# Packages the extension, attests its SLSA build provenance, publishes it to
-# the Visual Studio Marketplace, and attaches the .vsix to the release — then
-# flips the release from draft to published.
+# Packages the extension, attests SLSA build provenance, publishes to the VS
+# Code Marketplace, attaches the .vsix to the release, then flips it from
+# draft to published — that order matters, since GitHub's immutable-releases
+# feature forbids adding assets once a release is published.
 #
-# The `publish` job runs under the `vscode-marketplace` GitHub environment,
-# which requires manual approval (Actions tab) before any step in the job
-# runs — this is a deliberate choice to keep a human in the loop before code
-# reaches the Marketplace, at the cost of also delaying the (otherwise
-# harmless) GitHub Release upload behind that same approval. The environment
-# also supplies the OIDC subject (repo:...:environment:vscode-marketplace)
-# that the Microsoft Entra ID federated identity credential is scoped to —
-# see get-mi-user-id.yml for how that identity was provisioned.
+# `publish` runs under the vscode-marketplace GitHub environment, which
+# requires manual approval before any step runs and supplies the OIDC subject
+# the Entra ID federated identity credential is scoped to (get-mi-user-id.yml).
 #
-# release-please creates the GitHub Release as a draft (config: "draft": true)
-# and pushes its tag using the default GITHUB_TOKEN. GitHub does not trigger
-# downstream `push`-triggered workflows for pushes authenticated with that
-# token (anti-recursion protection), so a plain `on: push: tags: v*` never
-# actually fires for release-please's own tags — confirmed: every tag it has
-# pushed has zero push-triggered runs in this repo's history. `workflow_run`
-# is not subject to that suppression (this mirrors refresh-gifs.yml, which
-# already relies on the same mechanism), so that's the primary trigger here;
-# `push` stays as a harmless fallback for tags pushed by a human/PAT.
-#
-# GitHub's immutable-releases feature forbids adding assets to a release once
-# it is published, so the .vsix/attestation must be attached while it's still
-# a draft — the last step here publishes it only after the asset upload
-# succeeds.
+# Primary trigger is workflow_run, not push:tags — release-please pushes its
+# tag with the default GITHUB_TOKEN, and GitHub's anti-recursion rule means
+# `push` never fires for that tag (same mechanism refresh-gifs.yml relies
+# on). `push` stays as a fallback for a human/PAT-pushed tag.
 on:
   push:
     tags:
@@ -45,10 +31,9 @@ permissions:
 
 jobs:
   resolve-tag:
-    # push/workflow_dispatch already name their tag directly; workflow_run only
-    # tells us release-please *ran*, not whether it actually cut a release, so
-    # this job derives the tag from the manifest and confirms a matching draft
-    # release exists — the exact evidence of "there's an unpublished release."
+    # workflow_run only tells us release-please ran, not whether it cut a
+    # release — derives the tag from the manifest and confirms a matching
+    # draft release exists as the actual evidence.
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
@@ -72,13 +57,8 @@ jobs:
           else
             version=$(node -p "require('./.github/release-please/manifest.json')['.']")
             tag="v$version"
-            # `gh release view`/list-and-match only surface draft releases to a
-            # token with push (contents: write) access — this job's permissions
-            # block grants that. Without it, every workflow_run-triggered run
-            # 404s here and silently skips publish (confirmed: it did, for every
-            # run before this comment existed). The retry loop is now just a
-            # thin safety margin for genuine eventual-consistency lag right
-            # after release-please creates the release, not the primary fix.
+            # Retries cover eventual-consistency lag right after
+            # release-please creates the release.
             is_draft=""
             for _ in 1 2 3 4 5 6; do
               is_draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo "")
@@ -97,10 +77,6 @@ jobs:
     needs: resolve-tag
     if: needs.resolve-tag.outputs.tag != ''
     runs-on: ubuntu-latest
-    # Required reviewer on this environment gates the Marketplace publish step
-    # behind manual approval; it's also what makes the OIDC subject below
-    # (repo:...:environment:vscode-marketplace) match the federated identity
-    # credential registered in Entra ID — see get-mi-user-id.yml.
     environment: vscode-marketplace
     permissions:
       contents: write # upload the .vsix asset to the release
@@ -151,12 +127,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release edit "$TAG" --draft=false
 
-      # docs/.vitepress/latestRelease.data.ts fetches GET /releases/latest at
-      # build time, which excludes drafts — so the docs site couldn't possibly
-      # have shown this version before now, no matter when it last built. And
-      # publishing a release doesn't push a commit, so nothing else would ever
-      # re-trigger docs.yml (push/workflow_dispatch only) on its own. Dispatch
-      # it explicitly, now that the version is actually visible via the API.
+      # docs/.vitepress/latestRelease.data.ts reads GET /releases/latest,
+      # which excludes drafts, and publishing a release pushes no commit — so
+      # nothing else would trigger docs.yml (push/workflow_dispatch only).
       - name: Trigger a docs rebuild now that the release is public
         env:
           GH_TOKEN: ${{ github.token }}

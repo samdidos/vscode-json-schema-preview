@@ -1,17 +1,12 @@
 name: Snyk (weekly SCA)
 
-# Snyk Open Source dependency scan, run WEEKLY (and on demand) rather than on
-# every PR — deliberately kept off the per-PR critical path, complementing
-# rather than replacing the existing Trivy fs scan + `npm audit` (decided
-# 2026-07-14 after a live side-by-side test: Snyk caught a High-severity
-# fast-uri finding, SNYK-JS-FASTURI-17675102, that both of those missed on
-# the same commit — worth keeping as a periodic layer, but not worth the
-# vendor/token dependency on the blocking path per AGENTS.md's agnosticity
-# principle).
+# Snyk dependency scan, complementing (not replacing) the Trivy fs scan and
+# `npm audit`: a side-by-side test found it catches findings those two miss
+# (e.g. SNYK-JS-FASTURI-17675102). Kept off the per-PR path per AGENTS.md's
+# agnosticity principle — weekly/on-demand only, not a blocking dependency.
 #
-# Needs a `SNYK_TOKEN` repository secret (already configured). If that
-# secret is ever removed the scan step no-ops via the `if:` guard below
-# rather than failing.
+# Needs a `SNYK_TOKEN` repository secret; the scan step no-ops via the `if:`
+# guard below rather than failing if it's ever removed.
 on:
   workflow_dispatch:
   schedule:

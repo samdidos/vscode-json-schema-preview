@@ -5,10 +5,7 @@ on:
     branches: [main]
   pull_request:
 
-# Least-privilege default token: every job here only reads the repo (checkout,
-# build, test, scan) — none post comments or push. Declared at the top level so
-# it applies to all jobs and satisfies OpenSSF Scorecard's Token-Permissions
-# check; grant a narrower per-job scope if a future job needs to write.
+# Least-privilege default (OpenSSF Token-Permissions): no job here writes.
 permissions:
   contents: read
 
@@ -25,15 +22,10 @@ jobs:
 
       - name: Diff against base
         id: filter
-        # Path set + diff logic live in scripts/ci-detect-source-changes.sh
-        # (S09-SR-02/S09-NFR-02) so ci.yml and codeql.yml share exactly one
-        # definition instead of duplicating the pattern. This job always runs
-        # (no path filter on the workflow trigger itself) and only gates work
-        # via job-level `if:` on its output — a workflow-level `paths-ignore`
-        # would instead make the whole workflow (and any required status
-        # check depending on it) never start on a docs-only PR, which GitHub
-        # then shows as permanently "Expected — Waiting" rather than passing
-        # (S09-SR-03).
+        # Shared with codeql.yml (S09-SR-02/NFR-02): scripts/ci-detect-source-changes.sh.
+        # Gated via job-level `if:` on this output, not a workflow-level
+        # `paths-ignore` — the latter leaves a docs-only PR's required checks
+        # permanently "Expected — Waiting" instead of passing (S09-SR-03).
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
@@ -42,10 +34,9 @@ jobs:
   actionlint:
     name: Lint workflows (actionlint)
     runs-on: ubuntu-latest
-    # The workflow YAML is code too (S09-SR-05). Always run — it's fast and a
-    # broken workflow can slip in on a PR that doesn't touch source. A
-    # version-pinned container image (not a `uses:` action) keeps this off the
-    # SHA-pin ledger the security metric tracks.
+    # Always runs, unlike the `changes`-gated jobs below (S09-SR-05): a broken
+    # workflow can land on a PR that never touches source. Container image
+    # tag rather than a `uses:` action, so it's not part of the SHA-pin ledger.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: actionlint
@@ -82,13 +73,11 @@ jobs:
       - name: Feature value estimates valid against the S16 rubric
         run: npm run check:spec-value
 
-  # The old `build` job ran lint/type-check/compile/bundle-size/coverage/audit
-  # as seven sequential steps in one runner, making that job's wall-clock time
-  # their sum. None of the six depend on each other except coverage → maturity
-  # (maturity:check reads coverage/coverage-summary.json, so those two stay
-  # sequential in one job); every other pair is independent, so each gets its
-  # own job below and they all fan out from `changes` in parallel instead
-  # (S09-SR-02 — same skip condition, same steps, just no longer serialised).
+  # Each of lint/type-check/compile/bundle-size/coverage/audit is independent
+  # of the others, so each is its own job fanning out from `changes` in
+  # parallel (S09-SR-02) rather than sharing one runner's wall-clock time.
+  # coverage keeps maturity:check as a second step since that reads
+  # coverage-summary.json from the step before it.
 
   lint:
     name: Lint
@@ -179,19 +168,9 @@ jobs:
 
       - name: Maturity scorer is healthy
         # Blocking, but asymmetric (S12-SR-16): fails only when the scorer is
-        # BROKEN — the artifact is unreadable, or a check probes a path that no
-        # longer exists and so scores a silent 0. A score that has merely
-        # MOVED, in either direction, warns and passes: it changes with
-        # coverage and with every requirement added, so failing on it would
-        # redden unrelated pull requests and tie the build's health to keeping
-        # the number flattering.
-        #
-        # This used to be `continue-on-error: true`, which is exactly why the
-        # five stale `.sh` predicates went unnoticed for so long.
-        #
-        # Kept in this job rather than a separate one: the scorer reads
-        # coverage/coverage-summary.json, which only exists after the step
-        # above runs in the same workspace.
+        # broken (unreadable artifact, or a check probing a path that no
+        # longer exists) — a score that merely moved warns and passes, since
+        # it changes with coverage and every requirement added.
         run: npm run maturity:check
 
   audit:
@@ -229,8 +208,6 @@ jobs:
     needs: changes
     if: needs.changes.outputs.src == 'true'
     runs-on: ubuntu-latest
-    # The backlog was cleared (see d364f60); this now gates merges like any
-    # other check instead of only reporting.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -249,17 +226,10 @@ jobs:
     needs: changes
     if: needs.changes.outputs.src == 'true'
     runs-on: ${{ matrix.os }}
-    # S08 — real VS Code via @vscode/test-electron, per S08-SR-08/09.
-    #
-    # Non-blocking while flakiness is measured, but that is a branch-protection
-    # setting (this job is not in the required status checks), NOT
-    # `continue-on-error` — see S09-SR-08. A red run here shows red and does
-    # not block the merge button. Reporting it green would have made
-    # S08-SR-08's own promotion criterion ("clean for 2 consecutive weeks")
-    # impossible to observe, so the job could never have been promoted.
-    #
-    # Promote to a required check after 2 consecutive clean weeks and record
-    # it in specs/S08-e2e-testing.md's History.
+    # Real VS Code via @vscode/test-electron (S08-SR-08/09). Non-blocking
+    # while flakiness is measured — via branch protection, not
+    # `continue-on-error` (S09-SR-08), so a red run still shows red. Promote
+    # to a required check after 2 consecutive clean weeks (specs/S08-e2e-testing.md).
     strategy:
       fail-fast: false
       matrix:
