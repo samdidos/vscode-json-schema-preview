@@ -2,6 +2,18 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.17.2](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.17.1...v0.17.2) (2026-08-06)
+
+
+### Bug Fixes
+
+* **ci:** collect metric refreshes into one bi-weekly standing PR ([027722c](https://github.com/samdidos/vscode-json-schema-preview/commit/027722c068ff4456648c2a0aad22f9d7ae0534b0))
+* **ci:** refresh repo metrics inside the release PR, bi-weekly otherwise ([851c6af](https://github.com/samdidos/vscode-json-schema-preview/commit/851c6af3dd481711f8564ffc163babc648603208))
+* **ci:** refresh repo metrics only when a release actually tagged ([d1a84c7](https://github.com/samdidos/vscode-json-schema-preview/commit/d1a84c766e222ef6c4083c6bb525026582de23f7))
+* **deps:** bump fast-uri override past 3.1.4 to close High-severity Snyk finding ([dce5e75](https://github.com/samdidos/vscode-json-schema-preview/commit/dce5e751567661df686ef1a0c26390685b6e23a7))
+* **deps:** raise brace-expansion and undici overrides past new High-severity advisories ([f084a4e](https://github.com/samdidos/vscode-json-schema-preview/commit/f084a4e839e08ad89edea4ce06b42846b3d49923))
+* **dora:** match the changelog heading with a static pattern ([09357e9](https://github.com/samdidos/vscode-json-schema-preview/commit/09357e9377370577cc1f76446b6159a36a9df5df))
+
 ## [0.17.1](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.17.0...v0.17.1) (2026-08-01)
 
 
