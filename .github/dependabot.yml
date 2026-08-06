@@ -1,22 +1,15 @@
 version: 2
 updates:
-  # Both ecosystems are pinned to a fixed weekly slot so the consolidation
-  # routine (Routine "Consolidate Dependabot PRs", Thursdays) has a
-  # deterministic window to run in, rather than chasing whenever Dependabot
-  # happened to wake up.
-  #
-  # The limits are deliberately above the number of bumps a normal week
-  # produces: when the routine closes the superseded PRs it frees slots, and
-  # a limit set to the batch size makes Dependabot immediately open the
-  # queued remainder (observed 2026-07-31 — closing 9 PRs refilled 4 within
-  # a minute). Those stragglers would then wait a full week for the next
-  # run, so the whole batch has to fit in one pass.
+  # Bi-weekly (1st and 15th), matching maturity-refresh.yml's cadence.
+  # `interval: weekly` has no native every-other-week option, and cron's
+  # day-of-week step values (`* * * * 1/2`) don't mean what they look like —
+  # Dependabot runs them weekly, not fortnightly (dependabot-core#12246). The
+  # day-of-month field doesn't have that bug, so `1,15 * *` is used instead.
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-      day: thursday
-      time: "06:00"
+      interval: cron
+      cronjob: "0 6 1,15 * *"
       timezone: Etc/UTC
     open-pull-requests-limit: 15
     ignore:
@@ -29,8 +22,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: thursday
-      time: "06:00"
+      interval: cron
+      cronjob: "0 6 1,15 * *"
       timezone: Etc/UTC
     open-pull-requests-limit: 10
