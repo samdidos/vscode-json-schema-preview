@@ -82,6 +82,18 @@
 - **`lint:workflows` needs `actionlint` on PATH, Go, or Docker** (tries each in
   that order — `scripts/lint-workflows.mjs`); it's part of `npm run verify`, so
   a machine with none of the three fails the local gate on that step alone.
+- **Dependabot (`.github/dependabot.yml`) opens PRs individually and bi-weekly
+  — nothing auto-consolidates them.** A scheduled routine used to do that; it
+  was removed (recurring cost for a task that's cheap to ask for on demand).
+  To consolidate the open `author:app/dependabot` PRs into one, ask an agent —
+  the pattern is the merged consolidation PRs (search closed PRs for
+  `Superseded by #`). The two things that actually bite: `npm run package &&
+  npm run check:bundle-size` is a required CI check but NOT part of `npm run
+  verify`, so it must be run separately (a `@types/vscode` bump has broken it
+  before — `vsce` requires `@types/vscode` ≤ `engines.vscode`); and closing
+  the superseded PRs frees Dependabot's `open-pull-requests-limit` slots,
+  which can make it open queued bumps within a minute — re-check for a refill
+  and fold stragglers into the same PR rather than opening a second one.
 
 ## Agnosticity & standardization (project principle)
 
