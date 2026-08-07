@@ -12,6 +12,15 @@ on:
         description: 'Branch to commit refreshed GIFs onto'
         required: false
         default: 'release-please--branches--main--components--json-schema-preview'
+      demos:
+        description: >-
+          S08-SR-15 manual override: comma-separated demo names (from
+          scripts/demo-registry.mjs) to force-regenerate, or "all". Bypasses
+          the automatic spec-diff selection — use this for a demo-script-only
+          change (e.g. a Playwright test rewrite) that touches no mapped spec
+          file. Leave empty for the normal automatic behavior.
+        required: false
+        default: ''
 
 # Top-level token is read-only (OSSF Token-Permissions); write scopes are
 # granted only to the job that pushes the refreshed GIFs.
@@ -42,9 +51,11 @@ jobs:
             echo "branch=$branch" >> "$GITHUB_OUTPUT"
           fi
 
-  # S08-SR-12/13 — which demos changed/are new since the previous release tag,
-  # cross-referenced against scripts/demo-registry.mjs. A separate job (needs
-  # fetch-depth: 0) since both consumers below share its output.
+  # S08-SR-12/13/15 — which demos changed/are new since the previous release
+  # tag, cross-referenced against scripts/demo-registry.mjs, unless the
+  # `demos` workflow_dispatch input (S08-SR-15) overrides it manually. A
+  # separate job (needs fetch-depth: 0) since both consumers below share its
+  # output.
   detect-features:
     needs: find-pr
     if: needs.find-pr.outputs.branch != ''
@@ -67,6 +78,8 @@ jobs:
 
       - name: Detect changed/new feature specs since the previous release
         id: features
+        env:
+          FORCE_DEMOS: ${{ github.event_name == 'workflow_dispatch' && inputs.demos || '' }}
         run: node scripts/detect-changed-features.mjs
 
   refresh-gifs:

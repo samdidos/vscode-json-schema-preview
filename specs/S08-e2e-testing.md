@@ -142,6 +142,18 @@ mechanism.
   in full on every PR — it is not release-scoped and not keyed to which specs
   changed, since it is regression coverage for the whole extension, not a
   per-feature demo capture.
+- **S08-SR-15** The `refresh-gifs.yml` `workflow_dispatch` trigger MUST accept
+  an optional `demos` input — a comma-separated list of demo names (as they
+  appear in `scripts/demo-registry.mjs`), or the literal `all` — that
+  overrides S08-SR-12's automatic spec-diff selection for that run only. This
+  covers the case S08-SR-12 cannot: a change to a demo's *script* (the
+  Playwright test itself, or a doc/History note) rather than to one of its
+  mapped spec files, which produces no spec-diff signal for
+  `detect-changed-features.mjs` to key off, yet still needs the GIF/smoke run
+  it would otherwise only get by coincidentally touching a mapped spec too.
+  An unrecognised demo name in the override MUST fail the run rather than
+  silently produce an empty or partial selection. Leaving the input empty
+  (the default) MUST fall through to S08-SR-12's normal behaviour unchanged.
 
 ### Harness notes (implementation)
 
