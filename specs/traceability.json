@@ -3391,6 +3391,15 @@
       ],
       "note": "policy requirement (test:integration stays unscoped) verified by inspection of package.json/ci.yml, not unit-taggable"
     },
+    "S08-SR-15": {
+      "status": "implemented",
+      "impl": [
+        "scripts/detect-changed-features.mjs",
+        ".github/workflows/refresh-gifs.yml"
+      ],
+      "note": "manual demos/all workflow_dispatch override; unit-tested (detectChangedFeatures.test.ts's resolveForceOverride cases)",
+      "specifiedAt": "2026-08-07"
+    },
     "S09-NFR-01": {
       "status": "manual",
       "impl": [
