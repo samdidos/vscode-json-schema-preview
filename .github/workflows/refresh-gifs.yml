@@ -9,16 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to commit refreshed GIFs onto'
+        description: 'Target branch'
         required: false
         default: 'release-please--branches--main--components--json-schema-preview'
       demos:
-        description: >-
-          S08-SR-15 manual override: comma-separated demo names (from
-          scripts/demo-registry.mjs) to force-regenerate, or "all". Bypasses
-          the automatic spec-diff selection — use this for a demo-script-only
-          change (e.g. a Playwright test rewrite) that touches no mapped spec
-          file. Leave empty for the normal automatic behavior.
+        description: 'Demos to force-regenerate (comma-separated names, or "all")'
         required: false
         default: ''
 
