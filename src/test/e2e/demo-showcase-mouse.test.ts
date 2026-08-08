@@ -42,11 +42,20 @@ import { createRealCursor } from './helpers/realCursor';
  * docs/public/demo-showcase.gif via ffmpeg's palette pipeline, instead of
  * scripts/make-gifs.mjs's gif-encoder-2 frame-stitching.
  *
- * Re-opening the schema file after hiding it (step 3/4) goes through the
- * Explorer, not Quick Open (Ctrl+P): the S08-e2e-testing.md History records
- * two demos that reproducibly timed out driving Quick Open's async
- * file-search against a freshly seeded/generated fixture, fixed by avoiding
- * Quick Open entirely — the same reasoning applies here.
+ * Re-opening the schema file right after hiding it (step 4) uses "Reopen
+ * Closed Editor" (Ctrl+Shift+T) rather than the Explorer or Quick Open
+ * (Ctrl+P): a CI run proved this the hard way — Explorer's tree only
+ * readdir()s a folder on first expand/refresh, and for a file saved via the
+ * native-save-dialog stub moments earlier in the same run, that lagged past
+ * a 15s wait. Ctrl+Shift+T reuses VS Code's own in-memory editor-history
+ * stack instead, with no dependency on the filesystem tree at all — and it
+ * reopens exactly the tab just closed. Quick Open has its own documented
+ * flakiness for a freshly-seeded/generated fixture (see the History note in
+ * S08-e2e-testing.md on two other demos that hit the same thing), so it's
+ * avoided too. The Explorer *is* still used once, in step 13 — deliberately,
+ * since "browse to a file" is the point being demonstrated there — but only
+ * after a full minute of other steps have given the tree time to catch up,
+ * and with a retry (re-toggle the folder, wait again) as a second safety net.
  *
  * The Expand all/Collapse all buttons (steps 5/6) require switching the
  * `json-schema-for-humans` template away from the default "flat" one
@@ -154,17 +163,13 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForTimeout(800); // a beat with only the viewer on screen
 
     // ── 4. Reopen the schema and live-edit its title (F02) ──────────────────
-    // Explorer, not Quick Open (Ctrl+P) — see the file doc-comment.
-    const schemasFolder = window.locator('.explorer-folders-view .monaco-list-row:has-text("schemas")').first();
-    await cursor.glideToLocator(schemasFolder);
-    await schemasFolder.click();
-    await window.waitForTimeout(500);
-
-    const schemaFile = window.locator(
-      '.explorer-folders-view .monaco-list-row:has-text("generated-schema.json")',
-    ).first();
-    await cursor.glideToLocator(schemaFile);
-    await schemaFile.click();
+    // Ctrl+Shift+T ("Reopen Closed Editor") — see the file doc-comment for
+    // why this isn't an Explorer click.
+    await window.keyboard.down('Control');
+    await window.keyboard.down('Shift');
+    await window.keyboard.press('t');
+    await window.keyboard.up('Shift');
+    await window.keyboard.up('Control');
     await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
     await window.waitForTimeout(500);
 
@@ -398,7 +403,27 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await settingsTabClose.click();
     await window.waitForTimeout(500);
 
-    // Reopening the schema file now auto-opens the preview with no click.
+    // Browse to the schema file via Explorer — deliberately, since "browse to
+    // a file" is the point being demonstrated here, unlike step 4's reopen.
+    // A full minute of other steps has passed since the file was written, so
+    // the readdir-on-first-expand lag that broke step 4's Explorer attempt
+    // shouldn't recur, but re-toggle-and-retry once anyway as a second net.
+    const schemasFolder = window.locator('.explorer-folders-view .monaco-list-row:has-text("schemas")').first();
+    await cursor.glideToLocator(schemasFolder);
+    await schemasFolder.click();
+    await window.waitForTimeout(500);
+
+    const schemaFile = window.locator(
+      '.explorer-folders-view .monaco-list-row:has-text("generated-schema.json")',
+    ).first();
+    try {
+      await schemaFile.waitFor({ state: 'visible', timeout: 8_000 });
+    } catch {
+      await schemasFolder.click(); // collapse
+      await window.waitForTimeout(400);
+      await schemasFolder.click(); // re-expand — forces a fresh readdir
+      await schemaFile.waitFor({ state: 'visible', timeout: 15_000 });
+    }
     await cursor.glideToLocator(schemaFile);
     await schemaFile.click();
     await window.waitForSelector('iframe.webview.ready', { state: 'visible', timeout: 15_000 });
