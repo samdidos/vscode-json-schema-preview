@@ -71,6 +71,14 @@ import { createRealCursor } from './helpers/realCursor';
  * (Bootstrap's `data-toggle="collapse"`), and that works. This is an
  * explicit, demo-only opt-in via `jsonschema.config` (F09) — the extension's
  * own default stays "flat" precisely to avoid this network dependency.
+ *
+ * Step 5's wait after picking the "Workspace Folder" settings scope was
+ * another real CI find: waiting on any `.monaco-editor .view-lines` is
+ * satisfied instantly by the schema editor already on screen from step 4,
+ * before `workbench.action.openWorkspaceSettingsFile` (an async command)
+ * has actually opened settings.json — racing the following keystrokes into
+ * whichever editor still has focus. Fixed by waiting for settings.json's own
+ * *active* tab specifically.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -203,7 +211,12 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     ).first();
     await cursor.glideToLocator(workspaceFolderScope);
     await workspaceFolderScope.click();
-    await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 10_000 });
+    // `workbench.action.openWorkspaceSettingsFile` is async — waiting on any
+    // `.monaco-editor .view-lines` is satisfied instantly by the schema
+    // editor that's *already* on screen, before settings.json has actually
+    // opened, which races the keystrokes below into whichever editor still
+    // has focus. Wait for settings.json's own *active* tab specifically.
+    await window.waitForSelector('.tab[aria-label*="settings.json"].active', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(600);
 
     // F09-FR-01 opens settings.json with the (freshly-seeded {}) jsonschema.config
@@ -214,7 +227,11 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForTimeout(600);
 
     // Settings changes don't auto-refresh an open preview — re-run Preview on
-    // the schema tab to pick up the new template.
+    // the schema tab to pick up the new template. Escape first: a defensive
+    // net against any lingering overlay (e.g. a suggestion widget from typing
+    // into a schema-validated settings.json) intercepting the click.
+    await window.keyboard.press('Escape');
+    await window.waitForTimeout(200);
     const schemaTab = window.locator('.tab[aria-label*="generated-schema.json"]').first();
     await cursor.glideToLocator(schemaTab);
     await schemaTab.click();
