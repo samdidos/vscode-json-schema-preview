@@ -110,6 +110,15 @@ import { createRealCursor } from './helpers/realCursor';
  * the known relative path guarantees the schema file ends up open regardless
  * — step 12 needs it active, and a stalled demo here would block everything
  * after it for no benefit.
+ *
+ * Step 13's Auto Open checkbox took three real-CI iterations of its own: a
+ * Settings-UI-specific class, then `.monaco-list-row` with an assumed label,
+ * then a plain `input[type="checkbox"]` — all missed, the last two with an
+ * outright zero-match timeout rather than a near-miss. The common thread
+ * gave it away: VS Code's Settings UI renders boolean settings with its own
+ * `Toggle`/`Checkbox` widget, a `div[role="checkbox"]` with no underlying
+ * `<input>` element at all, so no selector built on `input[type="checkbox"]`
+ * could ever have matched. Fixed by targeting `[role="checkbox"]` instead.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -516,14 +525,19 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.keyboard.type('jsonschema.preview.autoOpen', { delay: 30 });
     await window.waitForTimeout(700);
 
-    // Two guesses in a row (a Settings-UI-specific class, then reusing
-    // `.monaco-list-row` with an assumed label) both missed in real CI —
-    // rather than guess a third row wrapper/label combination, lean on what's
-    // actually known: the search query above is the exact full setting ID
-    // (`jsonschema.preview.autoOpen`), so the results list shows only this
-    // one setting. Any checkbox in the settings editor at this point is
-    // unambiguous — no row class or label text needed at all.
-    const autoOpenCheckbox = window.locator('.settings-editor input[type="checkbox"]').first();
+    // Three guesses in a row (a Settings-UI-specific class, then reusing
+    // `.monaco-list-row` with an assumed label, then a plain
+    // `input[type="checkbox"]`) all missed in real CI — the common thread
+    // across the last two is `input[type="checkbox"]` itself, and VS Code's
+    // Settings UI doesn't actually use a native checkbox input for boolean
+    // settings: it renders its own `Toggle`/`Checkbox` widget (a `div` with
+    // `role="checkbox"`, no underlying `<input>` at all), which is why every
+    // `input[type="checkbox"]` selector timed out finding zero matches
+    // rather than a wrong one. The search query above is still the exact
+    // full setting ID (`jsonschema.preview.autoOpen`), so the results list
+    // shows only this one setting — any `role="checkbox"` element in the
+    // settings editor at this point is unambiguous.
+    const autoOpenCheckbox = window.locator('.settings-editor [role="checkbox"]').first();
     await cursor.glideToLocator(autoOpenCheckbox);
     await autoOpenCheckbox.click();
     await window.waitForTimeout(600);
