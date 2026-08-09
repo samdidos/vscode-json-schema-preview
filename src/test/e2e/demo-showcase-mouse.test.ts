@@ -118,7 +118,16 @@ import { createRealCursor } from './helpers/realCursor';
  * gave it away: VS Code's Settings UI renders boolean settings with its own
  * `Toggle`/`Checkbox` widget, a `div[role="checkbox"]` with no underlying
  * `<input>` element at all, so no selector built on `input[type="checkbox"]`
- * could ever have matched. Fixed by targeting `[role="checkbox"]` instead.
+ * could ever have matched. Fixed by targeting `[role="checkbox"]` instead —
+ * confirmed by a real CI run that got past it into the very next step.
+ *
+ * That next step — closing the Settings tab via a guessed
+ * `.tab[aria-label*="Settings"] .codicon-close` selector — then missed the
+ * same way (zero matches). Rather than guess yet another close-button
+ * structure, it now reuses the pattern that already proved reliable twice
+ * earlier in this same test for editor management (Close All Editors,
+ * Reopen Closed Editor): a keyboard shortcut, `Ctrl+W`, closing whatever tab
+ * is currently active — no DOM selector involved at all.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -542,9 +551,14 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await autoOpenCheckbox.click();
     await window.waitForTimeout(600);
 
-    const settingsTabClose = window.locator('.tab[aria-label*="Settings"] .codicon-close').first();
-    await cursor.glideToLocator(settingsTabClose);
-    await settingsTabClose.click();
+    // A guessed `.tab[aria-label*="Settings"] .codicon-close` selector timed
+    // out in real CI finding zero matches. Rather than guess another close-
+    // button structure, use the same approach that already proved reliable
+    // for editor management earlier in this same test (Close All Editors,
+    // Reopen Closed Editor): a keyboard shortcut. The Settings editor is the
+    // active tab right after interacting with its checkbox above, so
+    // Ctrl+W closes exactly it with no selector at all.
+    await window.keyboard.press('Control+w');
     await window.waitForTimeout(500);
 
     // Browse to the schema file via Explorer — deliberately, since "browse to
