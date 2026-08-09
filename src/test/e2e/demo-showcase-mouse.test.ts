@@ -279,16 +279,26 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForTimeout(4_000);
 
     // ── 6. Collapse all, then expand all ────────────────────────────────────
+    // `force: true` on both clicks: real CI showed Playwright's actionability
+    // check (attached, visible, enabled, *and* two consecutive frames with an
+    // unchanged bounding box) resolve the element but never pass the
+    // stability half, for the full 30s, on this specific button — a static
+    // Bootstrap button at the very top of the page, above all the collapsible
+    // content, with nothing that should legitimately be moving it. Likelier
+    // a webview-inside-Xvfb-inside-Electron rendering quirk than a real UI
+    // problem; `attached` state was already confirmed above, and a plain
+    // Bootstrap `data-toggle="collapse"` button doesn't need a precise real
+    // hover/stability state to work correctly when clicked.
     const previewFrame = window.frameLocator('iframe.webview.ready').frameLocator('#active-frame');
     const collapseAllBtn = previewFrame.locator('button:has-text("Collapse all")').first();
     await collapseAllBtn.waitFor({ state: 'attached', timeout: 15_000 });
     await cursor.glideToLocator(collapseAllBtn);
-    await collapseAllBtn.click();
+    await collapseAllBtn.click({ force: true });
     await window.waitForTimeout(900);
 
     const expandAllBtn = previewFrame.locator('button:has-text("Expand all")').first();
     await cursor.glideToLocator(expandAllBtn);
-    await expandAllBtn.click();
+    await expandAllBtn.click({ force: true });
     await window.waitForTimeout(900);
 
     // ── 7. Close all tabs and open a bad JSON example ───────────────────────
