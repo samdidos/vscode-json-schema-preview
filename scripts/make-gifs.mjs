@@ -113,6 +113,23 @@ for (const { name, dir, delay, hold } of DEMOS) {
 }
 
 if (built === 0) {
+  // A real CI run of the S08-SR-15 `demos` override with only "showcase"
+  // requested (a legitimate case: showcase has no `dir`, so it's excluded
+  // from DEMOS above by design — S08-SR-13 — and produced by
+  // make-showcase-gif.mjs instead) hit this unconditionally, since `built`
+  // is 0 whenever every requested name was dir-less, not only when frames
+  // are genuinely missing. Only treat it as a failure if at least one
+  // requested name was actually eligible for this script to produce.
+  const requestedNames = demoArg ? [demoArg] : demosArg;
+  const allDirless = requestedNames != null && requestedNames.length > 0 &&
+    requestedNames.every((n) => REGISTRY.some((d) => d.name === n && !d.dir));
+  if (allDirless) {
+    console.log(
+      `\nNothing to do here — every requested demo (${requestedNames.join(', ')}) is a screen ` +
+      'recording handled by scripts/make-showcase-gif.mjs, not a frame-stitched GIF.',
+    );
+    process.exit(0);
+  }
   console.error('\nNo GIFs created. Run `npm run test:e2e` first to capture frames.');
   process.exit(1);
 }
