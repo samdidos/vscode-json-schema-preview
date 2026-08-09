@@ -72,13 +72,17 @@ import { createRealCursor } from './helpers/realCursor';
  * explicit, demo-only opt-in via `jsonschema.config` (F09) — the extension's
  * own default stays "flat" precisely to avoid this network dependency.
  *
- * Step 5's wait after picking the "Workspace Folder" settings scope was
- * another real CI find: waiting on any `.monaco-editor .view-lines` is
- * satisfied instantly by the schema editor already on screen from step 4,
- * before `workbench.action.openWorkspaceSettingsFile` (an async command)
- * has actually opened settings.json — racing the following keystrokes into
- * whichever editor still has focus. Fixed by waiting for settings.json's own
- * *active* tab specifically.
+ * Step 5's wait after picking the "Workspace Folder" settings scope took two
+ * real-CI iterations to get right: waiting on any `.monaco-editor .view-lines`
+ * is satisfied instantly by the schema editor already on screen from step 4,
+ * before `workbench.action.openWorkspaceSettingsFile` (an async command) has
+ * actually opened settings.json, racing the following keystrokes into
+ * whichever editor still has focus. The first fix — wait for settings.json's
+ * own *active* tab by `aria-label` — was itself wrong: CI showed VS Code
+ * gives that tab a friendly title like "Folder Settings (JSON)", not the
+ * literal filename, so the label substring never matched. Fixed by waiting
+ * for the `jsonschema.config` key's actual text (F09-FR-01 guarantees it's
+ * seeded) to render on screen instead — a content check, not a label guess.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -215,8 +219,13 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     // `.monaco-editor .view-lines` is satisfied instantly by the schema
     // editor that's *already* on screen, before settings.json has actually
     // opened, which races the keystrokes below into whichever editor still
-    // has focus. Wait for settings.json's own *active* tab specifically.
-    await window.waitForSelector('.tab[aria-label*="settings.json"].active', { state: 'visible', timeout: 10_000 });
+    // has focus. A tab-label wait (tried and failed in CI: VS Code shows a
+    // friendly name like "Folder Settings (JSON)", not the literal filename,
+    // so `[aria-label*="settings.json"]` never matched) is also the wrong
+    // signal — wait instead for the actual `jsonschema.config` key
+    // (F09-FR-01 guarantees it's seeded) to render on screen, which only
+    // happens once the right file's content is showing.
+    await window.waitForSelector('.view-line:has-text("jsonschema.config")', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(600);
 
     // F09-FR-01 opens settings.json with the (freshly-seeded {}) jsonschema.config
