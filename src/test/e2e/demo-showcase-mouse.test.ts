@@ -128,6 +128,17 @@ import { createRealCursor } from './helpers/realCursor';
  * earlier in this same test for editor management (Close All Editors,
  * Reopen Closed Editor): a keyboard shortcut, `Ctrl+W`, closing whatever tab
  * is currently active — no DOM selector involved at all.
+ *
+ * The final Explorer lookup (browsing to the schema file, step 13's closing
+ * beat) then failed even past its own collapse/re-expand retry. Root cause:
+ * `explorer.autoReveal` (VS Code's default) had already expanded "schemas"
+ * earlier in the test — generated-schema.json had already been the active
+ * editor more than once (e.g. step 11's Ctrl+click) — so the original
+ * "click once to expand" assumed a starting state that wasn't actually
+ * true, collapsing an already-open folder instead, and the retry's own two
+ * more blind clicks didn't reliably undo that. Fixed by reading each row's
+ * `aria-expanded` attribute before clicking, so the folder ends up expanded
+ * regardless of which state it started in.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -565,11 +576,23 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     // a file" is the point being demonstrated here, unlike step 4's reopen.
     // A full minute of other steps has passed since the file was written, so
     // the readdir-on-first-expand lag that broke step 4's Explorer attempt
-    // shouldn't recur, but re-toggle-and-retry once anyway as a second net.
+    // shouldn't recur — but a real CI run (31292251675) still failed here,
+    // even after the old version's blind collapse/re-expand retry. Root
+    // cause: `explorer.autoReveal` (VS Code's default) had already expanded
+    // "schemas" earlier in this same test — generated-schema.json became the
+    // active editor more than once before this point (e.g. step 11's
+    // Ctrl+click), and VS Code auto-expands/reveals the active editor's
+    // containing folder as a side effect. A blind click assuming "starts
+    // collapsed" then *collapses* an already-expanded folder instead, and
+    // the retry's own two blind clicks don't reliably cancel that out.
+    // Reading the row's actual `aria-expanded` state before each click fixes
+    // it for either starting state.
     const schemasFolder = window.locator('.explorer-folders-view .monaco-list-row:has-text("schemas")').first();
     await cursor.glideToLocator(schemasFolder);
-    await schemasFolder.click();
-    await window.waitForTimeout(500);
+    if ((await schemasFolder.getAttribute('aria-expanded')) !== 'true') {
+      await schemasFolder.click();
+      await window.waitForTimeout(500);
+    }
 
     const schemaFile = window.locator(
       '.explorer-folders-view .monaco-list-row:has-text("generated-schema.json")',
@@ -577,9 +600,14 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     try {
       await schemaFile.waitFor({ state: 'visible', timeout: 8_000 });
     } catch {
-      await schemasFolder.click(); // collapse
-      await window.waitForTimeout(400);
-      await schemasFolder.click(); // re-expand — forces a fresh readdir
+      // Genuine readdir lag rather than a wrong state guess: force a fresh
+      // collapse/re-expand cycle, checking state before each click so the
+      // two toggles can't cancel out or double up.
+      if ((await schemasFolder.getAttribute('aria-expanded')) === 'true') {
+        await schemasFolder.click();
+        await window.waitForTimeout(400);
+      }
+      await schemasFolder.click();
       await schemaFile.waitFor({ state: 'visible', timeout: 15_000 });
     }
     await cursor.glideToLocator(schemaFile);
