@@ -28,10 +28,24 @@ function probedPaths(): string[] {
 }
 
 /** Paths some commit contains. A generated artifact is in no commit, so this
- *  separates "must be there" from "may not have been produced yet". */
+ *  separates "must be there" from "may not have been produced yet".
+ *
+ *  `--full-name -- :/` is load-bearing: under Stryker, ROOT is a sandbox copy
+ *  nested inside the real checkout (`.stryker-tmp/sandbox-xxx`), which has no
+ *  `.git` of its own. `git ls-files` still finds the real repo's `.git` by
+ *  walking up, but without these flags it silently scopes to files *under*
+ *  that cwd — none, since the sandbox copy isn't itself tracked — making
+ *  every probed path look "generated" and failing the very next test. `:/`
+ *  matches from the repo top regardless of cwd, and `--full-name` reports
+ *  those paths relative to the top rather than to cwd.
+ */
 function committedPaths(): Set<string> {
   return new Set(
-    execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 32 << 20 })
+    execFileSync('git', ['ls-files', '--full-name', '--', ':/'], {
+      cwd: ROOT,
+      encoding: 'utf-8',
+      maxBuffer: 32 << 20,
+    })
       .split('\n')
       .filter(Boolean),
   );
