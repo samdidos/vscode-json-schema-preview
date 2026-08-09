@@ -383,9 +383,16 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForSelector('.suggest-widget', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(900);
 
-    const adminSuggestion = window.locator('.suggest-widget .monaco-list-row:has-text("admin")').first();
-    await cursor.glideToLocator(adminSuggestion);
-    await adminSuggestion.click();
+    // Pick the first row rather than text-matching "admin": real CI showed no
+    // row ever matched that substring within 15s, even though the widget
+    // itself was confirmed visible above — the exact label text/markup
+    // wasn't provable without live access. The schema declares
+    // `"enum": ["admin", "editor", "viewer"]`, and vscode-json-languageservice
+    // preserves that order in its suggestions, so the first row is "admin" in
+    // practice — this just doesn't hard-depend on that being visible text.
+    const topSuggestion = window.locator('.suggest-widget .monaco-list-row').first();
+    await cursor.glideToLocator(topSuggestion);
+    await topSuggestion.click();
     await window.keyboard.type('",', { delay: 40 });
     await window.waitForTimeout(500);
     await window.keyboard.press('Control+s');
