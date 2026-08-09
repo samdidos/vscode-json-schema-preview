@@ -52,7 +52,17 @@ export function createRealCursor(origin: { x: number; y: number }, start = { x: 
 
   const glideToLocator = async (locator: Locator, steps = 20): Promise<void> => {
     await locator.waitFor({ state: 'visible', timeout: 15_000 });
-    const box = await locator.boundingBox();
+    // A real CI run showed `boundingBox()` return null immediately after
+    // `waitFor` resolved "visible" — VS Code toolbars re-render icons as
+    // async context-key evaluation settles right after a file opens, and the
+    // specific DOM node Playwright resolved can go stale/detached in that
+    // window. Retry a few times rather than hard-failing on what's most
+    // likely a few-millisecond race, not a genuinely missing element.
+    let box = await locator.boundingBox();
+    for (let attempt = 0; !box && attempt < 5; attempt++) {
+      await new Promise(r => setTimeout(r, 150));
+      box = await locator.boundingBox();
+    }
     if (!box) { throw new Error('No bounding box for locator'); }
     await glideTo(origin.x + box.x + box.width / 2, origin.y + box.y + box.height / 2, steps);
   };

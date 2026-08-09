@@ -9,10 +9,12 @@ interface DemoEntry {
   dir?: string;
   specs: string[];
 }
+interface ForceOverride { all: boolean; demos: DemoEntry[]; }
 interface DetectModule {
   parseChangedSpecIds(diffOutput: string): string[];
   affectedDemos(changedSpecIds: string[], demos: DemoEntry[]): DemoEntry[];
   buildGrepPattern(names: string[], variant: 'mouse' | 'smoke'): string;
+  resolveForceOverride(forceInput: string, demos: DemoEntry[]): ForceOverride | null;
 }
 const loadModule = async (): Promise<DetectModule> =>
   import('../../../scripts/detect-changed-features.mjs');
@@ -71,5 +73,32 @@ suite('S08 — release-scoped demo selection', () => {
   test('[S08-SR-12] buildGrepPattern returns an empty string for no affected demos', async () => {
     const { buildGrepPattern } = await loadModule();
     assert.strictEqual(buildGrepPattern([], 'mouse'), '');
+  });
+
+  test('[S08-SR-15] resolveForceOverride returns null for an empty or whitespace-only input', async () => {
+    const { resolveForceOverride } = await loadModule();
+    assert.strictEqual(resolveForceOverride('', FAKE_DEMOS), null);
+    assert.strictEqual(resolveForceOverride('   ', FAKE_DEMOS), null);
+  });
+
+  test('[S08-SR-15] resolveForceOverride treats "all" (any case) as selecting every demo', async () => {
+    const { resolveForceOverride } = await loadModule();
+    assert.deepStrictEqual(resolveForceOverride('all', FAKE_DEMOS), { all: true, demos: [] });
+    assert.deepStrictEqual(resolveForceOverride('  ALL  ', FAKE_DEMOS), { all: true, demos: [] });
+  });
+
+  test('[S08-SR-15] resolveForceOverride selects exactly the named demos, in registry order', async () => {
+    const { resolveForceOverride } = await loadModule();
+    const result = resolveForceOverride('showcase, preview', FAKE_DEMOS);
+    assert.deepStrictEqual(result?.all, false);
+    assert.deepStrictEqual(result?.demos.map((d) => d.name), ['preview', 'showcase']);
+  });
+
+  test('[S08-SR-15] resolveForceOverride throws on an unrecognised demo name instead of silently narrowing', async () => {
+    const { resolveForceOverride } = await loadModule();
+    assert.throws(
+      () => resolveForceOverride('preview,not-a-real-demo', FAKE_DEMOS),
+      /Unknown demo name\(s\).*not-a-real-demo/,
+    );
   });
 });

@@ -11,10 +11,18 @@
 //
 // Usage:
 //   node scripts/detect-changed-features.mjs [--base <ref>] [--head <ref>]
+//   node scripts/detect-changed-features.mjs --force <name,name|all>
 //
 // --base defaults to the nearest tag reachable from --head (the previous
 // release); --head defaults to HEAD. Writes `all`, `demos`, `mouse-grep`,
 // `smoke-grep`, and `changed-specs` to $GITHUB_OUTPUT (or stdout).
+//
+// --force (or the FORCE_DEMOS env var, which --force takes priority over)
+// is a manual override (S08-SR-15) for a change that doesn't touch any
+// mapped spec file — e.g. a demo script/History-only edit — and so produces
+// no spec-diff signal: `all` runs every demo, a comma-separated list of
+// demo names runs only those, bypassing the base-tag diff entirely. An
+// unrecognised name exits non-zero rather than silently narrowing the run.
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -54,6 +62,31 @@ export function buildGrepPattern(names, variant) {
   return variant === 'mouse' ? `demo-(${alt})-mouse:` : `demo-(${alt}):`;
 }
 
+/**
+ * Parses a manual `demos` workflow_dispatch override (S08-SR-15): the
+ * literal `all` selects every demo regardless of spec diff; a comma-
+ * separated list selects exactly those demos by name. An empty/whitespace-
+ * only input means "no override" (`null`), so the caller falls through to
+ * S08-SR-12's normal base-diff selection. An unrecognised name throws,
+ * rather than silently narrowing the run to whatever *did* match.
+ */
+export function resolveForceOverride(forceInput, demos = DEMOS) {
+  const trimmed = (forceInput ?? '').trim();
+  if (!trimmed) return null;
+  if (trimmed.toLowerCase() === 'all') return { all: true, demos: [] };
+
+  const names = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  const known = new Set(demos.map((d) => d.name));
+  const unknown = names.filter((n) => !known.has(n));
+  if (unknown.length) {
+    throw new Error(
+      `Unknown demo name(s) in the "demos" override: ${unknown.join(', ')}. ` +
+      `Valid names: ${[...known].sort().join(', ')}.`
+    );
+  }
+  return { all: false, demos: demos.filter((d) => names.includes(d.name)) };
+}
+
 function writeOutputs(fields) {
   const target = process.env.GITHUB_OUTPUT;
   const lines = Object.entries(fields).map(([k, v]) => `${k}=${v}`).join('\n') + '\n';
@@ -86,29 +119,59 @@ function diffSpecFiles(base, head) {
 const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop());
 if (isMain) {
   const { values: argv } = parseArgs({
-    options: { base: { type: 'string' }, head: { type: 'string' } },
+    options: { base: { type: 'string' }, head: { type: 'string' }, force: { type: 'string' } },
     strict: false,
   });
   const head = argv.head ?? 'HEAD';
-  const base = argv.base ?? resolvePreviousTag(head);
 
-  if (!base) {
-    console.error('No previous release tag found — running every demo.');
-    writeOutputs({ all: 'true', demos: '', 'mouse-grep': '', 'smoke-grep': '', 'changed-specs': '' });
+  // S08-SR-15 — a manual workflow_dispatch override takes priority over the
+  // usual base-tag diff and short-circuits it entirely; --force wins over
+  // FORCE_DEMOS so a local `--force` call isn't silently overridden by a
+  // leftover env var.
+  let override;
+  try {
+    override = resolveForceOverride(argv.force ?? process.env.FORCE_DEMOS ?? '');
+  } catch (e) {
+    console.error(e.message);
+    process.exit(1);
+  }
+
+  if (override) {
+    if (override.all) {
+      console.error('Manual override: demos=all -> running every demo.');
+      writeOutputs({ all: 'true', demos: '', 'mouse-grep': '', 'smoke-grep': '', 'changed-specs': '' });
+    } else {
+      const names = override.demos.map((d) => d.name);
+      console.error(`Manual override: demos=${names.join(',')} -> running only these demos.`);
+      writeOutputs({
+        all: 'false',
+        demos: names.join(','),
+        'mouse-grep': buildGrepPattern(names, 'mouse'),
+        'smoke-grep': buildGrepPattern(names, 'smoke'),
+        'changed-specs': '',
+      });
+    }
   } else {
-    const changedSpecIds = parseChangedSpecIds(diffSpecFiles(base, head));
-    const affected = affectedDemos(changedSpecIds);
-    const names = affected.map((d) => d.name);
-    console.error(
-      `Base ${base}..${head}: ${changedSpecIds.length ? changedSpecIds.join(', ') : '(no spec changes)'} ` +
-      `-> ${names.length ? names.join(', ') : '(no demos affected)'}`,
-    );
-    writeOutputs({
-      all: 'false',
-      demos: names.join(','),
-      'mouse-grep': buildGrepPattern(names, 'mouse'),
-      'smoke-grep': buildGrepPattern(names, 'smoke'),
-      'changed-specs': changedSpecIds.join(','),
-    });
+    const base = argv.base ?? resolvePreviousTag(head);
+
+    if (!base) {
+      console.error('No previous release tag found — running every demo.');
+      writeOutputs({ all: 'true', demos: '', 'mouse-grep': '', 'smoke-grep': '', 'changed-specs': '' });
+    } else {
+      const changedSpecIds = parseChangedSpecIds(diffSpecFiles(base, head));
+      const affected = affectedDemos(changedSpecIds);
+      const names = affected.map((d) => d.name);
+      console.error(
+        `Base ${base}..${head}: ${changedSpecIds.length ? changedSpecIds.join(', ') : '(no spec changes)'} ` +
+        `-> ${names.length ? names.join(', ') : '(no demos affected)'}`,
+      );
+      writeOutputs({
+        all: 'false',
+        demos: names.join(','),
+        'mouse-grep': buildGrepPattern(names, 'mouse'),
+        'smoke-grep': buildGrepPattern(names, 'smoke'),
+        'changed-specs': changedSpecIds.join(','),
+      });
+    }
   }
 }

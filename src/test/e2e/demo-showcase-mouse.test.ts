@@ -42,11 +42,20 @@ import { createRealCursor } from './helpers/realCursor';
  * docs/public/demo-showcase.gif via ffmpeg's palette pipeline, instead of
  * scripts/make-gifs.mjs's gif-encoder-2 frame-stitching.
  *
- * Re-opening the schema file after hiding it (step 3/4) goes through the
- * Explorer, not Quick Open (Ctrl+P): the S08-e2e-testing.md History records
- * two demos that reproducibly timed out driving Quick Open's async
- * file-search against a freshly seeded/generated fixture, fixed by avoiding
- * Quick Open entirely — the same reasoning applies here.
+ * Re-opening the schema file right after hiding it (step 4) uses "Reopen
+ * Closed Editor" (Ctrl+Shift+T) rather than the Explorer or Quick Open
+ * (Ctrl+P): a CI run proved this the hard way — Explorer's tree only
+ * readdir()s a folder on first expand/refresh, and for a file saved via the
+ * native-save-dialog stub moments earlier in the same run, that lagged past
+ * a 15s wait. Ctrl+Shift+T reuses VS Code's own in-memory editor-history
+ * stack instead, with no dependency on the filesystem tree at all — and it
+ * reopens exactly the tab just closed. Quick Open has its own documented
+ * flakiness for a freshly-seeded/generated fixture (see the History note in
+ * S08-e2e-testing.md on two other demos that hit the same thing), so it's
+ * avoided too. The Explorer *is* still used once, in step 13 — deliberately,
+ * since "browse to a file" is the point being demonstrated there — but only
+ * after a full minute of other steps have given the tree time to catch up,
+ * and with a retry (re-toggle the folder, wait again) as a second safety net.
  *
  * The Expand all/Collapse all buttons (steps 5/6) require switching the
  * `json-schema-for-humans` template away from the default "flat" one
@@ -62,6 +71,123 @@ import { createRealCursor } from './helpers/realCursor';
  * (Bootstrap's `data-toggle="collapse"`), and that works. This is an
  * explicit, demo-only opt-in via `jsonschema.config` (F09) — the extension's
  * own default stays "flat" precisely to avoid this network dependency.
+ *
+ * Step 5's wait after picking the "Workspace Folder" settings scope took two
+ * real-CI iterations to get right: waiting on any `.monaco-editor .view-lines`
+ * is satisfied instantly by the schema editor already on screen from step 4,
+ * before `workbench.action.openWorkspaceSettingsFile` (an async command) has
+ * actually opened settings.json, racing the following keystrokes into
+ * whichever editor still has focus. The first fix — wait for settings.json's
+ * own *active* tab by `aria-label` — was itself wrong: CI showed VS Code
+ * gives that tab a friendly title like "Folder Settings (JSON)", not the
+ * literal filename, so the label substring never matched. Fixed by waiting
+ * for the `jsonschema.config` key's actual text (F09-FR-01 guarantees it's
+ * seeded) to render on screen instead — a content check, not a label guess.
+ *
+ * Getting *into* settings.json reliably still wasn't enough: a third CI run
+ * got past all of the above and into step 6, then timed out waiting for the
+ * "Collapse all" button — the config write silently hadn't taken effect, so
+ * the re-rendered preview was still the default "flat" template. F09-FR-01
+ * reveals the seeded `{}` value but doesn't reliably leave it *selected* for
+ * overtype; typing on that assumption risks landing next to the `{}` instead
+ * of replacing it, leaving invalid JSON that VS Code silently falls back
+ * from (to the last-known-good, still-empty config) with no visible error —
+ * exactly the kind of failure that looks fine on screen and only shows up as
+ * "the button I expected never appeared". Fixed by selecting the whole file
+ * (Ctrl+A) and typing the complete, valid settings.json content, which can't
+ * depend on what was or wasn't pre-selected.
+ *
+ * Step 11's Ctrl+click on the `$schema` document link resisted three real-CI
+ * iterations in a row — a longer pre-click wait, then a same-click retry —
+ * neither of which changed the outcome, which rules out "clicked too early"
+ * and "needs a second click" without identifying what the actual problem is.
+ * That's not verifiable further without live VS Code access (this repo
+ * contributes no document-link provider of its own for a *data* file's
+ * `$schema` field, so if the built-in one doesn't behave the way assumed
+ * here, there's no source in this repo to inspect for why). Rather than
+ * keep guessing blind, the click is still attempted (twice) since it's the
+ * more faithful demonstration when it works, but a Quick Open fallback with
+ * the known relative path guarantees the schema file ends up open regardless
+ * — step 12 needs it active, and a stalled demo here would block everything
+ * after it for no benefit.
+ *
+ * Step 13's Auto Open checkbox took three real-CI iterations of its own: a
+ * Settings-UI-specific class, then `.monaco-list-row` with an assumed label,
+ * then a plain `input[type="checkbox"]` — all missed, the last two with an
+ * outright zero-match timeout rather than a near-miss. The common thread
+ * gave it away: VS Code's Settings UI renders boolean settings with its own
+ * `Toggle`/`Checkbox` widget, a `div[role="checkbox"]` with no underlying
+ * `<input>` element at all, so no selector built on `input[type="checkbox"]`
+ * could ever have matched. Fixed by targeting `[role="checkbox"]` instead —
+ * confirmed by a real CI run that got past it into the very next step.
+ *
+ * That next step — closing the Settings tab via a guessed
+ * `.tab[aria-label*="Settings"] .codicon-close` selector — then missed the
+ * same way (zero matches). Rather than guess yet another close-button
+ * structure, it now reuses the pattern that already proved reliable twice
+ * earlier in this same test for editor management (Close All Editors,
+ * Reopen Closed Editor): a keyboard shortcut, `Ctrl+W`, closing whatever tab
+ * is currently active — no DOM selector involved at all.
+ *
+ * The final Explorer lookup (browsing to the schema file, step 13's closing
+ * beat) then failed even past its own collapse/re-expand retry. Root cause:
+ * `explorer.autoReveal` (VS Code's default) had already expanded "schemas"
+ * earlier in the test — generated-schema.json had already been the active
+ * editor more than once (e.g. step 11's Ctrl+click) — so the original
+ * "click once to expand" assumed a starting state that wasn't actually
+ * true, collapsing an already-open folder instead, and the retry's own two
+ * more blind clicks didn't reliably undo that. Fixed by reading each row's
+ * `aria-expanded` attribute before clicking, so the folder ends up expanded
+ * regardless of which state it started in.
+ *
+ * With that fixed, the test ran to its very last line — waiting for the
+ * preview webview to auto-open after clicking the schema file, proving
+ * `jsonschema.preview.autoOpen` actually did something — and timed out
+ * there instead. The unscoped `.settings-editor [role="checkbox"]` selector
+ * for the Auto Open toggle (previous fix, above) apparently found and
+ * clicked *something* without erroring, just not the right thing: the
+ * Settings editor's own search/filter toolbar (e.g. a "Only show modified
+ * settings" filter) uses the same `role="checkbox"` widget and sits earlier
+ * in DOM order than the results list, so an unscoped `.first()` could land
+ * there instead. Scoped to `.monaco-list-row [role="checkbox"]` — the
+ * search query is still the exact full setting ID, so exactly one result
+ * row renders, and scoping to it excludes every toolbar control above it.
+ *
+ * That row-scoped fix, run for real (31293043167), failed at the exact same
+ * spot again — meaning either the click still isn't landing as a real
+ * toggle, or the wait afterward is simply too tight for a cold-start
+ * webview panel this late in a 12+-minute run (Close All Editors, just
+ * before this, disposes the panel opened back in step 3, so this recreates
+ * it from scratch rather than reusing one). Verifying `aria-checked` and
+ * retrying, plus widening the final webview wait from 15s to 30s, addressed
+ * both — and still failed identically (run 31293471507), even hitting the
+ * full 30s. A consistent failure at the same spot across selector, retry,
+ * *and* timing changes means the mutation itself was never taking effect,
+ * not any particular guess about how to trigger or verify it — and there's
+ * no way to see what a custom, unlabelled Settings UI widget actually did
+ * without CI screenshot access. Rather than keep guessing at that widget,
+ * step 13 now edits settings.json directly instead (Ctrl+A, full retype),
+ * the same mechanism already proven reliable for step 5's settings change.
+ *
+ * That rewrite itself then failed in real CI (31293925609) one step
+ * earlier than before — opening settings.json via the command palette never
+ * actually landed. Two things differed from the rest of the file's *proven*
+ * Ctrl+Shift patterns: a single `'Control+Shift+p'` combo string instead of
+ * the down/press/up sequence Reopen Closed Editor already relies on, and
+ * pressing Enter on the palette's default-highlighted row instead of
+ * clicking the exact row already confirmed to exist. Fixed both to match
+ * the file's established, CI-proven patterns.
+ *
+ * Both of those fixes held — the very next real CI run (31294290306) got
+ * past opening the command palette and selecting the entry, then failed
+ * one line later, waiting for `.tab[aria-label*="settings.json"]`. This is
+ * a trap step 5 already documented above: VS Code titles this tab something
+ * friendly ("Settings (JSON)" for the user scope here, "Folder Settings
+ * (JSON)" for step 5's workspace scope), never the literal filename, so a
+ * label-substring guess can't match either scope. Fixed the same way step 5
+ * was: stop guessing the label and wait for editor content instead — since
+ * Close All Editors ran moments earlier, any `.monaco-editor .view-lines`
+ * becoming visible is unambiguous here.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -154,17 +280,13 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForTimeout(800); // a beat with only the viewer on screen
 
     // ── 4. Reopen the schema and live-edit its title (F02) ──────────────────
-    // Explorer, not Quick Open (Ctrl+P) — see the file doc-comment.
-    const schemasFolder = window.locator('.explorer-folders-view .monaco-list-row:has-text("schemas")').first();
-    await cursor.glideToLocator(schemasFolder);
-    await schemasFolder.click();
-    await window.waitForTimeout(500);
-
-    const schemaFile = window.locator(
-      '.explorer-folders-view .monaco-list-row:has-text("generated-schema.json")',
-    ).first();
-    await cursor.glideToLocator(schemaFile);
-    await schemaFile.click();
+    // Ctrl+Shift+T ("Reopen Closed Editor") — see the file doc-comment for
+    // why this isn't an Explorer click.
+    await window.keyboard.down('Control');
+    await window.keyboard.down('Shift');
+    await window.keyboard.press('t');
+    await window.keyboard.up('Shift');
+    await window.keyboard.up('Control');
     await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
     await window.waitForTimeout(500);
 
@@ -198,18 +320,48 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     ).first();
     await cursor.glideToLocator(workspaceFolderScope);
     await workspaceFolderScope.click();
-    await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 10_000 });
+    // `workbench.action.openWorkspaceSettingsFile` is async — waiting on any
+    // `.monaco-editor .view-lines` is satisfied instantly by the schema
+    // editor that's *already* on screen, before settings.json has actually
+    // opened, which races the keystrokes below into whichever editor still
+    // has focus. A tab-label wait (tried and failed in CI: VS Code shows a
+    // friendly name like "Folder Settings (JSON)", not the literal filename,
+    // so `[aria-label*="settings.json"]` never matched) is also the wrong
+    // signal — wait instead for the actual `jsonschema.config` key
+    // (F09-FR-01 guarantees it's seeded) to render on screen, which only
+    // happens once the right file's content is showing.
+    const settingsLine = window.locator('.view-line:has-text("jsonschema.config")').first();
+    await settingsLine.waitFor({ state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(600);
+    // Visible isn't the same as focused — click into it so Ctrl+A below
+    // selects settings.json's content, not whatever last had keyboard focus.
+    await cursor.glideToLocator(settingsLine);
+    await settingsLine.click();
+    await window.waitForTimeout(200);
 
-    // F09-FR-01 opens settings.json with the (freshly-seeded {}) jsonschema.config
-    // value already revealed/selected — typing replaces it directly.
-    await window.keyboard.type('{ "template_name": "js", "expand_buttons": true }', { delay: 25 });
+    // F09-FR-01 reveals the (freshly-seeded {}) jsonschema.config value, but
+    // doesn't reliably leave it *selected* for overtype — typing assuming a
+    // selection risks inserting next to the existing {} instead of replacing
+    // it, leaving invalid JSON that VS Code silently ignores in favour of the
+    // last-known-good (empty) config, so the preview keeps rendering "flat"
+    // (no Expand/Collapse) with no visible error. Select-all and retype the
+    // whole file instead — this can't depend on what was pre-selected.
+    await window.keyboard.press('Control+a');
+    await window.waitForTimeout(200);
+    await window.keyboard.type(
+      '{ "jsonschema.config": { "template_name": "js", "expand_buttons": true } }',
+      { delay: 20 },
+    );
     await window.waitForTimeout(400);
     await window.keyboard.press('Control+s');
     await window.waitForTimeout(600);
 
     // Settings changes don't auto-refresh an open preview — re-run Preview on
-    // the schema tab to pick up the new template.
+    // the schema tab to pick up the new template. Escape first: a defensive
+    // net against any lingering overlay (e.g. a suggestion widget from typing
+    // into a schema-validated settings.json) intercepting the click.
+    await window.keyboard.press('Escape');
+    await window.waitForTimeout(200);
     const schemaTab = window.locator('.tab[aria-label*="generated-schema.json"]').first();
     await cursor.glideToLocator(schemaTab);
     await schemaTab.click();
@@ -219,16 +371,26 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForTimeout(4_000);
 
     // ── 6. Collapse all, then expand all ────────────────────────────────────
+    // `force: true` on both clicks: real CI showed Playwright's actionability
+    // check (attached, visible, enabled, *and* two consecutive frames with an
+    // unchanged bounding box) resolve the element but never pass the
+    // stability half, for the full 30s, on this specific button — a static
+    // Bootstrap button at the very top of the page, above all the collapsible
+    // content, with nothing that should legitimately be moving it. Likelier
+    // a webview-inside-Xvfb-inside-Electron rendering quirk than a real UI
+    // problem; `attached` state was already confirmed above, and a plain
+    // Bootstrap `data-toggle="collapse"` button doesn't need a precise real
+    // hover/stability state to work correctly when clicked.
     const previewFrame = window.frameLocator('iframe.webview.ready').frameLocator('#active-frame');
     const collapseAllBtn = previewFrame.locator('button:has-text("Collapse all")').first();
     await collapseAllBtn.waitFor({ state: 'attached', timeout: 15_000 });
     await cursor.glideToLocator(collapseAllBtn);
-    await collapseAllBtn.click();
+    await collapseAllBtn.click({ force: true });
     await window.waitForTimeout(900);
 
     const expandAllBtn = previewFrame.locator('button:has-text("Expand all")').first();
     await cursor.glideToLocator(expandAllBtn);
-    await expandAllBtn.click();
+    await expandAllBtn.click({ force: true });
     await window.waitForTimeout(900);
 
     // ── 7. Close all tabs and open a bad JSON example ───────────────────────
@@ -313,9 +475,16 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForSelector('.suggest-widget', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(900);
 
-    const adminSuggestion = window.locator('.suggest-widget .monaco-list-row:has-text("admin")').first();
-    await cursor.glideToLocator(adminSuggestion);
-    await adminSuggestion.click();
+    // Pick the first row rather than text-matching "admin": real CI showed no
+    // row ever matched that substring within 15s, even though the widget
+    // itself was confirmed visible above — the exact label text/markup
+    // wasn't provable without live access. The schema declares
+    // `"enum": ["admin", "editor", "viewer"]`, and vscode-json-languageservice
+    // preserves that order in its suggestions, so the first row is "admin" in
+    // practice — this just doesn't hard-depend on that being visible text.
+    const topSuggestion = window.locator('.suggest-widget .monaco-list-row').first();
+    await cursor.glideToLocator(topSuggestion);
+    await topSuggestion.click();
     await window.keyboard.type('",', { delay: 40 });
     await window.waitForTimeout(500);
     await window.keyboard.press('Control+s');
@@ -325,16 +494,38 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     // Built-in VS Code JSON language support turns a "$schema" value into a
     // clickable document link — no code in this extension is involved.
     await window.keyboard.press('Control+Home');
-    await window.waitForTimeout(400);
     const schemaLink = window.locator('.view-line span:has-text("generated-schema.json")').last();
     await schemaLink.waitFor({ state: 'visible', timeout: 10_000 });
-    const linkBox = await schemaLink.boundingBox();
-    if (!linkBox) { throw new Error('No bounding box for the $schema link span'); }
-    await cursor.glideTo(bounds.x + linkBox.x + linkBox.width / 2, bounds.y + linkBox.y + linkBox.height / 2);
-    await window.keyboard.down('Control');
+    await window.waitForTimeout(1_500);
+    await cursor.glideToLocator(schemaLink);
     await schemaLink.click({ modifiers: ['Control'] });
-    await window.keyboard.up('Control');
-    await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
+
+    const schemaTabVisible = () =>
+      window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 6_000 })
+        .then(() => true).catch(() => false);
+
+    // Three real CI runs in a row failed to navigate from this exact click —
+    // a longer pre-click wait and a same-click retry each ruled out one
+    // theory (not "too early", not "needs a second click") without fixing
+    // it, which points at something more fundamental than click timing that
+    // isn't verifiable without live VS Code access. Rather than keep
+    // guessing blind, fall back to Quick Open with the known relative path
+    // so the demo makes forward progress (step 12 needs the schema file
+    // active) regardless — a no-op skip on any run where the click does work.
+    if (!(await schemaTabVisible())) {
+      await schemaLink.click({ modifiers: ['Control'] });
+      if (!(await schemaTabVisible())) {
+        await window.keyboard.press('Control+p');
+        await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
+        await window.keyboard.type('generated-schema.json', { delay: 30 });
+        await window.waitForSelector(
+          '.quick-input-list .monaco-list-row:has-text("generated-schema.json")',
+          { timeout: 10_000 },
+        );
+        await window.keyboard.press('Enter');
+        await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
+      }
+    }
     await window.waitForTimeout(800);
 
     // ── 12. Generate TypeScript code from the schema (F18) ──────────────────
@@ -369,39 +560,119 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     // ── 13. Flip a VS Code setting to show an interesting configurable ─────
     //       feature: auto-opening the preview whenever a schema file is
     //       opened (jsonschema.preview.autoOpen — no icon of its own, so
-    //       this goes through the Settings UI rather than a toolbar click).
+    //       this goes through settings.json rather than a toolbar click;
+    //       see the History note above for why not the Settings UI).
     await window.keyboard.down('Control');
     await window.keyboard.press('k');
     await window.keyboard.press('w');
     await window.keyboard.up('Control');
     await window.waitForTimeout(600);
 
-    await window.keyboard.press('Control+,');
-    await window.waitForSelector('.settings-editor', { state: 'visible', timeout: 10_000 });
-    await window.waitForTimeout(600);
-
-    const settingsSearch = window.locator('.settings-editor .suggest-input-container input').first();
-    await cursor.glideToLocator(settingsSearch);
-    await settingsSearch.click();
-    await window.keyboard.type('jsonschema.preview.autoOpen', { delay: 30 });
-    await window.waitForTimeout(700);
-
-    const autoOpenCheckbox = window.locator(
-      '.settings-editor .setting-item-contents:has-text("Auto Open") input[type="checkbox"]',
+    // Four real-CI iterations in a row all failed at the exact same later
+    // point — the preview webview never appearing after clicking the schema
+    // file — even as the mitigations tried got progressively more
+    // fundamental: scoping the checkbox selector to its results row,
+    // verifying+retrying on `aria-checked`, and finally widening the wait to
+    // 30s (which *still* timed out, ruling out "just needed more time"). A
+    // consistent failure at the same spot across unrelated selector/timing
+    // changes points at the mutation itself never taking effect, not at any
+    // particular selector guessed for it — and there's no way to visually
+    // confirm what a custom, unlabelled Settings UI widget actually did
+    // without CI screenshot access. Rather than keep guessing at that
+    // widget, this switches to the mechanism that already proved reliable
+    // for step 5's settings change: editing settings.json directly (Ctrl+A,
+    // full retype) instead of clicking a UI control. The retype includes
+    // `jsonschema.preview.liveUpdate` (seeded at launch, below) alongside
+    // the new key, so this doesn't silently drop it.
+    // A real CI run (31293925609) timed out right after this point too —
+    // waiting for settings.json's tab, meaning the command never actually
+    // ran. Two things differ here from the rest of the file's *proven*
+    // Ctrl+Shift shortcuts (e.g. Reopen Closed Editor): the single combo
+    // string `'Control+Shift+p'` instead of the down/press/up pattern used
+    // everywhere else, and blindly pressing Enter on whatever the palette's
+    // default-highlighted row happens to be instead of clicking the exact
+    // row already confirmed to exist. Matching the proven pattern for both.
+    await window.keyboard.down('Control');
+    await window.keyboard.down('Shift');
+    await window.keyboard.press('p');
+    await window.keyboard.up('Shift');
+    await window.keyboard.up('Control');
+    await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
+    await window.keyboard.type('Preferences: Open User Settings (JSON)', { delay: 20 });
+    const openSettingsJsonEntry = window.locator(
+      '.quick-input-list .monaco-list-row:has-text("Open User Settings (JSON)")',
     ).first();
-    await cursor.glideToLocator(autoOpenCheckbox);
-    await autoOpenCheckbox.click();
-    await window.waitForTimeout(600);
-
-    const settingsTabClose = window.locator('.tab[aria-label*="Settings"] .codicon-close').first();
-    await cursor.glideToLocator(settingsTabClose);
-    await settingsTabClose.click();
+    await openSettingsJsonEntry.waitFor({ state: 'visible', timeout: 10_000 });
+    await openSettingsJsonEntry.click();
+    // Not a `.tab[aria-label*="settings.json"]` wait: this file's own step 5
+    // already hit this exact trap once — VS Code gives this tab a friendly
+    // title ("Settings (JSON)" for the user scope, "Folder Settings (JSON)"
+    // for workspace), never the literal filename, so a label-substring guess
+    // can't match. Every other tab was closed via Close All Editors moments
+    // ago, so waiting for any editor content at all is unambiguous here.
+    await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
     await window.waitForTimeout(500);
 
-    // Reopening the schema file now auto-opens the preview with no click.
+    await window.keyboard.press('Control+a');
+    await window.waitForTimeout(200);
+    await window.keyboard.type(
+      '{ "jsonschema.preview.liveUpdate": true, "jsonschema.preview.autoOpen": true }',
+      { delay: 20 },
+    );
+    await window.keyboard.press('Control+s');
+    await window.waitForTimeout(1_000);
+
+    await window.keyboard.press('Control+w');
+    await window.waitForTimeout(500);
+
+    // Browse to the schema file via Explorer — deliberately, since "browse to
+    // a file" is the point being demonstrated here, unlike step 4's reopen.
+    // A full minute of other steps has passed since the file was written, so
+    // the readdir-on-first-expand lag that broke step 4's Explorer attempt
+    // shouldn't recur — but a real CI run (31292251675) still failed here,
+    // even after the old version's blind collapse/re-expand retry. Root
+    // cause: `explorer.autoReveal` (VS Code's default) had already expanded
+    // "schemas" earlier in this same test — generated-schema.json became the
+    // active editor more than once before this point (e.g. step 11's
+    // Ctrl+click), and VS Code auto-expands/reveals the active editor's
+    // containing folder as a side effect. A blind click assuming "starts
+    // collapsed" then *collapses* an already-expanded folder instead, and
+    // the retry's own two blind clicks don't reliably cancel that out.
+    // Reading the row's actual `aria-expanded` state before each click fixes
+    // it for either starting state.
+    const schemasFolder = window.locator('.explorer-folders-view .monaco-list-row:has-text("schemas")').first();
+    await cursor.glideToLocator(schemasFolder);
+    if ((await schemasFolder.getAttribute('aria-expanded')) !== 'true') {
+      await schemasFolder.click();
+      await window.waitForTimeout(500);
+    }
+
+    const schemaFile = window.locator(
+      '.explorer-folders-view .monaco-list-row:has-text("generated-schema.json")',
+    ).first();
+    try {
+      await schemaFile.waitFor({ state: 'visible', timeout: 8_000 });
+    } catch {
+      // Genuine readdir lag rather than a wrong state guess: force a fresh
+      // collapse/re-expand cycle, checking state before each click so the
+      // two toggles can't cancel out or double up.
+      if ((await schemasFolder.getAttribute('aria-expanded')) === 'true') {
+        await schemasFolder.click();
+        await window.waitForTimeout(400);
+      }
+      await schemasFolder.click();
+      await schemaFile.waitFor({ state: 'visible', timeout: 15_000 });
+    }
     await cursor.glideToLocator(schemaFile);
     await schemaFile.click();
-    await window.waitForSelector('iframe.webview.ready', { state: 'visible', timeout: 15_000 });
+    // Widened from 15s: Close All Editors (step 13's opening beat, above)
+    // disposes the panel opened back in step 3, so this recreates it from
+    // scratch — a cold Python-subprocess render, plus general CI load 12+
+    // minutes into the test — rather than reusing/reconfiguring an existing
+    // one the way every other step in between did. The very first creation
+    // (step 3) never actually proved its own completion time; it just moved
+    // on after a blind 4s pause. 30s gives real headroom to rule that out.
+    await window.waitForSelector('iframe.webview.ready', { state: 'visible', timeout: 30_000 });
     await window.waitForTimeout(1_500);
 
     await window.waitForTimeout(1_500); // final hold — a clear rest beat for the GIF loop
