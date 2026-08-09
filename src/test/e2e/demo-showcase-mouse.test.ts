@@ -493,7 +493,14 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForSelector('.settings-editor', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(600);
 
-    const settingsSearch = window.locator('.settings-editor .suggest-input-container input').first();
+    // An untested guess at the search box's CSS class (`.suggest-input-container
+    // input`) never matched anything in real CI — VS Code's Settings UI search
+    // box reliably carries an aria-label/placeholder for accessibility, which
+    // is a far more stable target than guessing internal class hierarchy.
+    const settingsSearch = window.locator(
+      '.settings-editor input[aria-label="Search settings"], ' +
+      '.settings-editor input[placeholder*="Search settings" i]',
+    ).first();
     await cursor.glideToLocator(settingsSearch);
     await settingsSearch.click();
     await window.keyboard.type('jsonschema.preview.autoOpen', { delay: 30 });
