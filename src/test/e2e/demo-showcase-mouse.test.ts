@@ -168,6 +168,15 @@ import { createRealCursor } from './helpers/realCursor';
  * without CI screenshot access. Rather than keep guessing at that widget,
  * step 13 now edits settings.json directly instead (Ctrl+A, full retype),
  * the same mechanism already proven reliable for step 5's settings change.
+ *
+ * That rewrite itself then failed in real CI (31293925609) one step
+ * earlier than before — opening settings.json via the command palette never
+ * actually landed. Two things differed from the rest of the file's *proven*
+ * Ctrl+Shift patterns: a single `'Control+Shift+p'` combo string instead of
+ * the down/press/up sequence Reopen Closed Editor already relies on, and
+ * pressing Enter on the palette's default-highlighted row instead of
+ * clicking the exact row already confirmed to exist. Fixed both to match
+ * the file's established, CI-proven patterns.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -564,14 +573,26 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     // full retype) instead of clicking a UI control. The retype includes
     // `jsonschema.preview.liveUpdate` (seeded at launch, below) alongside
     // the new key, so this doesn't silently drop it.
-    await window.keyboard.press('Control+Shift+p');
+    // A real CI run (31293925609) timed out right after this point too —
+    // waiting for settings.json's tab, meaning the command never actually
+    // ran. Two things differ here from the rest of the file's *proven*
+    // Ctrl+Shift shortcuts (e.g. Reopen Closed Editor): the single combo
+    // string `'Control+Shift+p'` instead of the down/press/up pattern used
+    // everywhere else, and blindly pressing Enter on whatever the palette's
+    // default-highlighted row happens to be instead of clicking the exact
+    // row already confirmed to exist. Matching the proven pattern for both.
+    await window.keyboard.down('Control');
+    await window.keyboard.down('Shift');
+    await window.keyboard.press('p');
+    await window.keyboard.up('Shift');
+    await window.keyboard.up('Control');
     await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
     await window.keyboard.type('Preferences: Open User Settings (JSON)', { delay: 20 });
-    await window.waitForSelector(
+    const openSettingsJsonEntry = window.locator(
       '.quick-input-list .monaco-list-row:has-text("Open User Settings (JSON)")',
-      { timeout: 10_000 },
-    );
-    await window.keyboard.press('Enter');
+    ).first();
+    await openSettingsJsonEntry.waitFor({ state: 'visible', timeout: 10_000 });
+    await openSettingsJsonEntry.click();
     await window.waitForSelector('.tab[aria-label*="settings.json"]', { state: 'visible', timeout: 15_000 });
     await window.waitForTimeout(500);
 
