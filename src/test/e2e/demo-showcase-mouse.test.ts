@@ -412,7 +412,16 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForTimeout(1_500);
     await cursor.glideToLocator(schemaLink);
     await schemaLink.click({ modifiers: ['Control'] });
-    await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
+    // A longer wait alone didn't fix this in CI (two prior real runs both
+    // failed here even after the wait above) — so the first click likely
+    // isn't "too early", it's establishing hover/focus without registering
+    // as a link-open. Retry once with a fresh click before giving up.
+    try {
+      await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 6_000 });
+    } catch {
+      await schemaLink.click({ modifiers: ['Control'] });
+      await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
+    }
     await window.waitForTimeout(800);
 
     // ── 12. Generate TypeScript code from the schema (F18) ──────────────────
