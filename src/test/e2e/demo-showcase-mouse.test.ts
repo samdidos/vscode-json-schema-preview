@@ -152,6 +152,17 @@ import { createRealCursor } from './helpers/realCursor';
  * there instead. Scoped to `.monaco-list-row [role="checkbox"]` — the
  * search query is still the exact full setting ID, so exactly one result
  * row renders, and scoping to it excludes every toolbar control above it.
+ *
+ * That row-scoped fix, run for real (31293043167), failed at the exact same
+ * spot again — meaning either the click still isn't landing as a real
+ * toggle, or the wait afterward is simply too tight for a cold-start
+ * webview panel this late in a 12+-minute run (Close All Editors, just
+ * before this, disposes the panel opened back in step 3, so this recreates
+ * it from scratch rather than reusing one). Rather than guess a fourth
+ * selector with no new evidence to justify it, this addresses both
+ * remaining explanations at once: verify `aria-checked` after the click and
+ * retry once if it didn't take, and widen the final webview wait from 15s
+ * to 30s to rule out pure cold-start slowness.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -584,6 +595,16 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await cursor.glideToLocator(autoOpenCheckbox);
     await autoOpenCheckbox.click();
     await window.waitForTimeout(600);
+    // The row-scoped selector above still didn't fix the actual symptom
+    // (real CI, run 31293043167, failed at the exact same later spot again —
+    // the preview never auto-opening), so this click may not be landing as a
+    // real toggle even though it finds the right element. Verify the
+    // resulting `aria-checked` state directly instead of assuming the click
+    // took effect, and click again once if it didn't.
+    if ((await autoOpenCheckbox.getAttribute('aria-checked')) !== 'true') {
+      await autoOpenCheckbox.click();
+      await window.waitForTimeout(600);
+    }
 
     // A guessed `.tab[aria-label*="Settings"] .codicon-close` selector timed
     // out in real CI finding zero matches. Rather than guess another close-
@@ -635,7 +656,14 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     }
     await cursor.glideToLocator(schemaFile);
     await schemaFile.click();
-    await window.waitForSelector('iframe.webview.ready', { state: 'visible', timeout: 15_000 });
+    // Widened from 15s: Close All Editors (step 13's opening beat, above)
+    // disposes the panel opened back in step 3, so this recreates it from
+    // scratch — a cold Python-subprocess render, plus general CI load 12+
+    // minutes into the test — rather than reusing/reconfiguring an existing
+    // one the way every other step in between did. The very first creation
+    // (step 3) never actually proved its own completion time; it just moved
+    // on after a blind 4s pause. 30s gives real headroom to rule that out.
+    await window.waitForSelector('iframe.webview.ready', { state: 'visible', timeout: 30_000 });
     await window.waitForTimeout(1_500);
 
     await window.waitForTimeout(1_500); // final hold — a clear rest beat for the GIF loop
