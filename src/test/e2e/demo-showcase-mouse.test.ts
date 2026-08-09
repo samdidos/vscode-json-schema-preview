@@ -493,21 +493,39 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForSelector('.settings-editor', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(600);
 
-    // An untested guess at the search box's CSS class (`.suggest-input-container
-    // input`) never matched anything in real CI — VS Code's Settings UI search
-    // box reliably carries an aria-label/placeholder for accessibility, which
-    // is a far more stable target than guessing internal class hierarchy.
-    const settingsSearch = window.locator(
-      '.settings-editor input[aria-label="Search settings"], ' +
-      '.settings-editor input[placeholder*="Search settings" i]',
+    // Two prior guesses at this element both failed in real CI (a CSS class
+    // that matched nothing, then an *exact* aria-label match that likely
+    // missed a keybinding hint like "Search Settings (Ctrl+F)" or a
+    // capitalisation difference). `.settings-editor` itself is confirmed
+    // valid (the wait for it above already passed in every run). Try a
+    // substring/case-insensitive attribute match first, then fall back to
+    // the first visible text input anywhere in the settings editor — a
+    // structural target with no dependency on guessed label text at all.
+    let settingsSearch = window.locator(
+      '.settings-editor input[aria-label*="search settings" i], ' +
+      '.settings-editor input[placeholder*="search settings" i]',
     ).first();
+    try {
+      await settingsSearch.waitFor({ state: 'visible', timeout: 5_000 });
+    } catch {
+      settingsSearch = window.locator('.settings-editor input[type="text"]').first();
+      await settingsSearch.waitFor({ state: 'visible', timeout: 10_000 });
+    }
     await cursor.glideToLocator(settingsSearch);
     await settingsSearch.click();
     await window.keyboard.type('jsonschema.preview.autoOpen', { delay: 30 });
     await window.waitForTimeout(700);
 
+    // `.setting-item-contents` is another guessed class in the same failed
+    // category as the search box above — `.monaco-list-row` is the one
+    // wrapper class proven reliable throughout this whole file (Explorer,
+    // quick-pick, and suggest-widget rows all use it), and the settings tree
+    // is a virtualized list like those, so reuse it here instead of guessing
+    // Settings-UI-specific structure again. VS Code derives this setting's
+    // label from its key (no explicit `title` in package.json) via its own
+    // camelCase-splitting, landing on "Auto Open" for `autoOpen`.
     const autoOpenCheckbox = window.locator(
-      '.settings-editor .setting-item-contents:has-text("Auto Open") input[type="checkbox"]',
+      '.monaco-list-row:has-text("Auto Open") input[type="checkbox"]',
     ).first();
     await cursor.glideToLocator(autoOpenCheckbox);
     await autoOpenCheckbox.click();
