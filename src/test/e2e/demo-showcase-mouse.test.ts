@@ -177,6 +177,17 @@ import { createRealCursor } from './helpers/realCursor';
  * pressing Enter on the palette's default-highlighted row instead of
  * clicking the exact row already confirmed to exist. Fixed both to match
  * the file's established, CI-proven patterns.
+ *
+ * Both of those fixes held — the very next real CI run (31294290306) got
+ * past opening the command palette and selecting the entry, then failed
+ * one line later, waiting for `.tab[aria-label*="settings.json"]`. This is
+ * a trap step 5 already documented above: VS Code titles this tab something
+ * friendly ("Settings (JSON)" for the user scope here, "Folder Settings
+ * (JSON)" for step 5's workspace scope), never the literal filename, so a
+ * label-substring guess can't match either scope. Fixed the same way step 5
+ * was: stop guessing the label and wait for editor content instead — since
+ * Close All Editors ran moments earlier, any `.monaco-editor .view-lines`
+ * becoming visible is unambiguous here.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -593,7 +604,13 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     ).first();
     await openSettingsJsonEntry.waitFor({ state: 'visible', timeout: 10_000 });
     await openSettingsJsonEntry.click();
-    await window.waitForSelector('.tab[aria-label*="settings.json"]', { state: 'visible', timeout: 15_000 });
+    // Not a `.tab[aria-label*="settings.json"]` wait: this file's own step 5
+    // already hit this exact trap once — VS Code gives this tab a friendly
+    // title ("Settings (JSON)" for the user scope, "Folder Settings (JSON)"
+    // for workspace), never the literal filename, so a label-substring guess
+    // can't match. Every other tab was closed via Close All Editors moments
+    // ago, so waiting for any editor content at all is unambiguous here.
+    await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
     await window.waitForTimeout(500);
 
     await window.keyboard.press('Control+a');
