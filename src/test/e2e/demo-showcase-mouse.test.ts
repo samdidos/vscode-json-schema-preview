@@ -158,11 +158,16 @@ import { createRealCursor } from './helpers/realCursor';
  * toggle, or the wait afterward is simply too tight for a cold-start
  * webview panel this late in a 12+-minute run (Close All Editors, just
  * before this, disposes the panel opened back in step 3, so this recreates
- * it from scratch rather than reusing one). Rather than guess a fourth
- * selector with no new evidence to justify it, this addresses both
- * remaining explanations at once: verify `aria-checked` after the click and
- * retry once if it didn't take, and widen the final webview wait from 15s
- * to 30s to rule out pure cold-start slowness.
+ * it from scratch rather than reusing one). Verifying `aria-checked` and
+ * retrying, plus widening the final webview wait from 15s to 30s, addressed
+ * both — and still failed identically (run 31293471507), even hitting the
+ * full 30s. A consistent failure at the same spot across selector, retry,
+ * *and* timing changes means the mutation itself was never taking effect,
+ * not any particular guess about how to trigger or verify it — and there's
+ * no way to see what a custom, unlabelled Settings UI widget actually did
+ * without CI screenshot access. Rather than keep guessing at that widget,
+ * step 13 now edits settings.json directly instead (Ctrl+A, full retype),
+ * the same mechanism already proven reliable for step 5's settings change.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -535,84 +540,50 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     // ── 13. Flip a VS Code setting to show an interesting configurable ─────
     //       feature: auto-opening the preview whenever a schema file is
     //       opened (jsonschema.preview.autoOpen — no icon of its own, so
-    //       this goes through the Settings UI rather than a toolbar click).
+    //       this goes through settings.json rather than a toolbar click;
+    //       see the History note above for why not the Settings UI).
     await window.keyboard.down('Control');
     await window.keyboard.press('k');
     await window.keyboard.press('w');
     await window.keyboard.up('Control');
     await window.waitForTimeout(600);
 
-    await window.keyboard.press('Control+,');
-    await window.waitForSelector('.settings-editor', { state: 'visible', timeout: 10_000 });
-    await window.waitForTimeout(600);
+    // Four real-CI iterations in a row all failed at the exact same later
+    // point — the preview webview never appearing after clicking the schema
+    // file — even as the mitigations tried got progressively more
+    // fundamental: scoping the checkbox selector to its results row,
+    // verifying+retrying on `aria-checked`, and finally widening the wait to
+    // 30s (which *still* timed out, ruling out "just needed more time"). A
+    // consistent failure at the same spot across unrelated selector/timing
+    // changes points at the mutation itself never taking effect, not at any
+    // particular selector guessed for it — and there's no way to visually
+    // confirm what a custom, unlabelled Settings UI widget actually did
+    // without CI screenshot access. Rather than keep guessing at that
+    // widget, this switches to the mechanism that already proved reliable
+    // for step 5's settings change: editing settings.json directly (Ctrl+A,
+    // full retype) instead of clicking a UI control. The retype includes
+    // `jsonschema.preview.liveUpdate` (seeded at launch, below) alongside
+    // the new key, so this doesn't silently drop it.
+    await window.keyboard.press('Control+Shift+p');
+    await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
+    await window.keyboard.type('Preferences: Open User Settings (JSON)', { delay: 20 });
+    await window.waitForSelector(
+      '.quick-input-list .monaco-list-row:has-text("Open User Settings (JSON)")',
+      { timeout: 10_000 },
+    );
+    await window.keyboard.press('Enter');
+    await window.waitForSelector('.tab[aria-label*="settings.json"]', { state: 'visible', timeout: 15_000 });
+    await window.waitForTimeout(500);
 
-    // Two prior guesses at this element both failed in real CI (a CSS class
-    // that matched nothing, then an *exact* aria-label match that likely
-    // missed a keybinding hint like "Search Settings (Ctrl+F)" or a
-    // capitalisation difference). `.settings-editor` itself is confirmed
-    // valid (the wait for it above already passed in every run). Try a
-    // substring/case-insensitive attribute match first, then fall back to
-    // the first visible text input anywhere in the settings editor — a
-    // structural target with no dependency on guessed label text at all.
-    let settingsSearch = window.locator(
-      '.settings-editor input[aria-label*="search settings" i], ' +
-      '.settings-editor input[placeholder*="search settings" i]',
-    ).first();
-    try {
-      await settingsSearch.waitFor({ state: 'visible', timeout: 5_000 });
-    } catch {
-      settingsSearch = window.locator('.settings-editor input[type="text"]').first();
-      await settingsSearch.waitFor({ state: 'visible', timeout: 10_000 });
-    }
-    await cursor.glideToLocator(settingsSearch);
-    await settingsSearch.click();
-    await window.keyboard.type('jsonschema.preview.autoOpen', { delay: 30 });
-    await window.waitForTimeout(700);
+    await window.keyboard.press('Control+a');
+    await window.waitForTimeout(200);
+    await window.keyboard.type(
+      '{ "jsonschema.preview.liveUpdate": true, "jsonschema.preview.autoOpen": true }',
+      { delay: 20 },
+    );
+    await window.keyboard.press('Control+s');
+    await window.waitForTimeout(1_000);
 
-    // Three guesses in a row (a Settings-UI-specific class, then reusing
-    // `.monaco-list-row` with an assumed label, then a plain
-    // `input[type="checkbox"]`) all missed in real CI — the common thread
-    // across the last two is `input[type="checkbox"]` itself, and VS Code's
-    // Settings UI doesn't actually use a native checkbox input for boolean
-    // settings: it renders its own `Toggle`/`Checkbox` widget (a `div` with
-    // `role="checkbox"`, no underlying `<input>` at all), which is why every
-    // `input[type="checkbox"]` selector timed out finding zero matches
-    // rather than a wrong one.
-    //
-    // The unscoped `.settings-editor [role="checkbox"]` version of this fix
-    // *found* an element and clicked it without erroring — real CI (run
-    // 31292644938) progressed past it into the last two steps entirely, all
-    // the way to the very last line, then timed out waiting for the preview
-    // webview to auto-open. That's consistent with having toggled the wrong
-    // control: the Settings editor's search/filter toolbar (e.g. a "Only
-    // show modified settings" filter) also uses the same `role="checkbox"`
-    // widget and sits earlier in DOM order than the results list, so an
-    // unscoped `.first()` could easily land there instead of on the actual
-    // setting. Scoped to `.monaco-list-row` instead — the search query above
-    // is still the exact full setting ID, so the results list renders
-    // exactly one row, and this excludes every toolbar control above it.
-    const autoOpenCheckbox = window.locator('.settings-editor .monaco-list-row [role="checkbox"]').first();
-    await cursor.glideToLocator(autoOpenCheckbox);
-    await autoOpenCheckbox.click();
-    await window.waitForTimeout(600);
-    // The row-scoped selector above still didn't fix the actual symptom
-    // (real CI, run 31293043167, failed at the exact same later spot again —
-    // the preview never auto-opening), so this click may not be landing as a
-    // real toggle even though it finds the right element. Verify the
-    // resulting `aria-checked` state directly instead of assuming the click
-    // took effect, and click again once if it didn't.
-    if ((await autoOpenCheckbox.getAttribute('aria-checked')) !== 'true') {
-      await autoOpenCheckbox.click();
-      await window.waitForTimeout(600);
-    }
-
-    // A guessed `.tab[aria-label*="Settings"] .codicon-close` selector timed
-    // out in real CI finding zero matches. Rather than guess another close-
-    // button structure, use the same approach that already proved reliable
-    // for editor management earlier in this same test (Close All Editors,
-    // Reopen Closed Editor): a keyboard shortcut. The Settings editor is the
-    // active tab right after interacting with its checkbox above, so
-    // Ctrl+W closes exactly it with no selector at all.
     await window.keyboard.press('Control+w');
     await window.waitForTimeout(500);
 
