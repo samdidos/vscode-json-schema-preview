@@ -516,17 +516,14 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.keyboard.type('jsonschema.preview.autoOpen', { delay: 30 });
     await window.waitForTimeout(700);
 
-    // `.setting-item-contents` is another guessed class in the same failed
-    // category as the search box above — `.monaco-list-row` is the one
-    // wrapper class proven reliable throughout this whole file (Explorer,
-    // quick-pick, and suggest-widget rows all use it), and the settings tree
-    // is a virtualized list like those, so reuse it here instead of guessing
-    // Settings-UI-specific structure again. VS Code derives this setting's
-    // label from its key (no explicit `title` in package.json) via its own
-    // camelCase-splitting, landing on "Auto Open" for `autoOpen`.
-    const autoOpenCheckbox = window.locator(
-      '.monaco-list-row:has-text("Auto Open") input[type="checkbox"]',
-    ).first();
+    // Two guesses in a row (a Settings-UI-specific class, then reusing
+    // `.monaco-list-row` with an assumed label) both missed in real CI —
+    // rather than guess a third row wrapper/label combination, lean on what's
+    // actually known: the search query above is the exact full setting ID
+    // (`jsonschema.preview.autoOpen`), so the results list shows only this
+    // one setting. Any checkbox in the settings editor at this point is
+    // unambiguous — no row class or label text needed at all.
+    const autoOpenCheckbox = window.locator('.settings-editor input[type="checkbox"]').first();
     await cursor.glideToLocator(autoOpenCheckbox);
     await autoOpenCheckbox.click();
     await window.waitForTimeout(600);
