@@ -96,6 +96,20 @@ import { createRealCursor } from './helpers/realCursor';
  * "the button I expected never appeared". Fixed by selecting the whole file
  * (Ctrl+A) and typing the complete, valid settings.json content, which can't
  * depend on what was or wasn't pre-selected.
+ *
+ * Step 11's Ctrl+click on the `$schema` document link resisted three real-CI
+ * iterations in a row — a longer pre-click wait, then a same-click retry —
+ * neither of which changed the outcome, which rules out "clicked too early"
+ * and "needs a second click" without identifying what the actual problem is.
+ * That's not verifiable further without live VS Code access (this repo
+ * contributes no document-link provider of its own for a *data* file's
+ * `$schema` field, so if the built-in one doesn't behave the way assumed
+ * here, there's no source in this repo to inspect for why). Rather than
+ * keep guessing blind, the click is still attempted (twice) since it's the
+ * more faithful demonstration when it works, but a Quick Open fallback with
+ * the known relative path guarantees the schema file ends up open regardless
+ * — step 12 needs it active, and a stalled demo here would block everything
+ * after it for no benefit.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -404,23 +418,35 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.keyboard.press('Control+Home');
     const schemaLink = window.locator('.view-line span:has-text("generated-schema.json")').last();
     await schemaLink.waitFor({ state: 'visible', timeout: 10_000 });
-    // Document links are computed asynchronously (VS Code has to check the
-    // referenced file actually exists on disk before it's clickable) — a
-    // real CI run showed the click landing without error but nothing
-    // navigating, i.e. it hit plain text before the link decoration was
-    // ready. Give it real headroom rather than a token wait.
     await window.waitForTimeout(1_500);
     await cursor.glideToLocator(schemaLink);
     await schemaLink.click({ modifiers: ['Control'] });
-    // A longer wait alone didn't fix this in CI (two prior real runs both
-    // failed here even after the wait above) — so the first click likely
-    // isn't "too early", it's establishing hover/focus without registering
-    // as a link-open. Retry once with a fresh click before giving up.
-    try {
-      await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 6_000 });
-    } catch {
+
+    const schemaTabVisible = () =>
+      window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 6_000 })
+        .then(() => true).catch(() => false);
+
+    // Three real CI runs in a row failed to navigate from this exact click —
+    // a longer pre-click wait and a same-click retry each ruled out one
+    // theory (not "too early", not "needs a second click") without fixing
+    // it, which points at something more fundamental than click timing that
+    // isn't verifiable without live VS Code access. Rather than keep
+    // guessing blind, fall back to Quick Open with the known relative path
+    // so the demo makes forward progress (step 12 needs the schema file
+    // active) regardless — a no-op skip on any run where the click does work.
+    if (!(await schemaTabVisible())) {
       await schemaLink.click({ modifiers: ['Control'] });
-      await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
+      if (!(await schemaTabVisible())) {
+        await window.keyboard.press('Control+p');
+        await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
+        await window.keyboard.type('generated-schema.json', { delay: 30 });
+        await window.waitForSelector(
+          '.quick-input-list .monaco-list-row:has-text("generated-schema.json")',
+          { timeout: 10_000 },
+        );
+        await window.keyboard.press('Enter');
+        await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
+      }
     }
     await window.waitForTimeout(800);
 
