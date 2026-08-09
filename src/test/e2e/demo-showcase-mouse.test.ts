@@ -139,6 +139,19 @@ import { createRealCursor } from './helpers/realCursor';
  * more blind clicks didn't reliably undo that. Fixed by reading each row's
  * `aria-expanded` attribute before clicking, so the folder ends up expanded
  * regardless of which state it started in.
+ *
+ * With that fixed, the test ran to its very last line — waiting for the
+ * preview webview to auto-open after clicking the schema file, proving
+ * `jsonschema.preview.autoOpen` actually did something — and timed out
+ * there instead. The unscoped `.settings-editor [role="checkbox"]` selector
+ * for the Auto Open toggle (previous fix, above) apparently found and
+ * clicked *something* without erroring, just not the right thing: the
+ * Settings editor's own search/filter toolbar (e.g. a "Only show modified
+ * settings" filter) uses the same `role="checkbox"` widget and sits earlier
+ * in DOM order than the results list, so an unscoped `.first()` could land
+ * there instead. Scoped to `.monaco-list-row [role="checkbox"]` — the
+ * search query is still the exact full setting ID, so exactly one result
+ * row renders, and scoping to it excludes every toolbar control above it.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -553,11 +566,21 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     // settings: it renders its own `Toggle`/`Checkbox` widget (a `div` with
     // `role="checkbox"`, no underlying `<input>` at all), which is why every
     // `input[type="checkbox"]` selector timed out finding zero matches
-    // rather than a wrong one. The search query above is still the exact
-    // full setting ID (`jsonschema.preview.autoOpen`), so the results list
-    // shows only this one setting — any `role="checkbox"` element in the
-    // settings editor at this point is unambiguous.
-    const autoOpenCheckbox = window.locator('.settings-editor [role="checkbox"]').first();
+    // rather than a wrong one.
+    //
+    // The unscoped `.settings-editor [role="checkbox"]` version of this fix
+    // *found* an element and clicked it without erroring — real CI (run
+    // 31292644938) progressed past it into the last two steps entirely, all
+    // the way to the very last line, then timed out waiting for the preview
+    // webview to auto-open. That's consistent with having toggled the wrong
+    // control: the Settings editor's search/filter toolbar (e.g. a "Only
+    // show modified settings" filter) also uses the same `role="checkbox"`
+    // widget and sits earlier in DOM order than the results list, so an
+    // unscoped `.first()` could easily land there instead of on the actual
+    // setting. Scoped to `.monaco-list-row` instead — the search query above
+    // is still the exact full setting ID, so the results list renders
+    // exactly one row, and this excludes every toolbar control above it.
+    const autoOpenCheckbox = window.locator('.settings-editor .monaco-list-row [role="checkbox"]').first();
     await cursor.glideToLocator(autoOpenCheckbox);
     await autoOpenCheckbox.click();
     await window.waitForTimeout(600);
