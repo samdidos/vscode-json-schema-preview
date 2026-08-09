@@ -402,15 +402,16 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     // Built-in VS Code JSON language support turns a "$schema" value into a
     // clickable document link — no code in this extension is involved.
     await window.keyboard.press('Control+Home');
-    await window.waitForTimeout(400);
     const schemaLink = window.locator('.view-line span:has-text("generated-schema.json")').last();
     await schemaLink.waitFor({ state: 'visible', timeout: 10_000 });
-    const linkBox = await schemaLink.boundingBox();
-    if (!linkBox) { throw new Error('No bounding box for the $schema link span'); }
-    await cursor.glideTo(bounds.x + linkBox.x + linkBox.width / 2, bounds.y + linkBox.y + linkBox.height / 2);
-    await window.keyboard.down('Control');
+    // Document links are computed asynchronously (VS Code has to check the
+    // referenced file actually exists on disk before it's clickable) — a
+    // real CI run showed the click landing without error but nothing
+    // navigating, i.e. it hit plain text before the link decoration was
+    // ready. Give it real headroom rather than a token wait.
+    await window.waitForTimeout(1_500);
+    await cursor.glideToLocator(schemaLink);
     await schemaLink.click({ modifiers: ['Control'] });
-    await window.keyboard.up('Control');
     await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
     await window.waitForTimeout(800);
 
