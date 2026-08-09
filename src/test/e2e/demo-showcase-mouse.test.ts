@@ -83,6 +83,19 @@ import { createRealCursor } from './helpers/realCursor';
  * literal filename, so the label substring never matched. Fixed by waiting
  * for the `jsonschema.config` key's actual text (F09-FR-01 guarantees it's
  * seeded) to render on screen instead — a content check, not a label guess.
+ *
+ * Getting *into* settings.json reliably still wasn't enough: a third CI run
+ * got past all of the above and into step 6, then timed out waiting for the
+ * "Collapse all" button — the config write silently hadn't taken effect, so
+ * the re-rendered preview was still the default "flat" template. F09-FR-01
+ * reveals the seeded `{}` value but doesn't reliably leave it *selected* for
+ * overtype; typing on that assumption risks landing next to the `{}` instead
+ * of replacing it, leaving invalid JSON that VS Code silently falls back
+ * from (to the last-known-good, still-empty config) with no visible error —
+ * exactly the kind of failure that looks fine on screen and only shows up as
+ * "the button I expected never appeared". Fixed by selecting the whole file
+ * (Ctrl+A) and typing the complete, valid settings.json content, which can't
+ * depend on what was or wasn't pre-selected.
  */
 test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in one flow', async () => {
   // Real video encoding plus a dozen distinct UI flows comfortably exceeds
@@ -225,12 +238,28 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     // signal — wait instead for the actual `jsonschema.config` key
     // (F09-FR-01 guarantees it's seeded) to render on screen, which only
     // happens once the right file's content is showing.
-    await window.waitForSelector('.view-line:has-text("jsonschema.config")', { state: 'visible', timeout: 10_000 });
+    const settingsLine = window.locator('.view-line:has-text("jsonschema.config")').first();
+    await settingsLine.waitFor({ state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(600);
+    // Visible isn't the same as focused — click into it so Ctrl+A below
+    // selects settings.json's content, not whatever last had keyboard focus.
+    await cursor.glideToLocator(settingsLine);
+    await settingsLine.click();
+    await window.waitForTimeout(200);
 
-    // F09-FR-01 opens settings.json with the (freshly-seeded {}) jsonschema.config
-    // value already revealed/selected — typing replaces it directly.
-    await window.keyboard.type('{ "template_name": "js", "expand_buttons": true }', { delay: 25 });
+    // F09-FR-01 reveals the (freshly-seeded {}) jsonschema.config value, but
+    // doesn't reliably leave it *selected* for overtype — typing assuming a
+    // selection risks inserting next to the existing {} instead of replacing
+    // it, leaving invalid JSON that VS Code silently ignores in favour of the
+    // last-known-good (empty) config, so the preview keeps rendering "flat"
+    // (no Expand/Collapse) with no visible error. Select-all and retype the
+    // whole file instead — this can't depend on what was pre-selected.
+    await window.keyboard.press('Control+a');
+    await window.waitForTimeout(200);
+    await window.keyboard.type(
+      '{ "jsonschema.config": { "template_name": "js", "expand_buttons": true } }',
+      { delay: 20 },
+    );
     await window.waitForTimeout(400);
     await window.keyboard.press('Control+s');
     await window.waitForTimeout(600);
