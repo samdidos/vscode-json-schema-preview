@@ -2766,6 +2766,81 @@
       ],
       "note": "Published bundle inlines the core (self-contained); verified by the webpack build — no runtime dependency on out/ or dist/extension.js."
     },
+    "F28-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "package.json",
+        "src/settings.ts"
+      ],
+      "note": "jsonschema.preview.syncScroll setting, default true; getSyncScrollEnabled() unit-tested",
+      "specifiedAt": "2026-08-10",
+      "implementedAt": "2026-08-10"
+    },
+    "F28-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts",
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "onDidChangeTextEditorVisibleRanges wired to syncPreviewScroll(); unit-tested",
+      "specifiedAt": "2026-08-10",
+      "implementedAt": "2026-08-10"
+    },
+    "F28-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "syncPreviewScroll() zero-division guard for lineCount < 2; unit-tested",
+      "specifiedAt": "2026-08-10",
+      "implementedAt": "2026-08-10"
+    },
+    "F28-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "syncPreviewScroll() no-ops without an open panel or a non-schema document; unit-tested",
+      "specifiedAt": "2026-08-10",
+      "implementedAt": "2026-08-10"
+    },
+    "F28-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts",
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "getSyncScrollEnabled() gates syncPreviewScroll(); unit-tested",
+      "specifiedAt": "2026-08-10",
+      "implementedAt": "2026-08-10"
+    },
+    "F28-FR-06": {
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "injected webview script only consumes scrollSync messages, never posts one back to move the editor; verified by manual/E2E testing",
+      "specifiedAt": "2026-08-10",
+      "implementedAt": "2026-08-10"
+    },
+    "F28-FR-07": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "syncPreviewScroll() only calls webview.postMessage, never re-renders; unit-tested",
+      "specifiedAt": "2026-08-10",
+      "implementedAt": "2026-08-10"
+    },
+    "F28-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "single event-driven listener, no polling/timers",
+      "specifiedAt": "2026-08-10",
+      "implementedAt": "2026-08-10"
+    },
     "S01-SR-01": {
       "status": "manual",
       "impl": [
@@ -3398,7 +3473,8 @@
         ".github/workflows/refresh-gifs.yml"
       ],
       "note": "manual demos/all workflow_dispatch override; unit-tested (detectChangedFeatures.test.ts's resolveForceOverride cases)",
-      "specifiedAt": "2026-08-07"
+      "specifiedAt": "2026-08-07",
+      "implementedAt": "2026-08-10"
     },
     "S09-NFR-01": {
       "status": "manual",

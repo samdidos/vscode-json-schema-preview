@@ -48,6 +48,12 @@ export function getPreviewRenderer(): PreviewRenderer {
   return cfg.get<string>('renderer') === 'builtin' ? 'builtin' : 'auto';
 }
 
+/** Whether the preview panel's scroll position follows the editor (F28-FR-01; default true). */
+export function getSyncScrollEnabled(): boolean {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.preview');
+  return cfg.get<boolean>('syncScroll') !== false;
+}
+
 /** Whether schema linting is enabled (F17-FR-03; default true). */
 export function getLintEnabled(): boolean {
   const cfg = vscode.workspace.getConfiguration('jsonschema.lint');

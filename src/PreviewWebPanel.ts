@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as YAML from 'yaml';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
-import { getRenderTimeoutMs, getPreviewRenderer } from './settings';
+import { getRenderTimeoutMs, getPreviewRenderer, getSyncScrollEnabled } from './settings';
 import { renderSchemaHtml, isToolingUnavailable } from './fallbackRenderer';
 import { isYaml, stripJsoncComments } from './languages';
 import { loadingPage, errorPage as renderErrorPage, sanitizeHtml, getNonce } from './webviewUtils';
@@ -72,6 +72,23 @@ export function disposeAllPanels(): void {
   for (const panel of Object.values(openJsonSchemaFiles)) {
     panel.dispose();
   }
+}
+
+/**
+ * F28-FR-02/03/04/05 — scrolls the open preview panel for `document` (if any)
+ * to the proportionally equivalent position of `topVisibleLine` within the
+ * document, unless sync is disabled (F28-FR-05) or there is no matching panel
+ * or no schema document (F28-FR-04). Purely a `postMessage` — never re-renders
+ * the panel (F28-FR-07).
+ */
+export function syncPreviewScroll(document: vscode.TextDocument, topVisibleLine: number): void {
+  if (!getSyncScrollEnabled()) {return;}
+  if (!isJsonSchemaFile(document)) {return;}
+  const panel = openJsonSchemaFiles[document.uri.fsPath];
+  if (!panel) {return;}
+  const totalLines = document.lineCount;
+  const fraction = totalLines < 2 ? 0 : Math.min(1, Math.max(0, topVisibleLine / (totalLines - 1)));
+  panel.webview.postMessage({ type: 'scrollSync', fraction });
 }
 
 /* c8 ignore start — webview lifecycle and Python subprocess; covered by manual/E2E testing */
@@ -401,6 +418,12 @@ function buildInjection(x: number, y: number, ext: string, nonce: string): strin
       });
       window.addEventListener('load', function () {
         setTimeout(function () { window.scrollTo(${x}, ${y}); }, 150);
+      });
+      window.addEventListener('message', function (event) {
+        var msg = event.data;
+        if (!msg || msg.type !== 'scrollSync') return;
+        var max = Math.max(0, document.body.scrollHeight - window.innerHeight);
+        window.scrollTo(0, Math.round((Number(msg.fraction) || 0) * max));
       });
       document.getElementById('_jspreview_dl').addEventListener('click', function () {
         vsc.postMessage({ type: 'download' });
