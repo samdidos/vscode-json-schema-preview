@@ -169,6 +169,11 @@
           "minimum": 500,
           "markdownDescription": "Milliseconds to wait after the last keystroke before the live preview refreshes."
         },
+        "jsonschema.preview.syncScroll": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Scroll the preview panel to follow the schema editor's scroll position. One-directional (editor drives the preview); the preview panel must already be open."
+        },
         "jsonschema.preview.renderer": {
           "type": "string",
           "default": "auto",

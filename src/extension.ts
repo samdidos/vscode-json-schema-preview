@@ -8,6 +8,7 @@ import {
   previewJsonSchema,
   scheduleLiveUpdate,
   disposeAllPanels,
+  syncPreviewScroll,
 } from './PreviewWebPanel';
 import { openConfigFile, configurePreview } from './ConfigWebPanel';
 import { openSchemaEditor } from './SchemaEditorPanel';
@@ -120,6 +121,11 @@ export function activate(context: vscode.ExtensionContext) {
       const cfg = vscode.workspace.getConfiguration('jsonschema.preview');
       if (!cfg.get<boolean>('liveUpdate')) { return; }
       scheduleLiveUpdate(context, doc);
+    }),
+
+    // F28-FR-02 — editor scroll drives the preview panel's scroll position.
+    vscode.window.onDidChangeTextEditorVisibleRanges(e => {
+      syncPreviewScroll(e.textEditor.document, e.visibleRanges[0]?.start.line ?? 0);
     }),
 
     validationDiagnostics,

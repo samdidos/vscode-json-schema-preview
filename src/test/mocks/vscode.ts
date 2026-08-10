@@ -108,6 +108,7 @@ export const statusBarItem = {
 // window
 const _createStatusBarItem        = sinon.stub();
 const _onDidChangeActiveTextEditor = sinon.stub();
+const _onDidChangeTextEditorVisibleRanges = sinon.stub();
 const _showInformationMessage      = sinon.stub();
 const _showErrorMessage            = sinon.stub();
 const _showWarningMessage          = sinon.stub();
@@ -160,7 +161,7 @@ const _clipboardWriteText = sinon.stub();
 
 const _allStubs: sinon.SinonStub[] = [
   statusBarItem.show, statusBarItem.hide, statusBarItem.dispose,
-  _createStatusBarItem, _onDidChangeActiveTextEditor,
+  _createStatusBarItem, _onDidChangeActiveTextEditor, _onDidChangeTextEditorVisibleRanges,
   _showInformationMessage, _showErrorMessage, _showWarningMessage,
   _showQuickPick, _createQuickPick, _showInputBox, _showTextDocument, _showOpenDialog, _showSaveDialog, _createWebviewPanel, _withProgress,
   _getWorkspaceFolder, _asRelativePath, _getConfiguration,
@@ -178,6 +179,7 @@ const _allStubs: sinon.SinonStub[] = [
 function applyDefaults() {
   _createStatusBarItem.returns(statusBarItem);
   _onDidChangeActiveTextEditor.returns(_disposable);
+  _onDidChangeTextEditorVisibleRanges.returns(_disposable);
   _showInformationMessage.resolves(undefined);
   _showErrorMessage.resolves(undefined);
   _showWarningMessage.resolves(undefined);
@@ -282,6 +284,7 @@ export const window = {
   set activeTextEditor(v: any) { _activeEditor = v; },
   createStatusBarItem:         _createStatusBarItem,
   onDidChangeActiveTextEditor: _onDidChangeActiveTextEditor,
+  onDidChangeTextEditorVisibleRanges: _onDidChangeTextEditorVisibleRanges,
   showInformationMessage:      _showInformationMessage,
   showErrorMessage:            _showErrorMessage,
   showWarningMessage:          _showWarningMessage,

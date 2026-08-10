@@ -50,6 +50,27 @@ suite('extension — activate()', () => {
     assert.ok(vscode.window.onDidChangeActiveTextEditor.called);
   });
 
+  test('[F28-FR-02][F28-NFR-01] registers onDidChangeTextEditorVisibleRanges and syncs the open preview panel', () => {
+    ext.activate(context);
+    assert.ok(vscode.window.onDidChangeTextEditorVisibleRanges.called);
+    const cb = vscode.window.onDidChangeTextEditorVisibleRanges.firstCall.args[0];
+    const preview = require('../../PreviewWebPanel');
+    const doc = {
+      languageId: 'json',
+      getText: () => '{"$schema":"http://json-schema.org/draft-07/schema#"}',
+      uri: { fsPath: '/ws/schema.json' },
+      lineCount: 11,
+    };
+    const panel = { webview: { postMessage: sinon.stub() } };
+    preview.openJsonSchemaFiles[doc.uri.fsPath] = panel;
+    try {
+      cb({ textEditor: { document: doc }, visibleRanges: [{ start: { line: 5 } }] });
+      assert.ok(panel.webview.postMessage.calledWithMatch({ type: 'scrollSync', fraction: 0.5 }));
+    } finally {
+      delete preview.openJsonSchemaFiles[doc.uri.fsPath];
+    }
+  });
+
   test('registers onDidSaveTextDocument listener', () => {
     ext.activate(context);
     assert.ok(vscode.workspace.onDidSaveTextDocument.called);

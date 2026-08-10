@@ -483,6 +483,25 @@
         "requirements": 19
       }
     },
+    "F28": {
+      "points": 5,
+      "basePoints": 8,
+      "tshirt": "M",
+      "hoursMin": 8,
+      "hoursMax": 16,
+      "factors": [
+        "PATTERN"
+      ],
+      "justification": "Editor-to-preview scroll sync built entirely on the existing preview panel and webview messaging (F01/F02) — one exported helper, one new listener registration, and a few lines added to the already-injected webview script. Its impl paths are the same large shared files F02 uses (extension.ts, PreviewWebPanel.ts) plus package.json, so counted LOC vastly overstates the marginal work.",
+      "estimator": "the project's AI coding agent (Claude Code)",
+      "estimatedAt": "2026-08-10",
+      "evidence": {
+        "implFiles": 4,
+        "implLoc": 1735,
+        "taggedTests": 11,
+        "requirements": 8
+      }
+    },
     "S01": {
       "points": 3,
       "basePoints": 3,

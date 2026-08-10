@@ -57,6 +57,24 @@ Milliseconds to wait after the last keystroke before the live preview refreshes.
 
 ---
 
+<!-- spec:F28 start -->
+## `jsonschema.preview.syncScroll`
+
+| Type | Default |
+|------|---------|
+| `boolean` | `true` |
+
+When `true`, scrolling the schema file in the editor also scrolls the open preview panel to the proportionally equivalent position (topmost visible line ÷ total lines). It's one-directional — scrolling the preview panel itself never moves the editor — and never re-renders the preview, just repositions it.
+
+```json
+{
+  "jsonschema.preview.syncScroll": false
+}
+```
+<!-- spec:F28 end -->
+
+---
+
 <!-- spec:F01,S03 start -->
 ## `jsonschema.preview.renderer`
 

@@ -35,6 +35,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [F25-enum-nearest.md](F25-enum-nearest.md) | Enum quick-fixes ranked by nearest match |
 | [F26-compat-gate.md](F26-compat-gate.md) | Backward-compatibility verdict & CI gate for schema diff |
 | [F27-cli.md](F27-cli.md) | Standalone command-line interface (validate/lint/diff/bundle/migrate) |
+| [F28-scroll-sync.md](F28-scroll-sync.md) | Preview scroll sync with the schema editor |
 | [S01-security.md](S01-security.md) | Webview security (CSP, nonces, sanitisation) |
 | [S02-workspace-trust.md](S02-workspace-trust.md) | Workspace Trust integration |
 | [S03-performance.md](S03-performance.md) | Performance and resource management |

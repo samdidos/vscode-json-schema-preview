@@ -345,6 +345,19 @@
    "justification": "The CLI takes the whole toolset outside VS Code into CI and scripting — a real differentiator, reaching the subset that automates schema work.",
    "estimator": "the project's AI coding agent (Claude Code)",
    "estimatedAt": "2026-07-25"
+  },
+  "F28": {
+   "reach": 4,
+   "impact": 2,
+   "confidence": 0.8,
+   "factors": [
+    "ZEROCONF"
+   ],
+   "score": 7.04,
+   "tier": "Moderate",
+   "justification": "Editor-driven preview scroll keeps the panel showing whatever the author is currently editing, without hand-scrolling — a small, automatic delighter on top of F01 usage, on by default, in the spirit of VS Code's own Markdown preview sync scrolling.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-08-10"
   }
  }
 }

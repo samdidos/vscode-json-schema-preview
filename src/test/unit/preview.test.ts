@@ -1,8 +1,10 @@
 import * as assert from 'assert';
+import * as sinon from 'sinon';
 import * as vscode from '../mocks/vscode';
 
 const {
   isJsonSchemaFile, findConfigFile, CONFIG_FILENAME, getSettingsConfig, resolveConfigSource,
+  syncPreviewScroll, openJsonSchemaFiles,
 } = require('../../PreviewWebPanel');
 
 suite('[F01-FR-02] isJsonSchemaFile()', () => {
@@ -209,5 +211,65 @@ suite('[F01-FR-28][F09-FR-13] resolveConfigSource()', () => {
       fs.unlinkSync(cfg);
       fs.rmdirSync(tmp);
     }
+  });
+});
+
+suite('[F28] syncPreviewScroll()', () => {
+  const schemaDoc = {
+    languageId: 'json',
+    getText: () => '{"$schema":"http://json-schema.org/draft-07/schema#"}',
+    uri: { fsPath: '/ws/schema.json' },
+    lineCount: 101,
+  };
+  let panel: { webview: { postMessage: sinon.SinonStub } };
+
+  setup(() => {
+    vscode.resetAll();
+    Object.keys(openJsonSchemaFiles).forEach(k => delete openJsonSchemaFiles[k]);
+    panel = { webview: { postMessage: sinon.stub() } };
+  });
+
+  test('[F28-FR-02][F28-FR-07] posts the proportional scroll fraction to the open panel via postMessage only', () => {
+    openJsonSchemaFiles[schemaDoc.uri.fsPath] = panel;
+    syncPreviewScroll(schemaDoc, 50);
+    assert.strictEqual(panel.webview.postMessage.callCount, 1);
+    assert.ok(panel.webview.postMessage.calledWithMatch({ type: 'scrollSync', fraction: 0.5 }));
+  });
+
+  test('[F28-FR-02] clamps the fraction to [0, 1]', () => {
+    openJsonSchemaFiles[schemaDoc.uri.fsPath] = panel;
+    syncPreviewScroll(schemaDoc, 100);
+    assert.ok(panel.webview.postMessage.calledWithMatch({ type: 'scrollSync', fraction: 1 }));
+  });
+
+  test('[F28-FR-03] treats a document with fewer than 2 lines as fraction 0', () => {
+    openJsonSchemaFiles[schemaDoc.uri.fsPath] = panel;
+    syncPreviewScroll({ ...schemaDoc, lineCount: 1 }, 0);
+    assert.ok(panel.webview.postMessage.calledWithMatch({ type: 'scrollSync', fraction: 0 }));
+  });
+
+  test('[F28-FR-04] does nothing when no preview panel is open for the document', () => {
+    syncPreviewScroll(schemaDoc, 50);
+    assert.ok(panel.webview.postMessage.notCalled);
+  });
+
+  test('[F28-FR-04] does nothing for a non-schema document', () => {
+    const dataDoc = { ...schemaDoc, getText: () => '{"title":"plain data"}' };
+    openJsonSchemaFiles[dataDoc.uri.fsPath] = panel;
+    syncPreviewScroll(dataDoc, 50);
+    assert.ok(panel.webview.postMessage.notCalled);
+  });
+
+  test('[F28-FR-05] does nothing when jsonschema.preview.syncScroll is false', () => {
+    vscode.setConfig('jsonschema.preview', 'syncScroll', false);
+    openJsonSchemaFiles[schemaDoc.uri.fsPath] = panel;
+    syncPreviewScroll(schemaDoc, 50);
+    assert.ok(panel.webview.postMessage.notCalled);
+  });
+
+  test('[F28-FR-01][F28-FR-05] syncs by default (setting unset)', () => {
+    openJsonSchemaFiles[schemaDoc.uri.fsPath] = panel;
+    syncPreviewScroll(schemaDoc, 50);
+    assert.ok(panel.webview.postMessage.called);
   });
 });
