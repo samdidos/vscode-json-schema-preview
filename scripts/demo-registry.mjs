@@ -16,11 +16,11 @@
 // `specs` lists every requirement-spec id (F* or S*) that demo exercises;
 // S08-SR-12 uses it to decide, at release time, which demos need re-running.
 export const DEMOS = [
-  { name: 'preview', dir: 'preview-mouse', delay: 220, hold: 1_200, specs: ['F01'] },
+  { name: 'preview', dir: 'preview-mouse', delay: 220, hold: 1_200, specs: ['F01', 'F28'] },
   { name: 'validation', dir: 'validation-mouse', delay: 220, hold: 1_400, specs: ['F03'] },
   { name: 'inference', dir: 'inference-mouse', delay: 220, hold: 1_400, specs: ['F06'] },
   { name: 'binding', dir: 'binding-mouse', delay: 220, hold: 1_200, specs: ['F04'] },
-  { name: 'live-update', dir: 'live-update-mouse', delay: 220, hold: 1_000, specs: ['F02'] },
+  { name: 'live-update', dir: 'live-update-mouse', delay: 220, hold: 1_000, specs: ['F02', 'F28'] },
   { name: 'visual-editor', dir: 'visual-editor-mouse', delay: 220, hold: 1_200, specs: ['F05'] },
   { name: 'workspace-trust', dir: 'workspace-trust-mouse', delay: 220, hold: 1_400, specs: ['S02'] },
   { name: 'schema-auth', dir: 'schema-auth-mouse', delay: 220, hold: 1_200, specs: ['F07'] },
