@@ -2,6 +2,21 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.18.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.17.2...v0.18.0) (2026-08-11)
+
+
+### Features
+
+* **ci:** manual GIF-refresh override, plus a real CI-found fix for the showcase demo ([#182](https://github.com/samdidos/vscode-json-schema-preview/issues/182)) ([8cec0c6](https://github.com/samdidos/vscode-json-schema-preview/commit/8cec0c6dc1a8063878a7ba3915671196af6f89e2))
+* **preview:** make scroll sync bidirectional (F28) ([d38b43e](https://github.com/samdidos/vscode-json-schema-preview/commit/d38b43ed65f56fa5df69e102cd63e04e5a290e90))
+* **preview:** section-accurate scroll sync + native find in preview (F28, F01) ([d7ba583](https://github.com/samdidos/vscode-json-schema-preview/commit/d7ba58321f52e14fa8f5016da744ceb814c1760c))
+* **preview:** sync preview scroll position with schema editor (F28) ([dfbdc65](https://github.com/samdidos/vscode-json-schema-preview/commit/dfbdc65e138e1e1559214450e88c375257ff2033))
+
+
+### Bug Fixes
+
+* **test:** make maturity predicate test git-scope-agnostic under Stryker ([c5c601f](https://github.com/samdidos/vscode-json-schema-preview/commit/c5c601f0bfa85be9baec4a4d9bb1bfa65d0879b8))
+
 ## [0.17.2](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.17.1...v0.17.2) (2026-08-06)
 
 
