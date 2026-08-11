@@ -252,6 +252,7 @@ applyDefaults();
 
 export function resetAll(): void {
   window.activeTextEditor = undefined;
+  window.visibleTextEditors = [];
   workspace.workspaceFolders = undefined;
   workspace.isTrusted = true;
   Object.keys(configStore).forEach(k => delete configStore[k]);
@@ -270,6 +271,7 @@ export const StatusBarAlignment = { Left: 1, Right: 2 };
 export const QuickPickItemKind  = { Separator: -1, Default: 0 };
 export const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3 };
 export const ViewColumn = { One: 1, Two: 2, Three: 3 };
+export const TextEditorRevealType = { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 };
 
 export const Uri = {
   file: (p: string) => ({ fsPath: p, scheme: 'file', toString: () => `file://${p}` }),
@@ -282,9 +284,12 @@ export const Uri = {
 };
 
 let _activeEditor: any = undefined;
+let _visibleTextEditors: any[] = [];
 export const window = {
   get activeTextEditor() { return _activeEditor; },
   set activeTextEditor(v: any) { _activeEditor = v; },
+  get visibleTextEditors() { return _visibleTextEditors; },
+  set visibleTextEditors(v: any[]) { _visibleTextEditors = v; },
   createStatusBarItem:         _createStatusBarItem,
   onDidChangeActiveTextEditor: _onDidChangeActiveTextEditor,
   onDidChangeTextEditorVisibleRanges: _onDidChangeTextEditorVisibleRanges,

@@ -74,7 +74,7 @@ Focus the preview panel and press <kbd>Ctrl</kbd>+<kbd>F</kbd> (<kbd>⌘F</kbd> 
 <!-- spec:F28 start -->
 ## Scroll Sync
 
-The preview panel follows the schema editor: scrolling, or clicking a line, moves the preview to the matching position. When the topmost visible/clicked line sits directly under a nested `properties`/`patternProperties`/`items` chain the sync jumps to that exact section; otherwise (e.g. inside a `$ref`-resolved definition, or a non-`flat` render template) it falls back to a proportional position. It's one-directional — scrolling the preview never moves the editor — and turned on by default; disable it with [`jsonschema.preview.syncScroll`](/guide/configuration#jsonschema-preview-syncscroll).
+The preview panel and the schema editor follow each other: scrolling, or clicking a line, in either one moves the other to the matching position. When the position sits directly under a nested `properties`/`patternProperties`/`items` chain the sync jumps to that exact section; otherwise (e.g. inside a `$ref`-resolved definition, or a non-`flat` render template) it falls back to a proportional position. Reverse (preview→editor) sync only moves the editor's viewport — never its cursor/selection, never the document. A brief cooldown after each sync stops the two views from oscillating. Turned on by default; disable it with [`jsonschema.preview.syncScroll`](/guide/configuration#jsonschema-preview-syncscroll).
 <!-- spec:F28 end -->
 
 <!-- spec:F13 -->

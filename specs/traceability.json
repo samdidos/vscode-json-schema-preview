@@ -2824,11 +2824,12 @@
       "implementedAt": "2026-08-10"
     },
     "F28-FR-06": {
-      "status": "manual",
+      "status": "implemented",
       "impl": [
+        "src/extension.ts",
         "src/PreviewWebPanel.ts"
       ],
-      "note": "injected webview script only consumes scrollSync messages, never posts one back to move the editor; verified by manual/E2E testing",
+      "note": "redefined for bidirectionality: editor listeners (extension.ts) drive syncPreviewScroll(), preview scrollend drives syncEditorFromPreview(), both gated by the same setting; unit-tested",
       "specifiedAt": "2026-08-10",
       "implementedAt": "2026-08-10"
     },
@@ -2878,6 +2879,52 @@
       "specifiedAt": "2026-08-11",
       "implementedAt": "2026-08-11"
     },
+    "F28-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "syncEditorFromPreview(), triggered from the webview's scrollend 'position' message; unit-tested",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
+    "F28-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts",
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "locateAnchorSegments() reverses computeAnchorCandidates(); unit-tested including the round-trip and unresolvable-path fallback",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
+    "F28-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "syncEditorFromPreview() no-ops without a visible editor or a non-schema document; unit-tested",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
+    "F28-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "syncEditorFromPreview() only calls editor.revealRange(), never touches selection or edits the document; unit-tested",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
+    "F28-FR-16": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "shared per-document direction-aware cooldown (lastSyncAction) in syncPreviewScroll()/syncEditorFromPreview(); unit-tested including same-direction non-suppression",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
     "F28-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -2893,6 +2940,15 @@
         "src/PreviewWebPanel.ts"
       ],
       "note": "scheduleSyncPreviewScroll() debounce; unit-tested with fake timers",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
+    "F28-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "SYNC_COOLDOWN_MS (250ms) is short relative to normal interaction pacing; unit-tested for correct suppress/resume timing",
       "specifiedAt": "2026-08-11",
       "implementedAt": "2026-08-11"
     },

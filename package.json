@@ -172,7 +172,7 @@
         "jsonschema.preview.syncScroll": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Scroll the preview panel to follow the schema editor's scroll position. One-directional (editor drives the preview); the preview panel must already be open."
+          "markdownDescription": "Keep the preview panel and the schema editor's scroll position in sync — scrolling either one moves the other to the matching position. The preview panel must already be open."
         },
         "jsonschema.preview.renderer": {
           "type": "string",

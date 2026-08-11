@@ -14,6 +14,7 @@ import {
   findRefInAst,
   locateInAst,
   computeAnchorCandidates,
+  locateAnchorSegments,
 } from '../../schemaPointer';
 
 suite('[F13-FR-03] parseJsonPointer() / unescapePointerToken()', () => {
@@ -322,5 +323,75 @@ suite('[F28-FR-09] computeAnchorCandidates()', () => {
     ].join('\n');
     const offset = yamlText.lastIndexOf('string');
     assert.deepStrictEqual(computeAnchorCandidates(yamlText, 'yaml', offset), ['tags_items', 'tags']);
+  });
+});
+
+suite('[F28-FR-13] locateAnchorSegments()', () => {
+  const nestedJson = JSON.stringify({
+    type: 'object',
+    properties: {
+      address: {
+        type: 'object',
+        properties: {
+          city: { type: 'string', description: 'City name' },
+        },
+      },
+      tags: { type: 'array', items: { type: 'string' } },
+    },
+  }, null, 2);
+
+  test('resolves a nested property back to its key span', () => {
+    const span = locateAnchorSegments(nestedJson, 'json', ['address', 'city']);
+    assert.ok(span);
+    assert.strictEqual(nestedJson.slice(span!.start, span!.end), '"city"');
+  });
+
+  test('resolves a top-level property', () => {
+    const span = locateAnchorSegments(nestedJson, 'json', ['tags']);
+    assert.ok(span);
+    assert.strictEqual(nestedJson.slice(span!.start, span!.end), '"tags"');
+  });
+
+  test('resolves a literal "items" segment back to the items keyword', () => {
+    const span = locateAnchorSegments(nestedJson, 'json', ['tags', 'items']);
+    assert.ok(span);
+    assert.strictEqual(nestedJson.slice(span!.start, span!.end), '"items"');
+  });
+
+  test('an unresolvable path returns undefined rather than throwing', () => {
+    assert.strictEqual(locateAnchorSegments(nestedJson, 'json', ['nonexistent']), undefined);
+    assert.strictEqual(locateAnchorSegments(nestedJson, 'json', ['address', 'zzz']), undefined);
+  });
+
+  test('empty segments return undefined', () => {
+    assert.strictEqual(locateAnchorSegments(nestedJson, 'json', []), undefined);
+  });
+
+  test('unparsable text returns undefined rather than throwing', () => {
+    assert.doesNotThrow(() => locateAnchorSegments('{ bad json', 'json', ['a']));
+    assert.strictEqual(locateAnchorSegments('{ bad json', 'json', ['a']), undefined);
+  });
+
+  test('YAML: resolves a nested property to a span at its value', () => {
+    const yamlText = [
+      'properties:',
+      '  address:',
+      '    properties:',
+      '      city:',
+      '        type: string',
+    ].join('\n');
+    const span = locateAnchorSegments(yamlText, 'yaml', ['address', 'city']);
+    assert.ok(span);
+    // locateInYamlDoc (schemaPointer.ts) resolves to the value node, same as
+    // locatePointerTarget() elsewhere in this suite — not the key itself.
+    assert.strictEqual(yamlText.slice(span!.start, span!.end), 'type: string');
+  });
+
+  test('is the round-trip inverse of computeAnchorCandidates for a resolvable position', () => {
+    const offset = nestedJson.indexOf('"City name"');
+    const candidates = computeAnchorCandidates(nestedJson, 'json', offset);
+    const span = locateAnchorSegments(nestedJson, 'json', candidates[0].split('_'));
+    assert.ok(span);
+    assert.strictEqual(nestedJson.slice(span!.start, span!.end), '"city"');
   });
 });

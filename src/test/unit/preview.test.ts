@@ -4,7 +4,8 @@ import * as vscode from '../mocks/vscode';
 
 const {
   isJsonSchemaFile, findConfigFile, CONFIG_FILENAME, getSettingsConfig, resolveConfigSource,
-  syncPreviewScroll, scheduleSyncPreviewScroll, openJsonSchemaFiles,
+  syncPreviewScroll, scheduleSyncPreviewScroll, syncEditorFromPreview, openJsonSchemaFiles,
+  lastSyncAction,
 } = require('../../PreviewWebPanel');
 
 suite('[F01-FR-02] isJsonSchemaFile()', () => {
@@ -332,5 +333,136 @@ suite('[F28-NFR-02] scheduleSyncPreviewScroll()', () => {
     clock.tick(200);
     assert.strictEqual(panel.webview.postMessage.callCount, 1);
     assert.ok(panel.webview.postMessage.calledWithMatch({ type: 'scrollSync', fraction: 0.5 }));
+  });
+});
+
+suite('[F28-FR-12..16] syncEditorFromPreview()', () => {
+  const nestedSchemaText = JSON.stringify({
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    properties: {
+      address: { properties: { city: { type: 'string', description: 'City name' } } },
+    },
+  }, null, 2);
+  const fsPath = '/ws/reverse.json';
+  let editor: { document: any; revealRange: sinon.SinonStub; selection?: unknown };
+
+  function makeDoc(text = nestedSchemaText, lineCount = 20) {
+    return {
+      languageId: 'json',
+      getText: () => text,
+      uri: { fsPath },
+      lineCount,
+    };
+  }
+
+  setup(() => {
+    vscode.resetAll();
+    lastSyncAction.clear();
+    editor = { document: makeDoc(), revealRange: sinon.stub() };
+    vscode.window.visibleTextEditors = [editor];
+  });
+
+  test('[F28-FR-06][F28-FR-13] resolves an anchor id to the matching line', () => {
+    syncEditorFromPreview(fsPath, 'address_city', 0);
+    assert.strictEqual(editor.revealRange.callCount, 1);
+    const [range, revealType] = editor.revealRange.getCall(0).args;
+    const expectedLine = nestedSchemaText.slice(0, nestedSchemaText.indexOf('"city"')).split('\n').length - 1;
+    assert.strictEqual(range.startLine, expectedLine);
+    assert.strictEqual(revealType, vscode.TextEditorRevealType.AtTop);
+  });
+
+  test('[F28-FR-12] falls back to the proportional line when no anchor id is given', () => {
+    syncEditorFromPreview(fsPath, undefined, 0.5);
+    assert.strictEqual(editor.revealRange.callCount, 1);
+    const [range] = editor.revealRange.getCall(0).args;
+    assert.strictEqual(range.startLine, Math.round(0.5 * (editor.document.lineCount - 1)));
+  });
+
+  test('[F28-FR-12][F28-FR-13] falls back to the proportional line when the anchor id does not resolve', () => {
+    syncEditorFromPreview(fsPath, 'nonexistent_anchor', 0.25);
+    assert.strictEqual(editor.revealRange.callCount, 1);
+    const [range] = editor.revealRange.getCall(0).args;
+    assert.strictEqual(range.startLine, Math.round(0.25 * (editor.document.lineCount - 1)));
+  });
+
+  test('[F28-FR-15] only reveals a range — never touches editor.selection', () => {
+    syncEditorFromPreview(fsPath, 'address_city', 0);
+    assert.strictEqual(editor.selection, undefined);
+  });
+
+  test('[F28-FR-05] does nothing when jsonschema.preview.syncScroll is false', () => {
+    vscode.setConfig('jsonschema.preview', 'syncScroll', false);
+    syncEditorFromPreview(fsPath, 'address_city', 0);
+    assert.ok(editor.revealRange.notCalled);
+  });
+
+  test('[F28-FR-14] does nothing when no visible editor shows the document', () => {
+    vscode.window.visibleTextEditors = [];
+    syncEditorFromPreview(fsPath, 'address_city', 0);
+    assert.ok(editor.revealRange.notCalled);
+  });
+
+  test('[F28-FR-14] does nothing for a non-schema document', () => {
+    editor.document = makeDoc('{"title":"plain data"}');
+    vscode.window.visibleTextEditors = [editor];
+    syncEditorFromPreview(fsPath, undefined, 0.5);
+    assert.ok(editor.revealRange.notCalled);
+  });
+});
+
+suite('[F28-FR-16] echo suppression between syncPreviewScroll() and syncEditorFromPreview()', () => {
+  const fsPath = '/ws/cooldown.json';
+  const schemaText = '{"$schema":"http://json-schema.org/draft-07/schema#","properties":{"a":{"type":"string"}}}';
+  let panel: { webview: { postMessage: sinon.SinonStub } };
+  let editor: { document: any; revealRange: sinon.SinonStub };
+  let clock: sinon.SinonFakeTimers;
+
+  function makeDoc() {
+    return { languageId: 'json', getText: () => schemaText, uri: { fsPath }, lineCount: 20 };
+  }
+
+  setup(() => {
+    vscode.resetAll();
+    Object.keys(openJsonSchemaFiles).forEach(k => delete openJsonSchemaFiles[k]);
+    lastSyncAction.clear();
+    panel = { webview: { postMessage: sinon.stub() } };
+    openJsonSchemaFiles[fsPath] = panel;
+    editor = { document: makeDoc(), revealRange: sinon.stub() };
+    vscode.window.visibleTextEditors = [editor];
+    clock = sinon.useFakeTimers();
+  });
+  teardown(() => { clock.restore(); });
+
+  test('a preview->editor sync immediately following an editor->preview sync is suppressed as an echo', () => {
+    syncPreviewScroll(makeDoc(), 5);
+    assert.strictEqual(panel.webview.postMessage.callCount, 1);
+    syncEditorFromPreview(fsPath, undefined, 0.3);
+    assert.ok(editor.revealRange.notCalled);
+  });
+
+  test('[F28-NFR-03] a preview->editor sync proceeds once the cooldown window has elapsed', () => {
+    syncPreviewScroll(makeDoc(), 5);
+    clock.tick(300);
+    syncEditorFromPreview(fsPath, undefined, 0.3);
+    assert.ok(editor.revealRange.called);
+  });
+
+  test('an editor->preview sync immediately following a preview->editor sync is suppressed as an echo', () => {
+    syncEditorFromPreview(fsPath, undefined, 0.3);
+    assert.strictEqual(editor.revealRange.callCount, 1);
+    syncPreviewScroll(makeDoc(), 5);
+    assert.ok(panel.webview.postMessage.notCalled);
+  });
+
+  test('two consecutive same-direction (toPreview) syncs are not treated as echoes of each other', () => {
+    syncPreviewScroll(makeDoc(), 5);
+    syncPreviewScroll(makeDoc(), 6);
+    assert.strictEqual(panel.webview.postMessage.callCount, 2);
+  });
+
+  test('two consecutive same-direction (toEditor) syncs are not treated as echoes of each other', () => {
+    syncEditorFromPreview(fsPath, undefined, 0.1);
+    syncEditorFromPreview(fsPath, undefined, 0.2);
+    assert.strictEqual(editor.revealRange.callCount, 2);
   });
 });
