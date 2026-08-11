@@ -66,6 +66,17 @@ Enable [`jsonschema.preview.autoOpen`](/guide/configuration#jsonschema-preview-a
 
 Enable [`jsonschema.preview.liveUpdate`](/guide/configuration#jsonschema-preview-liveupdate) to refresh the preview as you type (debounced). The preview panel must already be open.
 
+<!-- spec:F01 -->
+## Searching the Preview
+
+Focus the preview panel and press <kbd>Ctrl</kbd>+<kbd>F</kbd> (<kbd>⌘F</kbd> on macOS) to search its rendered content directly, using VS Code's native find widget.
+
+<!-- spec:F28 start -->
+## Scroll Sync
+
+The preview panel follows the schema editor: scrolling, or clicking a line, moves the preview to the matching position. When the topmost visible/clicked line sits directly under a nested `properties`/`patternProperties`/`items` chain the sync jumps to that exact section; otherwise (e.g. inside a `$ref`-resolved definition, or a non-`flat` render template) it falls back to a proportional position. It's one-directional — scrolling the preview never moves the editor — and turned on by default; disable it with [`jsonschema.preview.syncScroll`](/guide/configuration#jsonschema-preview-syncscroll).
+<!-- spec:F28 end -->
+
 <!-- spec:F13 -->
 ## Navigating `$ref`s
 

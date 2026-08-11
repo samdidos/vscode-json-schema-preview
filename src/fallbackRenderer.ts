@@ -39,6 +39,14 @@ function s(v: unknown): string {
   return sanitizeHtml(String(v));
 }
 
+/** Escapes a value for safe embedding inside a double-quoted HTML attribute.
+ *  {@link sanitizeHtml} alone leaves `"` unescaped, which is fine for text
+ *  content but would let a schema-derived string (e.g. a property literally
+ *  named `x" onmouseover="…`) break out of an attribute value. */
+function escapeAttr(v: string): string {
+  return sanitizeHtml(v).replace(/"/g, '&quot;');
+}
+
 function asObject(v: unknown): Sub | undefined {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Sub) : undefined;
 }
@@ -58,8 +66,13 @@ export function describeType(sub: unknown): string {
   return 'any';
 }
 
-/** Renders the `properties` of a schema as a table, recursing one level into nested objects. */
-function renderProperties(schema: Sub, depth: number): string {
+/** Renders the `properties` of a schema as a table, recursing one level into
+ *  nested objects. `parentPath` is the chain of enclosing property names, used
+ *  to give each row an `id` (F28-FR-11) matching the anchor-candidate
+ *  convention `computeAnchorCandidates()` (schemaPointer.ts) computes from the
+ *  source position, so section-accurate preview scroll sync (F28) also works
+ *  against this renderer's own output. */
+function renderProperties(schema: Sub, depth: number, parentPath: string[] = []): string {
   const props = asObject(schema.properties);
   if (!props) {return '';}
   const required = new Set(Array.isArray(schema.required) ? schema.required.map(String) : []);
@@ -69,9 +82,10 @@ function renderProperties(schema: Sub, depth: number): string {
   const rows = names.map(name => {
     const sub = asObject(props[name]) ?? {};
     const desc = typeof sub.description === 'string' ? sub.description : '';
+    const id = [...parentPath, name].join('_');
     // Text label ("Yes"/"—"), never colour alone (S06-SR-07).
     const req = required.has(name) ? '<td class="req">Yes</td>' : '<td>—</td>';
-    return `<tr><td><code>${s(name)}</code></td><td>${s(describeType(sub))}</td>` +
+    return `<tr id="${escapeAttr(id)}"><td><code>${s(name)}</code></td><td>${s(describeType(sub))}</td>` +
       `${req}<td>${s(desc)}</td></tr>`;
   }).join('\n');
 
@@ -84,7 +98,7 @@ function renderProperties(schema: Sub, depth: number): string {
     for (const name of names) {
       const sub = asObject(props[name]);
       if (sub && asObject(sub.properties)) {
-        html += `\n<h3>${s(name)}</h3>\n${renderProperties(sub, depth + 1)}`;
+        html += `\n<h3>${s(name)}</h3>\n${renderProperties(sub, depth + 1, [...parentPath, name])}`;
       }
     }
   }

@@ -348,16 +348,16 @@
   },
   "F28": {
    "reach": 4,
-   "impact": 2,
+   "impact": 3,
    "confidence": 0.8,
    "factors": [
     "ZEROCONF"
    ],
-   "score": 7.04,
+   "score": 10.56,
    "tier": "Moderate",
-   "justification": "Editor-driven preview scroll keeps the panel showing whatever the author is currently editing, without hand-scrolling — a small, automatic delighter on top of F01 usage, on by default, in the spirit of VS Code's own Markdown preview sync scrolling.",
+   "justification": "Editor-driven preview scroll keeps the panel showing whatever the author is currently editing, without hand-scrolling, and — when the position resolves — jumps to the exact matching section rather than an approximate one; a real navigation aid on a long schema, on by default, in the spirit of VS Code's own Markdown preview sync scrolling.",
    "estimator": "the project's AI coding agent (Claude Code)",
-   "estimatedAt": "2026-08-10"
+   "estimatedAt": "2026-08-11"
   }
  }
 }

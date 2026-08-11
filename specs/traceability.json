@@ -208,6 +208,15 @@
       ],
       "note": "getSettingsConfig()/resolveConfigSource() unit-tested in preview.test.ts"
     },
+    "F01-FR-29": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "enableFindWidget:true passed to createWebviewPanel; unit-tested via the call's options argument",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
     "F01-NFR-01": {
       "status": "manual",
       "impl": [
@@ -2832,14 +2841,60 @@
       "specifiedAt": "2026-08-10",
       "implementedAt": "2026-08-10"
     },
+    "F28-FR-08": {
+      "status": "implemented",
+      "impl": [
+        "src/extension.ts"
+      ],
+      "note": "onDidChangeTextEditorSelection wired alongside the visible-ranges listener; unit-tested",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
+    "F28-FR-09": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaPointer.ts",
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "computeAnchorCandidates() (JSON/JSONC + YAML) wired into syncPreviewScroll(); unit-tested",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
+    "F28-FR-10": {
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "injected webview script's anchor-first-then-fraction-fallback logic; VS Code webview-bound, verified by manual/E2E testing",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
+    "F28-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/fallbackRenderer.ts"
+      ],
+      "note": "per-row id attribute (escaped) matching the anchor convention; unit-tested",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
+    },
     "F28-NFR-01": {
       "status": "implemented",
       "impl": [
         "src/extension.ts"
       ],
-      "note": "single event-driven listener, no polling/timers",
+      "note": "the two event-driven listeners (visible-range and selection change) are the only sync trigger, no polling/timers",
       "specifiedAt": "2026-08-10",
       "implementedAt": "2026-08-10"
+    },
+    "F28-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "scheduleSyncPreviewScroll() debounce; unit-tested with fake timers",
+      "specifiedAt": "2026-08-11",
+      "implementedAt": "2026-08-11"
     },
     "S01-SR-01": {
       "status": "manual",

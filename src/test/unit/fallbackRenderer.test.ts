@@ -92,6 +92,33 @@ suite('renderSchemaHtml()', () => {
     assert.match(html, /<code>city<\/code>/);
   });
 
+  test('[F28-FR-11] each row gets an id matching computeAnchorCandidates()\' convention', () => {
+    const html = renderSchemaHtml({
+      type: 'object',
+      properties: {
+        address: {
+          type: 'object',
+          properties: { city: { type: 'string' } },
+        },
+      },
+    });
+    assert.match(html, /<tr id="address">/);
+    assert.match(html, /<tr id="address_city">/);
+  });
+
+  test('[F28-FR-11][F01-FR-22] a malicious property name cannot break out of the id attribute', () => {
+    const html = renderSchemaHtml({
+      type: 'object',
+      properties: {
+        'x" onmouseover="alert(1)': { type: 'string' },
+      },
+    });
+    // The quote is escaped, so the attribute value can't break out into a new
+    // attribute — this exact unescaped sequence must never appear.
+    assert.doesNotMatch(html, /<tr id="x" onmouseover="/);
+    assert.match(html, /<tr id="x&quot; onmouseover=&quot;alert\(1\)">/);
+  });
+
   test('a schema with no properties still renders a valid page', () => {
     const html = renderSchemaHtml({ title: 'Scalar', type: 'string' });
     assert.match(html, /<!DOCTYPE html>/i);
