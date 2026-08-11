@@ -64,7 +64,7 @@ Milliseconds to wait after the last keystroke before the live preview refreshes.
 |------|---------|
 | `boolean` | `true` |
 
-When `true`, scrolling — or clicking a line — in the schema editor also moves the open preview panel: to the exact matching section when it can be resolved (a position directly under nested `properties`/`patternProperties`/`items`), otherwise to the proportionally equivalent position (topmost visible line ÷ total lines). It's one-directional — scrolling the preview panel itself never moves the editor — and never re-renders the preview, just repositions it.
+When `true`, the preview panel and the schema editor keep each other in view — bidirectionally. Scrolling, or clicking a line, in the schema editor moves the open preview panel; scrolling the preview panel moves the editor's viewport back. Either direction resolves the exact matching section when it can (a position directly under nested `properties`/`patternProperties`/`items`), otherwise falls back to the proportionally equivalent position. Neither direction re-renders the preview or edits the document — the preview leg just repositions the panel, and the editor leg just reveals a range (never moving the cursor/selection). A brief cooldown after each sync keeps the two directions from fighting each other.
 
 ```json
 {

@@ -5,7 +5,7 @@ import * as os from 'os';
 import * as YAML from 'yaml';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
 import { getRenderTimeoutMs, getPreviewRenderer, getSyncScrollEnabled } from './settings';
-import { computeAnchorCandidates } from './schemaPointer';
+import { computeAnchorCandidates, locateAnchorSegments } from './schemaPointer';
 import { renderSchemaHtml, isToolingUnavailable } from './fallbackRenderer';
 import { isYaml, stripJsoncComments } from './languages';
 import { loadingPage, errorPage as renderErrorPage, sanitizeHtml, getNonce } from './webviewUtils';
@@ -88,14 +88,44 @@ function offsetAtLineChar(text: string, line: number, character: number): number
   return offset + Math.min(Math.max(character, 0), lineText.length);
 }
 
+// ── Echo suppression (F28-FR-16) ────────────────────────────────────────────
+//
+// Each direction's sync action changes state the other direction listens to:
+// an editor->preview sync makes the preview scroll, which fires the
+// preview's own scroll event; a preview->editor sync reveals a range, which
+// is itself a visible-range change. Left unguarded the two would ping-pong.
+// Tracking only the *last* action (direction + timestamp) per document, and
+// suppressing a trigger only when it is the *opposite* direction within the
+// cooldown window, breaks that loop while letting continuous same-direction
+// scrolling (e.g. the editor scrolling for a while) keep syncing normally.
+
+type SyncDirection = 'toPreview' | 'toEditor';
+/** Exported (like {@link openJsonSchemaFiles}) so tests can clear leftover
+ *  state between cases — plain module state, not part of the vscode mock. */
+export const lastSyncAction = new Map<string, { at: number; direction: SyncDirection }>();
+const SYNC_COOLDOWN_MS = 250;
+
+function isEchoOfOppositeSync(fsPath: string, direction: SyncDirection): boolean {
+  const last = lastSyncAction.get(fsPath);
+  if (!last) {return false;}
+  const opposite: SyncDirection = direction === 'toPreview' ? 'toEditor' : 'toPreview';
+  return last.direction === opposite && Date.now() - last.at < SYNC_COOLDOWN_MS;
+}
+
+function markSyncAction(fsPath: string, direction: SyncDirection): void {
+  lastSyncAction.set(fsPath, { at: Date.now(), direction });
+}
+
 /**
- * F28-FR-02/03/04/05/09 — scrolls the open preview panel for `document` (if
- * any) to the position matching `referenceLine`/`referenceCharacter`, unless
- * sync is disabled (F28-FR-05) or there is no matching panel or no schema
- * document (F28-FR-04). Sends both the proportional fraction (F28-FR-02/03)
- * and any section-accurate anchor-id candidates (F28-FR-09) — the webview
- * script tries the anchors first and falls back to the fraction (F28-FR-10).
- * Purely a `postMessage` — never re-renders the panel (F28-FR-07).
+ * F28-FR-02/03/04/05/09/16 — scrolls the open preview panel for `document`
+ * (if any) to the position matching `referenceLine`/`referenceCharacter`,
+ * unless sync is disabled (F28-FR-05), there is no matching panel or no
+ * schema document (F28-FR-04), or this trigger looks like the echo of a
+ * preview->editor sync we just performed (F28-FR-16). Sends both the
+ * proportional fraction (F28-FR-02/03) and any section-accurate anchor-id
+ * candidates (F28-FR-09) — the webview script tries the anchors first and
+ * falls back to the fraction (F28-FR-10). Purely a `postMessage` — never
+ * re-renders the panel (F28-FR-07).
  */
 export function syncPreviewScroll(
   document: vscode.TextDocument,
@@ -106,11 +136,13 @@ export function syncPreviewScroll(
   if (!isJsonSchemaFile(document)) {return;}
   const panel = openJsonSchemaFiles[document.uri.fsPath];
   if (!panel) {return;}
+  if (isEchoOfOppositeSync(document.uri.fsPath, 'toPreview')) {return;}
   const totalLines = document.lineCount;
   const fraction = totalLines < 2 ? 0 : Math.min(1, Math.max(0, referenceLine / (totalLines - 1)));
   const text = document.getText();
   const offset = offsetAtLineChar(text, referenceLine, referenceCharacter);
   const anchorIds = computeAnchorCandidates(text, document.languageId, offset);
+  markSyncAction(document.uri.fsPath, 'toPreview');
   panel.webview.postMessage({ type: 'scrollSync', fraction, anchorIds });
 }
 
@@ -135,6 +167,50 @@ export function scheduleSyncPreviewScroll(
     scrollSyncTimers.delete(key);
     syncPreviewScroll(document, referenceLine, referenceCharacter);
   }, SCROLL_SYNC_DEBOUNCE_MS));
+}
+
+/** 0-based line number of `offset` within `text` (inverse of {@link offsetAtLineChar}). */
+function lineAtOffset(text: string, offset: number): number {
+  return text.slice(0, Math.max(0, offset)).split('\n').length - 1;
+}
+
+/**
+ * F28-FR-12/13/14/15/16 — reveals the matching position in a visible editor
+ * for `fsPath` when the preview panel scrolls, unless sync is disabled
+ * (F28-FR-05), no visible editor shows that document or it isn't a schema
+ * file (F28-FR-14), or this trigger looks like the echo of an editor->preview
+ * sync we just performed (F28-FR-16). Tries the anchor id first (F28-FR-13),
+ * falling back to the proportional fraction (F28-FR-12) when it doesn't
+ * resolve. Only ever changes the editor's viewport — never its selection,
+ * never the document itself (F28-FR-15).
+ */
+export function syncEditorFromPreview(
+  fsPath: string,
+  anchorId: string | undefined,
+  fraction: number,
+): void {
+  if (!getSyncScrollEnabled()) {return;}
+  const editor = vscode.window.visibleTextEditors.find(e => e.document.uri.fsPath === fsPath);
+  if (!editor) {return;}
+  if (!isJsonSchemaFile(editor.document)) {return;}
+  if (isEchoOfOppositeSync(fsPath, 'toEditor')) {return;}
+
+  const document = editor.document;
+  const text = document.getText();
+  let targetLine: number | undefined;
+  if (anchorId) {
+    const span = locateAnchorSegments(text, document.languageId, anchorId.split('_'));
+    if (span) {targetLine = lineAtOffset(text, span.start);}
+  }
+  if (targetLine === undefined) {
+    const totalLines = document.lineCount;
+    const clamped = Math.min(1, Math.max(0, fraction));
+    targetLine = totalLines < 2 ? 0 : Math.round(clamped * (totalLines - 1));
+  }
+
+  markSyncAction(fsPath, 'toEditor');
+  const range = new vscode.Range(targetLine, 0, targetLine, 0);
+  editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
 }
 
 /* c8 ignore start — webview lifecycle and Python subprocess; covered by manual/E2E testing */
@@ -187,6 +263,14 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
         // Coerce to numbers — message payload is untyped at runtime even though
         // window.scrollX/scrollY are always DOM numbers on the sending side.
         position = { x: Number(message.scrollX) || 0, y: Number(message.scrollY) || 0 };
+        // F28-FR-12 — preview -> editor: the same scrollend report also
+        // carries the topmost visible anchor id (if any) and scroll
+        // fraction, so the editor's viewport can follow the preview too.
+        syncEditorFromPreview(
+          uri.fsPath,
+          typeof message.anchorId === 'string' ? message.anchorId : undefined,
+          Number(message.fraction) || 0,
+        );
       } else if (message.type === 'openExternal') {
         try {
           const parsed = vscode.Uri.parse(message.href as string);
@@ -462,8 +546,29 @@ function buildInjection(x: number, y: number, ext: string, nonce: string): strin
   (function () {
     try {
       var vsc = acquireVsCodeApi();
+      // F28-FR-12 — the element whose top edge is nearest (at or just below)
+      // the viewport top, ignoring this script's own injected controls; its
+      // id (if any) is reported so the editor can reveal the matching
+      // source position. No match just means "no anchor id available."
+      function topmostAnchorId() {
+        var els = document.querySelectorAll('[id]');
+        var best = null, bestTop = Infinity;
+        for (var i = 0; i < els.length; i++) {
+          if (els[i].id.indexOf('_jspreview') === 0) continue;
+          var top = els[i].getBoundingClientRect().top;
+          if (top >= -4 && top < bestTop) { bestTop = top; best = els[i].id; }
+        }
+        return best;
+      }
       window.addEventListener('scrollend', function () {
-        vsc.postMessage({ type: 'position', scrollX: window.scrollX || 0, scrollY: window.scrollY || 0 });
+        var max = Math.max(0, document.body.scrollHeight - window.innerHeight);
+        vsc.postMessage({
+          type: 'position',
+          scrollX: window.scrollX || 0,
+          scrollY: window.scrollY || 0,
+          anchorId: topmostAnchorId(),
+          fraction: max > 0 ? (window.scrollY || 0) / max : 0,
+        });
       });
       window.addEventListener('load', function () {
         setTimeout(function () { window.scrollTo(${x}, ${y}); }, 150);

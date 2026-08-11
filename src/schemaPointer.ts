@@ -353,3 +353,34 @@ export function computeAnchorCandidates(text: string, languageId: string, offset
   return candidates;
 }
 
+/** Inverse of {@link rawPathToAnchorSegments} (best-effort, F28-FR-13): a
+ *  literal `items` segment maps back to the `items` keyword; every other
+ *  segment is assumed to be a `properties` child — `patternProperties` can't
+ *  be told apart from `properties` by name alone, so it isn't attempted,
+ *  same gap `computeAnchorCandidates` already accepts going forward. */
+function anchorSegmentsToPointerPath(segments: string[]): string[] {
+  const path: string[] = [];
+  for (const seg of segments) {
+    if (seg === 'items') { path.push('items'); } else { path.push('properties', seg); }
+  }
+  return path;
+}
+
+/**
+ * Reverse of {@link computeAnchorCandidates} (F28-FR-13): locates the source
+ * span for an anchor's `_`-joined segments, as reported by the preview when
+ * scrolling drives the editor. `segments` is the anchor id naively split on
+ * `_` by the caller — a property literally containing `_` in its name may
+ * not resolve correctly, an accepted gap (see specs/F28-scroll-sync.md).
+ * `undefined` when unresolvable, so the caller can fall back to the
+ * proportional position instead of erroring.
+ */
+export function locateAnchorSegments(
+  text: string,
+  languageId: string,
+  segments: string[],
+): SourceSpan | undefined {
+  if (segments.length === 0) { return undefined; }
+  return locatePointerTarget(text, languageId, anchorSegmentsToPointerPath(segments));
+}
+

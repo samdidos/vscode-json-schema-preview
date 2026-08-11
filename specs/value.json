@@ -348,14 +348,15 @@
   },
   "F28": {
    "reach": 4,
-   "impact": 3,
+   "impact": 4,
    "confidence": 0.8,
    "factors": [
-    "ZEROCONF"
+    "ZEROCONF",
+    "UNIQUE"
    ],
-   "score": 10.56,
-   "tier": "Moderate",
-   "justification": "Editor-driven preview scroll keeps the panel showing whatever the author is currently editing, without hand-scrolling, and — when the position resolves — jumps to the exact matching section rather than an approximate one; a real navigation aid on a long schema, on by default, in the spirit of VS Code's own Markdown preview sync scrolling.",
+   "score": 15.36,
+   "tier": "High",
+   "justification": "Now a genuine two-way navigation aid, not just a follow-along convenience: the editor drives the preview (jumping to the exact matching section when it resolves) and the preview drives the editor back, so browsing the rendered docs first and landing on the right source line works too — removing a manual search-the-source workflow entirely. On by default, no built-in VS Code or common-extension equivalent syncs a custom rendered webview with the source both ways.",
    "estimator": "the project's AI coding agent (Claude Code)",
    "estimatedAt": "2026-08-11"
   }

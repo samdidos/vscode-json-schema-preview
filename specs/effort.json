@@ -484,20 +484,22 @@
       }
     },
     "F28": {
-      "points": 8,
+      "points": 13,
       "basePoints": 8,
-      "tshirt": "L",
-      "hoursMin": 16,
-      "hoursMax": 32,
-      "factors": [],
-      "justification": "Grew from a simple proportional scroll-follow into section-accurate sync: a JSON/JSONC (jsonc-parser) and YAML (yaml AST) path-at-offset resolver reverse-engineered against json-schema-for-humans' actual anchor-id output, matching ids added to the built-in fallback renderer (with attribute-escaping hardening), a second (selection-change) trigger, and a debounce layer — genuine new logic on top of the reused webview-messaging plumbing, not just glue; sits in its evidence band with no adjustment needed.",
+      "tshirt": "XL",
+      "hoursMin": 32,
+      "hoursMax": 80,
+      "factors": [
+        "NOVEL"
+      ],
+      "justification": "Grew from one-directional section-accurate sync into full bidirectional sync: a reverse anchor-id resolver (locateAnchorSegments, inverting the forward path convention), a preview-side 'nearest element to viewport top' detector, viewport-only editor reveals (never touching selection/document), and — the genuinely new problem — a direction-aware echo-suppression cooldown so the two legs don't oscillate, which needed its own reasoning about which event sequences are genuine vs. self-caused. That last piece is a different kind of work than wiring up more listeners; bumped one step above its LOC band.",
       "estimator": "the project's AI coding agent (Claude Code)",
       "estimatedAt": "2026-08-11",
       "evidence": {
         "implFiles": 6,
-        "implLoc": 2304,
-        "taggedTests": 19,
-        "requirements": 13
+        "implLoc": 2440,
+        "taggedTests": 31,
+        "requirements": 19
       }
     },
     "S01": {
