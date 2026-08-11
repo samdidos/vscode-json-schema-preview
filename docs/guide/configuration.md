@@ -64,7 +64,7 @@ Milliseconds to wait after the last keystroke before the live preview refreshes.
 |------|---------|
 | `boolean` | `true` |
 
-When `true`, scrolling the schema file in the editor also scrolls the open preview panel to the proportionally equivalent position (topmost visible line ÷ total lines). It's one-directional — scrolling the preview panel itself never moves the editor — and never re-renders the preview, just repositions it.
+When `true`, scrolling — or clicking a line — in the schema editor also moves the open preview panel: to the exact matching section when it can be resolved (a position directly under nested `properties`/`patternProperties`/`items`), otherwise to the proportionally equivalent position (topmost visible line ÷ total lines). It's one-directional — scrolling the preview panel itself never moves the editor — and never re-renders the preview, just repositions it.
 
 ```json
 {

@@ -4,7 +4,7 @@ import * as vscode from '../mocks/vscode';
 
 const {
   isJsonSchemaFile, findConfigFile, CONFIG_FILENAME, getSettingsConfig, resolveConfigSource,
-  syncPreviewScroll, openJsonSchemaFiles,
+  syncPreviewScroll, scheduleSyncPreviewScroll, openJsonSchemaFiles,
 } = require('../../PreviewWebPanel');
 
 suite('[F01-FR-02] isJsonSchemaFile()', () => {
@@ -271,5 +271,66 @@ suite('[F28] syncPreviewScroll()', () => {
     openJsonSchemaFiles[schemaDoc.uri.fsPath] = panel;
     syncPreviewScroll(schemaDoc, 50);
     assert.ok(panel.webview.postMessage.called);
+  });
+
+  test('[F28-FR-09] includes deepest-first anchor-id candidates for the reference position', () => {
+    const nested = {
+      languageId: 'json',
+      getText: () => JSON.stringify({
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        properties: { address: { properties: { city: { type: 'string' } } } },
+      }, null, 2),
+      uri: { fsPath: '/ws/nested.json' },
+      lineCount: 10,
+    };
+    openJsonSchemaFiles[nested.uri.fsPath] = panel;
+    // Line 4 (0-based) is the `"type": "string"` line inside city.
+    const lineOfType = nested.getText().split('\n').findIndex(l => l.includes('"type": "string"'));
+    syncPreviewScroll(nested, lineOfType);
+    const call = panel.webview.postMessage.getCall(0).args[0];
+    assert.deepStrictEqual(call.anchorIds, ['address_city', 'address']);
+  });
+
+  test('[F28-FR-09] a position with no enclosing property yields an empty anchorIds array', () => {
+    openJsonSchemaFiles[schemaDoc.uri.fsPath] = panel;
+    syncPreviewScroll(schemaDoc, 0);
+    const call = panel.webview.postMessage.getCall(0).args[0];
+    assert.deepStrictEqual(call.anchorIds, []);
+  });
+});
+
+suite('[F28-NFR-02] scheduleSyncPreviewScroll()', () => {
+  const schemaDoc = {
+    languageId: 'json',
+    getText: () => '{"$schema":"http://json-schema.org/draft-07/schema#"}',
+    uri: { fsPath: '/ws/debounced.json' },
+    lineCount: 101,
+  };
+  let panel: { webview: { postMessage: sinon.SinonStub } };
+  let clock: sinon.SinonFakeTimers;
+
+  setup(() => {
+    vscode.resetAll();
+    Object.keys(openJsonSchemaFiles).forEach(k => delete openJsonSchemaFiles[k]);
+    panel = { webview: { postMessage: sinon.stub() } };
+    openJsonSchemaFiles[schemaDoc.uri.fsPath] = panel;
+    clock = sinon.useFakeTimers();
+  });
+  teardown(() => { clock.restore(); });
+
+  test('does not sync before the debounce elapses', () => {
+    scheduleSyncPreviewScroll(schemaDoc, 50);
+    assert.ok(panel.webview.postMessage.notCalled);
+    clock.tick(200);
+    assert.ok(panel.webview.postMessage.called);
+  });
+
+  test('coalesces rapid successive calls into a single sync', () => {
+    scheduleSyncPreviewScroll(schemaDoc, 10);
+    scheduleSyncPreviewScroll(schemaDoc, 20);
+    scheduleSyncPreviewScroll(schemaDoc, 50);
+    clock.tick(200);
+    assert.strictEqual(panel.webview.postMessage.callCount, 1);
+    assert.ok(panel.webview.postMessage.calledWithMatch({ type: 'scrollSync', fraction: 0.5 }));
   });
 });

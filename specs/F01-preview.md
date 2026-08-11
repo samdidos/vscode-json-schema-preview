@@ -47,6 +47,13 @@ in a VS Code webview panel beside the editor. Rendering is delegated to the
 - **F01-FR-08** The preview MUST be regenerated and the panel refreshed every
   time the schema file is saved.
 
+### Search
+
+- **F01-FR-29** The preview webview panel MUST be created with
+  `enableFindWidget: true` so VS Code's native find widget (Ctrl+F/Cmd+F)
+  searches the rendered preview content directly, without requiring a
+  separate in-page search implementation.
+
 ### Toolbar and Context Menu
 
 - **F01-FR-09** The **Preview** toolbar icon (eye) MUST appear in the editor
@@ -163,3 +170,5 @@ in a VS Code webview panel beside the editor. Rendering is delegated to the
    F10) is NOT treated as a JSON Schema file: `jsonschema.isJsonSchema` stays
    `false`, the Preview/Edit/Configure toolbar icons don't appear, and
    Validate/Infer icons show instead.
+6. With the preview panel focused, pressing Ctrl+F/Cmd+F opens VS Code's
+   native find widget over the panel and searches its rendered content.

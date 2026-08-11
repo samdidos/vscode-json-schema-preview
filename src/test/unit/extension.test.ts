@@ -50,7 +50,7 @@ suite('extension — activate()', () => {
     assert.ok(vscode.window.onDidChangeActiveTextEditor.called);
   });
 
-  test('[F28-FR-02][F28-NFR-01] registers onDidChangeTextEditorVisibleRanges and syncs the open preview panel', () => {
+  test('[F28-FR-02][F28-NFR-01][F28-NFR-02] registers onDidChangeTextEditorVisibleRanges and syncs the open preview panel', () => {
     ext.activate(context);
     assert.ok(vscode.window.onDidChangeTextEditorVisibleRanges.called);
     const cb = vscode.window.onDidChangeTextEditorVisibleRanges.firstCall.args[0];
@@ -63,10 +63,37 @@ suite('extension — activate()', () => {
     };
     const panel = { webview: { postMessage: sinon.stub() } };
     preview.openJsonSchemaFiles[doc.uri.fsPath] = panel;
+    const clock = sinon.useFakeTimers();
     try {
       cb({ textEditor: { document: doc }, visibleRanges: [{ start: { line: 5 } }] });
+      clock.tick(200);
       assert.ok(panel.webview.postMessage.calledWithMatch({ type: 'scrollSync', fraction: 0.5 }));
     } finally {
+      clock.restore();
+      delete preview.openJsonSchemaFiles[doc.uri.fsPath];
+    }
+  });
+
+  test('[F28-FR-08] registers onDidChangeTextEditorSelection and syncs the open preview panel to the caret position', () => {
+    ext.activate(context);
+    assert.ok(vscode.window.onDidChangeTextEditorSelection.called);
+    const cb = vscode.window.onDidChangeTextEditorSelection.firstCall.args[0];
+    const preview = require('../../PreviewWebPanel');
+    const doc = {
+      languageId: 'json',
+      getText: () => '{"$schema":"http://json-schema.org/draft-07/schema#"}',
+      uri: { fsPath: '/ws/schema2.json' },
+      lineCount: 11,
+    };
+    const panel = { webview: { postMessage: sinon.stub() } };
+    preview.openJsonSchemaFiles[doc.uri.fsPath] = panel;
+    const clock = sinon.useFakeTimers();
+    try {
+      cb({ textEditor: { document: doc }, selections: [{ active: { line: 5, character: 3 } }] });
+      clock.tick(200);
+      assert.ok(panel.webview.postMessage.calledWithMatch({ type: 'scrollSync', fraction: 0.5 }));
+    } finally {
+      clock.restore();
       delete preview.openJsonSchemaFiles[doc.uri.fsPath];
     }
   });
@@ -485,6 +512,21 @@ suite('extension — event listener branches', () => {
     vscode.window.activeTextEditor = { document: doc };
     ext.activate(context);
     assert.ok(vscode.window.createWebviewPanel.called);
+  });
+
+  test('[F01-FR-29] preview panel is created with enableFindWidget so Ctrl+F searches it', () => {
+    vscode.resetAll();
+    context = { subscriptions: [] };
+    vscode.setConfig('jsonschema.preview', 'autoOpen', true);
+    const doc = {
+      languageId: 'json',
+      getText: () => JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#' }),
+      uri: { fsPath: '/ws/schema.json', scheme: 'file' },
+    };
+    vscode.window.activeTextEditor = { document: doc };
+    ext.activate(context);
+    const opts = vscode.window.createWebviewPanel.firstCall.args[3];
+    assert.strictEqual(opts.enableFindWidget, true);
   });
 
   test('maybeAutoPreview skips untitled files even when autoOpen=true', () => {

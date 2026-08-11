@@ -13,6 +13,7 @@ import {
   parseSchemaAst,
   findRefInAst,
   locateInAst,
+  computeAnchorCandidates,
 } from '../../schemaPointer';
 
 suite('[F13-FR-03] parseJsonPointer() / unescapePointerToken()', () => {
@@ -240,5 +241,86 @@ suite('parseSchemaText()', () => {
   });
   test('returns undefined on malformed input', () => {
     assert.strictEqual(parseSchemaText('{bad', 'json'), undefined);
+  });
+});
+
+suite('[F28-FR-09] computeAnchorCandidates()', () => {
+  const nestedJson = JSON.stringify({
+    type: 'object',
+    properties: {
+      address: {
+        type: 'object',
+        properties: {
+          city: { type: 'string', description: 'City name' },
+        },
+      },
+      tags: { type: 'array', items: { type: 'string' } },
+    },
+  }, null, 2);
+
+  test('deepest-first candidates for a nested property', () => {
+    const offset = nestedJson.indexOf('"City name"');
+    assert.deepStrictEqual(
+      computeAnchorCandidates(nestedJson, 'json', offset),
+      ['address_city', 'address'],
+    );
+  });
+
+  test('a top-level property yields a single candidate', () => {
+    const topLevelOffset = nestedJson.indexOf('"array"');
+    assert.deepStrictEqual(computeAnchorCandidates(nestedJson, 'json', topLevelOffset), ['tags']);
+  });
+
+  test('array items keep a literal "items" segment', () => {
+    const offset = nestedJson.indexOf('"string"', nestedJson.indexOf('"tags"'));
+    assert.deepStrictEqual(computeAnchorCandidates(nestedJson, 'json', offset), ['tags_items', 'tags']);
+  });
+
+  test('the document root (before any property) yields no candidates', () => {
+    const offset = nestedJson.indexOf('"object"');
+    assert.deepStrictEqual(computeAnchorCandidates(nestedJson, 'json', offset), []);
+  });
+
+  test('unparsable JSON yields no candidates rather than throwing', () => {
+    assert.deepStrictEqual(computeAnchorCandidates('{ bad json', 'json', 3), []);
+  });
+
+  test('a $ref-indirected position degrades gracefully (no candidates, no throw)', () => {
+    const refJson = JSON.stringify({
+      properties: { address: { $ref: '#/$defs/address' } },
+      $defs: { address: { properties: { city: { type: 'string' } } } },
+    });
+    const offset = refJson.indexOf('"city"');
+    assert.doesNotThrow(() => computeAnchorCandidates(refJson, 'json', offset));
+  });
+
+  test('YAML: deepest-first candidates for a nested property', () => {
+    const yamlText = [
+      'type: object',
+      'properties:',
+      '  address:',
+      '    type: object',
+      '    properties:',
+      '      city:',
+      '        type: string',
+      '        description: City name',
+    ].join('\n');
+    const offset = yamlText.indexOf('City name');
+    assert.deepStrictEqual(
+      computeAnchorCandidates(yamlText, 'yaml', offset),
+      ['address_city', 'address'],
+    );
+  });
+
+  test('YAML: array items keep a literal "items" segment', () => {
+    const yamlText = [
+      'properties:',
+      '  tags:',
+      '    type: array',
+      '    items:',
+      '      type: string',
+    ].join('\n');
+    const offset = yamlText.lastIndexOf('string');
+    assert.deepStrictEqual(computeAnchorCandidates(yamlText, 'yaml', offset), ['tags_items', 'tags']);
   });
 });

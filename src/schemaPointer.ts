@@ -3,8 +3,8 @@
 // find a `$ref` under an offset or a pointer target's source range. Kept free of
 // the `vscode` module so every branch is unit-testable on plain text + offsets.
 
-import { parseTree, findNodeAtOffset, findNodeAtLocation, type Node } from 'jsonc-parser';
-import { parseDocument, visit, isScalar } from 'yaml';
+import { parseTree, findNodeAtOffset, findNodeAtLocation, getNodePath, type Node } from 'jsonc-parser';
+import { parseDocument, visit, isScalar, isMap, isSeq } from 'yaml';
 import { describeType } from './fallbackRenderer';
 import { isYaml, stripJsoncComments } from './languages';
 
@@ -253,5 +253,103 @@ export function parseSchemaText(text: string, languageId: string): unknown {
   } catch {
     return undefined;
   }
+}
+
+// ── Preview anchor-id candidates (F28-FR-09) ────────────────────────────────
+//
+// json-schema-for-humans's `flat` template ids each inlined property by its
+// schema path, with `properties`/`patternProperties` keys stripped down to
+// just the property name and a literal `items` segment kept for array items
+// (see specs/F28-scroll-sync.md for the worked examples this mirrors). These
+// functions compute the same kind of path for a source offset so the preview
+// can scroll straight to the matching element instead of only proportionally.
+
+/** The raw JSON-Pointer-shaped path (including the `properties`/`items`
+ *  keyword tokens themselves) of the node enclosing `offset` in a JSON/JSONC
+ *  tree, or `undefined` when the offset resolves to nothing (e.g. empty text). */
+function rawPathAtOffsetJson(tree: Node, offset: number): (string | number)[] | undefined {
+  const node = findNodeAtOffset(tree, offset, true);
+  return node ? getNodePath(node) : undefined;
+}
+
+/** Same as {@link rawPathAtOffsetJson} for a parsed YAML document: walks
+ *  down from the root through whichever map entry / sequence item's source
+ *  range contains `offset`, collecting the literal keys/indices — YAML
+ *  schema documents use the same `properties`/`items` keyword vocabulary as
+ *  JSON ones, just as mapping keys instead of object keys. */
+function rawPathAtOffsetYaml(doc: YamlDoc, offset: number): (string | number)[] | undefined {
+  const root = doc.contents as { range?: [number, number, number] } | null;
+  if (!root?.range || offset < root.range[0] || offset > root.range[2]) { return undefined; }
+
+  const path: (string | number)[] = [];
+  let node: unknown = root;
+  for (;;) {
+    if (isMap(node)) {
+      const items = node.items as { key: unknown; value: unknown }[];
+      const next = items.find(({ value }) => {
+        const r = (value as { range?: [number, number, number] } | null)?.range;
+        return r && offset >= r[0] && offset <= r[2];
+      });
+      if (!next) { break; }
+      path.push(String(isScalar(next.key) ? next.key.value : next.key));
+      node = next.value;
+      continue;
+    }
+    if (isSeq(node)) {
+      const items = node.items as unknown[];
+      const index = items.findIndex(item => {
+        const r = (item as { range?: [number, number, number] } | null)?.range;
+        return r && offset >= r[0] && offset <= r[2];
+      });
+      if (index === -1) { break; }
+      path.push(index);
+      node = items[index];
+      continue;
+    }
+    break;
+  }
+  return path;
+}
+
+/** Strip `properties`/`patternProperties` keyword tokens down to the name
+ *  that follows them, keep a literal `items` token for array items (skipping
+ *  a following tuple index, whose target is otherwise unrepresented), and
+ *  drop any other keyword (`$ref`, `$defs`/`definitions`, `oneOf`/`anyOf`/
+ *  `allOf`, `additionalProperties`, …) this convention doesn't cover. */
+function rawPathToAnchorSegments(rawPath: (string | number)[]): string[] {
+  const segments: string[] = [];
+  for (let i = 0; i < rawPath.length; i++) {
+    const token = rawPath[i];
+    if (token === 'properties' || token === 'patternProperties') {
+      const name = rawPath[i + 1];
+      if (typeof name === 'string') { segments.push(name); i++; }
+    } else if (token === 'items') {
+      segments.push('items');
+      if (typeof rawPath[i + 1] === 'number') { i++; }
+    }
+  }
+  return segments;
+}
+
+/**
+ * Anchor-id candidates for `offset` in a JSON/JSONC/YAML schema, ordered from
+ * the deepest enclosing candidate to progressively shorter prefixes ending at
+ * the shallowest (top-level) enclosing property (F28-FR-09). Empty when
+ * `offset` isn't enclosed by any `properties`/`patternProperties`/`items`
+ * step (e.g. the document root, or an unparsable document).
+ */
+export function computeAnchorCandidates(text: string, languageId: string, offset: number): string[] {
+  const ast = parseSchemaAst(text, languageId);
+  if (!ast) { return []; }
+  const rawPath = ast.kind === 'yaml'
+    ? rawPathAtOffsetYaml(ast.doc, offset)
+    : rawPathAtOffsetJson(ast.tree, offset);
+  if (!rawPath || rawPath.length === 0) { return []; }
+  const segments = rawPathToAnchorSegments(rawPath);
+  const candidates: string[] = [];
+  for (let len = segments.length; len > 0; len--) {
+    candidates.push(segments.slice(0, len).join('_'));
+  }
+  return candidates;
 }
 

@@ -5,6 +5,7 @@ import * as os from 'os';
 import * as YAML from 'yaml';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
 import { getRenderTimeoutMs, getPreviewRenderer, getSyncScrollEnabled } from './settings';
+import { computeAnchorCandidates } from './schemaPointer';
 import { renderSchemaHtml, isToolingUnavailable } from './fallbackRenderer';
 import { isYaml, stripJsoncComments } from './languages';
 import { loadingPage, errorPage as renderErrorPage, sanitizeHtml, getNonce } from './webviewUtils';
@@ -74,21 +75,66 @@ export function disposeAllPanels(): void {
   }
 }
 
+/** Character offset of `line`/`character` within `text`, approximating
+ *  `TextDocument.offsetAt` with plain string splitting so the anchor lookup
+ *  (F28-FR-09) needs nothing beyond the already-read document text. */
+function offsetAtLineChar(text: string, line: number, character: number): number {
+  const lines = text.split('\n');
+  let offset = 0;
+  for (let i = 0; i < line && i < lines.length; i++) {
+    offset += lines[i].length + 1; // +1 for the newline consumed between lines
+  }
+  const lineText = lines[Math.min(Math.max(line, 0), lines.length - 1)] ?? '';
+  return offset + Math.min(Math.max(character, 0), lineText.length);
+}
+
 /**
- * F28-FR-02/03/04/05 — scrolls the open preview panel for `document` (if any)
- * to the proportionally equivalent position of `topVisibleLine` within the
- * document, unless sync is disabled (F28-FR-05) or there is no matching panel
- * or no schema document (F28-FR-04). Purely a `postMessage` — never re-renders
- * the panel (F28-FR-07).
+ * F28-FR-02/03/04/05/09 — scrolls the open preview panel for `document` (if
+ * any) to the position matching `referenceLine`/`referenceCharacter`, unless
+ * sync is disabled (F28-FR-05) or there is no matching panel or no schema
+ * document (F28-FR-04). Sends both the proportional fraction (F28-FR-02/03)
+ * and any section-accurate anchor-id candidates (F28-FR-09) — the webview
+ * script tries the anchors first and falls back to the fraction (F28-FR-10).
+ * Purely a `postMessage` — never re-renders the panel (F28-FR-07).
  */
-export function syncPreviewScroll(document: vscode.TextDocument, topVisibleLine: number): void {
+export function syncPreviewScroll(
+  document: vscode.TextDocument,
+  referenceLine: number,
+  referenceCharacter = 0,
+): void {
   if (!getSyncScrollEnabled()) {return;}
   if (!isJsonSchemaFile(document)) {return;}
   const panel = openJsonSchemaFiles[document.uri.fsPath];
   if (!panel) {return;}
   const totalLines = document.lineCount;
-  const fraction = totalLines < 2 ? 0 : Math.min(1, Math.max(0, topVisibleLine / (totalLines - 1)));
-  panel.webview.postMessage({ type: 'scrollSync', fraction });
+  const fraction = totalLines < 2 ? 0 : Math.min(1, Math.max(0, referenceLine / (totalLines - 1)));
+  const text = document.getText();
+  const offset = offsetAtLineChar(text, referenceLine, referenceCharacter);
+  const anchorIds = computeAnchorCandidates(text, document.languageId, offset);
+  panel.webview.postMessage({ type: 'scrollSync', fraction, anchorIds });
+}
+
+const scrollSyncTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const SCROLL_SYNC_DEBOUNCE_MS = 80;
+
+/**
+ * Debounced wrapper around {@link syncPreviewScroll} (F28-NFR-02) —
+ * coalesces rapid successive triggers (continuous scrolling, or a selection
+ * change that fires alongside a visible-range change) so the schema source
+ * isn't re-parsed on every intermediate event.
+ */
+export function scheduleSyncPreviewScroll(
+  document: vscode.TextDocument,
+  referenceLine: number,
+  referenceCharacter = 0,
+): void {
+  const key = document.uri.fsPath;
+  const existing = scrollSyncTimers.get(key);
+  if (existing) {clearTimeout(existing);}
+  scrollSyncTimers.set(key, setTimeout(() => {
+    scrollSyncTimers.delete(key);
+    syncPreviewScroll(document, referenceLine, referenceCharacter);
+  }, SCROLL_SYNC_DEBOUNCE_MS));
 }
 
 /* c8 ignore start — webview lifecycle and Python subprocess; covered by manual/E2E testing */
@@ -125,6 +171,9 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
       // Regenerating the preview re-runs the Python tool (seconds of work), so we
       // retain context rather than reload on every tab switch despite the memory cost.
       retainContextWhenHidden: true,
+      // F01-FR-29 — VS Code's native find widget (Ctrl+F) searches the
+      // rendered content directly; no in-page search script needed.
+      enableFindWidget: true,
       localResourceRoots,
     });
 
@@ -422,6 +471,14 @@ function buildInjection(x: number, y: number, ext: string, nonce: string): strin
       window.addEventListener('message', function (event) {
         var msg = event.data;
         if (!msg || msg.type !== 'scrollSync') return;
+        // F28-FR-10 — try each anchor-id candidate (deepest first); the first
+        // match wins and scrolls straight to that section. No match (or none
+        // supplied) falls back to the proportional fraction.
+        var ids = Array.isArray(msg.anchorIds) ? msg.anchorIds : [];
+        for (var i = 0; i < ids.length; i++) {
+          var el = document.getElementById(ids[i]);
+          if (el) { el.scrollIntoView({ block: 'start' }); return; }
+        }
         var max = Math.max(0, document.body.scrollHeight - window.innerHeight);
         window.scrollTo(0, Math.round((Number(msg.fraction) || 0) * max));
       });

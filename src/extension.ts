@@ -8,7 +8,7 @@ import {
   previewJsonSchema,
   scheduleLiveUpdate,
   disposeAllPanels,
-  syncPreviewScroll,
+  scheduleSyncPreviewScroll,
 } from './PreviewWebPanel';
 import { openConfigFile, configurePreview } from './ConfigWebPanel';
 import { openSchemaEditor } from './SchemaEditorPanel';
@@ -125,7 +125,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     // F28-FR-02 — editor scroll drives the preview panel's scroll position.
     vscode.window.onDidChangeTextEditorVisibleRanges(e => {
-      syncPreviewScroll(e.textEditor.document, e.visibleRanges[0]?.start.line ?? 0);
+      scheduleSyncPreviewScroll(e.textEditor.document, e.visibleRanges[0]?.start.line ?? 0);
+    }),
+
+    // F28-FR-08 — clicking a line (or a Ctrl+F jump) without necessarily
+    // scrolling also nudges the preview to the matching section.
+    vscode.window.onDidChangeTextEditorSelection(e => {
+      const pos = e.selections[0]?.active;
+      scheduleSyncPreviewScroll(e.textEditor.document, pos?.line ?? 0, pos?.character ?? 0);
     }),
 
     validationDiagnostics,
