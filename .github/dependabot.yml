@@ -12,6 +12,13 @@ updates:
       cronjob: "0 6 1,15 * *"
       timezone: Etc/UTC
     open-pull-requests-limit: 15
+    # Native grouping so a bi-weekly run opens one PR instead of one per
+    # dependency — replaces the manual/agent-driven consolidation this repo
+    # used to need (see AGENTS.md).
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
     ignore:
       # @types/vscode is a compatibility pin, not a vulnerability surface: it
       # must stay aligned with engines.vscode (constitution Article I).
@@ -26,3 +33,23 @@ updates:
       cronjob: "0 6 1,15 * *"
       timezone: Etc/UTC
     open-pull-requests-limit: 10
+    groups:
+      github-actions-dependencies:
+        patterns:
+          - "*"
+
+  # docs/ is a separate npm project (VitePress site) with its own lockfile,
+  # not covered by the root `/` entry above — it needs its own schedule to
+  # get security fixes (e.g. the vite/postcss/nanoid transitive CVEs Snyk's
+  # weekly scan catches via --all-projects but root `npm audit` never sees).
+  - package-ecosystem: npm
+    directory: /docs
+    schedule:
+      interval: cron
+      cronjob: "0 6 1,15 * *"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 10
+    groups:
+      docs-npm-dependencies:
+        patterns:
+          - "*"
