@@ -14,9 +14,20 @@ updates:
     open-pull-requests-limit: 15
     # Native grouping so a bi-weekly run opens one PR instead of one per
     # dependency — replaces the manual/agent-driven consolidation this repo
-    # used to need (see AGENTS.md).
+    # used to need (see AGENTS.md). Two groups, not one: a bare `groups:`
+    # entry defaults to `applies-to: version-updates` (the scheduled runs
+    # above) and does NOT cover `security-updates` — the event-triggered PRs
+    # Dependabot opens the moment a GitHub Advisory matches an installed
+    # dependency, independent of the schedule. Without the second group here,
+    # exactly the PRs this repo cares most about consolidating (vulnerability
+    # patches) would keep opening individually.
     groups:
       npm-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      npm-security-updates:
+        applies-to: security-updates
         patterns:
           - "*"
     ignore:
@@ -35,6 +46,11 @@ updates:
     open-pull-requests-limit: 10
     groups:
       github-actions-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      github-actions-security-updates:
+        applies-to: security-updates
         patterns:
           - "*"
 
@@ -51,5 +67,10 @@ updates:
     open-pull-requests-limit: 10
     groups:
       docs-npm-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      docs-npm-security-updates:
+        applies-to: security-updates
         patterns:
           - "*"

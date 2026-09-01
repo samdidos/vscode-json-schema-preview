@@ -85,20 +85,32 @@
 - **Dependabot (`.github/dependabot.yml`) groups each ecosystem/directory's
   bumps into one PR per bi-weekly run** (native `groups: {..., patterns:
   ["*"]}`, one per `updates:` entry — npm at `/`, github-actions at `/`, and
-  npm at `/docs`, the VitePress site's own lockfile). A scheduled routine
-  used to consolidate PRs after the fact; it was removed once grouping made
-  that unnecessary, so an ungrouped batch of individual PRs should no longer
-  occur — if you see one anyway (e.g. left over from before grouping was
-  added), ask an agent to consolidate it: the pattern is the merged
-  consolidation PRs (search closed PRs for `Superseded by #`). Grouping is
-  per ecosystem/directory, not global, so a single bi-weekly run can still
-  open up to three PRs (npm, github-actions, docs npm) — that's expected,
-  not a config bug. The two things that actually bite: `npm run package &&
-  npm run check:bundle-size` is a required CI check but NOT part of `npm run
-  verify`, so it must be run separately (a `@types/vscode` bump has broken it
-  before — `vsce` requires `@types/vscode` ≤ `engines.vscode`); and closing
-  a superseded PR frees Dependabot's `open-pull-requests-limit` slots, which
-  can make it open a queued bump within a minute — re-check for a refill.
+  npm at `/docs`, the VitePress site's own lockfile). Each entry defines
+  **two** groups, not one: a bare `groups:` entry defaults to
+  `applies-to: version-updates` and covers only the scheduled bumps above —
+  it does NOT cover `applies-to: security-updates`, the event-triggered PRs
+  Dependabot opens the moment a GitHub Advisory matches an installed
+  dependency, independent of the schedule (exactly the PR type this repo
+  cares most about consolidating, since that's how the nanoid/postcss CVEs
+  arrived). Adding a dependabot `updates:` entry without both groups
+  silently reintroduces individual, ungrouped PRs for that entry's security
+  fixes even though its scheduled bumps stay grouped — easy to miss since
+  nothing fails, it just quietly stops bundling the one PR type that matters
+  most. A scheduled routine used to consolidate PRs after the fact; it was
+  removed once grouping made that unnecessary, so an ungrouped batch of
+  individual PRs should no longer occur — if you see one anyway (e.g. left
+  over from before grouping was added, or a new `updates:` entry missing the
+  security-updates group), ask an agent to consolidate it: the pattern is
+  the merged consolidation PRs (search closed PRs for `Superseded by #`).
+  Grouping is per ecosystem/directory, not global, so a single bi-weekly run
+  can still open up to three PRs (npm, github-actions, docs npm) — that's
+  expected, not a config bug. The two things that actually bite: `npm run
+  package && npm run check:bundle-size` is a required CI check but NOT part
+  of `npm run verify`, so it must be run separately (a `@types/vscode` bump
+  has broken it before — `vsce` requires `@types/vscode` ≤
+  `engines.vscode`); and closing a superseded PR frees Dependabot's
+  `open-pull-requests-limit` slots, which can make it open a queued bump
+  within a minute — re-check for a refill.
 
 ## Agnosticity & standardization (project principle)
 
