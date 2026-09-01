@@ -50,6 +50,7 @@ jobs:
             exit 0
           fi
 
+          # shellcheck disable=SC2016 # single-quoted on purpose: these backticks are literal markdown code spans for the issue body, not command substitution.
           BODY='`scripts/check-ts7-eslint-support.mjs` reports that `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` — their latest published peer ranges now both allow TypeScript 7.
 
           Time to revisit the `typescript` major-version ignore rule in `.github/dependabot.yml` (added in PR #220): remove the `- dependency-name: "typescript"` ignore entry, let Dependabot open the bump PR again, and confirm `npm ci` resolves cleanly before merging.
