@@ -36,6 +36,14 @@ updates:
       # Raising it is a deliberate minimum-VS-Code-version decision, not a
       # routine bump — see PR #150/#155.
       - dependency-name: "@types/vscode"
+      # typescript 7.x isn't installable yet: @typescript-eslint/eslint-plugin
+      # (and @typescript-eslint/parser) peer on `typescript@">=4.8.4 <6.1.0"`,
+      # so `npm ci` fails with ERESOLVE the instant the major bump lands —
+      # every job in CI dies in ~2s before anything runs (PR #220). Only the
+      # major version is ignored; 6.x minor/patch bumps still flow normally.
+      # Revisit once typescript-eslint ships TS 7 support.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
