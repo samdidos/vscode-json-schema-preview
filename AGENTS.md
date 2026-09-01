@@ -111,6 +111,14 @@
   `engines.vscode`); and closing a superseded PR frees Dependabot's
   `open-pull-requests-limit` slots, which can make it open a queued bump
   within a minute — re-check for a refill.
+- **`typescript`'s major-version bumps are ignored in `dependabot.yml`** (PR
+  #220): `npm ci` fails outright on typescript 7.x because
+  `@typescript-eslint/eslint-plugin`/`parser` peer on
+  `typescript@">=4.8.4 <6.1.0"`. `.github/workflows/typescript-eslint-ts7-watch.yml`
+  runs `npm run check:ts7-eslint-support` bi-weekly and opens a tracking
+  issue the one time that peer range starts allowing TS 7 — nothing else
+  watches for this, so don't remove the ignore rule without checking that
+  issue (or rerunning the check) first.
 
 ## Agnosticity & standardization (project principle)
 
