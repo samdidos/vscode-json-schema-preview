@@ -2,6 +2,20 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.19.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.18.0...v0.19.0) (2026-09-01)
+
+
+### Features
+
+* **ci:** add path-scoped docs build & audit job (S09-SR-09/10) ([f1cd902](https://github.com/samdidos/vscode-json-schema-preview/commit/f1cd9028d8107f849ded011dea398e80b0eda040))
+* **ci:** watch typescript-eslint for TS7 peer support ([af455bc](https://github.com/samdidos/vscode-json-schema-preview/commit/af455bc21b7f9868a19a4f6aaad0374fbbd64b26))
+
+
+### Bug Fixes
+
+* **deps:** group Dependabot security-update PRs too ([4e9d42f](https://github.com/samdidos/vscode-json-schema-preview/commit/4e9d42f1f0c61934a37c52e229e5ca16a966ffd6))
+* **deps:** patch nanoid/postcss CVEs; group Dependabot PRs per ecosystem ([8fb1ce2](https://github.com/samdidos/vscode-json-schema-preview/commit/8fb1ce2d42ff13587f1da28edd9c87282bb8ceb6))
+
 ## [0.18.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.17.2...v0.18.0) (2026-08-11)
 
 
