@@ -576,7 +576,7 @@
     "@json-editor/json-editor": "^2.17.1",
     "@playwright/test": "^1.62.1",
     "@stryker-mutator/core": "^9.6.1",
-    "@stryker-mutator/mocha-runner": "^9.6.1",
+    "@stryker-mutator/mocha-runner": "^10.0.0",
     "@stryker-mutator/typescript-checker": "^9.6.1",
     "@types/command-line-args": "^5.2.3",
     "@types/mocha": "^10.0.10",
