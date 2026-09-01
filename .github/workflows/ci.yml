@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       src: ${{ steps.filter.outputs.src }}
+      docs: ${{ steps.filter.outputs.docs }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -251,3 +252,27 @@ jobs:
       - name: Integration tests
         if: runner.os != 'Linux'
         run: npm run test:integration
+
+  docs:
+    name: Docs site build & audit
+    needs: changes
+    # docs/ is a separate npm project (own package.json/package-lock.json),
+    # not covered by any src-scoped job above nor by root's `npm audit`
+    # (S09-SR-09). Scoped to docs/** the same way the src-scoped jobs are
+    # scoped to SR-02's path set (S09-SR-10), via the `changes` job's `docs`
+    # output rather than a workflow-level path trigger, for the reason
+    # S09-SR-03 gives for `src`.
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - run: npm ci --prefix docs
+      - run: npm run build --prefix docs
+      - run: npm run check:docs-audit
