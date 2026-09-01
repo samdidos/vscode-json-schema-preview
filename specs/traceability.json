@@ -3670,6 +3670,24 @@
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     },
+    "S09-SR-09": {
+      "status": "manual",
+      "impl": [
+        ".github/workflows/ci.yml",
+        "scripts/check-docs-audit.mjs"
+      ],
+      "note": "docs job, gated on the changes job's docs output; CI workflow requirement, not unit-taggable",
+      "specifiedAt": "2026-09-01"
+    },
+    "S09-SR-10": {
+      "status": "manual",
+      "impl": [
+        ".github/workflows/ci.yml",
+        "scripts/ci-detect-source-changes.sh"
+      ],
+      "note": "docs output computed alongside src in the shared changes-detection script; CI workflow requirement, not unit-taggable",
+      "specifiedAt": "2026-09-01"
+    },
     "S10-NFR-01": {
       "status": "manual",
       "impl": [

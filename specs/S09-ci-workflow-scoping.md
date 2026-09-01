@@ -92,6 +92,31 @@ drift on the PRs most likely to introduce it.
   hold for this check too, not only for lint/`tsc`/tests. The local script
   and CI's container image MUST pin the identical actionlint version; a
   consistency check (`npm run check:consistency`) MUST fail if they drift.
+- **S09-SR-09** `ci.yml` MUST include a `docs` job that, whenever the
+  triggering diff touches `docs/**`, installs `docs/`'s dependencies from its
+  own lockfile (`npm ci --prefix docs`), builds the VitePress site
+  (`npm run build --prefix docs`), and audits that lockfile
+  (`npm run check:docs-audit`). `docs/` is a separate npm project with its
+  own `package.json`/`package-lock.json` — neither root's `npm audit`/
+  `check:audit` nor any job gated by SR-02's path set inspects it, and
+  `docs.yml`'s build step (which does) only runs on push to `main` or manual
+  dispatch (Out of Scope), never on a pull request. Without this job a
+  docs-only PR that bumps a vulnerable or build-breaking `docs/` dependency
+  merges with no CI signal at all.
+  `check:docs-audit` MUST fail only on a high/critical advisory that
+  `npm audit fix` could resolve (`fixAvailable` is not `false` in
+  `npm audit --json`'s output) — a plain `npm audit --audit-level=high`
+  would also fail on an advisory with no upstream fix (as
+  `GHSA-fx2h-pf6j-xcff` currently is for vitepress's vite dependency),
+  leaving the check permanently red through no fault of the PR that
+  triggers it. Such findings MUST still be printed, just not treated as
+  blocking.
+- **S09-SR-10** The `docs` job's skip condition MUST follow SR-03's pattern:
+  a job-level `if:` fed by a `docs` output the shared `changes` job computes
+  alongside `src` (extending `scripts/ci-detect-source-changes.sh`), not a
+  second workflow-level path trigger — for the same reason SR-03 requires it
+  for `src` (a path-filtered trigger leaves a required check permanently
+  "Expected — Waiting" on a non-matching diff instead of passing).
 
 ## Non-Functional Requirements
 
@@ -118,10 +143,10 @@ drift on the PRs most likely to introduce it.
 
 ## Acceptance Criteria
 
-1. A PR touching only `docs/**`, `specs/**`, or root `*.md` files shows the
+1. A PR touching only `specs/**` or root `*.md` files shows the
    `traceability` job passing and `lint`/`type-check`/`compile`/
-   `bundle-size`/`coverage`/`audit`/`security`/`knip`/`integration` (and
-   CodeQL's `analyze`) reporting as skipped, not pending.
+   `bundle-size`/`coverage`/`audit`/`security`/`knip`/`integration`/`docs`
+   (and CodeQL's `analyze`) reporting as skipped, not pending.
 2. A PR touching `src/**` runs every job as before this spec.
 3. A PR that only edits `specs/traceability.json` still runs
    `check:traceability` and `check:doc-traceability`.
@@ -130,6 +155,12 @@ drift on the PRs most likely to introduce it.
 5. `ci.yml` and `codeql.yml` each invoke `scripts/ci-detect-source-changes.sh`
    rather than defining the path pattern inline; changing the pattern is a
    one-file edit.
+6. A PR touching only `docs/**` shows `lint`/`type-check`/`compile`/
+   `bundle-size`/`coverage`/`audit`/`security`/`knip`/`integration` (and
+   CodeQL's `analyze`) skipped, while `docs` (S09-SR-09) actually runs and
+   fails the check if the VitePress build breaks or `docs/`'s lockfile gains
+   a high/critical advisory `npm audit fix` could resolve — but not for one
+   with no upstream fix yet (`fixAvailable: false`).
 
 ## Relation to Existing Specs
 
@@ -148,6 +179,13 @@ drift on the PRs most likely to introduce it.
 
 ## History
 
+- 2026-09-01 — Added S09-SR-09/10: a `docs` job, scoped to `docs/**` the
+  same way SR-02's jobs are scoped to `src/**`. Found by gap, not by design:
+  a Snyk weekly scan flagged high-severity nanoid/postcss advisories in
+  `docs/`'s VitePress lockfile that had merged with zero CI signal — root
+  `npm audit` doesn't see a nested lockfile, and `docs.yml`'s build step
+  (the one place that would have caught a broken build too) only runs on
+  push to `main`, never on the PR that introduced the bump.
 - 2026-07-26 — Split `ci.yml`'s `build` job into six independent jobs
   (`lint`, `type-check`, `compile`, `bundle-size`, `coverage`, `audit`) that
   all fan out from `changes` in parallel, for maximum CI parallelism. Same
