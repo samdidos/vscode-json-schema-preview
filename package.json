@@ -580,7 +580,7 @@
     "@stryker-mutator/typescript-checker": "^9.6.1",
     "@types/command-line-args": "^5.2.3",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.4.0",
     "@types/readable-stream": "^4.0.24",
     "@types/sinon": "^22.0.0",
     "@types/urijs": "^1.19.26",
