@@ -369,6 +369,8 @@ the aggregate.
 Failing cases appear as errors on the failing case in the suite file, and each
 run replaces the previous run's diagnostics. The summary offers **Copy report**.
 
+![Running a schema test suite and landing on the failing case](/demo-schema-tests.gif)
+
 The suite format, the `errors` keyword-matching rule, and the CI story are in
 [The schema lifecycle](/guide/lifecycle#guarding-schema-tests).
 

@@ -26,6 +26,8 @@ property, its effective type, and whether it is required — not a chain of
 Nothing to configure: it is a document-symbol provider, active on any file
 recognised as a schema.
 
+![Reading a schema through the Outline view, and jumping to a property](/demo-outline.gif)
+
 <!-- spec:F31 end -->
 
 <!-- spec:F30 start -->
