@@ -67,8 +67,16 @@ for (const file of files) {
   }
 
   for (const run of sarif.runs ?? []) {
+    // Rules live under the driver for a plain analysis, but CodeQL puts the
+    // query packs' rules — every security rule among them — under
+    // tool.extensions instead. Missing this reads every security finding as a
+    // maintainability one, which is exactly the confusion this script exists
+    // to remove.
     const rules = new Map(
-      (run.tool?.driver?.rules ?? []).map((rule) => [rule.id, rule]),
+      [
+        ...(run.tool?.driver?.rules ?? []),
+        ...(run.tool?.extensions ?? []).flatMap((extension) => extension.rules ?? []),
+      ].map((rule) => [rule.id, rule]),
     );
 
     const findings = (run.results ?? []).map((result) => {
