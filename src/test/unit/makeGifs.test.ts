@@ -8,7 +8,7 @@
 // not encode anything — the module guards its CLI body behind a direct-run
 // check, which these tests implicitly assert by not producing output.
 import * as assert from 'assert';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
 interface MakeGifsModule {
@@ -19,6 +19,58 @@ interface MakeGifsModule {
 const loadModule = async (): Promise<MakeGifsModule> => import('../../../scripts/make-gifs.mjs');
 
 const ROOT = resolve(__dirname, '../../../');
+
+/**
+ * Total playback time of a GIF, in seconds, read from the file itself.
+ *
+ * Written out rather than shelled out to ffprobe: this runs in the mandatory
+ * local gate, which may not have ffmpeg installed (S15 — the gate assumes
+ * nothing beyond Node and git). The walk follows the GIF89a block structure —
+ * header, logical screen descriptor, optional global colour table, then blocks
+ * — and sums the delay field of every Graphic Control Extension. Delays are
+ * stored in centiseconds.
+ */
+function gifDurationSeconds(bytes: Buffer): number {
+  let at = 6; // past "GIF89a"
+  const packed = bytes[at + 4];
+  at += 7;
+  if (packed & 0x80) { at += 3 * (1 << ((packed & 0x07) + 1)); }
+
+  const skipSubBlocks = () => {
+    while (at < bytes.length) {
+      const size = bytes[at];
+      at += 1;
+      if (size === 0) { return; }
+      at += size;
+    }
+  };
+
+  let centiseconds = 0;
+  while (at < bytes.length) {
+    const marker = bytes[at];
+    if (marker === 0x3b) { break; } // trailer
+    if (marker === 0x21) {
+      const label = bytes[at + 1];
+      at += 2;
+      if (label === 0xf9) {
+        // Graphic Control Extension: [size=4][packed][delay lo][delay hi][transparent]
+        centiseconds += bytes.readUInt16LE(at + 2);
+      }
+      skipSubBlocks();
+      continue;
+    }
+    if (marker === 0x2c) {
+      const localPacked = bytes[at + 9];
+      at += 10;
+      if (localPacked & 0x80) { at += 3 * (1 << ((localPacked & 0x07) + 1)); }
+      at += 1; // LZW minimum code size
+      skipSubBlocks();
+      continue;
+    }
+    break; // unrecognised block — stop rather than misread the rest
+  }
+  return centiseconds / 100;
+}
 
 suite('S08 — demo GIF encoding', () => {
   test('[S08-SR-16] buildConcatScript emits an ffconcat header and one entry per frame', async () => {
@@ -93,5 +145,21 @@ suite('S08 — demo GIF encoding', () => {
     assert.deepStrictEqual(frames, ['001.png', '002.png', '003.png']);
 
     rmSync(dir, { recursive: true, force: true });
+  });
+  test('[S08-SR-21] every frame-stitched demo stays inside the 30s budget', async () => {
+    // Past half a minute a reader scrubs rather than watches. demo-showcase is
+    // the stated exception: it is the one end-to-end narrative, and shortening
+    // it needs a re-recording session, not a re-encode.
+    const { DEMOS } = (await import('../../../scripts/demo-registry.mjs')) as { DEMOS: { name: string; dir?: string }[] };
+    const publicDir = resolve(ROOT, 'docs', 'public');
+
+    for (const demo of DEMOS) {
+      if (!demo.dir) { continue; } // showcase — see above
+      const file = resolve(publicDir, `demo-${demo.name}.gif`);
+      if (!existsSync(file)) { continue; } // not yet regenerated for a new demo
+      const seconds = gifDurationSeconds(readFileSync(file));
+      assert.ok(seconds > 0, `demo-${demo.name}.gif has no readable frame delays`);
+      assert.ok(seconds <= 30, `demo-${demo.name}.gif runs ${seconds.toFixed(1)}s — over the 30s budget`);
+    }
   });
 });

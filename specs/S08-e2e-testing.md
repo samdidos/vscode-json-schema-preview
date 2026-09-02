@@ -193,9 +193,13 @@ mechanism.
   seventeen inline GIFs would make that page unusable.
 - **S08-SR-21** A frame-stitched demo SHOULD stay under 30 seconds of
   playback. Past that a reader scrubs rather than watches, and the file grows
-  without teaching more. `demo-showcase` is the deliberate exception — it is
-  the one end-to-end narrative — but even it SHOULD be trimmed toward that
-  budget when it is next re-recorded.
+  without teaching more. The 16 frame-stitched demos currently run 6.8–16.9 s,
+  so the budget is headroom rather than a diet; it exists to keep a demo from
+  quietly growing past the point where anyone watches it to the end.
+  `demo-showcase` is the deliberate exception at 92 s — it is the one
+  end-to-end narrative — but it SHOULD be trimmed toward the budget when it is
+  next re-recorded (shortening it means re-recording, which needs a real X11
+  session; it cannot be done by re-encoding).
 
 ### Harness notes (implementation)
 
