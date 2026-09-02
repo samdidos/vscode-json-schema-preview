@@ -1,13 +1,13 @@
 {
   "$comment": "DORA delivery-performance metrics (S14) computed from git by scripts/dora-metrics.mjs — do not edit by hand. Run `npm run dora`. NEVER read by the maturity scorer.",
-  "generatedAt": "2026-08-11",
-  "releaseCount": 23,
+  "generatedAt": "2026-09-02",
+  "releaseCount": 24,
   "firstRelease": "2026-06-18",
-  "lastRelease": "2026-08-11",
+  "lastRelease": "2026-09-02",
   "metrics": {
     "deploymentFrequency": {
-      "medianIntervalDays": 1.5,
-      "perWeek": 3,
+      "medianIntervalDays": 1.7,
+      "perWeek": 2.2,
       "band": "High"
     },
     "leadTimeForChanges": {
@@ -15,9 +15,9 @@
       "band": "Elite"
     },
     "changeFailureRate": {
-      "percent": 21.7,
+      "percent": 20.8,
       "failures": 5,
-      "of": 23,
+      "of": 24,
       "band": "Medium"
     },
     "timeToRestore": {
@@ -252,6 +252,16 @@
       "date": "2026-08-11",
       "commits": 8,
       "intervalDays": 4.7,
+      "leadTimeDays": 0.9,
+      "isPatch": false,
+      "failure": false,
+      "restoreDays": null
+    },
+    {
+      "tag": "v0.19.0",
+      "date": "2026-09-02",
+      "commits": 13,
+      "intervalDays": 21.7,
       "leadTimeDays": 0.9,
       "isPatch": false,
       "failure": false,
