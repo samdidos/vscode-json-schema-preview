@@ -54,6 +54,16 @@ jobs:
           queries: security-and-quality
 
       - name: Perform CodeQL Analysis
+        id: analyze
         uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           category: "/language:javascript-typescript"
+          output: sarif-results
+
+      # The `CodeQL` check reports only a count ("3 new alerts including 3 high
+      # severity") and links to annotations in the web UI. Echo the rule ids and
+      # source locations into the job log so a failure is diagnosable from the
+      # CLI without a second round trip.
+      - name: Summarise findings
+        if: always() && steps.analyze.outcome != 'skipped'
+        run: node scripts/summarize-sarif.mjs sarif-results
