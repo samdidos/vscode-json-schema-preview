@@ -11,9 +11,11 @@
 ## Commands
 
 - **Setup (fresh container)**: `node scripts/bootstrap.mjs` — **not** `npm ci`
-  (the `canvas` dependency, demo-GIF pipeline only, compiles native code and
-  fails in minimal containers; bootstrap installs with `--ignore-scripts`).
-  Regenerating GIFs (`npm run make-gifs`) does need a full `npm install`.
+  (`keytar`, a transitive dependency of `@vscode/vsce`, compiles native code
+  and fails in minimal containers; bootstrap installs with `--ignore-scripts`).
+  A bootstrapped checkout can do everything except `npm run package`, GIFs
+  included — the demo pipeline shells out to `ffmpeg` (S08-SR-17), so it needs
+  ffmpeg on PATH rather than a full `npm install`.
 - **Full local gate**: `npm run verify` (lint, workflow-lint, type-check,
   traceability, doc-traceability, consistency, spec-effort, spec-value,
   dependency audit, coverage — `scripts/verify.mjs`). Steps run concurrently

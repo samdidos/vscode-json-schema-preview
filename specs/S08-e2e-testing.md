@@ -155,6 +155,48 @@ mechanism.
   silently produce an empty or partial selection. Leaving the input empty
   (the default) MUST fall through to S08-SR-12's normal behaviour unchanged.
 
+### GIF Encoding
+
+- **S08-SR-16** Every demo GIF — the frame-stitched ones and the showcase
+  recording alike — MUST be encoded with **ffmpeg's two-pass palette
+  pipeline** (`palettegen=stats_mode=diff` then
+  `paletteuse=…:diff_mode=rectangle`). One encoder for all of them: a
+  per-frame palette optimised for a mostly-static editor window, re-encoding
+  only the region that changed between frames.
+- **S08-SR-17** The GIF pipeline MUST NOT depend on a package requiring a
+  native build. `canvas` compiles against cairo/pango at install time, which
+  is why a plain `npm ci` fails in a minimal container and why the repository
+  needs a bootstrap script at all — a cost paid on every clone by everyone, to
+  serve a step that runs only at release time on one Linux runner that already
+  has ffmpeg installed.
+- **S08-SR-18** Encoding MUST preserve the captured frames' own resolution.
+  Downscaling to save bytes is unnecessary: at identical dimensions the
+  palette pipeline is roughly ten times smaller than the octree quantiser it
+  replaces, so there is nothing to trade legibility for.
+
+### Demo content and placement
+
+- **S08-SR-19** Every demo MUST show its feature *succeeding*. A capture that
+  ends on a refusal or a no-op is a defect in the demo script, not a
+  documentation gap: the script MUST seed whatever state the feature needs (a
+  bound schema, a fixture data file) before performing the action it
+  demonstrates. `demo-validation` shipped for months ending on "No schema
+  bound to person-invalid.json. Bind one first." — it opened an unbound file,
+  so the one demo of the extension's headline feature never validated
+  anything.
+- **S08-SR-20** Every entry in `scripts/demo-registry.mjs` MUST be embedded on
+  the docs site in **both** places a reader looks: the landing page's demo
+  gallery (`docs/.vitepress/theme/QuickDemo.vue`) and the guide section that
+  documents the command it shows. A GIF regenerated at release time and never
+  displayed is pure payload. The **README** is deliberately the exception: it
+  embeds `demo-showcase.gif` alone, because the marketplace renders it and
+  seventeen inline GIFs would make that page unusable.
+- **S08-SR-21** A frame-stitched demo SHOULD stay under 30 seconds of
+  playback. Past that a reader scrubs rather than watches, and the file grows
+  without teaching more. `demo-showcase` is the deliberate exception — it is
+  the one end-to-end narrative — but even it SHOULD be trimmed toward that
+  budget when it is next re-recorded.
+
 ### Harness notes (implementation)
 
 - The `toml` language id and the `yaml.schemas` configuration key are not
@@ -184,6 +226,34 @@ mechanism.
 - **S08-NFR-02** E2E tests MUST NOT hit the network: remote-schema scenarios
   use a local HTTP fixture server, keeping runs deterministic and offline
   (S04, S05).
+
+## History (encoding)
+
+- **2026-09-02** — The 16 frame-stitched demos moved from `gif-encoder-2`'s
+  octree quantiser to the same ffmpeg palette pipeline
+  `make-showcase-gif.mjs` already used, and `canvas`/`gif-encoder-2` were
+  dropped (S08-SR-16/17/18).
+
+  The earlier History note reasoned that the screenshot pipeline was "simpler
+  and has no external-binary dependency beyond the already-required canvas".
+  Both halves of that turned out backwards. ffmpeg is not an *additional*
+  dependency — the refresh workflow already installs it for the showcase — and
+  `canvas` is not free: it is a native build, the reason `npm ci` fails in a
+  minimal container, and the reason `scripts/bootstrap.mjs` exists.
+
+  The measured result on the largest demo, at unchanged dimensions:
+  **4.03 MB → 0.39 MB**, visually indistinguishable. Across the 16
+  frame-stitched GIFs the committed payload drops from ~28 MB to ~3.4 MB.
+  Re-encoding needs neither X11 nor the original frames — decoding each
+  committed GIF and re-encoding it produces the same timing — so the existing
+  GIFs were re-encoded in place rather than waiting for the next release to
+  regenerate them. `demo-showcase.gif` was left alone: it already came out of
+  this pipeline, so a second lossy pass would buy ~4% for a generation of
+  quality. It stays the outlier at 7.8 MB — a length problem, not an encoding
+  one (S08-SR-19).
+
+  What still needs a real recording session — and so is *not* addressed here —
+  is the content of individual demos (S08-SR-19).
 
 ## Out of Scope
 
@@ -321,6 +391,9 @@ mechanism.
   screenshot pipeline, which is simpler and has no external-binary dependency
   beyond the already-required `canvas`. The refresh-gifs workflow gained
   `ffmpeg`/`xdotool` apt packages and a `make-showcase-gif.mjs` step.
+  *(That last scoping decision was reversed on 2026-09-02 — see "History
+  (encoding)" above: all 17 demos now share the ffmpeg palette pipeline and
+  `canvas` is gone. The rest of this note still stands.)*
   The preview itself renders json-schema-for-humans' **flat** template
   (`PreviewWebPanel.ts` avoids the default accordion template, which would
   pull Bootstrap/jQuery from a CDN — a network request this zero-telemetry

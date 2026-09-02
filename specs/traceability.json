@@ -5791,6 +5791,54 @@
       "note": "the model boundary is injected, so correctness is testable without a model",
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
+    },
+    "S08-SR-16": {
+      "status": "implemented",
+      "impl": [
+        "scripts/make-gifs.mjs",
+        "scripts/make-showcase-gif.mjs"
+      ],
+      "note": "one ffmpeg two-pass palette encoder for every demo GIF; the pure ffconcat/frame-ordering helpers are unit-tested (makeGifs.test.ts), the encode itself by running npm run make-gifs",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S08-SR-17": {
+      "status": "implemented",
+      "impl": [
+        "package.json",
+        "scripts/bootstrap.mjs",
+        ".github/workflows/refresh-gifs.yml"
+      ],
+      "note": "canvas/gif-encoder-2 removed from the manifest; guarded by a makeGifs.test.ts assertion on package.json so the native build cannot come back unnoticed",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S08-SR-18": {
+      "status": "implemented",
+      "impl": [
+        "scripts/make-gifs.mjs"
+      ],
+      "note": "no scale filter in either ffmpeg pass; asserted in makeGifs.test.ts",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S08-SR-19": {
+      "status": "planned",
+      "impl": [],
+      "note": "demo scripts must seed the state their feature needs; demo-validation currently ends on the unbound-file refusal",
+      "specifiedAt": "2026-09-02"
+    },
+    "S08-SR-20": {
+      "status": "planned",
+      "impl": [],
+      "note": "every registry demo embedded in both the landing gallery and its guide section",
+      "specifiedAt": "2026-09-02"
+    },
+    "S08-SR-21": {
+      "status": "planned",
+      "impl": [],
+      "note": "30s playback budget for frame-stitched demos; showcase is the stated exception",
+      "specifiedAt": "2026-09-02"
     }
   }
 }
