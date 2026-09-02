@@ -23,6 +23,7 @@ import { computeCoverage, renderCoverageReport } from '../schemaCoverage';
 import { TARGET_LANGUAGES, generateCode } from '../typeGenerator';
 import { buildRefGraph, detectCycle, summarizeGraph, renderAdjacencyList, layoutGraph, renderGraphSvg } from '../refGraph';
 import { parseTestSuite, runTestSuite, renderSuiteReport, type SuiteResult } from '../schemaTests';
+import { enrichInferredSchema } from '../inferenceEnrich';
 
 /** Injected side-effect surface so `runCli` stays pure and testable. */
 export interface CliIO {
@@ -68,7 +69,7 @@ const USAGE = [
   '      [--check] [--strict]                  …and gate on backward-compatibility',
   '  bundle <schema-file> [--dereference]      Produce one self-contained schema',
   '  migrate <schema-file> --to <draft>        Convert to 2020-12 | 2019-09 | draft-07',
-  '  infer <data-file> [--to <draft>]          Infer a schema from data (default 2020-12)',
+  '  infer <data-file> [--to <draft>] [--plain] Infer a schema from data (default 2020-12)',
   '  sample <schema-file>                      Generate a valid sample instance',
   '  types <schema-file> [--lang <id>]         Generate typed code (default typescript)',
   '  coverage <data-file...> --schema <schema> Report schema coverage from one or more data files',
@@ -359,7 +360,10 @@ function cmdInfer(args: ParsedArgs, io: CliIO): CliResult {
   } catch (e) {
     return err(`Cannot parse ${dataFile}: ${(e as Error).message}\n`, EXIT.data);
   }
-  const schema = createSchema(data as object) as Record<string, unknown>;
+  const structural = createSchema(data as object) as Record<string, unknown>;
+  // F06-FR-13/14 — add format/enum from the observed values unless --plain asks
+  // for the structural pass alone (F06-FR-15).
+  const schema = (args.flags.has('plain') ? structural : enrichInferredSchema(structural, data)) as Record<string, unknown>;
   // Declare the target draft's meta-schema (F06/F22), default 2020-12 (latest).
   const withDraft = { $schema: META_SCHEMA[target], ...schema };
   if (args.flags.has('json')) { return jsonOut({ schema: withDraft }, EXIT.ok); }

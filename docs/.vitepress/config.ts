@@ -99,6 +99,7 @@ export default defineConfig({
         ],
       },
       { text: 'Delivery', link: '/delivery/', activeMatch: '/delivery/' },
+      { text: 'Contributing', link: '/contributing', activeMatch: '/contributing' },
       { text: 'Blog', link: '/blog/', activeMatch: '/blog/' },
     ],
 

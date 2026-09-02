@@ -161,6 +161,8 @@ const _selectChatModels = sinon.stub();
 const _registerTool     = sinon.stub();
 const _openExternal     = sinon.stub();
 const _fsReadFile       = sinon.stub();
+const _setStatusBarMessage = sinon.stub();
+const _registerMcpServerDefinitionProvider = sinon.stub();
 
 // authentication
 const _onDidChangeSessions = sinon.stub();
@@ -191,6 +193,7 @@ const _allStubs: sinon.SinonStub[] = [
   _registerDocumentSymbolProvider, _registerRenameProvider, _registerReferenceProvider,
   _registerCodeLensProvider, _getDiagnostics,
   _selectChatModels, _registerTool, _openExternal, _fsReadFile,
+  _setStatusBarMessage, _registerMcpServerDefinitionProvider,
 ];
 
 function applyDefaults() {
@@ -201,6 +204,8 @@ function applyDefaults() {
   _registerReferenceProvider.returns(_disposable);
   _registerCodeLensProvider.returns(_disposable);
   _registerTool.returns(_disposable);
+  _setStatusBarMessage.returns(_disposable);
+  _registerMcpServerDefinitionProvider.returns(_disposable);
   _selectChatModels.resolves([]);
   _openExternal.resolves(true);
   _onDidChangeActiveTextEditor.returns(_disposable);
@@ -314,6 +319,7 @@ export const window = {
   get visibleTextEditors() { return _visibleTextEditors; },
   set visibleTextEditors(v: any[]) { _visibleTextEditors = v; },
   createStatusBarItem:         _createStatusBarItem,
+  setStatusBarMessage:         _setStatusBarMessage,
   onDidChangeActiveTextEditor: _onDidChangeActiveTextEditor,
   onDidChangeTextEditorVisibleRanges: _onDidChangeTextEditorVisibleRanges,
   onDidChangeTextEditorSelection: _onDidChangeTextEditorSelection,
@@ -391,7 +397,19 @@ export const languages = {
 export const lm = {
   selectChatModels: _selectChatModels,
   registerTool: _registerTool,
+  registerMcpServerDefinitionProvider: _registerMcpServerDefinitionProvider,
 };
+
+/** Post-1.101 API (F33-FR-15): the extension feature-detects this class. */
+export class McpStdioServerDefinition {
+  constructor(
+    public label: string,
+    public command: string,
+    public args: string[] = [],
+    public env?: Record<string, string | number | null>,
+    public version?: string,
+  ) {}
+}
 
 export const authentication = {
   onDidChangeSessions: _onDidChangeSessions,

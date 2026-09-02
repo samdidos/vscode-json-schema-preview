@@ -402,3 +402,23 @@ guarantees, and exactly what is sent.
 |---------|----------------|
 | — (JSON Schema submenu) | ✅ |
 <!-- spec:F32 end -->
+
+<!-- spec:F06 start -->
+### What inference adds beyond structure
+
+Structural inference says `type: string` for an e-mail address. A deterministic
+enrichment pass then adds what only the values reveal:
+
+- a **`format`** (`email`, `uri`, `date-time`, `date`, `uuid`, `ipv4`) when
+  **every** observed value at a path matches it — one mismatch means no format,
+  because a wrong format turns valid data invalid;
+- an **`enum`** when a path repeats a small closed set across enough records
+  (at least 4 observations, at most 5 distinct values, repeating at least half
+  the time). A single document never yields an enum — that would freeze
+  first-seen data into a contract.
+
+The pass is additive and pure: nothing the structural pass produced is removed,
+renamed or retyped. Pass `--plain` to the CLI's `infer` to skip it. The optional
+model-assisted **Enrich Inferred Schema** ([AI](/guide/ai)) builds on this
+deterministic pass rather than replacing it.
+<!-- spec:F06 end -->

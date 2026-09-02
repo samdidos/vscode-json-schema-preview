@@ -90,6 +90,22 @@ consumes it.
 - **F33-FR-14** The server MUST write nothing but JSON-RPC to stdout (diagnostics
   go to stderr), since stray output corrupts the protocol stream.
 
+### Distribution
+
+- **F33-FR-15** The extension MUST contribute an **MCP server definition
+  provider** so that, in a host supporting it, installing the extension from
+  the Marketplace is enough for the editor's agent mode to discover and start
+  the `jstk mcp` server with no manual configuration. The definition MUST
+  launch the published CLI package (`npx json-schema-toolkit mcp`) rather than
+  bundle the CLI into the extension, so the .vsix stays within its size budget
+  (S03) and the two ship independently. Registration MUST be feature-detected:
+  on a host without the API the extension MUST behave exactly as before.
+- **F33-FR-16** The CLI package MUST carry the metadata the open MCP Registry
+  expects — a `server.json` describing the stdio server and the `mcpName`
+  field linking the npm package to it — so the same server can be published to
+  the registry and discovered by clients outside VS Code. Publishing itself is a
+  release step, documented on the docs site.
+
 ## Non-Functional Requirements
 
 - **F33-NFR-01** The descriptor table, every handler, and the MCP message
@@ -137,3 +153,9 @@ consumes it.
 ## History
 
 - **2026-09-02** — Initial specification.
+
+- **2026-09-02** — Added F33-FR-15/16: the Marketplace route (an MCP server
+  definition provider launching the published CLI, feature-detected) and the
+  open MCP Registry route (`server.json` + `mcpName`). Bundling the CLI into
+  the .vsix was rejected: the CLI bundle is ~1.4 MB against a 1.5 MB .vsix
+  budget, and the two artifacts release on different cadences.

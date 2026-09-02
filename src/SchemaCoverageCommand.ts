@@ -5,6 +5,7 @@
 // action. All non-trivial logic lives in the pure `schemaCoverage` module; this
 // file is the thin VS Code wiring.
 import * as vscode from 'vscode';
+import { confirm } from './notify';
 import * as fs from 'fs';
 import * as path from 'path';
 import { reconcile, renderReconcileReport, type SchemaProperty } from './schemaCoverage';
@@ -75,7 +76,7 @@ async function runCoverage(
   if (action === 'Copy report') {
     const header = `${path.basename(doc.uri.fsPath)} vs ${schemaLabel(ref)}`;
     await vscode.env.clipboard.writeText(renderReconcileReport({ coverage: result, undeclared }, header));
-    vscode.window.showInformationMessage('Coverage report copied to the clipboard.');
+    confirm('Coverage report copied to the clipboard.');
   }
 }
 

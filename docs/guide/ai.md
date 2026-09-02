@@ -162,3 +162,55 @@ only in direct response to a command you ran — never on activation, open, save
 type, or a timer.
 
 <!-- spec:F32,S20 end -->
+
+<!-- spec:F33 start -->
+
+## Getting the MCP server to agents
+
+There are three routes, from least to most setup, and they all launch the same
+`jstk mcp` process.
+
+### 1. Install the extension
+
+In a VS Code that supports MCP server definition providers (1.101 and later), the
+extension **registers the server itself**: agent mode lists "JSON Schema
+Toolkit" under MCP servers the moment the extension is installed, with nothing
+to configure. The definition launches the published CLI
+(`npx -y json-schema-toolkit mcp`), so the first start needs npm access; after
+that it is cached. On an older VS Code the provider is simply not registered and
+nothing else changes.
+
+This is how "publishing an MCP server to the Marketplace" works today: the
+Marketplace has no server category of its own — an extension carries the
+definition, and installing the extension is what publishes the server to that
+user's editor.
+
+### 2. Configure it by hand
+
+Any MCP client — Claude Code, Cursor, an IDE plugin, a CI bot — can launch it
+from its own configuration:
+
+```jsonc
+{ "mcpServers": { "json-schema": { "command": "npx", "args": ["-y", "json-schema-toolkit", "mcp"] } } }
+```
+
+### 3. The open MCP Registry
+
+The CLI package ships a `server.json` and an `mcpName` field
+(`io.github.samdidos/json-schema-toolkit`), which is what the
+[MCP Registry](https://registry.modelcontextprotocol.io) reads. Publishing is a
+release step, done once per CLI version:
+
+```sh
+# from cli/, after `npm publish`
+npx @modelcontextprotocol/publisher login github
+npx @modelcontextprotocol/publisher publish
+```
+
+The registry verifies namespace ownership through the GitHub login (the
+`io.github.<user>` prefix) and that the npm package's `mcpName` matches
+`server.json`. Once listed, clients that browse the registry — including the MCP
+server gallery in VS Code's Extensions view, which is fed from it — can find and
+install the server without knowing this project exists.
+
+<!-- spec:F33 end -->

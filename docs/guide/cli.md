@@ -69,7 +69,7 @@ clean, pipeable schema.
 jstk migrate legacy.schema.json --to 2020-12 > modern.schema.json
 ```
 
-### `infer <data-file> [--to <draft>]`
+### `infer <data-file> [--to <draft>] [--plain]`
 
 Infer a schema from an existing data file (JSON/JSONC/JSONL/YAML/TOML). A JSONL
 file infers over the array of its records. `--to` selects the declared
