@@ -61,6 +61,16 @@ so the local gate and CI enforce identical policy.
   audit policy cannot drift between local and CI the way it could if the
   level were duplicated in two places.
 
+### Unused-code Check
+
+- **S17-SR-07** The unused-code check MUST be one of the concurrent steps,
+  wired as `npm run knip` — the identical command `ci.yml`'s `knip` job
+  enforces as a blocking check. The same reasoning as S17-SR-06 applies with
+  a sharper edge: a blocking CI check absent from the local gate is not merely
+  a drift risk, it is a guaranteed round trip. The contributor pushes, waits
+  for CI, and learns about an unused export only then — which is exactly the
+  cost the single-gate design exists to remove.
+
 ## Non-Functional Requirements
 
 - **S17-NFR-01** The orchestrator MUST be plain Node with no new runtime
@@ -71,6 +81,13 @@ so the local gate and CI enforce identical policy.
   step's own pass/fail semantics or output — each step is still exactly
   `npm run <script>`, unmodified, so a step's behavior when run alone (e.g.
   `npm run lint`) is identical to its behavior inside `npm run verify`.
+
+## History
+
+- **2026-09-02** — Added S17-SR-07: `knip` joins the gate. It was already a
+  blocking CI job but absent locally, so an unused export could only be found
+  by pushing. Discovered the way the spec predicts — a red CI job on a branch
+  whose local gate was green.
 
 ## Out of Scope
 

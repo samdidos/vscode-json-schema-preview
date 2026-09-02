@@ -349,7 +349,8 @@ suite('[F18-FR-11] generateTypesCommand — multi-file (Java) folder save', func
     // No overwrite prompt for a clean folder; the top-level file is opened.
     assert.ok(!vscode.window.showWarningMessage.called);
     assert.strictEqual(vscode.workspace.openTextDocument.lastCall.args[0].fsPath, path.join(folder, 'Person.java'));
-    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/Wrote \d+ files to/));
+    // F34-FR-12 — an action-less confirmation goes to the status bar, not a toast.
+    assert.ok(vscode.window.setStatusBarMessage.calledWithMatch(/Wrote \d+ files to/));
   });
 
   test('an existing file prompts before overwriting; declining writes nothing and falls back to untitled', async () => {

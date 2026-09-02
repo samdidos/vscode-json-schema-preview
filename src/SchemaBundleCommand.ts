@@ -2,6 +2,7 @@
 // schemaBundler: mode picker, an auth/cache-backed async resolver, cancellable
 // progress, and an untitled-editor result. The source file is never modified.
 import * as vscode from 'vscode';
+import { confirm } from './notify';
 import * as path from 'path';
 import * as fs from 'fs';
 import { bundleSchema, dereferenceSchema, type ResolvedDoc } from './schemaBundler';
@@ -84,7 +85,7 @@ export function bundleSchemaCommand(auth: SchemaAuthManager, cache: SchemaCache)
         `Schema ${mode === 'bundle' ? 'bundled' : 'dereferenced'}. Removed ${result.strippedIds.length} nested "$id" keyword(s) from inlined content to keep resolution unambiguous.`,
       );
     } else {
-      vscode.window.showInformationMessage(`Schema ${mode === 'bundle' ? 'bundled' : 'dereferenced'}.`);
+      confirm(`Schema ${mode === 'bundle' ? 'bundled' : 'dereferenced'}.`);
     }
   };
 }

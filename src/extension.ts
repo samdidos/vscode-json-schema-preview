@@ -35,7 +35,16 @@ import { registerWorkspaceValidation } from './WorkspaceValidateCommand';
 import { registerSchemaCoverage } from './SchemaCoverageCommand';
 import { registerRefGraph } from './RefGraphPanel';
 import { isYaml, isSupported, languageForSchemaSource } from './languages';
-import { getCacheAutoRefresh } from './settings';
+import { getCacheAutoRefresh, getValidateOnSave } from './settings';
+import { registerSchemaOutline } from './SchemaOutlineProvider';
+import { registerSchemaRefactorings } from './SchemaRefactorProvider';
+import { registerSchemaTests } from './SchemaTestsCommand';
+import { registerCompatCodeLens } from './CompatCodeLensProvider';
+import { registerLanguageModelTools } from './LanguageModelTools';
+import { aiCommands } from './ai/commands';
+import { registerMcpServerDefinition } from './McpServerDefinition';
+import { enrichInferredSchema } from './inferenceEnrich';
+import { confirm } from './notify';
 import { createSchema } from 'genson-js';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -113,6 +122,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (vscode.window.activeTextEditor?.document) {
         setJsonSchemaPreviewContext(vscode.window.activeTextEditor.document);
       }
+      void maybeValidateOnSave(document);
     }),
 
     vscode.workspace.onDidChangeTextDocument(e => {
@@ -188,8 +198,29 @@ export function activate(context: vscode.ExtensionContext) {
   // ── $ref dependency graph view (F24) ────────────────────────────────────────
   registerRefGraph(context, authManager, schemaCache);
 
+  // ── Schema-aware outline & breadcrumbs (F31) ────────────────────────────────
+  registerSchemaOutline(context);
+
+  // ── Schema refactorings: extract/inline/rename/find-refs/unused (F30) ───────
+  registerSchemaRefactorings(context);
+
+  // ── Declarative schema test suites (F29) ────────────────────────────────────
+  registerSchemaTests(context);
+
+  // ── Passive backward-compatibility lens (F26-FR-07) ─────────────────────────
+  registerCompatCodeLens(context);
+
+  // ── Agent tools: the deterministic engines, callable by a model (F33) ───────
+  registerLanguageModelTools(context);
+  // F33-FR-15 — in a capable host, agent mode discovers `jstk mcp` on install.
+  registerMcpServerDefinition(context);
+
   // ── Commands ───────────────────────────────────────────────────────────────
   context.subscriptions.push(
+    // ── AI-assisted authoring (F32). Every command refuses before any model
+    //    request while `jsonschema.ai.enabled` is false (S20-SR-01). ─────────
+    ...aiCommands().map(([id, handler]) => vscode.commands.registerCommand(id, handler)),
+
     vscode.commands.registerCommand('jsonschema.preview',  previewJsonSchema(context)),
 
     vscode.commands.registerCommand('jsonschema.edit', (uri: vscode.Uri) => {
@@ -301,7 +332,7 @@ export function activate(context: vscode.ExtensionContext) {
         async () => {
           try {
             await schemaCache.download(url!);
-            vscode.window.showInformationMessage('Schema cache refreshed.');
+            confirm('Schema cache refreshed.');
           } catch (e) {
             vscode.window.showErrorMessage(`Failed to refresh cache: ${(e as Error).message}`);
           }
@@ -345,7 +376,8 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      const schema = createSchema(data as object) as Record<string, unknown>;
+      // F06-FR-13/14 — structure first, then what only the values reveal.
+      const schema = enrichInferredSchema(createSchema(data as object), data) as Record<string, unknown>;
       schema.$schema = 'http://json-schema.org/draft-07/schema#';
 
       const newDoc = await vscode.workspace.openTextDocument({
@@ -416,10 +448,27 @@ export function activate(context: vscode.ExtensionContext) {
         [
           { label: 'JSON', id: 'json' as const },
           { label: 'YAML', id: 'yaml' as const },
+          { label: 'JSONL (many instances)', id: 'jsonl' as const },
+          { label: 'JSON array (many instances)', id: 'array' as const },
         ],
         { title: 'Sample data format', placeHolder: 'Choose the output format' },
       );
       if (!format) { return; }
+
+      // F16-FR-10 — bulk formats ask how many, then gate each instance
+      // individually so nothing invalid is ever emitted.
+      let count = 1;
+      if (format.id === 'jsonl' || format.id === 'array') {
+        const answer = await vscode.window.showInputBox({
+          title: 'How many instances?',
+          value: '10',
+          validateInput: v => (/^\d+$/.test(v.trim()) && Number(v) > 0 && Number(v) <= 1000
+            ? undefined
+            : 'Enter a whole number between 1 and 1000.'),
+        });
+        if (!answer) { return; }
+        count = Number(answer.trim());
+      }
 
       // Ref resolver: local pointers resolve within the root schema; relative
       // and cached-remote refs are read best-effort (F16-FR-06). Relative refs
@@ -443,21 +492,72 @@ export function activate(context: vscode.ExtensionContext) {
         return resolvePointer(parseSchemaText(text, languageForSchemaSource(targetId)), segments);
       };
 
-      const result = generateAndValidate(root, { resolveRef });
-      if (!result.ok) {
-        vscode.window.showErrorMessage(
-          `Could not generate valid sample data: ${result.errors.slice(0, 5).join('; ')}`,
-        );
-        return;
+      let content: string;
+      let language: string;
+      if (count > 1) {
+        const { generateMany, renderJsonl } = await import('./sampleDataGenerator');
+        const bulk = generateMany(root, count, { resolveRef });
+        if (!bulk.instances.length) {
+          vscode.window.showErrorMessage(
+            `Could not generate valid sample data: ${bulk.errors.slice(0, 5).join('; ')}`,
+          );
+          return;
+        }
+        if (bulk.dropped) {
+          vscode.window.showWarningMessage(
+            `${bulk.dropped} of ${bulk.requested} generated instances did not validate and were dropped.`,
+          );
+        }
+        content = format.id === 'jsonl'
+          ? renderJsonl(bulk.instances)
+          : JSON.stringify(bulk.instances, null, 2);
+        language = format.id === 'jsonl' ? 'jsonl' : 'json';
+      } else {
+        const result = generateAndValidate(root, { resolveRef });
+        if (!result.ok) {
+          vscode.window.showErrorMessage(
+            `Could not generate valid sample data: ${result.errors.slice(0, 5).join('; ')}`,
+          );
+          return;
+        }
+        content = format.id === 'yaml'
+          ? (await import('yaml')).stringify(result.value)
+          : JSON.stringify(result.value, null, 2);
+        language = format.id === 'yaml' ? 'yaml' : 'json';
       }
-
-      const content = format.id === 'yaml'
-        ? (await import('yaml')).stringify(result.value)
-        : JSON.stringify(result.value, null, 2);
-      const newDoc = await vscode.workspace.openTextDocument({ content, language: format.id });
+      const newDoc = await vscode.workspace.openTextDocument({ content, language });
       await vscode.window.showTextDocument(newDoc, vscode.ViewColumn.Beside);
     }),
   );
+
+/**
+   * F03-FR-17 — re-validate a bound data file on save when the setting asks for
+   * it. Silent by design (diagnostics only, no notification) and cache-only for
+   * remote schemas, so saving never blocks on the network. This is the gap the
+   * editor's own language servers leave open for YAML, TOML, JSONL and
+   * authenticated schemas.
+   */
+  async function maybeValidateOnSave(document: vscode.TextDocument): Promise<void> {
+    const mode = getValidateOnSave();
+    if (mode === 'off') { return; }
+    if (isJsonSchemaFile(document) || !isSupported(document.languageId)) { return; }
+
+    const explicit = extractInlineSchemaUrl(document) ?? findBoundSchemaPath(document);
+    if (!explicit && mode !== 'always') { return; }
+    if (!explicit && !bindingManager.detectNativeSchema(document)) { return; }
+
+    try {
+      await validateCurrentFile(
+        authManager,
+        schemaCache,
+        validationFixProvider,
+        doc => bindingManager.detectNativeSchema(doc),
+        { silent: true, document },
+      )();
+    } catch {
+      // A save must never surface an error the user did not ask for.
+    }
+  }
 }
 
 export function deactivate() {

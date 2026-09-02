@@ -22,6 +22,12 @@ import { generateAndValidate } from '../sampleDataGenerator';
 import { computeCoverage, renderCoverageReport } from '../schemaCoverage';
 import { TARGET_LANGUAGES, generateCode } from '../typeGenerator';
 import { buildRefGraph, detectCycle, summarizeGraph, renderAdjacencyList, layoutGraph, renderGraphSvg } from '../refGraph';
+import {
+  parseTestSuite, runTestSuite, renderSuiteReport,
+  type SuiteResult, type SuiteProblem, type CaseResult,
+} from '../schemaTests';
+import { enrichInferredSchema } from '../inferenceEnrich';
+import { resolveWithin, outsideRootMessage } from '../pathSafety';
 
 /** Injected side-effect surface so `runCli` stays pure and testable. */
 export interface CliIO {
@@ -67,11 +73,13 @@ const USAGE = [
   '      [--check] [--strict]                  …and gate on backward-compatibility',
   '  bundle <schema-file> [--dereference]      Produce one self-contained schema',
   '  migrate <schema-file> --to <draft>        Convert to 2020-12 | 2019-09 | draft-07',
-  '  infer <data-file> [--to <draft>]          Infer a schema from data (default 2020-12)',
+  '  infer <data-file> [--to <draft>] [--plain] Infer a schema from data (default 2020-12)',
   '  sample <schema-file>                      Generate a valid sample instance',
   '  types <schema-file> [--lang <id>]         Generate typed code (default typescript)',
   '  coverage <data-file...> --schema <schema> Report schema coverage from one or more data files',
   '  graph <schema-file> [--svg]               Print the $ref dependency graph',
+  '  test <suite-file...>                      Run *.schema.test.json suites',
+  '  mcp                                       Serve the tool surface over MCP (stdio)',
   '',
   'Global options:',
   '  --json        Machine-readable output',
@@ -356,7 +364,10 @@ function cmdInfer(args: ParsedArgs, io: CliIO): CliResult {
   } catch (e) {
     return err(`Cannot parse ${dataFile}: ${(e as Error).message}\n`, EXIT.data);
   }
-  const schema = createSchema(data as object) as Record<string, unknown>;
+  const structural = createSchema(data as object) as Record<string, unknown>;
+  // F06-FR-13/14 — add format/enum from the observed values unless --plain asks
+  // for the structural pass alone (F06-FR-15).
+  const schema = (args.flags.has('plain') ? structural : enrichInferredSchema(structural, data)) as Record<string, unknown>;
   // Declare the target draft's meta-schema (F06/F22), default 2020-12 (latest).
   const withDraft = { $schema: META_SCHEMA[target], ...schema };
   if (args.flags.has('json')) { return jsonOut({ schema: withDraft }, EXIT.ok); }
@@ -448,6 +459,82 @@ function cmdCoverage(args: ParsedArgs, io: CliIO): CliResult {
     }, EXIT.ok);
   }
   return out(`${renderCoverageReport(result, header)}\n`);
+}
+
+// ── test (F27-FR-17) ─────────────────────────────────────────────────────────
+
+/** Read + parse a suite fixture file into its single instance.
+ *  F29-FR-14 — the path comes from the suite's contents, so it is confined to
+ *  the directory the CLI was invoked from. */
+function loadInstanceFile(io: CliIO, baseDir: string, relPath: string): unknown {
+  const abs = resolveWithin(io.cwd, baseDir, relPath);
+  if (!abs) { throw new Error(outsideRootMessage(relPath)); }
+  return parseDataText(io.readFile(abs), languageIdForPath(abs) ?? 'json')[0];
+}
+
+async function cmdTest(args: ParsedArgs, io: CliIO): Promise<CliResult> {
+  const suiteFiles = args.positionals;
+  if (!suiteFiles.length) {
+    return err(`test requires one or more suite files.\n\n${USAGE}\n`, EXIT.usage);
+  }
+
+  const reports: string[] = [];
+  const payloads: Array<{ suite: string; result: SuiteResult }> = [];
+  let failed = 0;
+
+  for (const suiteFile of suiteFiles) {
+    const suiteAbs = path.resolve(io.cwd, suiteFile);
+    let raw: unknown;
+    try {
+      raw = parseDataText(io.readFile(suiteAbs), languageIdForPath(suiteAbs) ?? 'json')[0];
+    } catch (e) {
+      return err(`Cannot read or parse ${suiteFile}: ${(e as Error).message}\n`, EXIT.data);
+    }
+    const parsed = parseTestSuite(raw);
+    if (!parsed.ok) {
+      const problems = parsed.problems
+        .map((p: SuiteProblem) => `  ${p.pointer || '(root)'}: ${p.message}`)
+        .join('\n');
+      return err(`Malformed suite ${suiteFile}:\n${problems}\n`, EXIT.data);
+    }
+
+    const suiteDir = path.dirname(suiteAbs);
+    const ref = parsed.suite.schemaRef;
+    let schema: unknown;
+    try {
+      // The runner never fetches (F29-NFR-02), so the schema is resolved here.
+      const source = isRemote(ref) ? ref : path.resolve(suiteDir, ref);
+      const text = isRemote(source) ? await io.fetchText(source) : io.readFile(source);
+      schema = parseSchemaText(text, languageForSchemaSource(source));
+      if (schema === undefined) { throw new Error('schema does not parse'); }
+    } catch (e) {
+      return err(`Cannot load schema "${ref}" for ${suiteFile}: ${(e as Error).message}\n`, EXIT.data);
+    }
+
+    const result = runTestSuite(parsed.suite, schema, {
+      loadInstance: (relPath: string) => loadInstanceFile(io, suiteDir, relPath),
+    });
+    failed += result.failed;
+    payloads.push({ suite: path.basename(suiteFile), result });
+    reports.push(renderSuiteReport(result, path.basename(suiteFile)));
+  }
+
+  const code = failed ? EXIT.finding : EXIT.ok;
+  if (args.flags.has('json')) {
+    return jsonOut({
+      suites: payloads.map(({ suite, result }) => ({
+        suite,
+        total: result.total,
+        passed: result.passed,
+        failed: result.failed,
+        cases: result.cases.map((c: CaseResult) => ({
+          name: c.name, expect: c.expect, passed: c.passed, message: c.message ?? null,
+        })),
+      })),
+      failed,
+    }, code);
+  }
+  return out(`${reports.join('\n')}\n`, code);
 }
 
 // ── graph (F27-FR-16) ─────────────────────────────────────────────────────────
@@ -559,6 +646,12 @@ export async function runCli(argv: string[], io: CliIO): Promise<CliResult> {
     case 'types': return cmdTypes(args, io);
     case 'coverage': return cmdCoverage(args, io);
     case 'graph': return cmdGraph(args, io);
+    case 'test': return cmdTest(args, io);
+    case 'mcp':
+      // The stdio server loop lives in the binary layer (F33-FR-13), which
+      // intercepts this command before runCli ever sees it. Reaching here means
+      // the pure core was called directly.
+      return err('mcp is a stdio server: launch it from an MCP client.\n', EXIT.usage);
     default:
       return err(`Unknown command: ${command}\n\n${USAGE}\n`, EXIT.usage);
   }

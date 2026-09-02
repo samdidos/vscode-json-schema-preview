@@ -3,7 +3,7 @@
   <text x="190" y="28" font-size="16" font-weight="600" fill="#0b0b0b"
         font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Project Maturity Scorecard</text>
   <text x="190" y="48" font-size="12" fill="#52514e"
-        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Snapshot: 2026-09-01 — scored out of 5</text>
+        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Snapshot: 2026-09-02 — scored out of 5</text>
   
     <line x1="268.8" y1="92" x2="268.8" y2="392"
           stroke="#e1e0d9" stroke-width="1" />
@@ -73,7 +73,7 @@
     <text x="174" y="377" font-size="13"
           font-weight="400" fill="#0b0b0b" text-anchor="end"
           font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">Docs</text>
-    <rect x="190" y="362" width="330.96000000000004" height="22" rx="4" ry="4" fill="#2a78d6" />
-    <text x="530.96" y="377" font-size="13" font-weight="600"
-          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.2</text>
+    <rect x="190" y="362" width="338.84" height="22" rx="4" ry="4" fill="#2a78d6" />
+    <text x="538.8399999999999" y="377" font-size="13" font-weight="600"
+          fill="#0b0b0b" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">4.3</text>
 </svg>
