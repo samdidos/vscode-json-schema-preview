@@ -10,17 +10,12 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { readFileSync, readdirSync } from 'fs';
 import { AGENT_TOOLS, invokeAgentTool } from './agentTools';
+import { isInsideRoot } from './pathSafety';
 import { runCli, type CliIO } from './cli/cli';
 
 /** Root all tool file arguments resolve against. */
 function workspaceRoot(): string | undefined {
   return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-}
-
-/** True when `target` is inside `root` — the containment check for F33-FR-08. */
-export function isInside(root: string, target: string): boolean {
-  const relative = path.relative(root, target);
-  return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
 /**
@@ -32,7 +27,7 @@ export function isInside(root: string, target: string): boolean {
 export function createWorkspaceIo(root: string, version: string): CliIO {
   return {
     readFile: (absPath: string) => {
-      if (!isInside(root, absPath)) {
+      if (!isInsideRoot(root, absPath)) {
         throw new Error(`Refusing to read outside the workspace: ${path.basename(absPath)}`);
       }
       return readFileSync(absPath, 'utf-8');
@@ -41,7 +36,7 @@ export function createWorkspaceIo(root: string, version: string): CliIO {
       throw new Error('Agent tools do not fetch over the network; cache the schema locally first.');
     },
     walk: (dir: string) => {
-      if (!isInside(root, dir) && dir !== root) { return []; }
+      if (!isInsideRoot(root, dir) && dir !== root) { return []; }
       const skip = new Set(['node_modules', '.git', 'dist', 'out', 'coverage']);
       const files: string[] = [];
       const visit = (d: string): void => {

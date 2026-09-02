@@ -25,6 +25,7 @@ import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './Schema
 import { lintSchema } from './schemaLinter';
 import { isJsonSchemaFile } from './PreviewWebPanel';
 import { parseTestSuite, runTestSuite, isSuitePath } from './schemaTests';
+import { resolveWithin, outsideRootMessage } from './pathSafety';
 import { positionAt } from './SchemaRefProvider';
 import { parseSchemaText, locatePointerTarget, parseJsonPointer } from './schemaPointer';
 import { languageForSchemaSource, isSupported } from './languages';
@@ -180,9 +181,13 @@ class WorkspaceRun {
     }
 
     const suiteDir = path.dirname(uri.fsPath);
+    const suiteRoot = vscode.workspace.getWorkspaceFolder(uri)?.uri.fsPath;
     const result = runTestSuite(parsed.suite, loaded.schema, {
+      // F29-FR-14 — a fixture path comes from the suite's contents, so it is
+      // confined to the workspace folder the suite lives in.
       loadInstance: (relative: string) => {
-        const abs = path.resolve(suiteDir, relative);
+        const abs = suiteRoot && resolveWithin(suiteRoot, suiteDir, relative);
+        if (!abs) { throw new Error(outsideRootMessage(relative)); }
         return parseDataText(fs.readFileSync(abs, 'utf-8'), languageIdForPath(abs) ?? 'json')[0];
       },
     });

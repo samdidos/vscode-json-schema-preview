@@ -83,6 +83,13 @@ A suite is a JSON (or JSONC) document whose file name ends in
 - **F29-FR-08** A case whose `file` cannot be read, or whose instance cannot be
   parsed, MUST fail that case with an explanatory message and MUST NOT abort the
   rest of the suite.
+- **F29-FR-14** A suite's `schema` and a case's `file` are paths taken from
+  *document contents*, not from anything the user named, so resolving them MUST
+  be confined: a path that resolves outside the workspace folder containing the
+  suite MUST be refused and reported, never read. Without this a suite committed
+  to a repository could name `../../../../etc/passwd` and have the extension
+  read it, surfacing the content in a diagnostic. The containment check MUST be
+  the same one the agent tools use for their file arguments (F33-FR-08).
 - **F29-FR-09** The result MUST report per-case pass/fail plus suite totals
   (total, passed, failed), in declaration order.
 

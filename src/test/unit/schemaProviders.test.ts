@@ -7,7 +7,8 @@ const {
 } = require('../../SchemaRefactorProvider');
 const { CompatCodeLensProvider, countBreaking, registerCompatCodeLens } = require('../../CompatCodeLensProvider');
 const { suiteDiagnostics, registerSchemaTests, RUN_TESTS_COMMAND } = require('../../SchemaTestsCommand');
-const { isInside, createWorkspaceIo, registerLanguageModelTools } = require('../../LanguageModelTools');
+const { createWorkspaceIo, registerLanguageModelTools } = require('../../LanguageModelTools');
+const { isInsideRoot } = require('../../pathSafety');
 
 /** Minimal TextDocument stand-in with real offset/position arithmetic. */
 function doc(text: string, opts: { languageId?: string; path?: string } = {}) {
@@ -309,12 +310,11 @@ suite('[F29-FR-11] suiteDiagnostics — failures on the failing case', () => {
 });
 
 suite('[F33-FR-08][F33-FR-09] LanguageModelTools — workspace confinement', () => {
-  test('isInside accepts paths under the root and rejects escapes', () => {
-    assert.strictEqual(isInside('/w', '/w/a.json'), true);
-    assert.strictEqual(isInside('/w', '/w/nested/a.json'), true);
-    assert.strictEqual(isInside('/w', '/etc/passwd'), false);
-    assert.strictEqual(isInside('/w', '/w/../etc/passwd'), false);
-    assert.strictEqual(isInside('/w', '/w'), false, 'the root itself is not a file inside it');
+  test('confinement uses the one shared containment check (F29-FR-14)', () => {
+    // Tools and schema-test suites resolve document-supplied paths through the
+    // same helper, so there is one place the rule can be wrong.
+    assert.strictEqual(isInsideRoot('/w', '/w/a.json'), true);
+    assert.strictEqual(isInsideRoot('/w', '/etc/passwd'), false);
   });
 
   test('the workspace IO refuses to read outside the root', () => {

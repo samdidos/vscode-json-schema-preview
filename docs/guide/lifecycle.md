@@ -105,6 +105,11 @@ declaring `errors: ["type"]` whose instance actually fails `required` *fails*,
 and the message names what was reported. Without that, a test can keep passing
 long after the constraint it was written for has gone.
 
+A suite's `schema` and its cases' `file` paths come from the suite document, not
+from anything you named, so they are **confined to the workspace**: a path that
+resolves outside it is refused and reported rather than read. A suite committed
+to a repository cannot make the extension open `../../../../etc/passwd`.
+
 Run them three ways:
 
 - **In the editor** — **JSON Schema: Run Schema Tests**. On a suite file it runs

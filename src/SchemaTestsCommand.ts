@@ -7,6 +7,7 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { readFileSync } from 'fs';
 import {
   parseTestSuite, runTestSuite, isSuitePath, renderSuiteReport,
   type SuiteResult, type TestSuite, type CaseResult,
@@ -15,8 +16,14 @@ import { parseDataText, languageIdForPath } from './workspaceValidation';
 import { parseSchemaText, locatePointerTarget, parseJsonPointer } from './schemaPointer';
 import { languageForSchemaSource } from './languages';
 import { isJsonSchemaFile } from './PreviewWebPanel';
+import { resolveWithin, outsideRootMessage } from './pathSafety';
 
 export const RUN_TESTS_COMMAND = 'jsonschema.runSchemaTests';
+
+/** Workspace folder containing `uri` — the root a suite's paths may not leave. */
+function rootFor(uri: vscode.Uri): string | undefined {
+  return vscode.workspace.getWorkspaceFolder(uri)?.uri.fsPath;
+}
 
 /** One resolved, runnable suite. */
 interface LoadedSuite {
@@ -54,7 +61,14 @@ async function loadSuite(uri: vscode.Uri): Promise<LoadedSuite | { error: string
   if (/^https?:\/\//.test(ref)) {
     return { error: `${path.basename(uri.fsPath)}: remote schema "${ref}" — cache it locally first.` };
   }
-  const schemaUri = vscode.Uri.file(path.resolve(path.dirname(uri.fsPath), ref));
+  // F29-FR-14 — the ref comes from the suite's own contents, so it is confined
+  // to the workspace rather than resolved wherever it points.
+  const root = rootFor(uri);
+  const schemaPath = root && resolveWithin(root, path.dirname(uri.fsPath), ref);
+  if (!schemaPath) {
+    return { error: `${path.basename(uri.fsPath)}: ${outsideRootMessage(ref)}` };
+  }
+  const schemaUri = vscode.Uri.file(schemaPath);
   try {
     const schema = parseSchemaText(await readText(schemaUri), languageForSchemaSource(schemaUri.fsPath));
     if (schema === undefined) { throw new Error('the schema does not parse'); }
@@ -141,10 +155,14 @@ export function registerSchemaTests(context: vscode.ExtensionContext): void {
         if ('error' in loaded) { problems.push(loaded.error); continue; }
 
         const suiteDir = path.dirname(uri.fsPath);
+        const suiteRoot = rootFor(uri);
         const result = runTestSuite(loaded.suite, loaded.schema, {
+          // F29-FR-14 — a case's `file` is document content; a fixture outside
+          // the workspace fails that case rather than being read.
           loadInstance: (relPath: string) => {
-            const abs = path.resolve(suiteDir, relPath);
-            const text = require('fs').readFileSync(abs, 'utf-8') as string;
+            const abs = suiteRoot && resolveWithin(suiteRoot, suiteDir, relPath);
+            if (!abs) { throw new Error(outsideRootMessage(relPath)); }
+            const text = readFileSync(abs, 'utf-8');
             return parseDataText(text, languageIdForPath(abs) ?? 'json')[0];
           },
         });
