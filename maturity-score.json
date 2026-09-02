@@ -392,15 +392,15 @@
   ],
   "facts": {
     "coverage": {
-      "lines": 94.46,
-      "statements": 94.46,
-      "functions": 96.76,
-      "branches": 89.45
+      "lines": 94.36,
+      "statements": 94.36,
+      "functions": 96.62,
+      "branches": 89.44
     },
     "requirements": {
-      "total": 736,
+      "total": 737,
       "byStatus": {
-        "implemented": 555,
+        "implemented": 556,
         "manual": 181
       }
     },

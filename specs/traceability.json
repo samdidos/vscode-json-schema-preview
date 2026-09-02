@@ -3221,6 +3221,18 @@
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },
+    "F29-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/pathSafety.ts",
+        "src/SchemaTestsCommand.ts",
+        "src/WorkspaceValidateCommand.ts",
+        "src/cli/cli.ts"
+      ],
+      "note": "document-supplied schema/fixture paths confined to the workspace; the same helper backs F33-FR-08",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
     "F29-NFR-01": {
       "status": "implemented",
       "impl": [

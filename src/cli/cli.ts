@@ -27,6 +27,7 @@ import {
   type SuiteResult, type SuiteProblem, type CaseResult,
 } from '../schemaTests';
 import { enrichInferredSchema } from '../inferenceEnrich';
+import { resolveWithin, outsideRootMessage } from '../pathSafety';
 
 /** Injected side-effect surface so `runCli` stays pure and testable. */
 export interface CliIO {
@@ -462,9 +463,12 @@ function cmdCoverage(args: ParsedArgs, io: CliIO): CliResult {
 
 // ── test (F27-FR-17) ─────────────────────────────────────────────────────────
 
-/** Read + parse a suite fixture file into its single instance. */
+/** Read + parse a suite fixture file into its single instance.
+ *  F29-FR-14 — the path comes from the suite's contents, so it is confined to
+ *  the directory the CLI was invoked from. */
 function loadInstanceFile(io: CliIO, baseDir: string, relPath: string): unknown {
-  const abs = path.resolve(baseDir, relPath);
+  const abs = resolveWithin(io.cwd, baseDir, relPath);
+  if (!abs) { throw new Error(outsideRootMessage(relPath)); }
   return parseDataText(io.readFile(abs), languageIdForPath(abs) ?? 'json')[0];
 }
 
