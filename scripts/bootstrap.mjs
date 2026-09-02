@@ -2,15 +2,18 @@
 // One-shot environment bootstrap for a fresh checkout or container — usable by
 // any agent OR human (vendor-neutral, per AGENTS.md's agnosticity principle).
 //
-// Why not just `npm ci`? The `canvas` dependency (used only by the demo-GIF
-// pipeline) compiles native code with node-gyp, which fails in minimal
+// Why not just `npm ci`? Some transitive dependencies build native code at
+// install time — `keytar`, pulled in by `@vscode/vsce`, falls back to a
+// node-gyp build when no prebuilt binary matches, which fails in minimal
 // containers that lack the build toolchain. We skip *all* install scripts so
 // the quality gate (lint / type-check / test / coverage / traceability) works
 // everywhere, then wire up the git hooks path explicitly (skipped scripts
 // mean husky's `prepare` did not run).
 //
-// The GIF pipeline (`npm run make-gifs`) needs canvas built; run a full
-// `npm install` separately if you are regenerating assets.
+// Nothing this repo builds needs those scripts: the demo-GIF pipeline
+// (`npm run make-gifs`) shells out to ffmpeg (S08-SR-17) rather than linking
+// a native encoder, so a bootstrapped checkout can regenerate assets as-is.
+// Only `npm run package` (vsce) wants the skipped native module.
 //
 // Plain Node, no shell — S15-SR-01/02: this is the first command a
 // contributor runs, so it must not assume bash (or any interpreter beyond
