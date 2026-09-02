@@ -5823,22 +5823,35 @@
       "implementedAt": "2026-09-02"
     },
     "S08-SR-19": {
-      "status": "planned",
-      "impl": [],
-      "note": "demo scripts must seed the state their feature needs; demo-validation currently ends on the unbound-file refusal",
-      "specifiedAt": "2026-09-02"
+      "status": "implemented",
+      "impl": [
+        "src/test/e2e/demo-validation.test.ts",
+        "src/test/e2e/demo-validation-mouse.test.ts"
+      ],
+      "note": "both validation demos now seed the json.schemas binding person-invalid.json deliberately lacks, so the demo shows validation errors instead of the unbound refusal; guarded by demoPlacement.test.ts",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     },
     "S08-SR-20": {
-      "status": "planned",
-      "impl": [],
-      "note": "every registry demo embedded in both the landing gallery and its guide section",
-      "specifiedAt": "2026-09-02"
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/QuickDemo.vue",
+        "docs/guide/commands.md",
+        "docs/guide/index.md",
+        "README.md"
+      ],
+      "note": "every registry demo is embedded in the landing gallery and in its guide section; the README stays showcase-only. Checked both ways (no orphan GIF, no dangling reference) by demoPlacement.test.ts",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     },
     "S08-SR-21": {
-      "status": "planned",
-      "impl": [],
-      "note": "30s playback budget for frame-stitched demos; showcase is the stated exception",
-      "specifiedAt": "2026-09-02"
+      "status": "implemented",
+      "impl": [
+        "docs/public"
+      ],
+      "note": "playback duration read from each committed GIF by a dependency-free GIF89a walk in makeGifs.test.ts; showcase is the declared exception",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     }
   }
 }

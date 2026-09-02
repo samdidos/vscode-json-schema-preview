@@ -54,6 +54,8 @@ The preview renders by calling a local Python tool, and a few other commands rea
 | Validate Workspace | ✅ | ✅ — remote schemas served from the local cache only |
 
 If a disabled command is run in an untrusted workspace a warning is displayed; for the preview it includes a **Manage Workspace Trust** button.
+
+![Preview refusing in Restricted Mode, with the Manage Workspace Trust button](/demo-workspace-trust.gif)
 <!-- spec:S02 end -->
 
 <!-- spec:F01 -->
@@ -65,6 +67,8 @@ Enable [`jsonschema.preview.autoOpen`](/guide/configuration#jsonschema-preview-a
 ## Live Preview
 
 Enable [`jsonschema.preview.liveUpdate`](/guide/configuration#jsonschema-preview-liveupdate) to refresh the preview as you type (debounced). The preview panel must already be open.
+
+![Editing a schema title and watching the preview refresh as you type](/demo-live-update.gif)
 
 <!-- spec:F01 -->
 ## Searching the Preview
@@ -81,6 +85,8 @@ The preview panel and the schema editor follow each other: scrolling, or clickin
 ## Navigating `$ref`s
 
 Inside a schema file, <kbd>Ctrl</kbd>+click (or <kbd>⌘</kbd>+click) a `$ref` value to jump straight to the definition it points to — in the same file, another workspace file, or a cached remote schema. Hovering a `$ref` shows a summary of its target (title, type, description, and its main properties) without navigating away; hover never makes a network request, so an uncached remote `$ref` just states that it isn't cached yet and offers to cache it so navigation and hover both work for it afterwards. A `$ref` that points at a path which doesn't exist in the target document shows a plain, non-modal message naming the missing pointer rather than an error.
+
+![Ctrl+clicking a $ref to jump to its definition in another file](/demo-ref-navigation.gif)
 
 <!-- spec:S04 -->
 ## Offline & Stale-Cache Behaviour

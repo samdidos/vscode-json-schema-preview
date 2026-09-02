@@ -51,6 +51,18 @@ const base = '/vscode-json-schema-preview/'
 const failed = reactive(new Set<string>())
 
 const features = [
+  // The end-to-end run leads the gallery: it is the only demo that shows the
+  // features working together rather than one at a time, and it is the same
+  // recording the README opens with (S08-SR-20). Its GIF is much larger than
+  // the rest, but the <img> only exists for the active tab, so it is fetched
+  // when someone chooses it — not on page load.
+  {
+    id: 'showcase',
+    icon: '🎬',
+    title: 'Full walkthrough',
+    gif: 'demo-showcase.gif',
+    desc: 'One continuous run: infer a schema from a JSON file, preview it, live-edit its title, configure the render, validate a bad data file, bind it inline, and generate TypeScript types.',
+  },
   {
     id: 'preview',
     icon: '👁',

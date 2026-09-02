@@ -77,6 +77,8 @@ Also available via **right-click** in the editor and the **Explorer** context me
 
 When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. **Validate This File** uses that auto-resolved schema as well. Clicking still lets you set your own explicit binding.
 
+![Binding a data file to a schema from the Quick Pick, and the status bar picking it up](/demo-binding.gif)
+
 | Toolbar | Command Palette | Context Menu |
 |---------|----------------|---|
 | — | ✅ | ✅ |
@@ -109,6 +111,8 @@ For JSON and JSONC files, the validation errors above carry a **lightbulb** (�
 <!-- spec:F25 -->
 For an `enum` mismatch the allowed values are **ranked by how close they are to what you typed**, so the likely-intended value is offered first rather than in schema order — type `"prod"` where the schema allows `["development", "staging", "production"]` and `Change to "production" (closest match)` leads the list. When the closest value is a clear near-miss (a typo, a wrong-case value, or an abbreviation like `prod`→`production`) it's marked the editor's **preferred** fix, so a single <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>.</kbd> applies it.
 
+![Applying a validation quick fix from the lightbulb](/demo-quick-fix.gif)
+
 
 ---
 
@@ -137,6 +141,8 @@ The wand appears for any data file, regardless of whether it already has a schem
 
 The inverse of inference: generates a valid example instance from the active JSON Schema, honouring `const`/`examples`/`default`/`enum` and common format/constraint keywords where present. Choose JSON or YAML output; the result opens in a new editor tab beside the schema. Useful for seeding fixtures or trying out a schema you just bound.
 
+![Generating a valid sample instance from a schema](/demo-sample-data.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (beaker icon, schema files only) | ✅ |
@@ -154,6 +160,8 @@ The "is my repo green?" button: one command that sweeps the whole workspace (all
 The run shows cancellable progress and finishes with a summary — files checked, valid, with errors, schemas linted, bindings failed — plus a **Copy Report** action that puts a per-folder Markdown report on the clipboard, ready to paste into a PR comment.
 
 Discovery respects `files.exclude`/`search.exclude`, skips files over 1 MiB, and caps the scan at `jsonschema.workspaceValidation.maxFiles` (default 2000, noted in the report when hit). Remote schemas are read cache-first and fetched at most once per run; in an untrusted workspace they're served from the local cache only.
+
+![Sweeping the workspace and copying the per-folder Markdown report](/demo-workspace-validation.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -191,6 +199,8 @@ After the language pick, choose the destination: a **new untitled editor** (defa
 
 External `$ref`s are resolved with the same machinery as bundling — relative files from disk, remote refs preferring the local schema cache and using stored credentials — before any code is generated; output is deterministic per language, so regenerated files only change when the schema does. Also offered from the **Bind Schema…** success notification, right after binding a data file.
 
+![Picking a target language and generating typed declarations from a schema](/demo-codegen.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (interface icon, schema files only) | ✅ |
@@ -209,6 +219,8 @@ Flattens a multi-file schema into one self-contained document, opened in a new e
 - **Dereference** — refs are replaced inline by their targets (maximally portable); cyclic references are detected and kept as `$defs` refs so expansion always terminates.
 
 Remote refs resolve using stored credentials and prefer an existing local cache entry over the network. Resolution runs under cancellable progress showing which document is currently being fetched. The root schema's `$schema`/`$id` are always preserved; any nested `$id` that would change resolution semantics after inlining is stripped and called out in the completion message. To bound memory on very large schema trees, the operation aborts with a clear error past a cap of 100 external documents.
+
+![Bundling a multi-file schema into one self-contained document](/demo-bundling.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -270,6 +282,8 @@ If the schema was itself produced by **Bundle** (below), each folded-in `$defs` 
 
 Rewrites the active schema between drafts — **draft-07**, **2019-09**, and **2020-12** — applying the well-known keyword changes and reporting exactly how many it made. Upgrading modernises `id` → `$id`, boolean `exclusiveMinimum`/`exclusiveMaximum` → their numeric form, `definitions` → `$defs` (with local `$ref`s rewritten to match), tuple `items` → `prefixItems` (and `additionalItems` → `items`), and splits `dependencies` into `dependentRequired`/`dependentSchemas`; downgrading reverses each of these. The transform recurses through every subschema and, like the diff command, leaves anything it cannot safely convert untouched rather than guessing. The result opens in a new editor beside the source — JSON for JSON sources, YAML for YAML — so the original file is never modified; a schema that already conforms reports "nothing to migrate".
 
+![Migrating a draft-07 schema to 2020-12, with the change list](/demo-draft-migration.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (swap icon, schema files only) | ✅ |
@@ -283,6 +297,8 @@ Rewrites the active schema between drafts — **draft-07**, **2019-09**, and **2
 **ID:** `jsonschema.lint.insertSchemaDeclaration`
 
 Inserts a `$schema` declaration into the active schema file, prompting for which JSON Schema draft to target (2020-12 first). Offered as a quick fix by the built-in schema linter when a schema is missing this declaration — see [Configuration](/guide/configuration) for the linter's settings.
+
+![A lint finding on a schema with no $schema, fixed from the lightbulb](/demo-schema-linting.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
