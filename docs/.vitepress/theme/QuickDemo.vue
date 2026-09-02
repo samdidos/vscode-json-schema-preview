@@ -169,6 +169,20 @@ const features = [
     desc: 'Schema-quality hints (missing $schema, $id, descriptions) show up as diagnostics with one-click quick fixes via the lightbulb.',
   },
   {
+    id: 'outline',
+    icon: '🧭',
+    title: 'Schema Outline',
+    gif: 'demo-outline.gif',
+    desc: "The Outline view, breadcrumbs and Go-to-Symbol show the schema's shape — a property, its type, whether it is required — instead of a chain of \"properties\" nodes.",
+  },
+  {
+    id: 'schema-tests',
+    icon: '🧪',
+    title: 'Schema Tests',
+    gif: 'demo-schema-tests.gif',
+    desc: 'Pin the documents a schema must accept and must reject in a *.schema.test.json file, then run the suite: a failing case lands on the case that broke.',
+  },
+  {
     id: 'workspace-validation',
     icon: '🗂️',
     title: 'Validate Workspace',

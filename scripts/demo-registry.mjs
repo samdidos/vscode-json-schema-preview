@@ -32,6 +32,8 @@ export const DEMOS = [
   { name: 'workspace-validation', dir: 'workspace-validation-mouse', delay: 220, hold: 1_400, specs: ['F20'] },
   { name: 'quick-fix', dir: 'quick-fix-mouse', delay: 220, hold: 1_400, specs: ['F21'] },
   { name: 'draft-migration', dir: 'draft-migration-mouse', delay: 220, hold: 1_400, specs: ['F22'] },
+  { name: 'outline', dir: 'outline-mouse', delay: 220, hold: 1_200, specs: ['F31'] },
+  { name: 'schema-tests', dir: 'schema-tests-mouse', delay: 220, hold: 1_400, specs: ['F29'] },
   // Chains inference (F06) -> preview (F01) -> live-edit (F02) -> configure
   // (F09) -> validate/bind (F03/F04/F10) -> code generation (F18); see the
   // History note in specs/S08-e2e-testing.md for the exact narrative. Captured

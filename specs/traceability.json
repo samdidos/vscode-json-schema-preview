@@ -5838,6 +5838,7 @@
         "docs/.vitepress/theme/QuickDemo.vue",
         "docs/guide/commands.md",
         "docs/guide/index.md",
+        "docs/guide/lifecycle.md",
         "README.md"
       ],
       "note": "every registry demo is embedded in the landing gallery and in its guide section; the README stays showcase-only. Checked both ways (no orphan GIF, no dangling reference) by demoPlacement.test.ts",

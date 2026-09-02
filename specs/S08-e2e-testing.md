@@ -257,7 +257,26 @@ mechanism.
   one (S08-SR-19).
 
   What still needs a real recording session — and so is *not* addressed here —
-  is the content of individual demos (S08-SR-19).
+  is trimming `demo-showcase` (S08-SR-21).
+
+- **2026-09-02 (coverage audit)** — Of 34 feature specs, 16 had no demo at all.
+  Ranked by the S16 value estimate, the gaps were: F34 (18), F12 (15.36), F31
+  and F33 (11.52), F08 (10.56), F27 and F29 (7.68), F15 and F30 (7.04), F11,
+  F19 and F25 (5.28), F24 (4.8), F26 (3.52), F32 (2.4), F23 (1.35).
+
+  `outline` (F31) and `schema-tests` (F29) were added in that pass — the two
+  with the highest value among the interactions that reuse an existing demo
+  pattern outright. The rest remain a backlog, in that order. F12's demo needs
+  a local catalog fixture rather than SchemaStore (S08-NFR-02 forbids network
+  access), and F32's needs a language model, so neither is a straight copy of
+  an existing pattern.
+
+  New demo scripts cannot be run in a container without an X server and a VS
+  Code download, so the two added here are unverified until the next
+  `refresh-gifs` run. That is deliberately survivable: the smoke job is
+  non-blocking, `make-gifs.mjs` skips a demo whose frames are missing, and the
+  docs gallery renders a placeholder for a GIF that does not exist yet — a
+  broken new demo costs a missing image, not a red build.
 
 ## Out of Scope
 
