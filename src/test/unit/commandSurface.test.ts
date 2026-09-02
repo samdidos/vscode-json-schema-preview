@@ -211,8 +211,14 @@ suite('[F34-FR-01][F34-FR-02][F34-FR-03][F34-NFR-03] the walkthrough', () => {
 
   test('every step links to the docs site and ships its media file', () => {
     for (const step of walkthrough.steps) {
+      // `.some(=== )` rather than `.includes(...)`: this is an array of
+      // hostnames, so the two are equivalent — but CodeQL reads any
+      // `.includes(hostLiteral)` on URL-derived data as a substring check
+      // (js/incomplete-url-substring-sanitization) and cannot see that the
+      // receiver is an array. An explicit equality comparison is unambiguous
+      // to both readers.
       assert.ok(
-        linkedHosts(step.description).includes(DOCS_HOST),
+        linkedHosts(step.description).some(host => host === DOCS_HOST),
         `${step.id} has no docs link`,
       );
       const media = path.join(__dirname, '..', '..', '..', step.media.markdown);
