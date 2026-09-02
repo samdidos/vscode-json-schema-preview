@@ -52,6 +52,16 @@ existing consumers).
   verdict modules as the extension, with no duplicated logic and no `vscode`
   import. It MUST print a usage message and exit non-zero on bad arguments or an
   unreadable/unparseable file.
+- **F26-FR-07** The verdict MUST also be available **passively**, as a CodeLens
+  on the schema document's first line reading the breaking-change count against
+  the file's Git `HEAD` version (e.g. "2 breaking changes vs HEAD"), whose
+  command opens the full report (F15). A schema with no Git baseline, or with no
+  changes, MUST show no lens rather than an empty one. The lens MUST be governed
+  by `jsonschema.compat.codeLens` (default `true`) and MUST compute from the
+  same classifier as the command — never a second implementation.
+- **F26-FR-08** Lens computation MUST NOT block typing: it MUST be debounced and
+  MUST reuse the previous result while a recomputation is in flight.
+
 
 ## Non-Functional Requirements
 
@@ -92,3 +102,11 @@ existing consumers).
 - Honours **S03** (in-process, no new latency/deps) and **S06** (text-first
   severity). **S05**: nothing leaves the machine; the CLI only reads the two
   files it is given.
+
+## History
+
+- **2026-09-02** — Added F26-FR-07/08: the verdict as a passive CodeLens on the
+  schema's first line, counting breaking changes against Git `HEAD`. Debounced
+  and computed in the background from the same classifier as the command, so
+  typing is never blocked; no baseline or no changes means no lens rather than an
+  empty one.

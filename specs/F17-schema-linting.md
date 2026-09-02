@@ -61,6 +61,20 @@ severities in parentheses.
 - **F17-FR-11** Every diagnostic MUST carry the precise source range of the
   offending key/value (via `jsonc-parser` / YAML AST node positions), the rule
   ID as `code`, and severity per configuration.
+- **F17-FR-13** `valid-examples` (warning): every entry of an `examples` array
+  MUST validate against the subschema that declares it. This is among the most
+  common real defects in a schema — an example that contradicts the contract it
+  illustrates — and no editor checks it today, because the built-in JSON
+  language server validates documents against schemas, never a schema's own
+  annotations against itself. The finding MUST be positioned on the offending
+  example entry and MUST name the failing keyword.
+- **F17-FR-14** `valid-default` (warning): a `default` value MUST validate
+  against the subschema that declares it, positioned on the value. A `default`
+  a consumer cannot legally use is a latent bug in every generated form, client
+  and fixture built from the schema.
+- **F17-FR-15** Both rules MUST evaluate the *local* subschema only: a subschema
+  carrying a `$ref` MUST be skipped rather than reported, so an unresolved
+  reference never produces a false positive.
 
 ### Quick Fixes
 
@@ -112,3 +126,11 @@ severities in parentheses.
 - Reuses **F01-FR-02** schema detection and the **F02** debounce pattern.
 - **S03**: debounced, in-process, single parse per version; **S06**: severity
   is conveyed by VS Code's standard diagnostic UI (not colour alone).
+
+## History
+
+- **2026-09-02** — Added F17-FR-13/14/15: `valid-examples` and `valid-default`,
+  which check a schema's own annotations against the subschema that declares
+  them. Nothing else looks for this: language servers validate documents against
+  schemas, never a schema's examples against itself. Both skip a subschema
+  carrying a `$ref`, so an unresolved reference cannot produce a false positive.

@@ -149,6 +149,18 @@ const _registerCodeActionsProvider      = sinon.stub();
 const _registerDefinitionProvider       = sinon.stub();
 const _registerHoverProvider            = sinon.stub();
 const _registerCompletionItemProvider   = sinon.stub();
+const _registerDocumentSymbolProvider   = sinon.stub();
+const _registerRenameProvider           = sinon.stub();
+const _registerReferenceProvider        = sinon.stub();
+const _registerCodeLensProvider         = sinon.stub();
+const _getDiagnostics                   = sinon.stub();
+
+// language model (F32/F33) — the API surface is deliberately tiny, so the mock
+// mirrors it exactly: model selection, a request, and tool registration.
+const _selectChatModels = sinon.stub();
+const _registerTool     = sinon.stub();
+const _openExternal     = sinon.stub();
+const _fsReadFile       = sinon.stub();
 
 // authentication
 const _onDidChangeSessions = sinon.stub();
@@ -176,10 +188,21 @@ const _allStubs: sinon.SinonStub[] = [
   _getExtension,
   _registerCommand, _executeCommand, _getCommands,
   _clipboardWriteText,
+  _registerDocumentSymbolProvider, _registerRenameProvider, _registerReferenceProvider,
+  _registerCodeLensProvider, _getDiagnostics,
+  _selectChatModels, _registerTool, _openExternal, _fsReadFile,
 ];
 
 function applyDefaults() {
   _createStatusBarItem.returns(statusBarItem);
+  _getDiagnostics.returns([]);
+  _registerDocumentSymbolProvider.returns(_disposable);
+  _registerRenameProvider.returns(_disposable);
+  _registerReferenceProvider.returns(_disposable);
+  _registerCodeLensProvider.returns(_disposable);
+  _registerTool.returns(_disposable);
+  _selectChatModels.resolves([]);
+  _openExternal.resolves(true);
   _onDidChangeActiveTextEditor.returns(_disposable);
   _onDidChangeTextEditorVisibleRanges.returns(_disposable);
   _onDidChangeTextEditorSelection.returns(_disposable);
@@ -270,7 +293,7 @@ export function resetAll(): void {
 export const StatusBarAlignment = { Left: 1, Right: 2 };
 export const QuickPickItemKind  = { Separator: -1, Default: 0 };
 export const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3 };
-export const ViewColumn = { One: 1, Two: 2, Three: 3 };
+export const ViewColumn = { One: 1, Two: 2, Three: 3, Beside: -2 };
 export const TextEditorRevealType = { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 };
 
 export const Uri = {
@@ -330,6 +353,7 @@ export const workspace = {
   onDidCloseTextDocument:   _onDidCloseTextDocument,
   registerTextDocumentContentProvider: _registerTextDocumentContentProvider,
   applyEdit:                _applyEdit,
+  fs: { readFile: _fsReadFile },
 };
 
 export const commands = {
@@ -347,6 +371,7 @@ export const extensions = {
 
 export const env = {
   clipboard: { writeText: _clipboardWriteText },
+  openExternal: _openExternal,
 };
 
 export const languages = {
@@ -355,6 +380,17 @@ export const languages = {
   registerDefinitionProvider: _registerDefinitionProvider,
   registerHoverProvider: _registerHoverProvider,
   registerCompletionItemProvider: _registerCompletionItemProvider,
+  registerDocumentSymbolProvider: _registerDocumentSymbolProvider,
+  registerRenameProvider: _registerRenameProvider,
+  registerReferenceProvider: _registerReferenceProvider,
+  registerCodeLensProvider: _registerCodeLensProvider,
+  getDiagnostics: _getDiagnostics,
+};
+
+/** F33 — the language model tool API (registerTool) and F32's model access. */
+export const lm = {
+  selectChatModels: _selectChatModels,
+  registerTool: _registerTool,
 };
 
 export const authentication = {
@@ -364,6 +400,7 @@ export const authentication = {
 
 export const CodeActionKind = {
   QuickFix: { value: 'quickfix', append: (s: string) => ({ value: `quickfix.${s}` }) },
+  Refactor: { value: 'refactor', append: (s: string) => ({ value: `refactor.${s}` }) },
   Empty:    { value: '', append: (s: string) => ({ value: s }) },
 };
 
@@ -417,6 +454,15 @@ export class Range {
   }
   get start(): Position { return new Position(this.startLine, this.startChar); }
   get end(): Position { return new Position(this.endLine, this.endChar); }
+  /** True when `other` (a Range or Position) lies within this range. */
+  contains(other: Range | Position): boolean {
+    const [s, e] = other instanceof Range
+      ? [other.start, other.end]
+      : [other as Position, other as Position];
+    const afterStart = s.line > this.startLine || (s.line === this.startLine && s.character >= this.startChar);
+    const beforeEnd = e.line < this.endLine || (e.line === this.endLine && e.character <= this.endChar);
+    return afterStart && beforeEnd;
+  }
 }
 export class Diagnostic {
   code?: string | number;
@@ -427,6 +473,60 @@ export class Diagnostic {
 
 export class Location {
   constructor(public uri: any, public range: Range) {}
+}
+
+/** Mirrors vscode.SymbolKind's numbering for the values F31 maps onto. */
+export const SymbolKind = {
+  File: 0, Module: 1, Namespace: 2, Package: 3, Class: 4, Method: 5, Property: 6,
+  Field: 7, Constructor: 8, Enum: 9, Interface: 10, Function: 11, Variable: 12,
+  Constant: 13, String: 14, Number: 15, Boolean: 16, Array: 17, Object: 18,
+  Key: 19, Null: 20, EnumMember: 21, Struct: 22, Event: 23, Operator: 24,
+  TypeParameter: 25,
+};
+
+export class DocumentSymbol {
+  children: DocumentSymbol[] = [];
+  constructor(
+    public name: string,
+    public detail: string,
+    public kind: number,
+    public range: Range,
+    public selectionRange: Range,
+  ) {}
+}
+
+export class CodeLens {
+  constructor(public range: Range, public command?: any) {}
+}
+
+/** Minimal EventEmitter: fires listeners synchronously, like the real one. */
+export class EventEmitter<T = void> {
+  private readonly listeners: Array<(e: T) => void> = [];
+  readonly event = (listener: (e: T) => void) => {
+    this.listeners.push(listener);
+    return { dispose: () => { const i = this.listeners.indexOf(listener); if (i >= 0) { this.listeners.splice(i, 1); } } };
+  };
+  fire(value?: T): void { for (const l of [...this.listeners]) { l(value as T); } }
+  dispose(): void { this.listeners.length = 0; }
+}
+
+export class CancellationTokenSource {
+  token = { isCancellationRequested: false, onCancellationRequested: () => ({ dispose: () => undefined }) };
+  cancel(): void { this.token.isCancellationRequested = true; }
+  dispose(): void { /* no-op */ }
+}
+
+export const LanguageModelChatMessage = {
+  User: (content: string) => ({ role: 1, content }),
+  Assistant: (content: string) => ({ role: 2, content }),
+};
+
+export class LanguageModelTextPart {
+  constructor(public value: string) {}
+}
+
+export class LanguageModelToolResult {
+  constructor(public content: unknown[]) {}
 }
 
 export class MarkdownString {

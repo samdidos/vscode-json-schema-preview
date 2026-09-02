@@ -46,24 +46,75 @@ function isJsonSchemaMetaRef(value: unknown): boolean {
   }
 }
 
+// F34-FR-10 — conventional schema file names. A new `order.schema.json` is a
+// schema the moment it exists, which is exactly when the "insert $schema" fix
+// (F17) is most useful — so detection must not wait for the `$schema` line it
+// is meant to add.
+const SCHEMA_FILENAME_RE = /(^|\/)(schema\.(json|ya?ml)|[^/]+\.schema\.(json|ya?ml))$/i;
+
+export function looksLikeSchemaFileName(fsPathOrUri: string): boolean {
+  return SCHEMA_FILENAME_RE.test(fsPathOrUri.replace(/\\/g, '/'));
+}
+
+/**
+ * F34-FR-10 — structural heuristic for a schema with no `$schema` line: a root
+ * object that declares a definitions container alongside `properties`, or
+ * `properties` alongside `type: "object"`. Deliberately narrow: a bare
+ * `properties` key is common in ordinary config data.
+ */
+export function hasSchemaShape(root: unknown): boolean {
+  if (!root || typeof root !== 'object' || Array.isArray(root)) { return false; }
+  const value = root as Record<string, unknown>;
+  const props = value.properties;
+  if (!props || typeof props !== 'object' || Array.isArray(props)) { return false; }
+  const hasDefs = ['$defs', 'definitions'].some(
+    key => !!value[key] && typeof value[key] === 'object' && !Array.isArray(value[key]),
+  );
+  return hasDefs || value.type === 'object';
+}
+
+/** Top-level YAML keys, for the shape heuristic without a full parse. */
+function yamlTopLevelKeys(text: string): Set<string> {
+  const keys = new Set<string>();
+  for (const line of text.split('\n')) {
+    const match = /^([$A-Za-z_][\w$-]*):/.exec(line);
+    if (match) { keys.add(match[1]); }
+  }
+  return keys;
+}
+
 export function isJsonSchemaFile(document?: vscode.TextDocument) {
   if (!document) {
     return false;
   }
   if (document.languageId === 'json' || document.languageId === 'jsonc') {
+    let json: unknown;
     try {
       const text = document.languageId === 'jsonc'
         ? stripJsoncComments(document.getText())
         : document.getText();
-      const json = JSON.parse(text);
-      return isJsonSchemaMetaRef(json?.$schema);
+      json = JSON.parse(text);
     } catch {
-      return false;
+      // Unparsable: fall back to the file name so a schema being typed keeps
+      // its toolbar between valid states.
+      return looksLikeSchemaFileName(document.uri?.path ?? '');
     }
+    const declared = (json as Record<string, unknown> | null)?.$schema;
+    // F34-FR-11 — a `$schema` pointing at anything but the meta-schema means
+    // this document is *bound to* a schema (F10), so it is data whatever its
+    // name or shape. The declaration always wins over the two heuristics.
+    if (declared !== undefined) { return isJsonSchemaMetaRef(declared); }
+    return looksLikeSchemaFileName(document.uri?.path ?? '') || hasSchemaShape(json);
   }
   if (isYaml(document.languageId)) {
-    const match = document.getText().match(/^\$schema:\s*(.+)$/m);
-    return match !== null && isJsonSchemaMetaRef(match[1].trim().replace(/^["']|["']$/g, ''));
+    const text = document.getText();
+    const match = text.match(/^\$schema:\s*(.+)$/m);
+    if (match) {
+      return isJsonSchemaMetaRef(match[1].trim().replace(/^["']|["']$/g, ''));
+    }
+    if (looksLikeSchemaFileName(document.uri?.path ?? '')) { return true; }
+    const keys = yamlTopLevelKeys(text);
+    return keys.has('properties') && (keys.has('$defs') || keys.has('definitions') || /^type:\s*["']?object/m.test(text));
   }
   // jsonl files are always data, never schemas
   return false;

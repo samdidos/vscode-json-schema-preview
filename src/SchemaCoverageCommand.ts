@@ -7,7 +7,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { computeCoverage, renderCoverageReport, type SchemaProperty } from './schemaCoverage';
+import { reconcile, renderReconcileReport, type SchemaProperty } from './schemaCoverage';
 import { parseSchemaText, parseJsonPointer, locatePointerTarget } from './schemaPointer';
 import { findBoundSchemaPath, extractInlineSchemaUrl } from './SchemaBindingManager';
 import { SchemaAuthManager } from './SchemaAuthManager';
@@ -53,7 +53,9 @@ async function runCoverage(
   }
 
   const instances = parseInstances(doc);
-  const result = computeCoverage(schema, instances);
+  // Both directions in one pass (F23-FR-09): what the data never exercises,
+  // and what it uses that the schema does not declare.
+  const { coverage: result, undeclared } = reconcile(schema, instances);
 
   // Highlight unexercised properties on the schema file (F23-FR-07). Remote
   // schemas have no local file to annotate — they get the summary/report only.
@@ -63,13 +65,16 @@ async function runCoverage(
     if (diags.length) { diagnostics.set(resolved.uri, diags); }
   }
 
+  const drift = undeclared.length
+    ? ` ${undeclared.length} path${undeclared.length === 1 ? '' : 's'} in the data are undeclared.`
+    : '';
   const summary =
     `Schema coverage: ${result.exercised.length}/${result.total} properties exercised (${result.percent}%). ` +
-    `${result.unexercised.length} unexercised.`;
+    `${result.unexercised.length} unexercised.` + drift;
   const action = await vscode.window.showInformationMessage(summary, 'Copy report');
   if (action === 'Copy report') {
     const header = `${path.basename(doc.uri.fsPath)} vs ${schemaLabel(ref)}`;
-    await vscode.env.clipboard.writeText(renderCoverageReport(result, header));
+    await vscode.env.clipboard.writeText(renderReconcileReport({ coverage: result, undeclared }, header));
     vscode.window.showInformationMessage('Coverage report copied to the clipboard.');
   }
 }

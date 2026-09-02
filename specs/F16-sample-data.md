@@ -52,6 +52,14 @@ stable fixtures suitable for committing.
   the failing keywords/paths instead of opening an invalid document.
 - **F16-FR-09** Generation MUST be deterministic for a given schema (fixed
   seed); a "Regenerate with random values" variant MAY be offered.
+- **F16-FR-10** Generation MUST support producing **N instances** in one run.
+  When N > 1 the output MUST be offered as a JSON array or as JSONL (one
+  instance per line), and every emitted instance MUST individually pass the
+  F16-FR-08 validation gate — an instance that fails is dropped and the shortfall
+  reported, never emitted. Deterministic generation (F16-FR-09) means repeated
+  instances would be identical, so bulk output MUST vary each instance where the
+  schema allows it (enum rotation, index-derived strings, numbers within
+  declared bounds) rather than repeating one document N times.
 
 ## Non-Functional Requirements
 
@@ -95,3 +103,11 @@ stable fixtures suitable for committing.
   semantics, **F08** cached remote refs.
 - **S03**: depth caps guarantee termination; **S05**: no network, no
   telemetry.
+
+## History
+
+- **2026-09-02** — Added F16-FR-10: bulk generation (N instances, as a JSON array or
+  JSONL). Every instance passes the F16-FR-08 gate individually, and the
+  generator varies enum/example/branch choices and steps scalars per instance so
+  the output is N distinct documents rather than N copies of one — while staying
+  deterministic for a given schema and count.

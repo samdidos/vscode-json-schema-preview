@@ -148,6 +148,56 @@
         "command": "jsonschema.refreshSchemaCache",
         "title": "JSON Schema: Refresh Schema Cache",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "jsonschema.runSchemaTests",
+        "title": "JSON Schema: Run Schema Tests",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "jsonschema.refactor.extractDefinition",
+        "title": "JSON Schema: Extract to $defs…",
+        "icon": "$(export)"
+      },
+      {
+        "command": "jsonschema.refactor.inlineRef",
+        "title": "JSON Schema: Inline this $ref",
+        "icon": "$(fold)"
+      },
+      {
+        "command": "jsonschema.refactor.removeUnusedDefinitions",
+        "title": "JSON Schema: Remove Unused Definitions",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "jsonschema.ai.describeProperties",
+        "title": "JSON Schema: Describe Properties (AI)",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "jsonschema.ai.draftSchema",
+        "title": "JSON Schema: Draft a Schema from a Description (AI)",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "jsonschema.ai.enrichSchema",
+        "title": "JSON Schema: Enrich Inferred Schema (AI)",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "jsonschema.ai.explainDiagnostic",
+        "title": "JSON Schema: Explain This Finding (AI)",
+        "icon": "$(question)"
+      },
+      {
+        "command": "jsonschema.ai.generateRealisticData",
+        "title": "JSON Schema: Generate Realistic Sample Data (AI)",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "jsonschema.ai.migrationNotes",
+        "title": "JSON Schema: Write Migration Notes (AI)",
+        "icon": "$(sparkle)"
       }
     ],
     "configuration": {
@@ -247,7 +297,7 @@
         "jsonschema.lint.rules": {
           "type": "object",
           "default": {},
-          "markdownDescription": "Per-rule severity overrides for schema linting. Map a rule id to `off`, `hint`, `info`, or `warning`. Rule ids: `no-unknown-keywords`, `require-schema-declaration`, `require-root-id`, `require-descriptions`, `explicit-additional-properties`, `no-duplicate-enum`, `no-empty-required`.",
+          "markdownDescription": "Per-rule severity overrides for schema linting. Map a rule id to `off`, `hint`, `info`, or `warning`. Rule ids: `no-unknown-keywords`, `require-schema-declaration`, `require-root-id`, `require-descriptions`, `explicit-additional-properties`, `no-duplicate-enum`, `no-empty-required`, `valid-examples`, `valid-default`.",
           "additionalProperties": {
             "type": "string",
             "enum": [
@@ -338,6 +388,38 @@
             }
           },
           "additionalProperties": true
+        },
+        "jsonschema.ai.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Enable AI-assisted authoring (draft descriptions, explain a finding, draft or enrich a schema, generate realistic sample data). **Off by default.** When on, the commands you run send the schema, value or diff they operate on — plus the file's base name — to the language model you have configured in VS Code, through the editor's own Language Model API. This extension ships no model, no API key and no provider endpoint, collects no telemetry, and sends nothing on its own: every request follows a command you invoked. Everything a model produces is verified against the schema engines (parse, Ajv compile, lint, sample) before it is offered, and nothing is written to a file without a preview. See the [AI assistance guide](https://samdidos.github.io/vscode-json-schema-preview/guide/ai)."
+        },
+        "jsonschema.ai.maxAttempts": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 5,
+          "markdownDescription": "How many times an AI command retries when its result fails verification, feeding the concrete failures back each time. After the last attempt the result is shown explicitly marked unverified, never silently."
+        },
+        "jsonschema.validation.onSave": {
+          "type": "string",
+          "default": "off",
+          "enum": [
+            "off",
+            "bound",
+            "always"
+          ],
+          "enumDescriptions": [
+            "Only validate when you run JSON Schema: Validate This File.",
+            "Re-validate on save when the file has an explicit binding (inline $schema or a settings binding).",
+            "Also re-validate on save when VS Code resolves a schema for the file natively (the \"(auto)\" state)."
+          ],
+          "markdownDescription": "Re-validate a data file when it is saved. Automatic runs are silent — diagnostics only, no notifications — and never fetch an uncached remote schema, so saving is never blocked on the network. This covers YAML, TOML, JSONL and authenticated schemas, which VS Code's own language servers do not validate live."
+        },
+        "jsonschema.compat.codeLens": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show a CodeLens on a schema's first line counting the breaking changes against its Git `HEAD` version. Uses the same classifier as **Diff Against Baseline**; computed in the background so typing is never blocked."
         }
       }
     },
@@ -359,36 +441,6 @@
           "group": "navigation@3"
         },
         {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "command": "jsonschema.generateSampleData",
-          "group": "1_run@1"
-        },
-        {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "command": "jsonschema.generateTypes",
-          "group": "1_run@2"
-        },
-        {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "command": "jsonschema.bundleSchema",
-          "group": "1_run@3"
-        },
-        {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "command": "jsonschema.diffSchema",
-          "group": "1_run@4"
-        },
-        {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "command": "jsonschema.refGraph",
-          "group": "1_run@6"
-        },
-        {
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "command": "jsonschema.migrateDraft",
-          "group": "1_run@5"
-        },
-        {
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.validateFile",
           "group": "navigation@4"
@@ -402,6 +454,16 @@
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
           "command": "jsonschema.schemaCoverage",
           "group": "navigation@6"
+        },
+        {
+          "submenu": "jsonschema.schemaMenu",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "1_run@1"
+        },
+        {
+          "submenu": "jsonschema.schemaMenu",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
+          "group": "1_run@1"
         }
       ],
       "commandPalette": [
@@ -473,6 +535,43 @@
         {
           "command": "jsonschema.cacheSchemaLocally",
           "when": "false"
+        },
+        {
+          "command": "jsonschema.runSchemaTests"
+        },
+        {
+          "command": "jsonschema.refactor.extractDefinition",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.refactor.inlineRef",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.refactor.removeUnusedDefinitions",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.ai.describeProperties",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.ai.draftSchema"
+        },
+        {
+          "command": "jsonschema.ai.enrichSchema",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.ai.explainDiagnostic"
+        },
+        {
+          "command": "jsonschema.ai.generateRealisticData",
+          "when": "jsonschema.isJsonSchema"
+        },
+        {
+          "command": "jsonschema.ai.migrationNotes",
+          "when": "false"
         }
       ],
       "editor/context": [
@@ -480,6 +579,11 @@
           "command": "jsonschema.bindToCurrentFile",
           "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
           "group": "1_modification@99"
+        },
+        {
+          "submenu": "jsonschema.schemaMenu",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "1_modification@98"
         }
       ],
       "explorer/context": [
@@ -489,8 +593,356 @@
           "group": "7_modification@99"
         }
       ],
-      "keybindings": []
-    }
+      "keybindings": [],
+      "jsonschema.schemaMenu": [
+        {
+          "command": "jsonschema.runSchemaTests",
+          "group": "1_view@1"
+        },
+        {
+          "command": "jsonschema.refGraph",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "1_view@2"
+        },
+        {
+          "command": "jsonschema.generateSampleData",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "2_generate@1"
+        },
+        {
+          "command": "jsonschema.generateTypes",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "2_generate@2"
+        },
+        {
+          "command": "jsonschema.bundleSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "3_transform@1"
+        },
+        {
+          "command": "jsonschema.migrateDraft",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "3_transform@2"
+        },
+        {
+          "command": "jsonschema.refactor.removeUnusedDefinitions",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "3_transform@3"
+        },
+        {
+          "command": "jsonschema.diffSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "4_analyse@1"
+        },
+        {
+          "command": "jsonschema.schemaCoverage",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
+          "group": "4_analyse@2"
+        },
+        {
+          "command": "jsonschema.ai.describeProperties",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "5_ai@1"
+        },
+        {
+          "command": "jsonschema.ai.enrichSchema",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "5_ai@2"
+        },
+        {
+          "command": "jsonschema.ai.generateRealisticData",
+          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
+          "group": "5_ai@3"
+        },
+        {
+          "command": "jsonschema.ai.draftSchema",
+          "group": "5_ai@4"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "jsonschema.schemaMenu",
+        "label": "JSON Schema",
+        "icon": "$(json)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "jsonschema.preview",
+        "key": "ctrl+k v",
+        "mac": "cmd+k v",
+        "when": "editorTextFocus && jsonschema.isJsonSchema"
+      },
+      {
+        "command": "jsonschema.validateFile",
+        "key": "ctrl+k j",
+        "mac": "cmd+k j",
+        "when": "editorTextFocus && !jsonschema.isJsonSchema && (editorLangId == json || editorLangId == jsonc || editorLangId == jsonl || editorLangId == yaml || editorLangId == yml || editorLangId == toml)"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "jsonschema.gettingStarted",
+        "title": "Get started with JSON Schema Preview",
+        "description": "Preview, validate and work with JSON Schemas — including private ones — without leaving the editor.",
+        "steps": [
+          {
+            "id": "preview",
+            "title": "Read a schema as documentation",
+            "description": "Open a JSON Schema and press the eye icon (or $(keyboard) Ctrl+K V) to render it as navigable documentation beside the editor.\n[Open the guide](https://samdidos.github.io/vscode-json-schema-preview/guide/)",
+            "media": {
+              "markdown": "media/walkthrough-preview.md"
+            },
+            "completionEvents": [
+              "onCommand:jsonschema.preview"
+            ]
+          },
+          {
+            "id": "validate",
+            "title": "Bind a schema and validate your data",
+            "description": "Bind a JSON, YAML, JSONL or TOML data file to a schema, then validate it — errors land in the Problems panel with quick fixes.\n[Command reference](https://samdidos.github.io/vscode-json-schema-preview/guide/commands)",
+            "media": {
+              "markdown": "media/walkthrough-validate.md"
+            },
+            "completionEvents": [
+              "onCommand:jsonschema.validateFile",
+              "onCommand:jsonschema.bindToCurrentFile"
+            ]
+          },
+          {
+            "id": "generate",
+            "title": "Start from data you already have",
+            "description": "Generate a schema from an existing document, then generate sample data or typed code back out of it.\n[Command reference](https://samdidos.github.io/vscode-json-schema-preview/guide/commands)",
+            "media": {
+              "markdown": "media/walkthrough-generate.md"
+            },
+            "completionEvents": [
+              "onCommand:jsonschema.inferSchema"
+            ]
+          },
+          {
+            "id": "private",
+            "title": "Use a schema behind authentication",
+            "description": "The differentiator most people miss: authenticate against GitHub, Artifactory or any HTTPS endpoint and cache the schema so IntelliSense works too.\n[Authentication guide](https://samdidos.github.io/vscode-json-schema-preview/guide/authentication)",
+            "media": {
+              "markdown": "media/walkthrough-auth.md"
+            },
+            "completionEvents": [
+              "onCommand:jsonschema.configureSchemaAuth"
+            ]
+          }
+        ]
+      }
+    ],
+    "languageModelTools": [
+      {
+        "name": "jsonschema_validate",
+        "displayName": "Validate a JSON, YAML, JSONL or TOML data file against a JSON Schema and return the errors with their line numbers",
+        "modelDescription": "Validate a JSON, YAML, JSONL or TOML data file against a JSON Schema and return the errors with their line numbers. Use this instead of judging validity by reading the documents.",
+        "toolReferenceName": "schemavalidate",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(json)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "dataFile": {
+              "type": "string",
+              "description": "Path to the data file to validate."
+            },
+            "schemaFile": {
+              "type": "string",
+              "description": "Path to the JSON Schema to validate against."
+            }
+          },
+          "required": [
+            "dataFile",
+            "schemaFile"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "jsonschema_lint",
+        "displayName": "Report schema-quality findings for a JSON Schema file: unknown keywords, missing descriptions, duplicate enum values, examples and defaults that contradict their own subschema",
+        "modelDescription": "Report schema-quality findings for a JSON Schema file: unknown keywords, missing descriptions, duplicate enum values, examples and defaults that contradict their own subschema.",
+        "toolReferenceName": "schemalint",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(json)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "schemaFile": {
+              "type": "string",
+              "description": "Path to the JSON Schema to lint."
+            }
+          },
+          "required": [
+            "schemaFile"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "jsonschema_diff",
+        "displayName": "Compare two versions of a JSON Schema and return a backward-compatibility verdict plus every classified change",
+        "modelDescription": "Compare two versions of a JSON Schema and return a backward-compatibility verdict plus every classified change. Use this to decide whether a schema change is breaking — do not infer it from the diff text.",
+        "toolReferenceName": "schemadiff",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(json)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "oldSchemaFile": {
+              "type": "string",
+              "description": "Path to the baseline (older) schema."
+            },
+            "newSchemaFile": {
+              "type": "string",
+              "description": "Path to the proposed (newer) schema."
+            },
+            "strict": {
+              "type": "boolean",
+              "description": "Also treat changes the classifier cannot prove safe as blocking."
+            }
+          },
+          "required": [
+            "oldSchemaFile",
+            "newSchemaFile"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "jsonschema_bundle",
+        "displayName": "Flatten a multi-file schema into one self-contained document, either bundling external refs into $defs or dereferencing them inline",
+        "modelDescription": "Flatten a multi-file schema into one self-contained document, either bundling external refs into $defs or dereferencing them inline.",
+        "toolReferenceName": "schemabundle",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(json)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "schemaFile": {
+              "type": "string",
+              "description": "Path to the root schema."
+            },
+            "dereference": {
+              "type": "boolean",
+              "description": "Inline ref targets instead of collecting them into $defs."
+            }
+          },
+          "required": [
+            "schemaFile"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "jsonschema_infer",
+        "displayName": "Infer a JSON Schema from an existing data file (JSON, JSONC, JSONL, YAML or TOML)",
+        "modelDescription": "Infer a JSON Schema from an existing data file (JSON, JSONC, JSONL, YAML or TOML). Use this to bootstrap a schema from real documents.",
+        "toolReferenceName": "schemainfer",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(json)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "dataFile": {
+              "type": "string",
+              "description": "Path to the data file to infer from."
+            },
+            "draft": {
+              "type": "string",
+              "enum": [
+                "2020-12",
+                "2019-09",
+                "draft-07"
+              ],
+              "description": "Target draft (default 2020-12)."
+            }
+          },
+          "required": [
+            "dataFile"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "jsonschema_sample",
+        "displayName": "Generate a valid example instance from a JSON Schema",
+        "modelDescription": "Generate a valid example instance from a JSON Schema. The output is validated against the schema before being returned.",
+        "toolReferenceName": "schemasample",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(json)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "schemaFile": {
+              "type": "string",
+              "description": "Path to the JSON Schema."
+            }
+          },
+          "required": [
+            "schemaFile"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "jsonschema_coverage",
+        "displayName": "Report which properties a schema declares that the given data files never exercise — the unused-in-data surface of a contract",
+        "modelDescription": "Report which properties a schema declares that the given data files never exercise — the unused-in-data surface of a contract.",
+        "toolReferenceName": "schemacoverage",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(json)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "dataFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "One or more data files to measure coverage from."
+            },
+            "schemaFile": {
+              "type": "string",
+              "description": "Path to the JSON Schema."
+            }
+          },
+          "required": [
+            "dataFiles",
+            "schemaFile"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "jsonschema_test",
+        "displayName": "Run declarative schema test suites (*",
+        "modelDescription": "Run declarative schema test suites (*.schema.test.json), which pin the documents a schema must accept and must reject. Use this to check a schema change against its contract.",
+        "toolReferenceName": "schematest",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(json)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "suiteFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "One or more *.schema.test.json suite files."
+            }
+          },
+          "required": [
+            "suiteFiles"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -614,5 +1066,23 @@
     "quicktype-core": "26.0.0",
     "smol-toml": "^1.8.0",
     "yaml": "^2.9.0"
-  }
+  },
+  "keywords": [
+    "json schema",
+    "jsonschema",
+    "schema",
+    "validation",
+    "yaml",
+    "toml",
+    "jsonl",
+    "json",
+    "openapi",
+    "intellisense",
+    "preview",
+    "documentation",
+    "codegen",
+    "linter",
+    "mcp",
+    "ai"
+  ]
 }
