@@ -383,7 +383,7 @@ suite('[F07-FR-01] SchemaAuthManager.configureAuth()', () => {
     const ok = await auth.configureAuth('https://raw.githubusercontent.com/o/r/s.json');
     assert.strictEqual(ok, true);
     assert.ok(vscode.authentication.getSession.calledWith('github', ['repo'], { createIfNone: true }));
-    assert.ok(vscode.window.showInformationMessage.called);
+    assert.ok(vscode.window.setStatusBarMessage.calledWithMatch(/GitHub authentication configured/)); // F34-FR-12
   });
 
   test('[F07-FR-05] Bearer flow stores the token and returns true', async () => {

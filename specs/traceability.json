@@ -691,6 +691,39 @@
       ],
       "note": "inferSchema: bind hint notification (unit-tested)"
     },
+    "F06-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/inferenceEnrich.ts",
+        "src/extension.ts",
+        "src/cli/cli.ts"
+      ],
+      "note": "deterministic format/enum enrichment after genson inference; pure, additive (property-tested), --plain in the CLI",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F06-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/inferenceEnrich.ts",
+        "src/extension.ts",
+        "src/cli/cli.ts"
+      ],
+      "note": "deterministic format/enum enrichment after genson inference; pure, additive (property-tested), --plain in the CLI",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F06-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/inferenceEnrich.ts",
+        "src/extension.ts",
+        "src/cli/cli.ts"
+      ],
+      "note": "deterministic format/enum enrichment after genson inference; pure, additive (property-tested), --plain in the CLI",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
     "F07-FR-01": {
       "status": "implemented",
       "impl": [
@@ -3768,6 +3801,26 @@
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },
+    "F33-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/McpServerDefinition.ts",
+        "package.json"
+      ],
+      "note": "feature-detected MCP server definition provider launching the published CLI; unit-tested on both host kinds",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-16": {
+      "status": "implemented",
+      "impl": [
+        "cli/server.json",
+        "cli/package.json"
+      ],
+      "note": "MCP Registry manifest + mcpName; a test asserts they agree with the npm package",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
     "F33-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -3895,6 +3948,15 @@
         "src/PreviewWebPanel.ts"
       ],
       "note": "name + structural detection, with the inline-binding rule keeping precedence; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/notify.ts"
+      ],
+      "note": "confirm() → transient status-bar message; a test greps src/ for surviving action-less toasts",
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },

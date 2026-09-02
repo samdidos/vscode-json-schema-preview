@@ -127,7 +127,7 @@ suite('[F23-FR-08] schemaCoverage — report', () => {
     assert.match(md, /# Schema coverage/);
     assert.match(md, /## Unexercised properties \(1\)/);
     assert.match(md, /`b`/);
-    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/copied to the clipboard/));
+    assert.ok(vscode.window.setStatusBarMessage.calledWithMatch(/copied to the clipboard/)); // F34-FR-12
   });
 
   test('a YAML data file resolves and reports coverage', async () => {

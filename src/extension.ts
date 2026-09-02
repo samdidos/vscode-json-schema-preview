@@ -42,6 +42,9 @@ import { registerSchemaTests } from './SchemaTestsCommand';
 import { registerCompatCodeLens } from './CompatCodeLensProvider';
 import { registerLanguageModelTools } from './LanguageModelTools';
 import { aiCommands } from './ai/commands';
+import { registerMcpServerDefinition } from './McpServerDefinition';
+import { enrichInferredSchema } from './inferenceEnrich';
+import { confirm } from './notify';
 import { createSchema } from 'genson-js';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -209,6 +212,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // ── Agent tools: the deterministic engines, callable by a model (F33) ───────
   registerLanguageModelTools(context);
+  // F33-FR-15 — in a capable host, agent mode discovers `jstk mcp` on install.
+  registerMcpServerDefinition(context);
 
   // ── Commands ───────────────────────────────────────────────────────────────
   context.subscriptions.push(
@@ -327,7 +332,7 @@ export function activate(context: vscode.ExtensionContext) {
         async () => {
           try {
             await schemaCache.download(url!);
-            vscode.window.showInformationMessage('Schema cache refreshed.');
+            confirm('Schema cache refreshed.');
           } catch (e) {
             vscode.window.showErrorMessage(`Failed to refresh cache: ${(e as Error).message}`);
           }
@@ -371,7 +376,8 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      const schema = createSchema(data as object) as Record<string, unknown>;
+      // F06-FR-13/14 — structure first, then what only the values reveal.
+      const schema = enrichInferredSchema(createSchema(data as object), data) as Record<string, unknown>;
       schema.$schema = 'http://json-schema.org/draft-07/schema#';
 
       const newDoc = await vscode.workspace.openTextDocument({

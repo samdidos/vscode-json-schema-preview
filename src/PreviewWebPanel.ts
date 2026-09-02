@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { confirm } from './notify';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -346,7 +347,7 @@ export async function openJsonSchema(context: vscode.ExtensionContext, uri: vsco
         });
         if (!dest) {return;}
         await fs.promises.writeFile(dest.fsPath, cached.content, 'utf-8');
-        vscode.window.showInformationMessage(`Preview saved to ${path.basename(dest.fsPath)}`);
+        confirm(`Preview saved to ${path.basename(dest.fsPath)}`);
       }
     },
     undefined,

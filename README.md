@@ -10,7 +10,7 @@
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/samdidos.json-schema-preview?logo=visual-studio-code&logoColor=white&label=installs)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
 [![Rating](https://img.shields.io/visual-studio-marketplace/stars/samdidos.json-schema-preview?logo=visual-studio-code&logoColor=white&label=rating)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview&ssr=false#review-details)
 [![CI](https://img.shields.io/github/actions/workflow/status/samdidos/vscode-json-schema-preview/ci.yml?label=CI&logo=github)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-89.3%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-89.5%25-brightgreen)](https://github.com/samdidos/vscode-json-schema-preview/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/samdidos/vscode-json-schema-preview/badge)](https://securityscorecards.dev/viewer/?uri=github.com/samdidos/vscode-json-schema-preview)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/LICENSE.md)
 

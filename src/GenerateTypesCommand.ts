@@ -4,6 +4,7 @@
 // the bundle command, cancellable progress, and an untitled-editor or
 // user-chosen-file result. The source schema file is never modified.
 import * as vscode from 'vscode';
+import { confirm } from './notify';
 import * as fs from 'fs';
 import * as path from 'path';
 import { bundleSchema } from './schemaBundler';
@@ -198,7 +199,7 @@ async function saveGeneratedFolder(
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path.join(folder, mainName)));
     await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
   }
-  vscode.window.showInformationMessage(`Wrote ${files.size} files to ${folder}.`);
+  confirm(`Wrote ${files.size} files to ${folder}.`);
   return true;
 }
 

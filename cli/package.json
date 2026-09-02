@@ -1,7 +1,7 @@
 {
   "name": "json-schema-toolkit",
   "version": "0.1.0",
-  "description": "Standalone CLI (jstk) for JSON Schema: validate, lint, diff (with backward-compat gate), bundle & migrate drafts. The editor-free front end of the json-schema-preview core.",
+  "description": "Standalone CLI (jstk) and MCP server for JSON Schema: validate, lint, diff (with backward-compat gate), bundle, migrate, infer, sample, coverage and schema tests. The editor-free front end of the json-schema-preview core.",
   "keywords": [
     "json-schema",
     "jsonschema",
@@ -13,7 +13,14 @@
     "dereference",
     "migrate",
     "ajv",
-    "ci"
+    "ci",
+    "mcp",
+    "mcp-server",
+    "agent",
+    "infer",
+    "sample",
+    "coverage",
+    "test"
   ],
   "license": "MIT",
   "author": {
@@ -38,9 +45,11 @@
   },
   "files": [
     "dist/cli.js",
-    "README.md"
+    "README.md",
+    "server.json"
   ],
   "scripts": {
     "prepack": "cd .. && npm run build:cli"
-  }
+  },
+  "mcpName": "io.github.samdidos/json-schema-toolkit"
 }

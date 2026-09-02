@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { confirm } from './notify';
 import { HttpError } from './reliability';
 
 type CredentialType = 'bearer' | 'basic';
@@ -240,7 +241,7 @@ export class SchemaAuthManager {
     switch (pick.id) {
       case 'github': {
         await vscode.authentication.getSession('github', ['repo'], { createIfNone: true });
-        vscode.window.showInformationMessage(`GitHub authentication configured for ${host}.`);
+        confirm(`GitHub authentication configured for ${host}.`);
         return true;
       }
 
@@ -253,7 +254,7 @@ export class SchemaAuthManager {
         });
         if (!token) {return false;}
         await this.storeCredential(host, { type: 'bearer', value: token });
-        vscode.window.showInformationMessage(`Bearer token saved for ${host}.`);
+        confirm(`Bearer token saved for ${host}.`);
         return true;
       }
 
@@ -273,13 +274,13 @@ export class SchemaAuthManager {
         if (!password) {return false;}
         const encoded = Buffer.from(`${username}:${password}`).toString('base64');
         await this.storeCredential(host, { type: 'basic', value: encoded });
-        vscode.window.showInformationMessage(`Basic auth saved for ${host}.`);
+        confirm(`Basic auth saved for ${host}.`);
         return true;
       }
 
       case 'remove': {
         await this.removeCredential(host);
-        vscode.window.showInformationMessage(`Credentials removed for ${host}.`);
+        confirm(`Credentials removed for ${host}.`);
         return true;
       }
     }

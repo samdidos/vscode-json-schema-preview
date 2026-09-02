@@ -77,6 +77,16 @@ and a grouped menu so the title bar stays legible as the command set grows.
   schema: a document whose `$schema` points at a non-meta schema (an inline
   binding, F10) MUST always be treated as data, regardless of its shape or name.
 
+### Notifications
+
+- **F34-FR-12** A **success confirmation that offers no action** — "schema
+  bundled", "credentials saved", "report copied", "cache refreshed" — MUST be
+  shown as a transient status-bar message, not a notification toast. Toasts are
+  for a choice the user must make or an outcome they must notice; a
+  confirmation that the thing they just asked for happened is neither, and
+  stacking them trains users to dismiss the ones that matter. Messages carrying
+  an action button, warnings and errors are unaffected.
+
 ## Non-Functional Requirements
 
 - **F34-NFR-01** The detection predicate MUST remain pure and unit-tested, and
@@ -120,3 +130,7 @@ and a grouped menu so the title bar stays legible as the command set grows.
 ## History
 
 - **2026-09-02** — Initial specification.
+
+- **2026-09-02** — Added F34-FR-12: action-less success confirmations move from
+  toasts to a transient status-bar message. The extension had grown past ninety
+  notification calls; the ones that only say "done" are the noise.

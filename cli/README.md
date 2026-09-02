@@ -87,3 +87,15 @@ jstk graph api.schema.json          # add --svg for a diagram
 MIT © Samuel Cardinal. Part of the
 [json-schema-preview](https://github.com/samdidos/vscode-json-schema-preview)
 project.
+
+## MCP server
+
+`jstk mcp` serves the same tools over the [Model Context Protocol](https://modelcontextprotocol.io)
+on stdio, for any agent that speaks it:
+
+```jsonc
+{ "mcpServers": { "json-schema": { "command": "npx", "args": ["-y", "json-schema-toolkit", "mcp"] } } }
+```
+
+The package carries a `server.json` for the open MCP Registry under the name
+`io.github.samdidos/json-schema-toolkit`.
