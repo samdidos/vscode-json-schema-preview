@@ -174,16 +174,27 @@ suite('[S20-SR-06][F32-NFR-01][S20-SR-10] no vendor SDK, model id, or provider e
   test('no source file names a model provider SDK or endpoint', () => {
     // Model access goes through the editor's Language Model API and nothing
     // else, so swapping the user's provider changes nothing in this repo.
-    const forbidden = [
-      /@anthropic-ai\//, /\bfrom ['"]openai['"]/, /@google\/generative-ai/,
-      /api\.openai\.com/, /api\.anthropic\.com/, /generativelanguage\.googleapis/,
-      /\bgpt-[0-9]/i, /\bclaude-[0-9]/i, /\bgemini-[0-9]/i,
-      /OPENAI_API_KEY/, /ANTHROPIC_API_KEY/,
+    // Package names, endpoints and env vars are searched as plain substrings.
+    // Writing a host as an unanchored regex reads — to a reader and to
+    // CodeQL's js/regex/missing-regexp-anchor — like a URL check that forgot
+    // its anchors. This is a grep over file text, so say that.
+    const forbiddenLiterals = [
+      '@anthropic-ai/', '@google/generative-ai',
+      'api.openai.com', 'api.anthropic.com', 'generativelanguage.googleapis',
+      'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
+    ];
+    // Genuinely patterns: an import form, and model-id families.
+    const forbiddenPatterns = [
+      /\bfrom ['"]openai['"]/, /\bgpt-[0-9]/i, /\bclaude-[0-9]/i, /\bgemini-[0-9]/i,
     ];
     for (const file of sourceFiles(SRC_DIR)) {
       const text = fs.readFileSync(file, 'utf-8');
-      for (const pattern of forbidden) {
-        assert.doesNotMatch(text, pattern, `${path.relative(SRC_DIR, file)} matches ${pattern}`);
+      const where = path.relative(SRC_DIR, file);
+      for (const literal of forbiddenLiterals) {
+        assert.ok(!text.includes(literal), `${where} names ${literal}`);
+      }
+      for (const pattern of forbiddenPatterns) {
+        assert.doesNotMatch(text, pattern, `${where} matches ${pattern}`);
       }
     }
   });

@@ -182,7 +182,10 @@ suite('[F34-FR-01][F34-FR-02][F34-FR-03][F34-NFR-03] the walkthrough', () => {
 
   test('every step links to the docs site and ships its media file', () => {
     for (const step of walkthrough.steps) {
-      assert.match(step.description, /samdidos\.github\.io/, `${step.id} has no docs link`);
+      // Substring, not a regex: an unanchored host pattern reads as a URL
+      // check missing its anchors (CodeQL js/regex/missing-regexp-anchor),
+      // and this only asks whether the description links to the docs site.
+      assert.ok(step.description.includes('samdidos.github.io'), `${step.id} has no docs link`);
       const media = path.join(__dirname, '..', '..', '..', step.media.markdown);
       assert.ok(fs.existsSync(media), `${step.id}: missing ${step.media.markdown}`);
     }
