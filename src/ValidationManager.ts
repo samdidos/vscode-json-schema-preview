@@ -25,22 +25,35 @@ export const validationDiagnostics =
  *  validator can fall back to it — supplied by the binding manager. */
 export type DetectNativeSchema = (doc: vscode.TextDocument) => NativeSchemaMatch | undefined;
 
+/** Options for a non-interactive run (F03-FR-17). */
+export interface ValidateOptions {
+  /** Diagnostics only: no notifications, and no network for an uncached schema. */
+  silent?: boolean;
+  /** Validate this document instead of the active editor's. */
+  document?: vscode.TextDocument;
+}
+
 export function validateCurrentFile(
   auth: SchemaAuthManager,
   cache?: SchemaCache,
   fixes?: ValidationFixProvider,
   detectNative?: DetectNativeSchema,
+  opts?: ValidateOptions,
 ) {
+  const silent = opts?.silent === true;
+  /** Suppressed entirely on an automatic run — a save must stay quiet. */
+  const notify = <T>(show: () => Thenable<T> | T): Thenable<T> | T | undefined =>
+    (silent ? undefined : show());
+
   return async () => {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      vscode.window.showInformationMessage('Open a JSON or YAML file to validate.');
+    const doc = opts?.document ?? vscode.window.activeTextEditor?.document;
+    if (!doc) {
+      notify(() => vscode.window.showInformationMessage('Open a JSON or YAML file to validate.'));
       return;
     }
 
-    const doc = editor.document;
     if (!isSupported(doc.languageId)) {
-      vscode.window.showInformationMessage('Validation supports JSON, JSONC, JSONL, YAML, and TOML files.');
+      notify(() => vscode.window.showInformationMessage('Validation supports JSON, JSONC, JSONL, YAML, and TOML files.'));
       return;
     }
 
@@ -53,6 +66,7 @@ export function validateCurrentFile(
       extractInlineSchemaUrl(doc) ??
       detectNative?.(doc)?.url;
     if (!schemaPath) {
+      if (silent) { return; }
       const action = await vscode.window.showWarningMessage(
         `No schema bound to ${path.basename(doc.uri.fsPath)}. Bind one first.`,
         'Bind Schema'
@@ -63,17 +77,24 @@ export function validateCurrentFile(
       return;
     }
 
+    // F03-FR-17 — an automatic run never reaches the network: an uncached
+    // remote schema simply means nothing to validate against this time.
+    if (silent && SchemaAuthManager.isRemoteUrl(schemaPath) && cache?.readCached(schemaPath) === undefined) {
+      return;
+    }
+
     let schema: unknown;
     try {
       const loaded = await loadSchema(schemaPath, auth, doc, cache);
       schema = loaded.schema;
-      if (loaded.stale) {
+      if (loaded.stale && !silent) {
         // S04-SR-02: announce the fallback without blocking validation.
         vscode.window.showWarningMessage(
           `${SchemaAuthManager.hostOf(schemaPath)} is unreachable — validating against the last cached copy of the schema.`,
         );
       }
     } catch (e) {
+      if (silent) { return; }
       if (e instanceof AuthRequiredError) {
         const action = await vscode.window.showErrorMessage(
           `Schema at ${SchemaAuthManager.hostOf(e.url)} requires authentication (HTTP ${e.status}).`,
@@ -94,9 +115,9 @@ export function validateCurrentFile(
     try {
       items = parseDataText(doc.getText(), doc.languageId);
     } catch (e) {
-      vscode.window.showErrorMessage(
+      notify(() => vscode.window.showErrorMessage(
         `Cannot parse ${path.basename(doc.uri.fsPath)}: ${(e as Error).message}`
-      );
+      ));
       return;
     }
 
@@ -107,7 +128,7 @@ export function validateCurrentFile(
     try {
       validate = ajv.compile(schema as object);
     } catch (e) {
-      vscode.window.showErrorMessage(`Cannot compile schema: ${(e as Error).message}`);
+      notify(() => vscode.window.showErrorMessage(`Cannot compile schema: ${(e as Error).message}`));
       return;
     }
 
@@ -144,19 +165,19 @@ export function validateCurrentFile(
 
     if (diags.length === 0) {
       fixes?.record(doc.uri, []); // F21-FR-09: clear stale fixes on a clean run
-      vscode.window.showInformationMessage(
+      notify(() => vscode.window.showInformationMessage(
         `✓ ${path.basename(doc.uri.fsPath)} is valid against ${path.basename(schemaPath)}.`
-      );
+      ));
       return;
     }
 
     fixes?.record(doc.uri, collectedFixes);
 
     validationDiagnostics.set(doc.uri, diags);
-    vscode.window.showErrorMessage(
+    notify(() => vscode.window.showErrorMessage(
       `✗ ${diags.length} validation error${diags.length === 1 ? '' : 's'} in ` +
       `${path.basename(doc.uri.fsPath)}. See Problems panel.`
-    );
+    ));
   };
 }
 

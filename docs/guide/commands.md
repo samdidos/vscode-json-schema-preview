@@ -15,6 +15,8 @@ Opens (or focuses) the preview panel for the active schema file. The panel rende
 
 Disabled in untrusted workspaces — see [Workspace Trust](/guide/#workspace-trust).
 
+![Opening the preview panel from the editor toolbar](/demo-preview.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (eye icon) | ✅ |
@@ -28,6 +30,8 @@ Disabled in untrusted workspaces — see [Workspace Trust](/guide/#workspace-tru
 **ID:** `jsonschema.edit`
 
 Opens a form-based editor panel for the active schema file. Edit the most common JSON Schema keywords without touching raw JSON. Saving from the form writes back to the source file and the preview reloads automatically.
+
+![Editing schema keywords through the form editor](/demo-visual-editor.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -87,6 +91,8 @@ When a file has no explicit binding but VS Code already resolves a schema for it
 
 Validates the active JSON, YAML, or TOML file against its bound schema (see [Bind Schema…](#json-schema-bind-schema)) using AJV. Errors appear in the **Problems** panel with precise line/column locations.
 
+![Validating a data file and seeing errors in the Problems panel](/demo-validation.gif)
+
 If the file already has an inline `$schema` field the bound schema is inferred from it — no explicit binding needed. If it has no binding at all but VS Code resolves a schema for it natively (the **(auto)** state shown in the status bar — see [Bind Schema…](#json-schema-bind-schema)), validation uses that schema too, rather than reporting "no schema bound".
 
 | Toolbar | Command Palette |
@@ -112,6 +118,8 @@ For an `enum` mismatch the allowed values are **ranked by how close they are to 
 **ID:** `jsonschema.inferSchema`
 
 Infers a JSON Schema from the active JSON, JSONC, JSONL, YAML, or TOML data file using `genson-js`. Opens the generated schema in a new editor tab beside the original. A great starting point for adopting schema-first workflows.
+
+![Generating a schema from an existing JSON file](/demo-inference.gif)
 
 The wand appears for any data file, regardless of whether it already has a schema bound (inline `$schema`, a settings binding, or a natively-resolved **(auto)** schema) — there's no reliable way to tell whether an existing binding means you'd never want to (re)generate a starting point from the file's current data, so the icon is always available.
 
@@ -329,3 +337,68 @@ Re-downloads a previously cached schema from its original remote URL. Use this w
 |---------|----------------|
 | — | ✅ |
 <!-- spec:F08 end -->
+
+---
+
+<!-- spec:F29 start -->
+## JSON Schema: Run Schema Tests
+
+**ID:** `jsonschema.runSchemaTests`
+
+Runs the declarative test suites that pin what a schema must accept and must
+reject. On a `*.schema.test.json` file it runs that suite; on a **schema** file
+it runs every suite in the workspace whose `schema` resolves to it, and reports
+the aggregate.
+
+Failing cases appear as errors on the failing case in the suite file, and each
+run replaces the previous run's diagnostics. The summary offers **Copy report**.
+
+The suite format, the `errors` keyword-matching rule, and the CI story are in
+[The schema lifecycle](/guide/lifecycle#guarding-schema-tests).
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — (JSON Schema submenu) | ✅ |
+<!-- spec:F29 end -->
+
+---
+
+<!-- spec:F30 start -->
+## JSON Schema: Extract to $defs… / Inline this $ref / Remove Unused Definitions
+
+**IDs:** `jsonschema.refactor.extractDefinition`, `jsonschema.refactor.inlineRef`,
+`jsonschema.refactor.removeUnusedDefinitions`
+
+Schema-aware structural edits, offered as **Refactor** code actions where they
+apply. Renaming a definition uses the editor's own <kbd>F2</kbd> gesture and
+rewrites every reference; <kbd>Shift</kbd>+<kbd>F12</kbd> finds them all.
+
+Each operation refuses rather than guessing when it cannot preserve meaning —
+see [Restructuring](/guide/lifecycle#restructuring-refactorings) for the rules and
+what "unused" means transitively. JSON/JSONC only.
+
+| Toolbar | Command Palette | Code action |
+|---------|----------------|---|
+| — (JSON Schema submenu) | ✅ | ✅ |
+<!-- spec:F30 end -->
+
+---
+
+<!-- spec:F32 start -->
+## AI commands
+
+**IDs:** `jsonschema.ai.describeProperties`, `jsonschema.ai.draftSchema`,
+`jsonschema.ai.enrichSchema`, `jsonschema.ai.explainDiagnostic`,
+`jsonschema.ai.generateRealisticData`, `jsonschema.ai.migrationNotes`
+
+Optional, opt-in drafting help through VS Code's own Language Model API — off by
+default, verified against this project's engines before anything is offered, and
+never applied without a preview.
+
+See [AI assistance](/guide/ai#ai-assisted-authoring) for what each one does, the
+guarantees, and exactly what is sent.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — (JSON Schema submenu) | ✅ |
+<!-- spec:F32 end -->

@@ -26,7 +26,7 @@ export interface FileResult {
   relPath: string;
   /** Workspace folder name the file belongs to ('' for single-root). */
   folder: string;
-  kind: 'data' | 'schema';
+  kind: 'data' | 'schema' | 'suite';
   status: FileStatus;
   /** The schema reference a data file was validated against. */
   schemaRef?: string;
@@ -164,16 +164,23 @@ export interface RunSummary {
   withErrors: number;
   schemasLinted: number;
   bindingsFailed: number;
+  /** Schema test suites run (F20-FR-09). */
+  suitesRun: number;
+  /** Individual cases that failed across those suites. */
+  casesFailed: number;
 }
 
 export function summarize(results: FileResult[]): RunSummary {
   const data = results.filter(r => r.kind === 'data');
+  const suites = results.filter(r => r.kind === 'suite');
   return {
     filesChecked: data.length,
     valid: data.filter(r => r.status === 'valid').length,
     withErrors: data.filter(r => r.status === 'errors').length,
     schemasLinted: results.filter(r => r.kind === 'schema').length,
     bindingsFailed: data.filter(r => r.status === 'binding-failed').length,
+    suitesRun: suites.length,
+    casesFailed: suites.reduce((total, r) => total + r.issues.length, 0),
   };
 }
 
@@ -186,6 +193,14 @@ export function summaryLine(summary: RunSummary, meta: RunMeta): string {
     `${summary.schemasLinted} schema${summary.schemasLinted === 1 ? '' : 's'} linted`,
     `${summary.bindingsFailed} binding${summary.bindingsFailed === 1 ? '' : 's'} failed`,
   ];
+  // Suites only earn a place in the line when the workspace has any, so a repo
+  // that uses no schema tests reads exactly as it did before (F20-FR-09).
+  if (summary.suitesRun > 0) {
+    parts.push(
+      `${summary.suitesRun} test suite${summary.suitesRun === 1 ? '' : 's'} run`,
+      `${summary.casesFailed} case${summary.casesFailed === 1 ? '' : 's'} failed`,
+    );
+  }
   let line = `Workspace validation: ${parts.join(', ')}.`;
   if (meta.truncated) { line += ` Scan capped at ${meta.maxFiles} files.`; }
   if (meta.untrusted) { line += ' Untrusted workspace: remote schemas served from the local cache only.'; }
@@ -214,6 +229,12 @@ export function renderMarkdownReport(results: FileResult[], meta: RunMeta): stri
     `**${summary.bindingsFailed}** binding failure(s); ` +
     `**${summary.schemasLinted}** schema(s) linted.`,
   );
+  if (summary.suitesRun > 0) {
+    lines.push(
+      '',
+      `**${summary.suitesRun}** schema test suite(s) run — **${summary.casesFailed}** case(s) failed.`,
+    );
+  }
   if (meta.truncated) { lines.push('', `> ⚠️ Scan capped at ${meta.maxFiles} files — results are partial.`); }
   if (meta.skippedLarge > 0) { lines.push('', `> ${meta.skippedLarge} file(s) over 1 MiB skipped.`); }
   if (meta.untrusted) { lines.push('', '> Untrusted workspace: remote schemas were served from the local cache only.'); }

@@ -106,6 +106,13 @@ re-implement the logic.
 - **F27-FR-16** `graph <schema-file> [--svg]` MUST print the schema's `$ref`
   dependency graph (F24): an adjacency list by default, or the SVG rendering
   with `--svg`. External and unresolved refs MUST be shown without fetching.
+- **F27-FR-17** The CLI MUST expose `jstk test <suite...>`, running the schema
+  test suites of F29 and exiting `0` when all cases pass, `1` on a failing
+  case, and `65` on a malformed suite.
+- **F27-FR-18** The CLI MUST expose `jstk mcp`, serving the tool surface of F33
+  over stdio as newline-delimited JSON-RPC 2.0. In this mode stdout MUST carry
+  protocol traffic only; all diagnostics MUST go to stderr.
+
 
 ### Output & exit codes
 
@@ -158,3 +165,7 @@ re-implement the logic.
   declared meta-schema, defaulting to `2020-12` instead of always draft-07.
   F27-FR-14: `coverage` now accepts multiple data files, unioning coverage
   across all of them.
+- **2026-09-02** — Added F27-FR-17/18: `jstk test` runs the schema test suites of
+  [F29](F29-schema-tests.md), and `jstk mcp` serves the agent tool surface of
+  [F33](F33-agent-tools.md) over stdio. The MCP subset is implemented directly
+  rather than through an SDK, so the CLI gains no runtime dependency.

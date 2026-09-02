@@ -424,6 +424,17 @@
       ],
       "note": "validateCurrentFile falls back to bindingManager.detectNativeSchema(doc).url (F04-FR-15) when there is no inline/settings binding, so auto-bound files validate instead of reporting 'no schema bound' (unit-tested)"
     },
+    "F03-FR-17": {
+      "status": "manual",
+      "impl": [
+        "src/extension.ts",
+        "src/ValidationManager.ts",
+        "package.json"
+      ],
+      "note": "save-triggered silent validation; the silent option and the setting are unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
     "F04-FR-01": {
       "status": "implemented",
       "impl": [
@@ -1768,6 +1779,16 @@
       ],
       "note": "deterministic (no randomness); byte-identical repeated output"
     },
+    "F16-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/sampleDataGenerator.ts",
+        "src/extension.ts"
+      ],
+      "note": "generateMany/renderJsonl with per-instance gating; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
     "F16-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -1867,6 +1888,33 @@
         "src/SchemaLintManager.ts"
       ],
       "note": "quick fixes: insert $schema (draft QuickPick, 2020-12 first), add additionalProperties:false, dedupe enum"
+    },
+    "F17-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "valid-examples / valid-default, skipping subschemas carrying a $ref; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F17-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "valid-examples / valid-default, skipping subschemas carrying a $ref; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F17-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaLinter.ts"
+      ],
+      "note": "valid-examples / valid-default, skipping subschemas carrying a $ref; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     },
     "F17-NFR-01": {
       "status": "implemented",
@@ -2124,6 +2172,16 @@
         "src/WorkspaceValidateCommand.ts"
       ],
       "note": "diagnostics.clear() at the start of every run"
+    },
+    "F20-FR-09": {
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "suites discovered, run and counted in the sweep",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     },
     "F20-NFR-01": {
       "status": "implemented",
@@ -2385,6 +2443,26 @@
       ],
       "note": "summary notification + Copy report -> renderCoverageReport markdown"
     },
+    "F23-FR-09": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCoverage.ts",
+        "src/SchemaCoverageCommand.ts"
+      ],
+      "note": "reconcile(): the undeclared-in-schema direction with inferred types; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F23-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaCoverage.ts",
+        "src/SchemaCoverageCommand.ts"
+      ],
+      "note": "reconcile(): the undeclared-in-schema direction with inferred types; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
     "F23-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -2623,6 +2701,26 @@
       ],
       "note": "headless CLI: npm run schema:compat; reuses out/ modules, verdict exit codes; verified manually"
     },
+    "F26-FR-07": {
+      "status": "implemented",
+      "impl": [
+        "src/CompatCodeLensProvider.ts",
+        "package.json"
+      ],
+      "note": "debounced CodeLens reusing the F15/F26 classifier; countBreaking unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F26-FR-08": {
+      "status": "implemented",
+      "impl": [
+        "src/CompatCodeLensProvider.ts",
+        "package.json"
+      ],
+      "note": "debounced CodeLens reusing the F15/F26 classifier; countBreaking unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
     "F26-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -2750,6 +2848,25 @@
         "src/cli/cli.ts"
       ],
       "note": "graph: buildRefGraph + renderAdjacencyList / renderGraphSvg (F24)."
+    },
+    "F27-FR-17": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/cli.ts"
+      ],
+      "note": "jstk test",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F27-FR-18": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/mcp.ts",
+        "src/cli/bin.ts"
+      ],
+      "note": "jstk mcp",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     },
     "F27-NFR-01": {
       "status": "manual",
@@ -2951,6 +3068,862 @@
       "note": "SYNC_COOLDOWN_MS (250ms) is short relative to normal interaction pacing; unit-tested for correct suppress/resume timing",
       "specifiedAt": "2026-08-11",
       "implementedAt": "2026-08-11"
+    },
+    "F29-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "parseTestSuite/runTestSuite: pure suite parsing and running; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "parseTestSuite/runTestSuite: pure suite parsing and running; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "parseTestSuite/runTestSuite: pure suite parsing and running; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "parseTestSuite/runTestSuite: pure suite parsing and running; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "parseTestSuite/runTestSuite: pure suite parsing and running; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-06": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "parseTestSuite/runTestSuite: pure suite parsing and running; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-07": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "parseTestSuite/runTestSuite: pure suite parsing and running; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-08": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "parseTestSuite/runTestSuite: pure suite parsing and running; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-09": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "parseTestSuite/runTestSuite: pure suite parsing and running; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-10": {
+      "status": "manual",
+      "impl": [
+        "src/SchemaTestsCommand.ts",
+        "package.json"
+      ],
+      "note": "command flow (active suite vs every suite guarding the active schema) is API-bound; registration unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaTestsCommand.ts"
+      ],
+      "note": "suiteDiagnostics() positions failures on the failing case; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/WorkspaceValidateCommand.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "suites are the third artifact the F20 sweep checks; summary/report counts unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/cli.ts"
+      ],
+      "note": "jstk test; unit-tested through runCli",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts"
+      ],
+      "note": "pure, no vscode import, fast-check covered",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaTests.ts",
+        "src/cli/cli.ts"
+      ],
+      "note": "the runner never fetches; schema resolution happens in the caller",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F29-NFR-03": {
+      "status": "manual",
+      "impl": [
+        "src/PreviewWebPanel.ts",
+        "src/WorkspaceValidateCommand.ts"
+      ],
+      "note": "a suite is neither a schema nor a bound data file; verified by the detection tests and the sweep short-circuit",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-06": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-07": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-08": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-09": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure text-edit computation over the jsonc AST; unit-tested including refusals",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefactorProvider.ts"
+      ],
+      "note": "code actions, rename provider and reference provider; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefactorProvider.ts"
+      ],
+      "note": "unused definitions as Unnecessary-tagged hints",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "pure, vscode-free",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "semantics preserved by refusing rather than guessing (F30-FR-05/07/08); refusal paths unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F30-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaRefactor.ts"
+      ],
+      "note": "fast-check totality over arbitrary text and JSON",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "buildOutline(): pure symbol tree from the linter AST; unit-tested for JSON and YAML",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "buildOutline(): pure symbol tree from the linter AST; unit-tested for JSON and YAML",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "buildOutline(): pure symbol tree from the linter AST; unit-tested for JSON and YAML",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "buildOutline(): pure symbol tree from the linter AST; unit-tested for JSON and YAML",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "buildOutline(): pure symbol tree from the linter AST; unit-tested for JSON and YAML",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-FR-06": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "buildOutline(): pure symbol tree from the linter AST; unit-tested for JSON and YAML",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-FR-07": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "buildOutline(): pure symbol tree from the linter AST; unit-tested for JSON and YAML",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-FR-08": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "buildOutline(): pure symbol tree from the linter AST; unit-tested for JSON and YAML",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-FR-09": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaOutlineProvider.ts"
+      ],
+      "note": "registered for schema documents only; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "pure; kinds are a local enum the provider maps",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "depth-capped and total; fast-check covered",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F31-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaOutline.ts"
+      ],
+      "note": "no ref resolution, no I/O, no network",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/model.ts",
+        "src/settings.ts",
+        "package.json"
+      ],
+      "note": "gated on jsonschema.ai.enabled (default false); refusal path unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/model.ts"
+      ],
+      "note": "acquireModel() via vscode.lm only; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/verify.ts",
+        "src/ai/extract.ts"
+      ],
+      "note": "verification stack, retry loop and tolerant extraction; unit-tested without a model",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/verify.ts",
+        "src/ai/extract.ts"
+      ],
+      "note": "verification stack, retry loop and tolerant extraction; unit-tested without a model",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/verify.ts",
+        "src/ai/extract.ts"
+      ],
+      "note": "verification stack, retry loop and tolerant extraction; unit-tested without a model",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-06": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/verify.ts",
+        "src/ai/extract.ts"
+      ],
+      "note": "verification stack, retry loop and tolerant extraction; unit-tested without a model",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-07": {
+      "status": "manual",
+      "impl": [
+        "src/ai/commands.ts",
+        "src/ai/prompts.ts"
+      ],
+      "note": "command wiring is API-bound; prompts, scope checks and the Ajv gate are unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-08": {
+      "status": "manual",
+      "impl": [
+        "src/ai/commands.ts",
+        "src/ai/prompts.ts"
+      ],
+      "note": "command wiring is API-bound; prompts, scope checks and the Ajv gate are unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-09": {
+      "status": "manual",
+      "impl": [
+        "src/ai/commands.ts",
+        "src/ai/prompts.ts"
+      ],
+      "note": "command wiring is API-bound; prompts, scope checks and the Ajv gate are unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-10": {
+      "status": "manual",
+      "impl": [
+        "src/ai/commands.ts",
+        "src/ai/prompts.ts"
+      ],
+      "note": "command wiring is API-bound; prompts, scope checks and the Ajv gate are unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-11": {
+      "status": "manual",
+      "impl": [
+        "src/ai/commands.ts",
+        "src/ai/prompts.ts"
+      ],
+      "note": "command wiring is API-bound; prompts, scope checks and the Ajv gate are unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-12": {
+      "status": "manual",
+      "impl": [
+        "src/ai/commands.ts",
+        "src/ai/prompts.ts"
+      ],
+      "note": "command wiring is API-bound; prompts, scope checks and the Ajv gate are unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/prompts.ts"
+      ],
+      "note": "prompt builders take only the artifacts and a base name; asserted by tests",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/prompts.ts",
+        "src/ai/extract.ts",
+        "src/ai/verify.ts"
+      ],
+      "note": "pure modules; only ai/model.ts touches the API",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/commands.ts"
+      ],
+      "note": "every AI command is additive to a deterministic command that still works",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F32-NFR-03": {
+      "status": "manual",
+      "impl": [
+        "src/ai/commands.ts"
+      ],
+      "note": "withProgress + cancellation token; API-bound",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/agentTools.ts"
+      ],
+      "note": "one descriptor table delegating to the CLI core; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/agentTools.ts"
+      ],
+      "note": "one descriptor table delegating to the CLI core; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/agentTools.ts"
+      ],
+      "note": "one descriptor table delegating to the CLI core; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/agentTools.ts"
+      ],
+      "note": "one descriptor table delegating to the CLI core; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/agentTools.ts"
+      ],
+      "note": "one descriptor table delegating to the CLI core; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-06": {
+      "status": "implemented",
+      "impl": [
+        "src/agentTools.ts"
+      ],
+      "note": "one descriptor table delegating to the CLI core; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-07": {
+      "status": "implemented",
+      "impl": [
+        "src/LanguageModelTools.ts",
+        "package.json"
+      ],
+      "note": "manifest generated from the table; a test asserts the two agree",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-08": {
+      "status": "implemented",
+      "impl": [
+        "src/LanguageModelTools.ts"
+      ],
+      "note": "workspace-confined reads; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-09": {
+      "status": "implemented",
+      "impl": [
+        "src/LanguageModelTools.ts"
+      ],
+      "note": "fetch refused outright; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/mcp.ts",
+        "src/cli/bin.ts"
+      ],
+      "note": "pure JSON-RPC handler; the stdio loop is the only excluded part",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/mcp.ts",
+        "src/cli/bin.ts"
+      ],
+      "note": "pure JSON-RPC handler; the stdio loop is the only excluded part",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/mcp.ts",
+        "src/cli/bin.ts"
+      ],
+      "note": "pure JSON-RPC handler; the stdio loop is the only excluded part",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/mcp.ts",
+        "src/cli/bin.ts"
+      ],
+      "note": "pure JSON-RPC handler; the stdio loop is the only excluded part",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/mcp.ts",
+        "src/cli/bin.ts"
+      ],
+      "note": "pure JSON-RPC handler; the stdio loop is the only excluded part",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/agentTools.ts",
+        "src/cli/mcp.ts"
+      ],
+      "note": "pure and covered",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/cli/mcp.ts"
+      ],
+      "note": "protocol implemented directly; no new dependency",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F33-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/agentTools.ts"
+      ],
+      "note": "every argv is a reporting subcommand; nothing writes",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-01": {
+      "status": "implemented",
+      "impl": [
+        "package.json",
+        "media/walkthrough-preview.md"
+      ],
+      "note": "walkthrough with completion events and docs links; asserted by the manifest tests",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-02": {
+      "status": "implemented",
+      "impl": [
+        "package.json",
+        "media/walkthrough-preview.md"
+      ],
+      "note": "walkthrough with completion events and docs links; asserted by the manifest tests",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-03": {
+      "status": "implemented",
+      "impl": [
+        "package.json",
+        "media/walkthrough-preview.md"
+      ],
+      "note": "walkthrough with completion events and docs links; asserted by the manifest tests",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-04": {
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "keybindings with when clauses; asserted",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "keybindings with when clauses; asserted",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-06": {
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "submenu grouping and palette filtering; asserted",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-07": {
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "submenu grouping and palette filtering; asserted",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-08": {
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "submenu grouping and palette filtering; asserted",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-09": {
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "submenu grouping and palette filtering; asserted",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "name + structural detection, with the inline-binding rule keeping precedence; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "name + structural detection, with the inline-binding rule keeping precedence; unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/PreviewWebPanel.ts"
+      ],
+      "note": "pure predicate; no F01/F10 regression",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-NFR-02": {
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "manifest-only contributions asserted by tests",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "F34-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "package.json"
+      ],
+      "note": "declarative walkthrough; no activation cost",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     },
     "S01-SR-01": {
       "status": "manual",
@@ -3287,6 +4260,16 @@
         "src/SchemaAuthManager.ts"
       ],
       "note": "credentials attached only to their own host; not returned for a different origin"
+    },
+    "S05-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/model.ts",
+        "src/ai/prompts.ts"
+      ],
+      "note": "the single opt-in carve-out to S05-SR-02; bounded by S20-SR-07 and asserted by tests",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     },
     "S06-SR-01": {
       "status": "manual",
@@ -3677,7 +4660,8 @@
         "scripts/check-docs-audit.mjs"
       ],
       "note": "docs job, gated on the changes job's docs output; CI workflow requirement, not unit-taggable",
-      "specifiedAt": "2026-09-01"
+      "specifiedAt": "2026-09-01",
+      "implementedAt": "2026-09-02"
     },
     "S09-SR-10": {
       "status": "manual",
@@ -3686,7 +4670,8 @@
         "scripts/ci-detect-source-changes.sh"
       ],
       "note": "docs output computed alongside src in the shared changes-detection script; CI workflow requirement, not unit-taggable",
-      "specifiedAt": "2026-09-01"
+      "specifiedAt": "2026-09-01",
+      "implementedAt": "2026-09-02"
     },
     "S10-NFR-01": {
       "status": "manual",
@@ -4623,6 +5608,105 @@
       "note": "unattributed fixes counted and shown, never inferred from impl paths",
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
+    },
+    "S20-SR-01": {
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts",
+        "src/ai/model.ts",
+        "package.json"
+      ],
+      "note": "off by default and user-initiated only; a test asserts no command reaches a request while disabled",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S20-SR-02": {
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts",
+        "src/ai/model.ts",
+        "package.json"
+      ],
+      "note": "off by default and user-initiated only; a test asserts no command reaches a request while disabled",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S20-SR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/verify.ts"
+      ],
+      "note": "four-stage verification; failures surfaced explicitly as unverified",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S20-SR-04": {
+      "status": "manual",
+      "impl": [
+        "src/ai/commands.ts",
+        "src/ai/verify.ts"
+      ],
+      "note": "single undoable previewed edit; the scope checks that reject over-wide results are unit-tested",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S20-SR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/verify.ts"
+      ],
+      "note": "four-stage verification; failures surfaced explicitly as unverified",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S20-SR-06": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/model.ts"
+      ],
+      "note": "no SDK, model id, endpoint or credential in the source; asserted by a grep test over src/",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S20-SR-07": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/prompts.ts"
+      ],
+      "note": "artifacts + base name only; asserted",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S20-SR-08": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/commands.ts"
+      ],
+      "note": "every AI command is additive",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S20-SR-09": {
+      "status": "implemented",
+      "impl": [
+        "src/schemaDiff.ts",
+        "src/schemaCompat.ts",
+        "src/sampleDataGenerator.ts"
+      ],
+      "note": "the deterministic engines never consult a model",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S20-SR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/ai/verify.ts",
+        "src/ai/prompts.ts",
+        "src/ai/extract.ts"
+      ],
+      "note": "the model boundary is injected, so correctness is testable without a model",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     }
   }
 }

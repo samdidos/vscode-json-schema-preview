@@ -328,3 +328,72 @@ While VS Code's own language servers provide schema-driven editing help for JSON
 
 Schema `$ref`s are followed (local pointers, files next to the schema, cached remote schemas). Everything works offline: a remote schema is read from the local cache — run **JSON Schema: Cache Schema Locally** once to populate it — and no request is ever made while you type. Removing the `$schema` line turns the assistance off.
 <!-- spec:F19 end -->
+
+<!-- spec:F03 start -->
+## `jsonschema.validation.onSave`
+
+**Type:** `"off"` \| `"bound"` \| `"always"` · **Default:** `"off"`
+
+Re-validate a data file when it is saved.
+
+- `off` — validation stays an explicit action.
+- `bound` — re-validate files with an explicit binding (inline `$schema` or a
+  settings binding).
+- `always` — also re-validate files whose schema VS Code resolves natively (the
+  **(auto)** state in the status bar).
+
+Automatic runs are **silent**: diagnostics only, no notifications. They never
+fetch an uncached remote schema, so saving is never blocked on the network.
+
+This is the gap VS Code's own language servers leave open — they validate JSON
+live, but not YAML, TOML, JSONL, or anything behind authentication.
+<!-- spec:F03 end -->
+
+<!-- spec:F26 -->
+## `jsonschema.compat.codeLens`
+
+**Type:** `boolean` · **Default:** `true`
+
+Show a CodeLens on a schema's first line counting the breaking changes against
+its Git `HEAD` version. Computed in the background from the same classifier as
+**Diff Against Baseline**, so typing is never blocked. No Git baseline, or no
+changes, means no lens.
+
+<!-- spec:F32 start -->
+## `jsonschema.ai.enabled`
+
+**Type:** `boolean` · **Default:** `false`
+
+Enable the AI-assisted authoring commands. **Off by default**, and while it is
+off no code path can reach a model request.
+
+When on, the command you run sends the artifact it operates on — plus the file's
+base name — to the language model configured in VS Code, through the editor's own
+Language Model API. This extension ships no model, no API key and no provider
+endpoint, and collects no telemetry.
+
+See [AI assistance](/guide/ai) for the full list of what each command sends and
+the verification every result goes through.
+
+## `jsonschema.ai.maxAttempts`
+
+**Type:** `number` · **Default:** `3` · **Range:** 1–5
+
+How many times an AI command retries when its result fails verification, feeding
+the concrete failures back each time. After the last attempt the result is shown
+explicitly marked unverified — never silently.
+<!-- spec:F32 end -->
+
+<!-- spec:F17 -->
+## Lint rules
+
+Two rules check a schema's own annotations against itself, which no language
+server does:
+
+- **`valid-examples`** — every entry of an `examples` array must satisfy the
+  subschema that declares it.
+- **`valid-default`** — a `default` value must satisfy its own subschema.
+
+Both skip a subschema carrying a `$ref`, so an unresolved reference never
+produces a false positive. Override severity through
+[`jsonschema.lint.rules`](#jsonschema-lint-rules) like any other rule.

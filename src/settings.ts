@@ -129,3 +129,48 @@ export function getRefGraphMaxDepth(): number {
   if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) { return DEFAULT_REF_GRAPH_MAX_DEPTH; }
   return Math.floor(raw);
 }
+
+// ── AI assistance (F32 / S20) ────────────────────────────────────────────────
+
+/**
+ * Whether AI assistance is enabled (F32-FR-01 / S20-SR-01). Defaults to
+ * **false**: no code path may reach a model request until the user has
+ * explicitly opted in.
+ */
+export function getAiEnabled(): boolean {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.ai');
+  return cfg.get<boolean>('enabled') === true;
+}
+
+export const DEFAULT_AI_MAX_ATTEMPTS = 3;
+
+/** Attempts the verified-generation loop makes before giving up (F32-FR-04). */
+export function getAiMaxAttempts(): number {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.ai');
+  const raw = cfg.get<number>('maxAttempts');
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) { return DEFAULT_AI_MAX_ATTEMPTS; }
+  return Math.min(5, Math.max(1, Math.trunc(raw)));
+}
+
+// ── Validate on save (F03-FR-17) ─────────────────────────────────────────────
+
+export type ValidateOnSave = 'off' | 'bound' | 'always';
+
+/**
+ * When to re-validate a data file on save (F03-FR-17). `off` (the default)
+ * keeps validation an explicit action; `bound` covers files with a resolved
+ * binding; `always` also covers natively-resolved (auto) bindings.
+ */
+export function getValidateOnSave(): ValidateOnSave {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.validation');
+  const raw = cfg.get<string>('onSave');
+  return raw === 'bound' || raw === 'always' ? raw : 'off';
+}
+
+// ── Compatibility CodeLens (F26-FR-07) ───────────────────────────────────────
+
+/** Whether the breaking-change CodeLens is shown on schema files (default true). */
+export function getCompatCodeLensEnabled(): boolean {
+  const cfg = vscode.workspace.getConfiguration('jsonschema.compat');
+  return cfg.get<boolean>('codeLens') !== false;
+}

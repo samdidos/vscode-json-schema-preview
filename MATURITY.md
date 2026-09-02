@@ -19,7 +19,7 @@ is committed as [`maturity-score.json`](maturity-score.json).
 > signal directly; where none does (AI-agent integration) it is an explicit
 > presence checklist, documented below, not a vibe.
 
-**Snapshot: 2026-09-01**
+**Snapshot: 2026-09-02**
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/public/maturity-scorecard-dark.svg">
@@ -58,13 +58,12 @@ site plots the evolution over time from that folder. <!-- spec:S12 -->
 | **Code quality** | TS strict (2) · zero lint errors (2) · lint warnings vs a 200 ceiling (3) · knip clean (2) · bundler configured (1) |
 | **AI-agent integration** | AGENTS.md (1) · CLAUDE.md imports it (1) · spec-prompt hook (1) · pre-commit agent hook (1) · coverage agent hook (1) · session bootstrap script + hook (1) · permissions allowlist (1) · `.mcp.json` (1) · PR template asks for requirement IDs (1) · machine-readable build state (1) |
 
-The dimensions currently lowest are **CI/CD & release** (three deliberately
-non-blocking `continue-on-error` jobs — a values trade-off, not an accident),
-**Security / supply chain** (the cached OpenSSF Scorecard grade is 5.1/10),
-and **Docs** (specs are ~43% documented by the depth metric). All are honest,
-mechanical signals: raise the Scorecard grade, write the missing spec
-documentation (the docs site's Docs dimension page lists the least-covered
-specs), and the score follows on the next `npm run maturity`.
+The dimensions currently lowest are **Code quality** (lint warnings against the
+200 ceiling), **Docs** (specs are ~53% documented by the depth metric, up from
+~43%), and **Security / supply chain** (the cached OpenSSF Scorecard grade is
+5.1/10). All are honest, mechanical signals: raise the Scorecard grade, write the
+missing spec documentation (the docs site's Docs dimension page lists the
+least-covered specs), and the score follows on the next `npm run maturity`.
 
 ## Known limitations of the current metrics
 
@@ -169,6 +168,22 @@ specs), and the score follows on the next `npm run maturity`.
   (`npm run maturity:backfill`), and the docs site's Maturity page gained an
   **evolution-over-time diagram** rendered from that folder. Scoring itself is
   unchanged.
+
+- **2026-09-02** — Six new feature specs (**F29** schema test suites, **F30**
+  schema refactorings, **F31** schema outline, **F32** AI-assisted authoring,
+  **F33** agent tools + MCP server, **F34** command surface & onboarding) and one
+  new system spec (**S20** AI assistance safety & verification), plus amendments
+  to F03, F13, F16, F17, F20, F23, F26, F27 and S05. 115 new requirements, all
+  traced. Two notes on the rubric rather than the score:
+  **(a)** S20 is the first spec whose requirements are largely *prohibitions*
+  ("MUST NOT contain a vendor SDK", "MUST NOT reach a model while disabled").
+  The depth and effort metrics were built for specs that describe things
+  built, so S20's LOC evidence double-counts the F32/F33 code enforcing it —
+  its effort estimate is deliberately one step below its LOC band, and the
+  justification says so. **(b)** Coverage rose to ~94% lines / ~89% branches
+  because the new modules are pure by construction; that is the intended
+  consequence of keeping the model boundary and the VS Code boundary thin, not
+  a change in how coverage is measured. No check, weight or threshold changed.
 
 ## Maintaining this file
 

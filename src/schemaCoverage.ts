@@ -5,6 +5,7 @@
 // resolve remote $ref, evaluate conditional applicability, or reason about
 // patternProperties. The command layer resolves the binding and renders.
 
+import { createCompoundSchema } from 'genson-js';
 import { isObject, parseJsonPointer, resolvePointer } from './schemaPointer';
 
 export interface SchemaProperty {
@@ -172,4 +173,129 @@ export function renderCoverageReport(result: CoverageResult, header: string): st
     '(`if`/`then`), and `patternProperties` applicability are not evaluated._',
   );
   return lines.join('\n');
+}
+
+// ── Reconciliation: undeclared-in-schema (F23-FR-09/10) ──────────────────────
+
+export interface UndeclaredProperty {
+  /** Data-space path present in the data but not declared by the schema. */
+  dataPath: string;
+  /** Number of instances in which the path occurs. */
+  occurrences: number;
+  /** Schema inferred from the observed values (F06's engine), for the fix text. */
+  inferred: unknown;
+}
+
+export interface ReconcileResult {
+  coverage: CoverageResult;
+  undeclared: UndeclaredProperty[];
+}
+
+/**
+ * Collect every property path present in `data` together with the values seen
+ * at it. Same key format as {@link collectDataPaths} (array indices collapsed
+ * to `[]`), which is defined in terms of this walk.
+ */
+export function collectDataEntries(data: unknown): Map<string, unknown[]> {
+  const entries = new Map<string, unknown[]>();
+  function walk(node: unknown, path: string): void {
+    if (Array.isArray(node)) {
+      for (const el of node) { walk(el, `${path}[]`); }
+    } else if (isObject(node)) {
+      for (const [key, value] of Object.entries(node)) {
+        const childPath = ADD(path, key);
+        const bucket = entries.get(childPath);
+        if (bucket) { bucket.push(value); } else { entries.set(childPath, [value]); }
+        walk(value, childPath);
+      }
+    }
+  }
+  walk(data, '');
+  return entries;
+}
+
+/** Parent of a data path, skipping the `[]` array marker (`a[].b` → `a`). */
+function parentPath(dataPath: string): string {
+  const dot = dataPath.lastIndexOf('.');
+  if (dot === -1) { return ''; }
+  let parent = dataPath.slice(0, dot);
+  while (parent.endsWith('[]')) { parent = parent.slice(0, -2); }
+  return parent;
+}
+
+/**
+ * Both directions in one pass (F23-FR-09/10): which declared properties the
+ * data never exercises, and which paths the data uses that the schema does not
+ * declare. Only the *topmost* undeclared path in a chain is reported — when a
+ * whole new nested object appears, the object is the gap, not each of its
+ * leaves. Never throws.
+ */
+export function reconcile(schema: unknown, instances: unknown[]): ReconcileResult {
+  const coverage = computeCoverage(schema, instances);
+
+  let declared: Set<string>;
+  try {
+    declared = new Set(collectSchemaProperties(schema).map(p => p.dataPath));
+  } catch {
+    declared = new Set();
+  }
+
+  const observed = new Map<string, unknown[]>();
+  for (const instance of instances) {
+    try {
+      for (const [path, values] of collectDataEntries(instance)) {
+        const bucket = observed.get(path);
+        if (bucket) { bucket.push(...values); } else { observed.set(path, [...values]); }
+      }
+    } catch {
+      // isolate a bad instance; the others still contribute
+    }
+  }
+
+  const undeclared: UndeclaredProperty[] = [];
+  for (const [dataPath, values] of observed) {
+    if (declared.has(dataPath)) { continue; }
+    const parent = parentPath(dataPath);
+    // Report only the shallowest gap: if the parent is itself undeclared, the
+    // parent's own finding already covers this subtree.
+    if (parent !== '' && !declared.has(parent)) { continue; }
+    undeclared.push({ dataPath, occurrences: values.length, inferred: inferFromValues(values) });
+  }
+
+  undeclared.sort((a, b) => a.dataPath.localeCompare(b.dataPath));
+  return { coverage, undeclared };
+}
+
+/** Infer a schema for the values observed at one path (F23-FR-10). */
+function inferFromValues(values: unknown[]): unknown {
+  try {
+    return createCompoundSchema(values);
+  } catch {
+    return {};
+  }
+}
+
+/** Markdown report covering both directions (F23-FR-10). */
+export function renderReconcileReport(result: ReconcileResult, header: string): string {
+  const lines = [renderCoverageReport(result.coverage, header).trimEnd(), ''];
+  lines.push('', `## Undeclared in the schema (${result.undeclared.length})`, '');
+  if (!result.undeclared.length) {
+    lines.push('The data sets nothing the schema does not declare.', '');
+  } else {
+    lines.push('Paths the data uses that the schema never declares:', '');
+    for (const entry of result.undeclared) {
+      const type = typeLabel(entry.inferred);
+      lines.push(`- \`${entry.dataPath}\` — ${type} (seen ${entry.occurrences}×)`);
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+function typeLabel(inferred: unknown): string {
+  if (!isObject(inferred)) { return 'unknown'; }
+  const type = inferred.type;
+  if (typeof type === 'string') { return type; }
+  if (Array.isArray(type)) { return type.map(String).join(' | '); }
+  return 'unknown';
 }

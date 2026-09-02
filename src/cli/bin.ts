@@ -5,6 +5,7 @@
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { runCli, type CliIO } from './cli';
+import { handleMcpMessage, createInvoker, takeLines } from './mcp';
 
 // Injected at build time from the CLI package's own package.json.
 declare const CLI_VERSION: string;
@@ -44,13 +45,47 @@ const io: CliIO = {
   version: typeof CLI_VERSION === 'string' ? CLI_VERSION : '0.0.0',
 };
 
-runCli(process.argv.slice(2), io)
-  .then((result) => {
-    if (result.stdout) { process.stdout.write(result.stdout); }
-    if (result.stderr) { process.stderr.write(result.stderr); }
-    process.exit(result.code);
-  })
-  .catch((e: unknown) => {
-    process.stderr.write(`Unexpected error: ${(e as Error).message}\n`);
-    process.exit(70); // EX_SOFTWARE — an internal fault, distinct from data/usage
+/**
+ * F27-FR-18 / F33-FR-10 — serve MCP over stdio. Only stdout carries protocol
+ * traffic (F33-FR-14): anything else written there corrupts the stream, so
+ * failures go to stderr.
+ */
+function serveMcp(): void {
+  const invoke = createInvoker(io);
+  let buffer = '';
+  let chain: Promise<void> = Promise.resolve();
+
+  process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', (chunk: string) => {
+    buffer += chunk;
+    const { lines, rest } = takeLines(buffer);
+    buffer = rest;
+    for (const line of lines) {
+      // Serialise responses so they leave in request order.
+      chain = chain.then(async () => {
+        try {
+          const response = await handleMcpMessage(line, invoke, io.version);
+          if (response) { process.stdout.write(`${response}\n`); }
+        } catch (e) {
+          process.stderr.write(`MCP handler error: ${(e as Error).message}\n`);
+        }
+      });
+    }
   });
+  process.stdin.on('end', () => { chain.then(() => process.exit(0)); });
+}
+
+if (process.argv[2] === 'mcp') {
+  serveMcp();
+} else {
+  runCli(process.argv.slice(2), io)
+    .then((result) => {
+      if (result.stdout) { process.stdout.write(result.stdout); }
+      if (result.stderr) { process.stderr.write(result.stderr); }
+      process.exit(result.code);
+    })
+    .catch((e: unknown) => {
+      process.stderr.write(`Unexpected error: ${(e as Error).message}\n`);
+      process.exit(70); // EX_SOFTWARE — an internal fault, distinct from data/usage
+    });
+}

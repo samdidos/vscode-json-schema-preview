@@ -136,6 +136,20 @@ const features = [
     desc: 'Ctrl-click (or Go to Definition) on any $ref to jump straight to the schema it points at — local, relative, or a cached remote schema.',
   },
   {
+    id: 'quick-fix',
+    icon: '💡',
+    title: 'Quick Fixes',
+    gif: 'demo-quick-fix.gif',
+    desc: 'Validation errors carry a lightbulb when the repair is unambiguous — insert a missing required property, drop an unexpected one, or swap a value for the closest allowed enum member.',
+  },
+  {
+    id: 'draft-migration',
+    icon: '🔀',
+    title: 'Draft Migration',
+    gif: 'demo-draft-migration.gif',
+    desc: 'Rewrite a schema between draft-07, 2019-09 and 2020-12, applying the well-known keyword changes and leaving anything it cannot safely convert untouched.',
+  },
+  {
     id: 'schema-linting',
     icon: '💡',
     title: 'Schema Linting',

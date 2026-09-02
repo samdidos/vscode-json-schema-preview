@@ -109,6 +109,8 @@ suite('[F20-FR-06] workspaceValidation — summary', () => {
   test('summarize counts by kind and status', () => {
     assert.deepStrictEqual(summarize(results), {
       filesChecked: 3, valid: 1, withErrors: 1, schemasLinted: 1, bindingsFailed: 1,
+      // F20-FR-09 — suites are counted separately; a workspace with none reports zero.
+      suitesRun: 0, casesFailed: 0,
     });
   });
 

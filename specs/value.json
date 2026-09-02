@@ -359,6 +359,89 @@
    "justification": "Now a genuine two-way navigation aid, not just a follow-along convenience: the editor drives the preview (jumping to the exact matching section when it resolves) and the preview drives the editor back, so browsing the rendered docs first and landing on the right source line works too — removing a manual search-the-source workflow entirely. On by default, no built-in VS Code or common-extension equivalent syncs a custom rendered webview with the source both ways.",
    "estimator": "the project's AI coding agent (Claude Code)",
    "estimatedAt": "2026-08-11"
+  },
+  "F29": {
+   "reach": 2,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "UNIQUE",
+    "CI"
+   ],
+   "score": 7.68,
+   "tier": "Moderate",
+   "justification": "Only schema *authors* write suites, so reach is narrow — but for them it converts a silent class of regression into a failing check, and it runs in CI as well as the editor. Nothing comparable exists in an editor today.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-09-02"
+  },
+  "F30": {
+   "reach": 2,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "UNIQUE"
+   ],
+   "score": 7.04,
+   "tier": "Moderate",
+   "justification": "Restructuring a schema is occasional but currently manual text surgery whose mistakes are silent; no editor offers schema-aware refactoring, and rename alone removes a real footgun.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-09-02"
+  },
+  "F31": {
+   "reach": 4,
+   "impact": 3,
+   "confidence": 0.8,
+   "factors": [
+    "ZEROCONF",
+    "UNIQUE"
+   ],
+   "score": 11.52,
+   "tier": "Moderate",
+   "justification": "Everyone who opens a schema gets a usable Outline, breadcrumbs and Go-to-Symbol with no action at all; the built-in JSON outline is actively unhelpful for schemas. Navigation aid rather than a reason to install.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-09-02"
+  },
+  "F32": {
+   "reach": 2,
+   "impact": 3,
+   "confidence": 0.5,
+   "factors": [
+    "DEP",
+    "NARROW"
+   ],
+   "score": 2.4,
+   "tier": "Marginal",
+   "justification": "Opt-in and off by default, and it needs a configured language model, so reach is small by construction. Impact is real for the description chore and error explanation, but this is speculative: there is no comparable in-editor schema assistant to reason from, hence 0.5 confidence.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-09-02"
+  },
+  "F33": {
+   "reach": 3,
+   "impact": 4,
+   "confidence": 0.8,
+   "factors": [
+    "UNIQUE",
+    "CI"
+   ],
+   "score": 11.52,
+   "tier": "Moderate",
+   "justification": "Agents are increasingly in the loop, and this hands them correct answers to the questions they most reliably get wrong about schemas. Nothing comparable exists, and the MCP server reaches agents outside the editor too. Capped at 0.8: how much agents actually reach for these tools is not yet observable.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-09-02"
+  },
+  "F34": {
+   "reach": 5,
+   "impact": 3,
+   "confidence": 1,
+   "factors": [
+    "ZEROCONF",
+    "GATEWAY"
+   ],
+   "score": 18,
+   "tier": "High",
+   "justification": "Onboarding, keybindings, menu structure and earlier schema detection touch every user on their first minute and every session after. It is a gateway rather than a destination — its value is the other features becoming findable.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-09-02"
   }
  }
 }

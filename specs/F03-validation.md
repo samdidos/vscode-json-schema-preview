@@ -29,6 +29,14 @@ Errors are reported as VS Code diagnostics in the Problems panel.
   validator MUST use that natively-resolved schema URL rather than report
   "No schema bound". The file is already schema-backed, so validation MUST
   recognise the auto binding and validate against it.
+- **F03-FR-17** Validation MAY be re-run automatically when a bound data file is
+  saved, governed by `jsonschema.validation.onSave` (default `off`; `bound`
+  re-validates a file that already has a resolved binding, `always` also
+  re-validates one whose binding resolves natively per F03-FR-16). Automatic
+  runs MUST be silent — diagnostics only, no notification — and MUST NOT fetch a
+  remote schema that is not already cached (F08), so saving never blocks on the
+  network. This closes the gap for YAML, TOML, JSONL and authenticated schemas,
+  which VS Code's own language servers do not validate live.
 
 ### Validation Execution
 
@@ -88,3 +96,11 @@ Errors are reported as VS Code diagnostics in the Problems panel.
 2. Opening `person-valid.json` and validating produces zero diagnostics and a
    success notification.
 3. Validation works without an explicit binding when `$schema` is present inline.
+
+## History
+
+- **2026-09-02** — Added F03-FR-17: opt-in re-validation on save
+  (`jsonschema.validation.onSave`, default `off`). Automatic runs are silent and
+  never fetch an uncached remote schema, so saving is never blocked on the
+  network. This closes the live-validation gap for YAML, TOML, JSONL and
+  authenticated schemas, which VS Code's own language servers leave open.

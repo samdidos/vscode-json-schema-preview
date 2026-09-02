@@ -74,7 +74,9 @@ schema *authors*.
 
 ## Out of Scope
 
-- Find-all-references and rename/refactor of `$ref` targets.
+- Find-all-references and rename/refactor of `$ref` targets. These live in
+  [F30-schema-refactoring.md](F30-schema-refactoring.md), which reuses this
+  spec's pointer parsing and AST locators.
 - Resolving `$id`-based / `$anchor` URI bases (bundler-grade resolution lives
   in F14); this spec resolves location-based refs only.
 - `$ref` completion (IntelliSense suggestions while typing a ref).
@@ -102,3 +104,9 @@ schema *authors*.
   cache-schema command) for remote targets.
 - Consistent with **F01** type-labelling (`describeType`).
 - **S03**: no subprocess, no network on hover; **S05**: no telemetry.
+
+## History
+
+- **2026-09-02** — Out of Scope narrowed: find-all-references and rename now exist,
+  in [F30](F30-schema-refactoring.md), which reuses this spec's pointer parsing,
+  `refKind` classification and AST locators rather than reimplementing them.

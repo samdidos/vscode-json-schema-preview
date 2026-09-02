@@ -36,6 +36,12 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [F26-compat-gate.md](F26-compat-gate.md) | Backward-compatibility verdict & CI gate for schema diff |
 | [F27-cli.md](F27-cli.md) | Standalone command-line interface (validate/lint/diff/bundle/migrate) |
 | [F28-scroll-sync.md](F28-scroll-sync.md) | Preview scroll sync with the schema editor |
+| [F29-schema-tests.md](F29-schema-tests.md) | Declarative schema test suites (`*.schema.test.json`) |
+| [F30-schema-refactoring.md](F30-schema-refactoring.md) | Schema refactorings (extract/inline `$ref`, rename, find refs, remove unused) |
+| [F31-schema-outline.md](F31-schema-outline.md) | Schema-aware document outline & breadcrumbs |
+| [F32-ai-authoring.md](F32-ai-authoring.md) | AI-assisted schema authoring (VS Code Language Model API) |
+| [F33-agent-tools.md](F33-agent-tools.md) | Agent tools: language model tools + `jstk mcp` server |
+| [F34-command-surface.md](F34-command-surface.md) | Command surface & onboarding (walkthrough, keybindings, menus, detection) |
 | [S01-security.md](S01-security.md) | Webview security (CSP, nonces, sanitisation) |
 | [S02-workspace-trust.md](S02-workspace-trust.md) | Workspace Trust integration |
 | [S03-performance.md](S03-performance.md) | Performance and resource management |
@@ -55,6 +61,7 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S17-concurrent-verify-gate.md](S17-concurrent-verify-gate.md) | Concurrent local verify gate (`npm run verify`): parallel steps, full-summary reporting, `--fail-fast` option, dependency audit |
 | [S18-mutation-score.md](S18-mutation-score.md) | Publishing the mutation score as a committed per-file artifact, so test strength can be compared where line coverage (gated at 80%, so flat) cannot |
 | [S19-defect-attribution.md](S19-defect-attribution.md) | Attributing each fix to the requirement it repaired via a `Fixes:` commit trailer, so defect counts are recorded rather than inferred |
+| [S20-ai-assistance.md](S20-ai-assistance.md) | AI assistance safety & verification (opt-in, deterministic verification, model agnosticity) |
 
 ## Scope
 
