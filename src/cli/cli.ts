@@ -22,7 +22,10 @@ import { generateAndValidate } from '../sampleDataGenerator';
 import { computeCoverage, renderCoverageReport } from '../schemaCoverage';
 import { TARGET_LANGUAGES, generateCode } from '../typeGenerator';
 import { buildRefGraph, detectCycle, summarizeGraph, renderAdjacencyList, layoutGraph, renderGraphSvg } from '../refGraph';
-import { parseTestSuite, runTestSuite, renderSuiteReport, type SuiteResult } from '../schemaTests';
+import {
+  parseTestSuite, runTestSuite, renderSuiteReport,
+  type SuiteResult, type SuiteProblem, type CaseResult,
+} from '../schemaTests';
 import { enrichInferredSchema } from '../inferenceEnrich';
 
 /** Injected side-effect surface so `runCli` stays pure and testable. */
@@ -485,7 +488,9 @@ async function cmdTest(args: ParsedArgs, io: CliIO): Promise<CliResult> {
     }
     const parsed = parseTestSuite(raw);
     if (!parsed.ok) {
-      const problems = parsed.problems.map((p) => `  ${p.pointer || '(root)'}: ${p.message}`).join('\n');
+      const problems = parsed.problems
+        .map((p: SuiteProblem) => `  ${p.pointer || '(root)'}: ${p.message}`)
+        .join('\n');
       return err(`Malformed suite ${suiteFile}:\n${problems}\n`, EXIT.data);
     }
 
@@ -518,7 +523,7 @@ async function cmdTest(args: ParsedArgs, io: CliIO): Promise<CliResult> {
         total: result.total,
         passed: result.passed,
         failed: result.failed,
-        cases: result.cases.map((c) => ({
+        cases: result.cases.map((c: CaseResult) => ({
           name: c.name, expect: c.expect, passed: c.passed, message: c.message ?? null,
         })),
       })),

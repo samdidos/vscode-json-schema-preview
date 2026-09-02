@@ -51,10 +51,15 @@ function isJsonSchemaMetaRef(value: unknown): boolean {
 // schema the moment it exists, which is exactly when the "insert $schema" fix
 // (F17) is most useful — so detection must not wait for the `$schema` line it
 // is meant to add.
-const SCHEMA_FILENAME_RE = /(^|\/)(schema\.(json|ya?ml)|[^/]+\.schema\.(json|ya?ml))$/i;
+// Matched against the base name alone. Testing the whole path with a
+// `[^/]+\.schema\.` pattern is ambiguous — `[^/]` also matches `.`, so a path
+// of many dotted segments makes the engine try every split.
+const SCHEMA_BASENAMES = new Set(['schema.json', 'schema.yaml', 'schema.yml']);
+const SCHEMA_SUFFIX_RE = /\.schema\.(json|ya?ml)$/i;
 
 export function looksLikeSchemaFileName(fsPathOrUri: string): boolean {
-  return SCHEMA_FILENAME_RE.test(fsPathOrUri.replace(/\\/g, '/'));
+  const base = fsPathOrUri.replace(/\\/g, '/').split('/').pop() ?? '';
+  return SCHEMA_BASENAMES.has(base.toLowerCase()) || SCHEMA_SUFFIX_RE.test(base);
 }
 
 /**

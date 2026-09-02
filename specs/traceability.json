@@ -5541,6 +5541,16 @@
       ],
       "note": "check:audit script shared by scripts/verify.mjs's STEPS and ci.yml's build job"
     },
+    "S17-SR-07": {
+      "status": "implemented",
+      "impl": [
+        "scripts/verify.mjs",
+        "package.json"
+      ],
+      "note": "knip joins the concurrent gate; a test asserts every blocking CI check is also a local step",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
     "S18-NFR-01": {
       "status": "implemented",
       "impl": [

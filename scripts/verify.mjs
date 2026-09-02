@@ -33,6 +33,9 @@ export const STEPS = [
   'check:spec-effort',
   'check:spec-value',
   'check:audit',
+  // S17-SR-07 — a blocking CI check absent from the local gate is a
+  // guaranteed round trip; `knip` is the same command ci.yml's knip job runs.
+  'knip',
   'test:coverage',
 ];
 

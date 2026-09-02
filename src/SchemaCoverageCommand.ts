@@ -8,7 +8,10 @@ import * as vscode from 'vscode';
 import { confirm } from './notify';
 import * as fs from 'fs';
 import * as path from 'path';
-import { reconcile, renderReconcileReport, type SchemaProperty } from './schemaCoverage';
+import {
+  reconcile, renderReconcileReport,
+  type SchemaProperty, type UndeclaredProperty,
+} from './schemaCoverage';
 import { parseSchemaText, parseJsonPointer, locatePointerTarget } from './schemaPointer';
 import { findBoundSchemaPath, extractInlineSchemaUrl } from './SchemaBindingManager';
 import { SchemaAuthManager } from './SchemaAuthManager';
@@ -66,7 +69,8 @@ async function runCoverage(
     if (diags.length) { diagnostics.set(resolved.uri, diags); }
   }
 
-  const drift = undeclared.length
+  const undeclaredPaths: UndeclaredProperty[] = undeclared;
+  const drift = undeclaredPaths.length
     ? ` ${undeclared.length} path${undeclared.length === 1 ? '' : 's'} in the data are undeclared.`
     : '';
   const summary =

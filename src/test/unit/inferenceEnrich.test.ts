@@ -4,7 +4,7 @@ import { createSchema } from 'genson-js';
 
 const {
   detectFormat, detectEnum, enrichInferredSchema,
-  ENUM_MIN_OBSERVATIONS, ENUM_MAX_DISTINCT,
+  ENUM_MIN_OBSERVATIONS, ENUM_MAX_DISTINCT, ENUM_MAX_DISTINCT_RATIO,
 } = require('../../inferenceEnrich');
 
 type Schema = Record<string, unknown>;
@@ -54,8 +54,12 @@ suite('[F06-FR-14] detectEnum() — a closed set only when it repeats', () => {
   });
 
   test('refuses when values barely repeat', () => {
-    // 4 observations, 3 distinct → ratio 0.75 > 0.5
+    // 4 observations, 3 distinct → ratio 0.75, above the threshold.
+    assert.ok(3 / 4 > ENUM_MAX_DISTINCT_RATIO, 'the fixture exercises the ratio rule');
     assert.strictEqual(detectEnum(['a', 'b', 'c', 'a']), undefined);
+    // 4 observations, 2 distinct → ratio 0.5, exactly at the threshold.
+    assert.ok(2 / 4 <= ENUM_MAX_DISTINCT_RATIO);
+    assert.deepStrictEqual(detectEnum(['a', 'b', 'a', 'b']), ['a', 'b']);
   });
 
   test('refuses a set that is too large to be a contract', () => {
