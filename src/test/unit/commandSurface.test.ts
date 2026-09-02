@@ -160,6 +160,35 @@ suite('[F03-FR-17] validate-on-save setting', () => {
   });
 });
 
+const DOCS_HOST = 'samdidos.github.io';
+
+/**
+ * The hosts a markdown description actually links to.
+ *
+ * Neither `/samdidos\.github\.io/` nor `.includes('samdidos.github.io')` is a
+ * host check — both are satisfied by `https://evil.example/samdidos.github.io`,
+ * which is what CodeQL's js/regex/missing-regexp-anchor and
+ * js/incomplete-url-substring-sanitization each say in turn. Parsing the URL
+ * and comparing `hostname` is the check that was meant all along.
+ *
+ * Splitting on whitespace and markdown's link delimiters is deliberately not a
+ * URL pattern: a regex that looks like one, used on a URL, is the shape those
+ * queries flag. The delimiters matter — each description ends in a
+ * `[label](url)` link, so `(` and `[` have to break the token too.
+ */
+function linkedHosts(description: string): string[] {
+  return description
+    .split(/[\s()[\]]+/)
+    .filter(token => token.startsWith('https://') || token.startsWith('http://'))
+    .flatMap(token => {
+      try {
+        return [new URL(token).hostname];
+      } catch {
+        return [];
+      }
+    });
+}
+
 suite('[F34-FR-01][F34-FR-02][F34-FR-03][F34-NFR-03] the walkthrough', () => {
   const walkthrough = contributes.walkthroughs?.[0];
 
@@ -182,13 +211,27 @@ suite('[F34-FR-01][F34-FR-02][F34-FR-03][F34-NFR-03] the walkthrough', () => {
 
   test('every step links to the docs site and ships its media file', () => {
     for (const step of walkthrough.steps) {
-      // Substring, not a regex: an unanchored host pattern reads as a URL
-      // check missing its anchors (CodeQL js/regex/missing-regexp-anchor),
-      // and this only asks whether the description links to the docs site.
-      assert.ok(step.description.includes('samdidos.github.io'), `${step.id} has no docs link`);
+      assert.ok(
+        linkedHosts(step.description).includes(DOCS_HOST),
+        `${step.id} has no docs link`,
+      );
       const media = path.join(__dirname, '..', '..', '..', step.media.markdown);
       assert.ok(fs.existsSync(media), `${step.id}: missing ${step.media.markdown}`);
     }
+  });
+
+  test('[F34-FR-03] the docs-link check compares the host, not a substring', () => {
+    // The regression this guards: both a substring match and an unanchored
+    // regex accept a lookalike that merely mentions the docs host in its path.
+    assert.deepStrictEqual(
+      linkedHosts('[Open the guide](https://evil.example/samdidos.github.io/)'),
+      ['evil.example'],
+    );
+    assert.deepStrictEqual(
+      linkedHosts('[Open the guide](https://samdidos.github.io/vscode-json-schema-preview/guide/)'),
+      [DOCS_HOST],
+    );
+    assert.deepStrictEqual(linkedHosts('no link here'), []);
   });
 });
 
