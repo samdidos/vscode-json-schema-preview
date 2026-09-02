@@ -24,6 +24,11 @@ deliberate: a red gate that stops at the first failure makes you fix, re-run and
 discover the next one, five minutes at a time. Seeing all failures at once is
 the point.
 
+Every check that **blocks CI is also a local step** — lint, type-check, knip and
+the dependency audit included. A blocking CI job missing from the local gate is
+not a drift risk so much as a guaranteed round trip: you push, wait, and learn
+about an unused export only then.
+
 Pass `--fail-fast` (or run `npm run verify:fail-fast`) to cancel the remaining
 steps on the first failure instead, when you want the quick answer rather than
 the full picture.

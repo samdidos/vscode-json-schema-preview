@@ -30,8 +30,18 @@ export function extractJson(response: string): ExtractResult {
  * none. Handles ``` and ```json (and any other language tag).
  */
 export function unwrapFence(response: string): string {
-  const match = /```[^\n`]*\n([\s\S]*?)(?:```|$)/.exec(response);
-  return match ? match[1] : response;
+  // Scanned rather than matched: a lazy quantifier between a literal and an
+  // end-anchored alternation backtracks over the whole response when the fence
+  // is never closed, and a model response is exactly the kind of unbounded,
+  // uncontrolled input where that matters.
+  const open = response.indexOf('```');
+  if (open === -1) { return response; }
+  const bodyStart = response.indexOf('\n', open);
+  if (bodyStart === -1) { return response; }
+  const close = response.indexOf('```', bodyStart);
+  return close === -1
+    ? response.slice(bodyStart + 1)
+    : response.slice(bodyStart + 1, close);
 }
 
 interface Span { start: number; end: number }

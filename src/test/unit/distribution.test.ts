@@ -4,7 +4,8 @@ import * as path from 'path';
 import * as vscodeMock from '../mocks/vscode';
 
 const {
-  registerMcpServerDefinition, serverDefinitionSpec, MCP_PROVIDER_ID, MCP_PACKAGE,
+  registerMcpServerDefinition, serverDefinitionSpec,
+  MCP_PROVIDER_ID, MCP_PACKAGE, MCP_SERVER_LABEL,
 } = require('../../McpServerDefinition');
 const { confirm, CONFIRMATION_MS } = require('../../notify');
 const { registerSchemaDiff } = require('../../SchemaDiffCommand');
@@ -19,7 +20,7 @@ setup(() => vscodeMock.resetAll());
 suite('[F33-FR-15] MCP server definition provider — the Marketplace route', () => {
   test('the manifest contributes the provider under the shared id', () => {
     assert.deepStrictEqual(pkg.contributes.mcpServerDefinitionProviders, [
-      { id: MCP_PROVIDER_ID, label: 'JSON Schema Toolkit' },
+      { id: MCP_PROVIDER_ID, label: MCP_SERVER_LABEL },
     ]);
   });
 
@@ -36,6 +37,7 @@ suite('[F33-FR-15] MCP server definition provider — the Marketplace route', ()
     assert.strictEqual(registerMcpServerDefinition(context as never), true);
     assert.strictEqual(vscodeMock.lm.registerMcpServerDefinitionProvider.callCount, 1);
     const [id, provider] = vscodeMock.lm.registerMcpServerDefinitionProvider.firstCall.args;
+    assert.strictEqual(serverDefinitionSpec('1.2.3').label, MCP_SERVER_LABEL);
     assert.strictEqual(id, MCP_PROVIDER_ID);
     const [definition] = provider.provideMcpServerDefinitions();
     assert.ok(definition instanceof vscodeMock.McpStdioServerDefinition);
@@ -95,11 +97,19 @@ suite('[F34-FR-12] confirm() — quiet success confirmations', () => {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) { if (entry.name !== 'test') { walk(full); } continue; }
         if (!full.endsWith('.ts')) { continue; }
+        const DONE_WORDS = ['saved', 'bundled', 'dereferenced', 'copied', 'refreshed', 'removed', 'configured'];
         for (const line of fs.readFileSync(full, 'utf-8').split('\n')) {
           // A bare showInformationMessage whose text is a past-tense "done"
           // statement and which offers no button is the pattern F34-FR-12 bans.
-          if (/^\s*vscode\.window\.showInformationMessage\([`'"][^,]*\b(saved|bundled|dereferenced|copied|refreshed|removed|configured)\b[^,]*[`'"]\);/.test(line)) {
-            offenders.push(`${path.relative(ROOT, full)}: ${line.trim()}`);
+          // Checked by scanning rather than a pattern: the obvious regex needs
+          // two unbounded `[^,]*` runs, which is the shape CodeQL flags.
+          const trimmed = line.trim();
+          const isBare = trimmed.startsWith('vscode.window.showInformationMessage(')
+            && trimmed.endsWith(');')
+            && !trimmed.includes("',")
+            && !trimmed.includes('`,');
+          if (isBare && DONE_WORDS.some(w => trimmed.includes(w))) {
+            offenders.push(`${path.relative(ROOT, full)}: ${trimmed}`);
           }
         }
       }

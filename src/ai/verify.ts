@@ -13,7 +13,7 @@ import { lintSchema } from '../schemaLinter';
 import { generateAndValidate } from '../sampleDataGenerator';
 import { extractJson } from './extract';
 
-export type VerifyStage = 'parse' | 'compile' | 'lint' | 'sample' | 'scope';
+type VerifyStage = 'parse' | 'compile' | 'lint' | 'sample' | 'scope';
 
 export interface VerifyProblem {
   stage: VerifyStage;
@@ -99,11 +99,6 @@ function stripMeta(schema: unknown): unknown {
   return Object.fromEntries(
     Object.entries(schema as Record<string, unknown>).filter(([k]) => k !== '$schema'),
   );
-}
-
-export interface GenerationAttempt {
-  attempt: number;
-  problems: VerifyProblem[];
 }
 
 export type GeneratedOutcome<T> =

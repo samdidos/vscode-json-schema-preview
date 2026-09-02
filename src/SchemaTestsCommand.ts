@@ -9,7 +9,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import {
   parseTestSuite, runTestSuite, isSuitePath, renderSuiteReport,
-  type SuiteResult, type TestSuite,
+  type SuiteResult, type TestSuite, type CaseResult,
 } from './schemaTests';
 import { parseDataText, languageIdForPath } from './workspaceValidation';
 import { parseSchemaText, locatePointerTarget, parseJsonPointer } from './schemaPointer';
@@ -81,7 +81,7 @@ async function suitesFor(schemaUri: vscode.Uri): Promise<vscode.Uri[]> {
 export function suiteDiagnostics(suiteText: string, result: SuiteResult): vscode.Diagnostic[] {
   return result.cases
     .filter(c => !c.passed)
-    .map(c => {
+    .map((c: CaseResult) => {
       const span = locatePointerTarget(suiteText, 'json', parseJsonPointer(c.pointer));
       const range = span
         ? new vscode.Range(offsetToPosition(suiteText, span.start), offsetToPosition(suiteText, span.end))

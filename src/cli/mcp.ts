@@ -13,7 +13,7 @@ import { runCli, type CliIO } from './cli';
 /** MCP revision this server implements. */
 export const PROTOCOL_VERSION = '2024-11-05';
 
-export const SERVER_INFO = { name: 'json-schema-toolkit', version: '' } as const;
+const SERVER_INFO = { name: 'json-schema-toolkit', version: '' } as const;
 
 /** JSON-RPC 2.0 error codes used here (F33-FR-12). */
 export const RPC = {

@@ -71,7 +71,7 @@ async function presentUnverified(text: string | undefined, problems: VerifyProbl
 
 // ── F32-FR-07 — fill in missing descriptions ─────────────────────────────────
 
-export function describePropertiesCommand() {
+function describePropertiesCommand() {
   return async (): Promise<void> => {
     const editor = activeSchemaEditor();
     if (!editor) { return; }
@@ -125,7 +125,7 @@ export function describePropertiesCommand() {
 
 // ── F32-FR-09 — natural language to a verified schema ────────────────────────
 
-export function draftSchemaCommand() {
+function draftSchemaCommand() {
   return async (): Promise<void> => {
     const ask = await ready();
     if (!ask) { return; }
@@ -156,7 +156,7 @@ export function draftSchemaCommand() {
 
 // ── F32-FR-10 — semantic enrichment of an inferred schema ────────────────────
 
-export function enrichSchemaCommand() {
+function enrichSchemaCommand() {
   return async (): Promise<void> => {
     const editor = activeSchemaEditor();
     if (!editor) { return; }
@@ -195,7 +195,7 @@ export function enrichSchemaCommand() {
 
 // ── F32-FR-08 — explain a finding ────────────────────────────────────────────
 
-export function explainDiagnosticCommand() {
+function explainDiagnosticCommand() {
   return async (diagnostic?: vscode.Diagnostic): Promise<void> => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) { return; }
@@ -234,7 +234,7 @@ function firstDiagnosticAt(editor: vscode.TextEditor): vscode.Diagnostic | undef
 
 // ── F32-FR-11 — realistic / adversarial sample data ──────────────────────────
 
-export function generateRealisticDataCommand() {
+function generateRealisticDataCommand() {
   return async (): Promise<void> => {
     const editor = activeSchemaEditor();
     if (!editor) { return; }
@@ -309,7 +309,7 @@ export function filterByExpectation(
 
 // ── F32-FR-12 — migration notes from a computed diff ─────────────────────────
 
-export function migrationNotesCommand() {
+function migrationNotesCommand() {
   return async (report?: string, verdict?: string, fileName?: string): Promise<void> => {
     if (!report || !verdict) {
       vscode.window.showInformationMessage('Run JSON Schema: Diff Against Baseline first, then ask for migration notes.');

@@ -6,9 +6,9 @@
 
 import { createAjv } from './ajvFactory';
 
-export type Expect = 'valid' | 'invalid';
+type Expect = 'valid' | 'invalid';
 
-export interface TestCase {
+interface TestCase {
   /** Reported name: the case's own `name`, else a positional label (F29-FR-03). */
   name: string;
   expect: Expect;
