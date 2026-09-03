@@ -42,20 +42,31 @@ import { createRealCursor } from './helpers/realCursor';
  * docs/public/demo-showcase.gif via ffmpeg's palette pipeline, instead of
  * scripts/make-gifs.mjs's gif-encoder-2 frame-stitching.
  *
- * Re-opening the schema file right after hiding it (step 4) uses "Reopen
- * Closed Editor" (Ctrl+Shift+T) rather than the Explorer or Quick Open
- * (Ctrl+P): a CI run proved this the hard way — Explorer's tree only
- * readdir()s a folder on first expand/refresh, and for a file saved via the
- * native-save-dialog stub moments earlier in the same run, that lagged past
- * a 15s wait. Ctrl+Shift+T reuses VS Code's own in-memory editor-history
- * stack instead, with no dependency on the filesystem tree at all — and it
- * reopens exactly the tab just closed. Quick Open has its own documented
- * flakiness for a freshly-seeded/generated fixture (see the History note in
- * S08-e2e-testing.md on two other demos that hit the same thing), so it's
- * avoided too. The Explorer *is* still used once, in step 13 — deliberately,
- * since "browse to a file" is the point being demonstrated there — but only
- * after a full minute of other steps have given the tree time to catch up,
- * and with a retry (re-toggle the folder, wait again) as a second safety net.
+ * The schema editor and the preview sit side by side from step 3 onward, and
+ * the schema tab is never closed. An earlier cut closed it for "a beat with
+ * only the viewer on screen": that read well as a still, and broke everything
+ * after it. Closing the last editor in a group makes VS Code remove the
+ * group, promoting the preview to full width — and the reopened schema editor
+ * then landed *inside the preview's own group* as a new tab, hiding the
+ * preview behind it for the rest of the run. Measured on the shipped GIF: the
+ * preview was on screen for 7 of 92 seconds, and neither of the two steps
+ * that exist to show it changing — the live title edit (F02) and the
+ * configure step adding Expand all/Collapse all (F09) — had it visible at
+ * all. Keeping the split is also the honest product experience: you edit on
+ * the left and watch the docs refresh on the right. `expectPreviewVisible()`
+ * asserts it at each of those moments, so the same silent failure cannot
+ * return (S08-SR-19).
+ *
+ * Not closing the tab also removes the need to reopen it, and with it the
+ * flakiness that choice was working around: the Explorer tree only readdir()s
+ * a folder on first expand, which lagged past a 15s wait for a file saved via
+ * the native-save-dialog stub moments earlier, and Quick Open has its own
+ * documented trouble with freshly-generated fixtures (see the History note in
+ * S08-e2e-testing.md on two other demos that hit it). The Explorer is still
+ * used once, in step 13 — deliberately, since "browse to a file" is the point
+ * being demonstrated there — but only after a full minute of other steps have
+ * given the tree time to catch up, and with a retry (re-toggle the folder,
+ * wait again) as a second safety net.
  *
  * The Expand all/Collapse all buttons (steps 5/6) require switching the
  * `json-schema-for-humans` template away from the default "flat" one
@@ -125,9 +136,9 @@ import { createRealCursor } from './helpers/realCursor';
  * `.tab[aria-label*="Settings"] .codicon-close` selector — then missed the
  * same way (zero matches). Rather than guess yet another close-button
  * structure, it now reuses the pattern that already proved reliable twice
- * earlier in this same test for editor management (Close All Editors,
- * Reopen Closed Editor): a keyboard shortcut, `Ctrl+W`, closing whatever tab
- * is currently active — no DOM selector involved at all.
+ * earlier in this same test for editor management (Close All Editors): a
+ * keyboard shortcut, `Ctrl+W`, closing whatever tab is currently active — no
+ * DOM selector involved at all.
  *
  * The final Explorer lookup (browsing to the schema file, step 13's closing
  * beat) then failed even past its own collapse/re-expand retry. Root cause:
@@ -219,6 +230,31 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await cursor.glideTo(bounds.x + 700, bounds.y + 460, 1); // snap to a known starting mark
     await window.waitForTimeout(600);
 
+    /**
+     * Fails the capture if the preview webview is not actually on screen.
+     *
+     * S08-SR-19: a step that exists to show the docs panel changing has to
+     * have the docs panel visible. The defect this guards against was silent —
+     * the recording still completed, every click still landed, and the GIF
+     * shipped for months showing a full-width editor at exactly the moments
+     * the narrative was about. Nothing failed, so nothing said so.
+     *
+     * `.isVisible()` is the check rather than a `waitFor`: by every call site
+     * the panel should already be up, so waiting would mask a slow reveal
+     * rather than report it.
+     */
+    const expectPreviewVisible = async (moment: string): Promise<void> => {
+      const panel = window.locator('iframe.webview.ready').first();
+      if (!(await panel.isVisible().catch(() => false))) {
+        throw new Error(
+          `The preview panel is not on screen at "${moment}". This step is ` +
+          'about the rendered docs changing, so a capture without them shows ' +
+          'nothing (S08-SR-19). Most likely the editor group holding the ' +
+          'preview was collapsed or the schema editor opened on top of it.',
+        );
+      }
+    };
+
     // ── 1. Open a good JSON file example ────────────────────────────────────
     let explorerVisible = await window.locator('.explorer-folders-view').count() > 0;
     if (!explorerVisible) {
@@ -272,23 +308,14 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     ).first();
     await cursor.glideToLocator(previewIcon);
     await previewIcon.click();
+    await expectPreviewVisible('opened beside the schema');
     await window.waitForTimeout(4_000);
 
-    const schemaTabClose = window.locator('.tab[aria-label*="generated-schema.json"] .codicon-close').first();
-    await cursor.glideToLocator(schemaTabClose);
-    await schemaTabClose.click();
-    await window.waitForTimeout(800); // a beat with only the viewer on screen
+    // The schema tab deliberately stays open — see the file doc-comment. The
+    // editor is on the left, the rendered docs on the right, and every step
+    // below happens with both on screen.
 
-    // ── 4. Reopen the schema and live-edit its title (F02) ──────────────────
-    // Ctrl+Shift+T ("Reopen Closed Editor") — see the file doc-comment for
-    // why this isn't an Explorer click.
-    await window.keyboard.down('Control');
-    await window.keyboard.down('Shift');
-    await window.keyboard.press('t');
-    await window.keyboard.up('Shift');
-    await window.keyboard.up('Control');
-    await window.waitForSelector('.tab[aria-label*="generated-schema.json"]', { state: 'visible', timeout: 15_000 });
-    await window.waitForTimeout(500);
+    // ── 4. Live-edit the schema's title and watch the preview refresh (F02) ─
 
     // Anchor on the root opening brace (always line 1, always just "{") rather
     // than any property — createSchema() assigns $schema *last*, so no
@@ -303,6 +330,9 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
 
     await window.keyboard.press('Control+s');
     await window.waitForTimeout(2_800); // debounce + render
+    // The whole point of this step: the docs panel is on screen and has just
+    // re-rendered with the new title.
+    await expectPreviewVisible('live title update');
     await window.waitForTimeout(700);
 
     // ── 5. Configure the viewer to show Expand all/Collapse all (F09) ───────
@@ -368,6 +398,7 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForTimeout(400);
     await cursor.glideToLocator(previewIcon);
     await previewIcon.click();
+    await expectPreviewVisible('configured render template');
     await window.waitForTimeout(4_000);
 
     // ── 6. Collapse all, then expand all ────────────────────────────────────

@@ -5826,9 +5826,10 @@
       "status": "implemented",
       "impl": [
         "src/test/e2e/demo-validation.test.ts",
-        "src/test/e2e/demo-validation-mouse.test.ts"
+        "src/test/e2e/demo-validation-mouse.test.ts",
+        "src/test/e2e/demo-showcase-mouse.test.ts"
       ],
-      "note": "both validation demos now seed the json.schemas binding person-invalid.json deliberately lacks, so the demo shows validation errors instead of the unbound refusal; guarded by demoPlacement.test.ts",
+      "note": "demo scripts must seed the state their feature needs AND keep the surface the step is about on screen; validation demos seed the binding, demo-showcase keeps the preview beside the editor and asserts it via expectPreviewVisible(); placement/seeding guarded by demoPlacement.test.ts",
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },
