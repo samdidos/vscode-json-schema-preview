@@ -1,7 +1,7 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
 import { seedWorkspaceFile } from './helpers/launch';
-import { openFile, runCommand } from './helpers/ui';
+import { runCommand } from './helpers/ui';
 
 // A suite that pins what the schema must accept and must reject (F29). The
 // failing case is deliberate: it is the whole point of the feature — a schema
@@ -47,7 +47,9 @@ test('demo-schema-tests: run a schema test suite and see the failing case', () =
     await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
     await capture('workspace');
 
-    await openFile(window, 'order.schema.test.json');
+    // No Quick Open here: the suite is freshly seeded, so runDemo's `openFiles`
+    // opens it through VS Code's own launch args instead of depending on the
+    // workspace search index (the failure demo-quickfix-mouse documents).
     await capture('suite-open');
 
     await runCommand(window, 'JSON Schema: Run Schema Tests');

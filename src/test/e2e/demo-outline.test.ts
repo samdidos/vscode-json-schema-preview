@@ -1,37 +1,34 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
-import { openFile, runCommand } from './helpers/ui';
+import { openFile } from './helpers/ui';
 
 /**
- * F31 — the schema-aware Outline. The Explorer's Outline view is collapsed by
- * default, so this expands it and lets the schema's own shape (properties,
- * their types, whether they are required) render in place of the chain of
- * "properties" nodes VS Code's built-in JSON outline would show.
+ * F31 — the schema-aware Outline, shown through Go-to-Symbol
+ * (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>).
+ *
+ * The Outline *view* is the headline surface, and the mouse twin drives it —
+ * but it is a collapsed Explorer pane whose chrome selectors have moved across
+ * VS Code releases. Go-to-Symbol reads the same document-symbol provider
+ * through a widget whose selector has been stable for years, which is the right
+ * trade for the command-palette variant: this one exists to crash-smoke the
+ * feature (S08-SR-10), not to reproduce the mouse narrative.
  *
  * `person.schema.json` ships in the showcase workspace and has nested objects,
- * an array, an enum and a $defs section — enough for the outline to be worth
- * looking at without seeding anything.
+ * an array, an enum and a $defs section — enough for the symbol list to be
+ * worth looking at without seeding anything.
  */
-test('demo-outline: read a schema through the Outline view', () =>
+test('demo-outline: read a schema through its document symbols', () =>
   runDemo('outline', async (window, capture) => {
     await capture('workspace');
 
     await openFile(window, 'person.schema.json');
     await capture('schema-open');
 
-    // Focus the Outline view directly rather than hunting for its twisty: the
-    // command is the same entry point a user reaches from the View menu, and
-    // it works whether or not the section was already expanded.
-    await runCommand(window, 'Focus on Outline View');
-    await window
-      .waitForSelector('.outline-tree .monaco-list-row, .pane[aria-label*="Outline"] .monaco-list-row', {
-        state: 'visible',
-        timeout: 15_000,
-      })
-      .catch(() => undefined);
+    await window.keyboard.press('Control+Shift+o');
+    await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(1_200);
-    await capture('outline');
+    await capture('symbols');
 
     await window.waitForTimeout(1_000);
-    await capture('outline-hold');
+    await capture('symbols-hold');
   }));

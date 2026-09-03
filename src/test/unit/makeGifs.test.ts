@@ -126,7 +126,13 @@ suite('S08 — demo GIF encoding', () => {
     assert.ok(!('gif-encoder-2' in declared), 'gif-encoder-2 is back in the manifest');
   });
 
-  test('[S08-SR-16] ffmpegAvailable reports a boolean without throwing', async () => {
+  // `function`, not an arrow: mocha's `this.timeout()` needs its own `this`.
+  // ffmpegAvailable spawns a process synchronously, so its cost is the
+  // machine's, not the code's — it measured 54ms on an idle runner and blew
+  // the default 2s budget on a loaded one. The generous ceiling keeps the test
+  // about "does this throw", which is all it claims.
+  test('[S08-SR-16] ffmpegAvailable reports a boolean without throwing', async function () {
+    this.timeout(30_000);
     const { ffmpegAvailable } = await loadModule();
     assert.strictEqual(typeof ffmpegAvailable(), 'boolean');
   });
