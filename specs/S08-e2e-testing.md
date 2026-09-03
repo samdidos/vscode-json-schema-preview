@@ -184,6 +184,20 @@ mechanism.
   bound to person-invalid.json. Bind one first." — it opened an unbound file,
   so the one demo of the extension's headline feature never validated
   anything.
+
+  Succeeding is not enough on its own: the **surface the step is about MUST be
+  on screen while it changes**. A step whose subject is the rendered preview
+  refreshing has to have the preview visible in the captured region — the
+  command running correctly off-screen demonstrates nothing to a reader.
+  `demo-showcase` shipped this way too: it closed the schema tab for "a beat
+  with only the viewer on screen", which made VS Code drop the now-empty
+  editor group and reopen the schema *inside the preview's group*, hiding the
+  preview behind it. The panel was visible for 7 of 92 seconds, and neither
+  the live-title-update step (F02) nor the configure step (F09) — both of
+  which exist purely to show the preview changing — had it on screen at all.
+  Where a demo can assert this, it SHOULD: a capture that silently records the
+  wrong thing is the failure mode this requirement exists to catch, and
+  nothing else in the pipeline notices it.
 - **S08-SR-20** Every entry in `scripts/demo-registry.mjs` MUST be embedded on
   the docs site in **both** places a reader looks: the landing page's demo
   gallery (`docs/.vitepress/theme/QuickDemo.vue`) and the guide section that
@@ -258,6 +272,22 @@ mechanism.
 
   What still needs a real recording session — and so is *not* addressed here —
   is trimming `demo-showcase` (S08-SR-21).
+
+- **2026-09-03 (showcase composition)** — `demo-showcase` was recorded with the
+  preview panel on screen for 7 of its 92 seconds. Closing the schema tab to
+  get "a beat with only the viewer" removed the editor group holding it, and
+  the reopened schema editor then landed inside the preview's own group as a
+  new tab, hiding it for the remainder of the run. The two steps that exist to
+  show the preview reacting — the live title edit and the render-template
+  change — both played against a full-width editor.
+
+  The schema tab is no longer closed: editor left, docs right, for the whole
+  narrative, which is also what using the extension actually looks like. That
+  removed the need to reopen the file at all, and with it the Explorer/Quick
+  Open flakiness the `Ctrl+Shift+T` workaround existed to dodge.
+  `expectPreviewVisible()` now asserts the panel at each of those moments, so
+  a capture that records the wrong thing fails instead of shipping
+  (S08-SR-19).
 
 - **2026-09-02 (coverage audit)** — Of 34 feature specs, 16 had no demo at all.
   Ranked by the S16 value estimate, the gaps were: F34 (18), F12 (15.36), F31
