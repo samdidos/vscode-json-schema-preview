@@ -310,6 +310,19 @@ mechanism.
   It now waits, bounded, and each call sits after its beat, so what it asserts
   is the state the recording actually contains.
 
+  The third attempt reached 2.2 of the run's ~4 minutes — past all three
+  preview assertions, so the layout fix itself held — and died at step 12,
+  waiting for "Generate Types from This Schema" in the More Actions menu. That
+  command had moved: `editor/title` now contributes the
+  `jsonschema.schemaMenu` **submenu**, and every non-icon command sits one
+  level down inside it. The restructuring landed earlier on the same branch,
+  and nothing caught it, because the two attempts above both died at step 3 —
+  this was the first full pass over the current `package.json` since. The
+  general rule: **restructuring a menu contribution invalidates every demo
+  that clicks through that menu**, and a demo only proves that when it runs
+  end to end. A demo failing early hides every later step's breakage, so a
+  fix that gets a demo further is not evidence that the rest still works.
+
 - **2026-09-02 (coverage audit)** — Of 34 feature specs, 16 had no demo at all.
   Ranked by the S16 value estimate, the gaps were: F34 (18), F12 (15.36), F31
   and F33 (11.52), F08 (10.56), F27 and F29 (7.68), F15 and F30 (7.04), F11,
