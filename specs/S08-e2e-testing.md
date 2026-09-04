@@ -301,6 +301,15 @@ mechanism.
   only appears on hover**, since the wait that precedes the move cannot be
   satisfied by the move itself.
 
+  The second attempt then failed on the new assertion itself, which is the
+  guard behaving correctly about the wrong thing: it checked instantly, before
+  the multi-second beat that follows each Preview click, and preview rendering
+  shells out to a Python renderer. The instant check had been a deliberate
+  choice — "the panel should already be up, so waiting would mask a slow
+  reveal" — which is simply untrue at a site that has just *created* the panel.
+  It now waits, bounded, and each call sits after its beat, so what it asserts
+  is the state the recording actually contains.
+
 - **2026-09-02 (coverage audit)** — Of 34 feature specs, 16 had no demo at all.
   Ranked by the S16 value estimate, the gaps were: F34 (18), F12 (15.36), F31
   and F33 (11.52), F08 (10.56), F27 and F29 (7.68), F15 and F30 (7.04), F11,
