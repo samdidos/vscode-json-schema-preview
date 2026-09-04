@@ -297,9 +297,27 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForTimeout(2_000); // untitled → real file, tab title updates
 
     // ── 3. Display the schema viewer, hiding the raw JSON tabs ──────────────
-    const dataTabClose = window.locator('.tab[aria-label*="person-valid.json"] .codicon-close').first();
-    await cursor.glideToLocator(dataTabClose);
-    await dataTabClose.click();
+    // Glide to the *tab*, not straight to its close button. VS Code only
+    // reveals `.codicon-close` on the active or hovered tab, and
+    // glideToLocator waits for visibility *before* it moves the pointer — so
+    // aiming at the icon on a background tab waits for the very thing only
+    // that move would produce. It resolved by luck for a long time and stopped
+    // on VS Code 1.136.1, timing out the whole recording. Clicking the tab
+    // makes it active, which reveals its close button; the keyboard shortcut
+    // is the fallback, the same deterministic editor management this file
+    // already leans on elsewhere.
+    const dataTab = window.locator('.tab[aria-label*="person-valid.json"]').first();
+    await cursor.glideToLocator(dataTab);
+    await dataTab.click();
+    await window.waitForTimeout(300);
+
+    const dataTabClose = dataTab.locator('.codicon-close').first();
+    if (await dataTabClose.isVisible().catch(() => false)) {
+      await cursor.glideToLocator(dataTabClose);
+      await dataTabClose.click();
+    } else {
+      await window.keyboard.press('Control+w');
+    }
     await window.waitForTimeout(600);
 
     const previewIcon = window.locator(

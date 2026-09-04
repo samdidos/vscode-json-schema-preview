@@ -289,6 +289,18 @@ mechanism.
   a capture that records the wrong thing fails instead of shipping
   (S08-SR-19).
 
+  The first re-record attempt failed before reaching any of that, on
+  pre-existing code: step 3 aimed the cursor straight at the `.codicon-close`
+  icon of the *background* `person-valid.json` tab. VS Code reveals that icon
+  only on the active or hovered tab, and `glideToLocator` waits for visibility
+  before moving the pointer — so it waited for the very thing only the move
+  would produce. That had resolved by luck for a long time and stopped on VS
+  Code 1.136.1. The demo now glides to the tab, clicks it (which reveals its
+  close button), and falls back to the keyboard shortcut. Worth recording
+  because the class generalises: **a mouse demo must not target a control that
+  only appears on hover**, since the wait that precedes the move cannot be
+  satisfied by the move itself.
+
 - **2026-09-02 (coverage audit)** — Of 34 feature specs, 16 had no demo at all.
   Ranked by the S16 value estimate, the gaps were: F34 (18), F12 (15.36), F31
   and F33 (11.52), F08 (10.56), F27 and F29 (7.68), F15 and F30 (7.04), F11,
