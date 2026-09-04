@@ -24,10 +24,10 @@
 
 ---
 
-<!-- spec:F01,F02,F03,F04,F06,F09,F10,F18 -->
-![Generate a schema from a JSON file, view and configure it in the schema viewer, live-edit its title, then validate a bad JSON file, inline-bind it to the schema, and generate TypeScript types](docs/public/demo-showcase.gif)
+<!-- spec:F01,F02,F06,F09,F18 -->
+![Generate a schema from a JSON file, open the schema viewer beside it, live-edit the schema's title and watch the docs refresh, configure how they render, then generate TypeScript types from the same schema](docs/public/demo-showcase.gif)
 
-<div align="center"><sub>One continuous take: infer a schema from data, preview it, live-edit it, then validate, bind and generate types — all from the editor toolbar.<br>Per-feature demos are on the <a href="https://samdidos.github.io/vscode-json-schema-preview/">documentation site</a>.</sub></div>
+<div align="center"><sub>One continuous take: infer a schema from data, preview it side by side, live-edit it, configure the render, then generate types — all from the editor toolbar.<br>Per-feature demos are on the <a href="https://samdidos.github.io/vscode-json-schema-preview/">documentation site</a>.</sub></div>
 
 ---
 

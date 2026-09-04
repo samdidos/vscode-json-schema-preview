@@ -61,7 +61,7 @@ const features = [
     icon: '🎬',
     title: 'Full walkthrough',
     gif: 'demo-showcase.gif',
-    desc: 'One continuous run: infer a schema from a JSON file, preview it, live-edit its title, configure the render, validate a bad data file, bind it inline, and generate TypeScript types.',
+    desc: 'One continuous run: infer a schema from a JSON file, preview it side by side, live-edit its title, configure how the docs render, and generate TypeScript types from it.',
   },
   {
     id: 'preview',
