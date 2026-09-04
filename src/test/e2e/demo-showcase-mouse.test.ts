@@ -595,9 +595,33 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForSelector('.monaco-menu', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(400);
 
+    // More Actions does not list the generate commands directly: `editor/title`
+    // contributes the `jsonschema.schemaMenu` *submenu* (labelled "JSON
+    // Schema"), and every non-icon command lives one level down inside it.
+    // This step predates that restructuring and had not run in CI since — the
+    // two previous re-record attempts both died at step 3, so this was the
+    // first full pass over the current package.json, and it timed out waiting
+    // for a label that is no longer at this level.
+    //
+    // Hovering is what opens a monaco submenu; the click is a fallback for the
+    // case where the pointer lands without the mouseover registering. Showing
+    // the submenu open is better demo content anyway — it puts the extension's
+    // whole action list on screen instead of one anonymous menu row.
+    const schemaSubmenu = window.locator(
+      '.monaco-menu .action-item.monaco-submenu-item:has-text("JSON Schema"), ' +
+      '.monaco-menu .action-item:has(.submenu-indicator):has-text("JSON Schema")',
+    ).first();
+    await cursor.glideToLocator(schemaSubmenu);
+    await schemaSubmenu.hover();
+    await window.waitForTimeout(700);
+
     const generateTypesEntry = window.locator(
       '.monaco-menu .action-item .action-label:has-text("Generate Types from This Schema")',
     ).first();
+    if (!(await generateTypesEntry.isVisible().catch(() => false))) {
+      await schemaSubmenu.click();
+      await window.waitForTimeout(700);
+    }
     await cursor.glideToLocator(generateTypesEntry);
     await generateTypesEntry.click();
 
