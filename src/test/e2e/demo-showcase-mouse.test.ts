@@ -239,13 +239,21 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
      * shipped for months showing a full-width editor at exactly the moments
      * the narrative was about. Nothing failed, so nothing said so.
      *
-     * `.isVisible()` is the check rather than a `waitFor`: by every call site
-     * the panel should already be up, so waiting would mask a slow reveal
-     * rather than report it.
+     * Bounded `waitFor`, not an instant `isVisible()`. The first version used
+     * the latter, reasoning that the panel "should already be up" — which is
+     * false at the two sites that have just clicked Preview: rendering shells
+     * out to a Python renderer, which is why each of those clicks is followed
+     * by a multi-second beat. Waiting masks nothing that matters here: an
+     * already-open panel resolves immediately, a panel that never opens still
+     * fails with the same message, and the capture happens after the beat
+     * either way. Each call sits *after* its beat, so what it asserts is the
+     * state the recording actually contains.
      */
     const expectPreviewVisible = async (moment: string): Promise<void> => {
       const panel = window.locator('iframe.webview.ready').first();
-      if (!(await panel.isVisible().catch(() => false))) {
+      try {
+        await panel.waitFor({ state: 'visible', timeout: 20_000 });
+      } catch {
         throw new Error(
           `The preview panel is not on screen at "${moment}". This step is ` +
           'about the rendered docs changing, so a capture without them shows ' +
@@ -326,8 +334,8 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     ).first();
     await cursor.glideToLocator(previewIcon);
     await previewIcon.click();
-    await expectPreviewVisible('opened beside the schema');
     await window.waitForTimeout(4_000);
+    await expectPreviewVisible('opened beside the schema');
 
     // The schema tab deliberately stays open — see the file doc-comment. The
     // editor is on the left, the rendered docs on the right, and every step
@@ -416,8 +424,8 @@ test('demo-showcase-mouse: infer, preview, configure, bind, and generate code in
     await window.waitForTimeout(400);
     await cursor.glideToLocator(previewIcon);
     await previewIcon.click();
-    await expectPreviewVisible('configured render template');
     await window.waitForTimeout(4_000);
+    await expectPreviewVisible('configured render template');
 
     // ── 6. Collapse all, then expand all ────────────────────────────────────
     // `force: true` on both clicks: real CI showed Playwright's actionability
