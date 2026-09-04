@@ -51,6 +51,18 @@ const base = '/vscode-json-schema-preview/'
 const failed = reactive(new Set<string>())
 
 const features = [
+  // The end-to-end run leads the gallery: it is the only demo that shows the
+  // features working together rather than one at a time, and it is the same
+  // recording the README opens with (S08-SR-20). Its GIF is much larger than
+  // the rest, but the <img> only exists for the active tab, so it is fetched
+  // when someone chooses it — not on page load.
+  {
+    id: 'showcase',
+    icon: '🎬',
+    title: 'Full walkthrough',
+    gif: 'demo-showcase.gif',
+    desc: 'One continuous run: infer a schema from a JSON file, preview it side by side, live-edit its title, configure how the docs render, and generate TypeScript types from it.',
+  },
   {
     id: 'preview',
     icon: '👁',
@@ -136,11 +148,39 @@ const features = [
     desc: 'Ctrl-click (or Go to Definition) on any $ref to jump straight to the schema it points at — local, relative, or a cached remote schema.',
   },
   {
+    id: 'quick-fix',
+    icon: '💡',
+    title: 'Quick Fixes',
+    gif: 'demo-quick-fix.gif',
+    desc: 'Validation errors carry a lightbulb when the repair is unambiguous — insert a missing required property, drop an unexpected one, or swap a value for the closest allowed enum member.',
+  },
+  {
+    id: 'draft-migration',
+    icon: '🔀',
+    title: 'Draft Migration',
+    gif: 'demo-draft-migration.gif',
+    desc: 'Rewrite a schema between draft-07, 2019-09 and 2020-12, applying the well-known keyword changes and leaving anything it cannot safely convert untouched.',
+  },
+  {
     id: 'schema-linting',
     icon: '💡',
     title: 'Schema Linting',
     gif: 'demo-schema-linting.gif',
     desc: 'Schema-quality hints (missing $schema, $id, descriptions) show up as diagnostics with one-click quick fixes via the lightbulb.',
+  },
+  {
+    id: 'outline',
+    icon: '🧭',
+    title: 'Schema Outline',
+    gif: 'demo-outline.gif',
+    desc: "The Outline view, breadcrumbs and Go-to-Symbol show the schema's shape — a property, its type, whether it is required — instead of a chain of \"properties\" nodes.",
+  },
+  {
+    id: 'schema-tests',
+    icon: '🧪',
+    title: 'Schema Tests',
+    gif: 'demo-schema-tests.gif',
+    desc: 'Pin the documents a schema must accept and must reject in a *.schema.test.json file, then run the suite: a failing case lands on the case that broke.',
   },
   {
     id: 'workspace-validation',

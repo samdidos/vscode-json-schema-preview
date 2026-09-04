@@ -66,6 +66,13 @@ file.
   report (per-file status grouped by folder) suitable for pasting into a PR.
 - **F20-FR-08** Re-running the command MUST first clear the previous run's
   diagnostics so removed problems disappear (no stale accumulation).
+- **F20-FR-09** The sweep MUST additionally discover schema test suites
+  (`*.schema.test.json`, F29), run each against its declared schema, and report
+  failing cases as diagnostics on the suite file plus a suite section in the
+  Markdown report. Suite counts (suites run, cases passed, cases failed) MUST
+  appear in the summary, so one command answers "is my repo green?" for data
+  files, schema quality **and** schema contracts.
+
 
 ## Non-Functional Requirements
 
@@ -106,3 +113,11 @@ file.
   (binding discovery — all scopes, all languages), **F07/F08** (remote
   schema access), honouring **S02** (trust), **S03** (caps, cancellation),
   **S04** (offline fallback), **S05** (no telemetry).
+
+## History
+
+- **2026-09-02** — Added F20-FR-09: the sweep now discovers and runs schema test
+  suites ([F29](F29-schema-tests.md)) alongside data files and schema lint, so
+  one command answers "is my repo green?" for contracts too. Suite counts join
+  the summary only when the workspace has suites, so a repo without them reads
+  exactly as before.

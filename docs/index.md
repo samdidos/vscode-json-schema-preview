@@ -54,6 +54,22 @@ features:
   - icon: ⚙️
     title: Configurable Rendering
     details: Choose from multiple json-schema-for-humans templates (flat, JS, Markdown, RST, HTML). Config lives in .json-schema-preview-config.json committed alongside your project, or in the jsonschema.config VS Code setting.
+
+  - icon: 🧪
+    title: Schema Tests
+    details: Pin the documents a schema must accept and must reject in a *.schema.test.json file. Runs in the editor, in the workspace sweep, and headlessly in CI — so a schema change that starts accepting garbage fails a test instead of reaching production.
+
+  - icon: 🧰
+    title: Schema Refactorings
+    details: Extract a subschema to $defs, inline a $ref, rename a definition across every reference, find all references, and delete definitions nothing reaches. Each one refuses rather than guessing when it cannot preserve meaning.
+
+  - icon: 🧭
+    title: Schema-aware Outline
+    details: The Outline view, breadcrumbs and Go-to-Symbol show the schema's shape — a property, its type, whether it is required — instead of a chain of "properties" nodes.
+
+  - icon: 🤖
+    title: Tools for AI Agents
+    details: The deterministic engines exposed as language model tools in VS Code and over MCP via "jstk mcp", so an agent checks whether a change is breaking instead of guessing. Optional, opt-in AI drafting is verified against those same engines before anything is offered.
 ---
 
 <!--
@@ -69,3 +85,7 @@ features:
 <!-- spec:F07,F08 --> <!-- Private Schema Auth -->
 <!-- spec:S02 --> <!-- Workspace Trust Aware -->
 <!-- spec:F09 --> <!-- Configurable Rendering -->
+<!-- spec:F29 --> <!-- Schema Tests -->
+<!-- spec:F30 --> <!-- Schema Refactorings -->
+<!-- spec:F31 --> <!-- Schema-aware Outline -->
+<!-- spec:F33,F32 --> <!-- Tools for AI Agents -->

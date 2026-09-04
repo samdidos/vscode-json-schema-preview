@@ -6,6 +6,8 @@ draws a red squiggle, and IntelliSense goes dark. This extension fixes that — 
 fetches the schema with your credentials and can cache it locally so the built-in
 language servers see it too.
 
+
+![Configuring authentication for a private schema from the status bar](/demo-schema-auth.gif)
 ## Configuring authentication
 
 Run **JSON Schema: Configure Schema Authentication…** from the Command Palette and

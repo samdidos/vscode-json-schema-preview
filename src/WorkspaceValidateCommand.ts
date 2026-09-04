@@ -24,8 +24,10 @@ import {
 import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './SchemaBindingManager';
 import { lintSchema } from './schemaLinter';
 import { isJsonSchemaFile } from './PreviewWebPanel';
+import { parseTestSuite, runTestSuite, isSuitePath } from './schemaTests';
+import { resolveWithin, outsideRootMessage } from './pathSafety';
 import { positionAt } from './SchemaRefProvider';
-import { parseSchemaText } from './schemaPointer';
+import { parseSchemaText, locatePointerTarget, parseJsonPointer } from './schemaPointer';
 import { languageForSchemaSource, isSupported } from './languages';
 import { SchemaAuthManager } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
@@ -139,6 +141,77 @@ class WorkspaceRun {
     private readonly untrusted: boolean,
   ) {}
 
+  /**
+   * F20-FR-09 — run one `*.schema.test.json` suite, reporting failing cases as
+   * diagnostics on the suite file and as a result row. Never throws: a
+   * malformed suite or an unloadable schema is a binding failure like any other.
+   */
+  private async runSuite(
+    uri: vscode.Uri,
+    text: string,
+    languageId: string,
+    relPath: string,
+    folder: string,
+  ): Promise<void> {
+    const fail = (message: string): void => {
+      this.results.push({ relPath, folder, kind: 'suite', status: 'binding-failed', issues: [{ message }] });
+      this.diagnostics.set(uri, [
+        new vscode.Diagnostic(new vscode.Range(0, 0, 0, 1), message, vscode.DiagnosticSeverity.Warning),
+      ]);
+    };
+
+    let raw: unknown;
+    try {
+      raw = parseDataText(text, languageId)[0];
+    } catch (e) {
+      fail(`Cannot parse suite: ${(e as Error).message}`);
+      return;
+    }
+    const parsed = parseTestSuite(raw);
+    if (!parsed.ok) {
+      fail(`Malformed suite: ${parsed.problems.map(p => p.message).join(' ')}`);
+      return;
+    }
+
+    const ref = parsed.suite.schemaRef;
+    const loaded = await this.loadSchema(ref, uri);
+    if ('error' in loaded) {
+      fail(`Cannot load schema "${ref}": ${loaded.error}`);
+      return;
+    }
+
+    const suiteDir = path.dirname(uri.fsPath);
+    const suiteRoot = vscode.workspace.getWorkspaceFolder(uri)?.uri.fsPath;
+    const result = runTestSuite(parsed.suite, loaded.schema, {
+      // F29-FR-14 — a fixture path comes from the suite's contents, so it is
+      // confined to the workspace folder the suite lives in.
+      loadInstance: (relative: string) => {
+        const abs = suiteRoot && resolveWithin(suiteRoot, suiteDir, relative);
+        if (!abs) { throw new Error(outsideRootMessage(relative)); }
+        return parseDataText(fs.readFileSync(abs, 'utf-8'), languageIdForPath(abs) ?? 'json')[0];
+      },
+    });
+
+    const failures = result.cases.filter(c => !c.passed);
+    const diags = failures.map(c => {
+      const span = locatePointerTarget(text, 'json', parseJsonPointer(c.pointer));
+      const range = span
+        ? new vscode.Range(positionAt(text, span.start), positionAt(text, span.end))
+        : new vscode.Range(0, 0, 0, 1);
+      const diagnostic = new vscode.Diagnostic(range, `${c.name}: ${c.message ?? 'failed'}`, vscode.DiagnosticSeverity.Error);
+      diagnostic.source = SOURCE;
+      return diagnostic;
+    });
+    if (diags.length) { this.diagnostics.set(uri, diags); }
+
+    this.results.push({
+      relPath, folder, kind: 'suite',
+      status: failures.length ? 'errors' : 'valid',
+      schemaRef: ref,
+      issues: failures.map(c => ({ message: `${c.name}: ${c.message ?? 'failed'}` })),
+    });
+  }
+
   async processFile(uri: vscode.Uri): Promise<void> {
     const languageId = languageIdForPath(uri.fsPath);
     if (!languageId || !isSupported(languageId)) { return; }
@@ -157,6 +230,13 @@ class WorkspaceRun {
     const relPath = vscode.workspace.asRelativePath(uri, false);
     const folder = vscode.workspace.getWorkspaceFolder(uri)?.name ?? '';
     const fileDiags: vscode.Diagnostic[] = [];
+
+    // (d) Schema test suites: the third checked artifact (F20-FR-09). A suite
+    // is neither a schema nor a bound data file, so it short-circuits here.
+    if (isSuitePath(uri.fsPath)) {
+      await this.runSuite(uri, text, languageId, relPath, folder);
+      return;
+    }
 
     // (c) Schema files: F17's lintable set (F20-FR-02/04).
     const isSchemaFile = /\.schema\.(json|jsonc|ya?ml)$/i.test(uri.fsPath) || isJsonSchemaFile(lightDoc);

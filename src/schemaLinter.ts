@@ -190,31 +190,31 @@ export function lintSchema(text: string, languageId: string): LintFinding[] {
     });
   }
 
-  walkSchema(root, findings, isJson);
+  walkSchema(root, findings, isJson, createSubCompiler());
   return findings;
 }
 
 /** Recursively lint one schema-position object node. */
-function walkSchema(node: TreeNode, findings: LintFinding[], isJson: boolean): void {
+function walkSchema(node: TreeNode, findings: LintFinding[], isJson: boolean, compile: SubCompiler): void {
   if (node.kind !== 'object') { return; }
 
   for (const entry of node.props) {
     const { key, value } = entry;
 
     if (SCHEMA_VALUED.has(key)) {
-      walkSchema(value, findings, isJson);
+      walkSchema(value, findings, isJson, compile);
     } else if (MAP_OF_SCHEMAS.has(key) && value.kind === 'object') {
       for (const sub of value.props) {
         if (key === 'properties') { checkPropertyDescription(sub, findings); }
-        walkSchema(sub.value, findings, isJson);
+        walkSchema(sub.value, findings, isJson, compile);
       }
     } else if (ARRAY_OF_SCHEMAS.has(key) && value.kind === 'array') {
-      value.items.forEach(it => walkSchema(it, findings, isJson));
+      value.items.forEach(it => walkSchema(it, findings, isJson, compile));
     } else if (key === 'items') {
-      if (value.kind === 'array') { value.items.forEach(it => walkSchema(it, findings, isJson)); }
-      else { walkSchema(value, findings, isJson); }
+      if (value.kind === 'array') { value.items.forEach(it => walkSchema(it, findings, isJson, compile)); }
+      else { walkSchema(value, findings, isJson, compile); }
     } else if (key === 'dependencies' && value.kind === 'object') {
-      value.props.forEach(sub => { if (sub.value.kind === 'object') { walkSchema(sub.value, findings, isJson); } });
+      value.props.forEach(sub => { if (sub.value.kind === 'object') { walkSchema(sub.value, findings, isJson, compile); } });
     } else if (key === 'enum') {
       checkDuplicateEnum(value, findings, isJson);
     } else if (!DATA_KEYWORDS.has(key) && !isKnownOrExtension(key)) {
@@ -224,6 +224,7 @@ function walkSchema(node: TreeNode, findings: LintFinding[], isJson: boolean): v
 
   checkExplicitAdditionalProperties(node, findings, isJson);
   checkEmptyRequired(node, findings);
+  checkAnnotationValues(node, findings, compile);
 }
 
 function isKnownOrExtension(key: string): boolean {
@@ -309,6 +310,101 @@ function checkDuplicateEnum(value: TreeNode, findings: LintFinding[], isJson: bo
       ? { kind: 'replaceRange', title: 'Remove duplicate enum values', offset: value.offset, length: value.length, text: `[${unique.join(', ')}]` }
       : undefined,
   });
+}
+
+// ── examples / default validation (F17-FR-13/14/15) ──────────────────────────
+
+/** Compile a subschema into a value predicate, or undefined when it cannot be
+ *  compiled (an unsupported or malformed subschema is skipped, never reported). */
+type SubCompiler = (schema: Record<string, unknown>) => ((value: unknown) => boolean) | undefined;
+
+/** Keywords that carry no constraint, so a subschema of only these accepts
+ *  everything and is not worth compiling. */
+const ANNOTATION_ONLY = new Set([
+  'title', 'description', 'examples', 'default', 'deprecated', 'readOnly',
+  'writeOnly', '$comment', '$schema', '$id', 'id', '$anchor',
+]);
+
+/** One Ajv per lint run: it memoises compiled subschemas (a big schema repeats
+ *  the same shapes) and is discarded with the run, so nothing accumulates. */
+function createSubCompiler(): SubCompiler {
+   
+  const Ajv = require('ajv').default as new (o: object) => import('ajv').default;
+  const ajv = new Ajv({ strict: false, allErrors: false, validateFormats: false });
+  return (schema) => {
+    try {
+      return ajv.compile(schema) as (value: unknown) => boolean;
+    } catch {
+      return undefined;
+    }
+  };
+}
+
+/** Plain JS value of a subtree, for handing to Ajv. */
+function toPlain(node: TreeNode): unknown {
+  if (node.kind === 'scalar') { return node.value; }
+  if (node.kind === 'array') { return node.items.map(toPlain); }
+  const out: Record<string, unknown> = {};
+  for (const p of node.props) { out[p.key] = toPlain(p.value); }
+  return out;
+}
+
+/** True when a `$ref` appears anywhere in the value (F17-FR-15): the local
+ *  subschema alone cannot be evaluated, so the rules stay silent rather than
+ *  report a false positive against an unresolved reference. */
+function containsRef(value: unknown): boolean {
+  if (Array.isArray(value)) { return value.some(containsRef); }
+  if (!value || typeof value !== 'object') { return false; }
+  const record = value as Record<string, unknown>;
+  if (typeof record.$ref === 'string') { return true; }
+  return Object.values(record).some(containsRef);
+}
+
+/**
+ * F17-FR-13/14 — check a subschema's own `examples` entries and `default`
+ * against the constraints that subschema declares. An example that contradicts
+ * the contract it illustrates is among the most common real schema defects, and
+ * nothing else checks it: language servers validate documents against schemas,
+ * never a schema's annotations against itself.
+ */
+function checkAnnotationValues(
+  node: Extract<TreeNode, { kind: 'object' }>,
+  findings: LintFinding[],
+  compile: SubCompiler,
+): void {
+  const examples = prop(node, 'examples');
+  const dflt = prop(node, 'default');
+  if (!examples && !dflt) { return; }
+
+  const plain = toPlain(node) as Record<string, unknown>;
+  const constraints: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(plain)) {
+    if (!ANNOTATION_ONLY.has(key)) { constraints[key] = value; }
+  }
+  if (!Object.keys(constraints).length) { return; }
+  if (containsRef(constraints)) { return; }
+
+  const validate = compile(constraints);
+  if (!validate) { return; }
+
+  if (examples?.value.kind === 'array') {
+    examples.value.items.forEach((item, index) => {
+      if (validate(toPlain(item))) { return; }
+      findings.push({
+        ruleId: 'valid-examples',
+        message: `Example ${index + 1} does not satisfy this subschema.`,
+        offset: item.offset, length: item.length, defaultSeverity: 'warning',
+      });
+    });
+  }
+
+  if (dflt && !validate(toPlain(dflt.value))) {
+    findings.push({
+      ruleId: 'valid-default',
+      message: 'The "default" value does not satisfy this subschema.',
+      offset: dflt.value.offset, length: dflt.value.length, defaultSeverity: 'warning',
+    });
+  }
 }
 
 /** Deep, order-sensitive JSON key of a scalar/array/object subtree for equality. */

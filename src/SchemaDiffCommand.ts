@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { diffSchemas, renderReport, summaryLine } from './schemaDiff';
 import { compatibilityVerdict, verdictVerb } from './schemaCompat';
+import { getAiEnabled } from './settings';
 import { parseSchemaText } from './schemaPointer';
 import { isJsonSchemaFile } from './PreviewWebPanel';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
@@ -58,13 +59,21 @@ export function registerSchemaDiff(context: vscode.ExtensionContext, auth: Schem
       // F26: lead the summary with the backward-compatibility verdict, using the
       // same pure verdict the CLI gate uses so the editor and CI never disagree.
       const verb = verdictVerb(compatibilityVerdict(entries));
+      // F32-FR-12 — the diff is computed here, deterministically; the model
+      // only narrates it, so the action is offered from the result and only
+      // when assistance is enabled.
+      const actions = getAiEnabled() ? ['Open report', 'Migration notes (AI)'] : ['Open report'];
       const action = await vscode.window.showInformationMessage(
         `Schema diff — ${verb}: ${summaryLine(entries)}.`,
-        'Open report',
+        ...actions,
       );
       if (action === 'Open report') {
         const reportDoc = await vscode.workspace.openTextDocument(uri);
         await vscode.window.showTextDocument(reportDoc, { preview: true });
+      } else if (action === 'Migration notes (AI)') {
+        await vscode.commands.executeCommand(
+          'jsonschema.ai.migrationNotes', content, verb, path.basename(doc.uri.fsPath),
+        );
       }
     }),
   );

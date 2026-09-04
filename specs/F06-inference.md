@@ -53,9 +53,37 @@ JSONL, or YAML data file using the `genson-js` library.
 - **F06-FR-12** A notification MUST inform the user to save and bind the schema
   to use it for validation.
 
+### Semantic enrichment
+
+- **F06-FR-13** After structural inference, the generator MUST run a
+  deterministic **enrichment pass** over the observed values, adding a
+  `format` to a string property when **every** observed value at that path
+  matches one well-known format (`email`, `uri`, `date-time`, `date`,
+  `uuid`, `ipv4`), and never when even one value does not. Structural
+  inference alone says `type: string` for an e-mail address; the format is
+  what makes the inferred schema catch a malformed one.
+- **F06-FR-14** The pass MUST add an `enum` to a string property when the path
+  has been observed enough times (at least 4) to make a closed set plausible,
+  the distinct values are few (at most 5), and they repeat (distinct ÷ observed
+  ≤ 0.5). It MUST NOT infer an enum from a single document, where every value
+  is trivially unique — that would freeze first-seen data into a contract.
+- **F06-FR-15** Enrichment MUST be additive and pure: it MUST NOT remove, rename
+  or retype anything the structural pass produced, MUST produce identical
+  output for identical input, and MUST be skippable (`--plain` in the CLI).
+  The optional model-assisted pass (F32-FR-10) builds on this deterministic
+  one, never replaces it.
+
 ## Acceptance Criteria
 
 1. Running **Generate Schema from This File** on `person-valid.json` opens a new
    editor tab containing valid JSON with a `$schema` field and at least the top-level
    property types inferred from the data.
 2. Running the command on a malformed JSON file shows an error notification.
+
+## History
+
+- **2026-09-02** — Added F06-FR-13/14/15: a deterministic enrichment pass after
+  structural inference — `format` when every observed value matches, `enum`
+  when a path repeats a small closed set across enough observations. Additive,
+  pure and skippable; the model-assisted pass in F32 builds on it rather than
+  replacing it.

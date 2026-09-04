@@ -69,7 +69,7 @@ clean, pipeable schema.
 jstk migrate legacy.schema.json --to 2020-12 > modern.schema.json
 ```
 
-### `infer <data-file> [--to <draft>]`
+### `infer <data-file> [--to <draft>] [--plain]`
 
 Infer a schema from an existing data file (JSON/JSONC/JSONL/YAML/TOML). A JSONL
 file infers over the array of its records. `--to` selects the declared
@@ -153,3 +153,31 @@ jstk graph api.schema.json --svg > api-refs.svg
 These codes are stable across every command, so each one drops straight into a
 pipeline step.
 <!-- spec:F27 end -->
+
+<!-- spec:F29 -->
+### `test <suite-file...>`
+
+Runs one or more `*.schema.test.json` suites (see
+[schema tests](/guide/lifecycle#guarding-schema-tests)).
+
+```sh
+jstk test contracts/*.schema.test.json
+```
+
+Exit `0` when every case passes, `1` on a failing case, `65` on a malformed
+suite or an unloadable schema. `--json` emits the per-case result.
+
+<!-- spec:F33 -->
+### `mcp`
+
+Serves the toolkit's deterministic capabilities over the
+[Model Context Protocol](https://modelcontextprotocol.io) on stdio, so any
+MCP-speaking agent can validate, lint, diff, bundle, infer, sample, measure
+coverage and run schema tests against ground truth instead of guessing.
+
+```sh
+jstk mcp
+```
+
+In this mode stdout carries protocol traffic only; diagnostics go to stderr.
+See [Agent tools](/guide/ai#agent-tools) for client configuration.

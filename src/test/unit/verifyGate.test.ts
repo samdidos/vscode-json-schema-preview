@@ -26,6 +26,16 @@ suite('S17 — concurrent verify gate', () => {
     assert.ok(STEPS.includes('lint'));
   });
 
+  test('[S17-SR-07] every blocking CI check is also a local step', async () => {
+    const { STEPS } = await loadVerify();
+    // A blocking CI job the local gate does not run is a guaranteed round trip:
+    // the contributor learns about it only after pushing.
+    const ciBlocking = ['lint', 'type-check', 'knip', 'check:audit'];
+    for (const step of ciBlocking) {
+      assert.ok(STEPS.includes(step), `${step} blocks CI but is missing from the local gate`);
+    }
+  });
+
   test('[S17-SR-02] renderSummary reports every step, passing and failing alike', async () => {
     const { renderSummary } = await loadVerify();
     const out = renderSummary([

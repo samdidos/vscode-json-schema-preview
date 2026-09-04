@@ -15,6 +15,8 @@ Opens (or focuses) the preview panel for the active schema file. The panel rende
 
 Disabled in untrusted workspaces — see [Workspace Trust](/guide/#workspace-trust).
 
+![Opening the preview panel from the editor toolbar](/demo-preview.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (eye icon) | ✅ |
@@ -28,6 +30,8 @@ Disabled in untrusted workspaces — see [Workspace Trust](/guide/#workspace-tru
 **ID:** `jsonschema.edit`
 
 Opens a form-based editor panel for the active schema file. Edit the most common JSON Schema keywords without touching raw JSON. Saving from the form writes back to the source file and the preview reloads automatically.
+
+![Editing schema keywords through the form editor](/demo-visual-editor.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -73,6 +77,8 @@ Also available via **right-click** in the editor and the **Explorer** context me
 
 When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. **Validate This File** uses that auto-resolved schema as well. Clicking still lets you set your own explicit binding.
 
+![Binding a data file to a schema from the Quick Pick, and the status bar picking it up](/demo-binding.gif)
+
 | Toolbar | Command Palette | Context Menu |
 |---------|----------------|---|
 | — | ✅ | ✅ |
@@ -86,6 +92,8 @@ When a file has no explicit binding but VS Code already resolves a schema for it
 **ID:** `jsonschema.validateFile`
 
 Validates the active JSON, YAML, or TOML file against its bound schema (see [Bind Schema…](#json-schema-bind-schema)) using AJV. Errors appear in the **Problems** panel with precise line/column locations.
+
+![Validating a data file and seeing errors in the Problems panel](/demo-validation.gif)
 
 If the file already has an inline `$schema` field the bound schema is inferred from it — no explicit binding needed. If it has no binding at all but VS Code resolves a schema for it natively (the **(auto)** state shown in the status bar — see [Bind Schema…](#json-schema-bind-schema)), validation uses that schema too, rather than reporting "no schema bound".
 
@@ -103,6 +111,8 @@ For JSON and JSONC files, the validation errors above carry a **lightbulb** (�
 <!-- spec:F25 -->
 For an `enum` mismatch the allowed values are **ranked by how close they are to what you typed**, so the likely-intended value is offered first rather than in schema order — type `"prod"` where the schema allows `["development", "staging", "production"]` and `Change to "production" (closest match)` leads the list. When the closest value is a clear near-miss (a typo, a wrong-case value, or an abbreviation like `prod`→`production`) it's marked the editor's **preferred** fix, so a single <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>.</kbd> applies it.
 
+![Applying a validation quick fix from the lightbulb](/demo-quick-fix.gif)
+
 
 ---
 
@@ -112,6 +122,8 @@ For an `enum` mismatch the allowed values are **ranked by how close they are to 
 **ID:** `jsonschema.inferSchema`
 
 Infers a JSON Schema from the active JSON, JSONC, JSONL, YAML, or TOML data file using `genson-js`. Opens the generated schema in a new editor tab beside the original. A great starting point for adopting schema-first workflows.
+
+![Generating a schema from an existing JSON file](/demo-inference.gif)
 
 The wand appears for any data file, regardless of whether it already has a schema bound (inline `$schema`, a settings binding, or a natively-resolved **(auto)** schema) — there's no reliable way to tell whether an existing binding means you'd never want to (re)generate a starting point from the file's current data, so the icon is always available.
 
@@ -128,6 +140,8 @@ The wand appears for any data file, regardless of whether it already has a schem
 **ID:** `jsonschema.generateSampleData`
 
 The inverse of inference: generates a valid example instance from the active JSON Schema, honouring `const`/`examples`/`default`/`enum` and common format/constraint keywords where present. Choose JSON or YAML output; the result opens in a new editor tab beside the schema. Useful for seeding fixtures or trying out a schema you just bound.
+
+![Generating a valid sample instance from a schema](/demo-sample-data.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -146,6 +160,8 @@ The "is my repo green?" button: one command that sweeps the whole workspace (all
 The run shows cancellable progress and finishes with a summary — files checked, valid, with errors, schemas linted, bindings failed — plus a **Copy Report** action that puts a per-folder Markdown report on the clipboard, ready to paste into a PR comment.
 
 Discovery respects `files.exclude`/`search.exclude`, skips files over 1 MiB, and caps the scan at `jsonschema.workspaceValidation.maxFiles` (default 2000, noted in the report when hit). Remote schemas are read cache-first and fetched at most once per run; in an untrusted workspace they're served from the local cache only.
+
+![Sweeping the workspace and copying the per-folder Markdown report](/demo-workspace-validation.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -183,6 +199,8 @@ After the language pick, choose the destination: a **new untitled editor** (defa
 
 External `$ref`s are resolved with the same machinery as bundling — relative files from disk, remote refs preferring the local schema cache and using stored credentials — before any code is generated; output is deterministic per language, so regenerated files only change when the schema does. Also offered from the **Bind Schema…** success notification, right after binding a data file.
 
+![Picking a target language and generating typed declarations from a schema](/demo-codegen.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (interface icon, schema files only) | ✅ |
@@ -201,6 +219,8 @@ Flattens a multi-file schema into one self-contained document, opened in a new e
 - **Dereference** — refs are replaced inline by their targets (maximally portable); cyclic references are detected and kept as `$defs` refs so expansion always terminates.
 
 Remote refs resolve using stored credentials and prefer an existing local cache entry over the network. Resolution runs under cancellable progress showing which document is currently being fetched. The root schema's `$schema`/`$id` are always preserved; any nested `$id` that would change resolution semantics after inlining is stripped and called out in the completion message. To bound memory on very large schema trees, the operation aborts with a clear error past a cap of 100 external documents.
+
+![Bundling a multi-file schema into one self-contained document](/demo-bundling.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -262,6 +282,8 @@ If the schema was itself produced by **Bundle** (below), each folded-in `$defs` 
 
 Rewrites the active schema between drafts — **draft-07**, **2019-09**, and **2020-12** — applying the well-known keyword changes and reporting exactly how many it made. Upgrading modernises `id` → `$id`, boolean `exclusiveMinimum`/`exclusiveMaximum` → their numeric form, `definitions` → `$defs` (with local `$ref`s rewritten to match), tuple `items` → `prefixItems` (and `additionalItems` → `items`), and splits `dependencies` into `dependentRequired`/`dependentSchemas`; downgrading reverses each of these. The transform recurses through every subschema and, like the diff command, leaves anything it cannot safely convert untouched rather than guessing. The result opens in a new editor beside the source — JSON for JSON sources, YAML for YAML — so the original file is never modified; a schema that already conforms reports "nothing to migrate".
 
+![Migrating a draft-07 schema to 2020-12, with the change list](/demo-draft-migration.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (swap icon, schema files only) | ✅ |
@@ -275,6 +297,8 @@ Rewrites the active schema between drafts — **draft-07**, **2019-09**, and **2
 **ID:** `jsonschema.lint.insertSchemaDeclaration`
 
 Inserts a `$schema` declaration into the active schema file, prompting for which JSON Schema draft to target (2020-12 first). Offered as a quick fix by the built-in schema linter when a schema is missing this declaration — see [Configuration](/guide/configuration) for the linter's settings.
+
+![A lint finding on a schema with no $schema, fixed from the lightbulb](/demo-schema-linting.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -329,3 +353,90 @@ Re-downloads a previously cached schema from its original remote URL. Use this w
 |---------|----------------|
 | — | ✅ |
 <!-- spec:F08 end -->
+
+---
+
+<!-- spec:F29 start -->
+## JSON Schema: Run Schema Tests
+
+**ID:** `jsonschema.runSchemaTests`
+
+Runs the declarative test suites that pin what a schema must accept and must
+reject. On a `*.schema.test.json` file it runs that suite; on a **schema** file
+it runs every suite in the workspace whose `schema` resolves to it, and reports
+the aggregate.
+
+Failing cases appear as errors on the failing case in the suite file, and each
+run replaces the previous run's diagnostics. The summary offers **Copy report**.
+
+![Running a schema test suite and landing on the failing case](/demo-schema-tests.gif)
+
+The suite format, the `errors` keyword-matching rule, and the CI story are in
+[The schema lifecycle](/guide/lifecycle#guarding-schema-tests).
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — (JSON Schema submenu) | ✅ |
+<!-- spec:F29 end -->
+
+---
+
+<!-- spec:F30 start -->
+## JSON Schema: Extract to $defs… / Inline this $ref / Remove Unused Definitions
+
+**IDs:** `jsonschema.refactor.extractDefinition`, `jsonschema.refactor.inlineRef`,
+`jsonschema.refactor.removeUnusedDefinitions`
+
+Schema-aware structural edits, offered as **Refactor** code actions where they
+apply. Renaming a definition uses the editor's own <kbd>F2</kbd> gesture and
+rewrites every reference; <kbd>Shift</kbd>+<kbd>F12</kbd> finds them all.
+
+Each operation refuses rather than guessing when it cannot preserve meaning —
+see [Restructuring](/guide/lifecycle#restructuring-refactorings) for the rules and
+what "unused" means transitively. JSON/JSONC only.
+
+| Toolbar | Command Palette | Code action |
+|---------|----------------|---|
+| — (JSON Schema submenu) | ✅ | ✅ |
+<!-- spec:F30 end -->
+
+---
+
+<!-- spec:F32 start -->
+## AI commands
+
+**IDs:** `jsonschema.ai.describeProperties`, `jsonschema.ai.draftSchema`,
+`jsonschema.ai.enrichSchema`, `jsonschema.ai.explainDiagnostic`,
+`jsonschema.ai.generateRealisticData`, `jsonschema.ai.migrationNotes`
+
+Optional, opt-in drafting help through VS Code's own Language Model API — off by
+default, verified against this project's engines before anything is offered, and
+never applied without a preview.
+
+See [AI assistance](/guide/ai#ai-assisted-authoring) for what each one does, the
+guarantees, and exactly what is sent.
+
+| Toolbar | Command Palette |
+|---------|----------------|
+| — (JSON Schema submenu) | ✅ |
+<!-- spec:F32 end -->
+
+<!-- spec:F06 start -->
+### What inference adds beyond structure
+
+Structural inference says `type: string` for an e-mail address. A deterministic
+enrichment pass then adds what only the values reveal:
+
+- a **`format`** (`email`, `uri`, `date-time`, `date`, `uuid`, `ipv4`) when
+  **every** observed value at a path matches it — one mismatch means no format,
+  because a wrong format turns valid data invalid;
+- an **`enum`** when a path repeats a small closed set across enough records
+  (at least 4 observations, at most 5 distinct values, repeating at least half
+  the time). A single document never yields an enum — that would freeze
+  first-seen data into a contract.
+
+The pass is additive and pure: nothing the structural pass produced is removed,
+renamed or retyped. Pass `--plain` to the CLI's `infer` to skip it. The optional
+model-assisted **Enrich Inferred Schema** ([AI](/guide/ai)) builds on this
+deterministic pass rather than replacing it.
+<!-- spec:F06 end -->

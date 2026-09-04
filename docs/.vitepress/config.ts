@@ -72,9 +72,13 @@ export default defineConfig({
         items: [
           { text: 'Introduction', link: '/guide/' },
           { text: 'Commands', link: '/guide/commands' },
+          { text: 'Schema lifecycle', link: '/guide/lifecycle' },
+          { text: 'AI & agent tools', link: '/guide/ai' },
           { text: 'CLI', link: '/guide/cli' },
           { text: 'Authentication', link: '/guide/authentication' },
           { text: 'Configuration', link: '/guide/configuration' },
+          { text: 'Security & privacy', link: '/guide/security' },
+          { text: 'Troubleshooting', link: '/guide/troubleshooting' },
         ],
       },
       {
@@ -95,6 +99,7 @@ export default defineConfig({
         ],
       },
       { text: 'Delivery', link: '/delivery/', activeMatch: '/delivery/' },
+      { text: 'Contributing', link: '/contributing', activeMatch: '/contributing' },
       { text: 'Blog', link: '/blog/', activeMatch: '/blog/' },
     ],
 
@@ -108,9 +113,13 @@ export default defineConfig({
           items: [
             { text: 'Introduction', link: '/guide/' },
             { text: 'Commands', link: '/guide/commands' },
+            { text: 'Schema lifecycle', link: '/guide/lifecycle' },
+            { text: 'AI & agent tools', link: '/guide/ai' },
             { text: 'CLI', link: '/guide/cli' },
             { text: 'Authentication', link: '/guide/authentication' },
             { text: 'Configuration', link: '/guide/configuration' },
+            { text: 'Security & privacy', link: '/guide/security' },
+            { text: 'Troubleshooting', link: '/guide/troubleshooting' },
           ],
         },
       ],

@@ -3,6 +3,7 @@
 // exercised in unit tests without a full VS Code UI harness.
 // Covered by manual and end-to-end testing instead.
 import * as vscode from 'vscode';
+import { confirm } from './notify';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as YAML from 'yaml';
@@ -63,7 +64,7 @@ export function openSchemaEditor(context: vscode.ExtensionContext, uri: vscode.U
           ? YAML.stringify(message.schema as object)
           : JSON.stringify(message.schema, null, 2) + '\n';
         fs.writeFileSync(filePath, content, 'utf-8');
-        vscode.window.showInformationMessage(`Saved ${path.basename(filePath)}`);
+        confirm(`Saved ${path.basename(filePath)}`);
       } catch (err) {
         vscode.window.showErrorMessage(`Save failed: ${(err as Error).message}`);
       }

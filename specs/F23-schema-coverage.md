@@ -63,6 +63,21 @@ real documents.
   total, percentage) offering a "Copy report" action that produces a Markdown
   report listing the unexercised property paths, suitable for pasting into a PR.
 
+### Reconciliation (undeclared-in-schema)
+
+- **F23-FR-09** The analyser MUST also compute the **inverse** direction: the
+  property paths *present in the data* that the schema does not declare.
+  Coverage alone answers "what does my data not use?"; reconciliation answers
+  "what does my data use that my schema does not know about?" — the direction
+  that finds drift after a producer starts emitting a new field. A path whose
+  parent is not a declared object schema MUST NOT be reported on its own (the
+  parent is the real gap), so one new nested object yields one finding rather
+  than one per leaf.
+- **F23-FR-10** Each undeclared path MUST be reported with a type inferred from
+  the observed values at that path (the F06 inference engine over the collected
+  values), so the report names what the declaration would be. The command MUST
+  report both directions in one summary and one copyable Markdown report.
+
 ## Non-Functional Requirements
 
 - **F23-NFR-01** The analyser (`collectSchemaProperties`, `collectDataPaths`,
@@ -107,3 +122,13 @@ real documents.
   **F10/F11/F04** for binding resolution, and **F08** for cached remote schemas.
 - Honours **S02** (no remote fetch in untrusted workspaces — cached/local only)
   and **S05** (no telemetry; data never leaves the machine).
+
+## History
+
+- **2026-09-02** — Added F23-FR-09/10: reconciliation, the inverse direction.
+  Coverage answers "what does my data not use?"; reconciliation answers "what
+  does my data use that my schema does not declare?" — the direction that finds
+  drift after a producer starts emitting a new field. Only the shallowest gap in
+  a chain is reported, so one new nested object yields one finding rather than
+  one per leaf, and each is reported with a type inferred from the observed
+  values.

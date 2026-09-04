@@ -155,6 +155,70 @@ mechanism.
   silently produce an empty or partial selection. Leaving the input empty
   (the default) MUST fall through to S08-SR-12's normal behaviour unchanged.
 
+### GIF Encoding
+
+- **S08-SR-16** Every demo GIF — the frame-stitched ones and the showcase
+  recording alike — MUST be encoded with **ffmpeg's two-pass palette
+  pipeline** (`palettegen=stats_mode=diff` then
+  `paletteuse=…:diff_mode=rectangle`). One encoder for all of them: a
+  per-frame palette optimised for a mostly-static editor window, re-encoding
+  only the region that changed between frames.
+- **S08-SR-17** The GIF pipeline MUST NOT depend on a package requiring a
+  native build. `canvas` compiles against cairo/pango at install time, which
+  is why a plain `npm ci` fails in a minimal container and why the repository
+  needs a bootstrap script at all — a cost paid on every clone by everyone, to
+  serve a step that runs only at release time on one Linux runner that already
+  has ffmpeg installed.
+- **S08-SR-18** Encoding MUST preserve the captured frames' own resolution.
+  Downscaling to save bytes is unnecessary: at identical dimensions the
+  palette pipeline is roughly ten times smaller than the octree quantiser it
+  replaces, so there is nothing to trade legibility for.
+
+### Demo content and placement
+
+- **S08-SR-19** Every demo MUST show its feature *succeeding*. A capture that
+  ends on a refusal or a no-op is a defect in the demo script, not a
+  documentation gap: the script MUST seed whatever state the feature needs (a
+  bound schema, a fixture data file) before performing the action it
+  demonstrates. `demo-validation` shipped for months ending on "No schema
+  bound to person-invalid.json. Bind one first." — it opened an unbound file,
+  so the one demo of the extension's headline feature never validated
+  anything.
+
+  Succeeding is not enough on its own: the **surface the step is about MUST be
+  on screen while it changes**. A step whose subject is the rendered preview
+  refreshing has to have the preview visible in the captured region — the
+  command running correctly off-screen demonstrates nothing to a reader.
+  `demo-showcase` shipped this way too: it closed the schema tab for "a beat
+  with only the viewer on screen", which made VS Code drop the now-empty
+  editor group and reopen the schema *inside the preview's group*, hiding the
+  preview behind it. The panel was visible for 7 of 92 seconds, and neither
+  the live-title-update step (F02) nor the configure step (F09) — both of
+  which exist purely to show the preview changing — had it on screen at all.
+  Where a demo can assert this, it SHOULD: a capture that silently records the
+  wrong thing is the failure mode this requirement exists to catch, and
+  nothing else in the pipeline notices it.
+- **S08-SR-20** Every entry in `scripts/demo-registry.mjs` MUST be embedded on
+  the docs site in **both** places a reader looks: the landing page's demo
+  gallery (`docs/.vitepress/theme/QuickDemo.vue`) and the guide section that
+  documents the command it shows. A GIF regenerated at release time and never
+  displayed is pure payload. The **README** is deliberately the exception: it
+  embeds `demo-showcase.gif` alone, because the marketplace renders it and
+  seventeen inline GIFs would make that page unusable.
+- **S08-SR-21** A frame-stitched demo SHOULD stay under 30 seconds of
+  playback. Past that a reader scrubs rather than watches, and the file grows
+  without teaching more. The 16 frame-stitched demos currently run 6.8–16.9 s,
+  so the budget is headroom rather than a diet; it exists to keep a demo from
+  quietly growing past the point where anyone watches it to the end.
+  `demo-showcase` is the deliberate exception — it is the one end-to-end
+  narrative — but it is held to the same principle: it MUST tell one story,
+  not several chained together. It ran 92 s carrying two acts (author a schema
+  and preview it; then validate and bind a different file); the second was cut
+  because every feature in it already had a focused demo, and a tour that
+  changes subject halfway is two demos in one file. Shortening it means
+  re-recording, which needs a real X11 session; it cannot be done by
+  re-encoding.
+
 ### Harness notes (implementation)
 
 - The `toml` language id and the `yaml.schemas` configuration key are not
@@ -184,6 +248,131 @@ mechanism.
 - **S08-NFR-02** E2E tests MUST NOT hit the network: remote-schema scenarios
   use a local HTTP fixture server, keeping runs deterministic and offline
   (S04, S05).
+
+## History (encoding)
+
+- **2026-09-02** — The 16 frame-stitched demos moved from `gif-encoder-2`'s
+  octree quantiser to the same ffmpeg palette pipeline
+  `make-showcase-gif.mjs` already used, and `canvas`/`gif-encoder-2` were
+  dropped (S08-SR-16/17/18).
+
+  The earlier History note reasoned that the screenshot pipeline was "simpler
+  and has no external-binary dependency beyond the already-required canvas".
+  Both halves of that turned out backwards. ffmpeg is not an *additional*
+  dependency — the refresh workflow already installs it for the showcase — and
+  `canvas` is not free: it is a native build, the reason `npm ci` fails in a
+  minimal container, and the reason `scripts/bootstrap.mjs` exists.
+
+  The measured result on the largest demo, at unchanged dimensions:
+  **4.03 MB → 0.39 MB**, visually indistinguishable. Across the 16
+  frame-stitched GIFs the committed payload drops from ~28 MB to ~3.4 MB.
+  Re-encoding needs neither X11 nor the original frames — decoding each
+  committed GIF and re-encoding it produces the same timing — so the existing
+  GIFs were re-encoded in place rather than waiting for the next release to
+  regenerate them. `demo-showcase.gif` was left alone: it already came out of
+  this pipeline, so a second lossy pass would buy ~4% for a generation of
+  quality. It stays the outlier at 7.8 MB — a length problem, not an encoding
+  one (S08-SR-19).
+
+  What still needs a real recording session — and so is *not* addressed here —
+  is trimming `demo-showcase` (S08-SR-21).
+
+- **2026-09-03 (showcase composition)** — `demo-showcase` was recorded with the
+  preview panel on screen for 7 of its 92 seconds. Closing the schema tab to
+  get "a beat with only the viewer" removed the editor group holding it, and
+  the reopened schema editor then landed inside the preview's own group as a
+  new tab, hiding it for the remainder of the run. The two steps that exist to
+  show the preview reacting — the live title edit and the render-template
+  change — both played against a full-width editor.
+
+  The schema tab is no longer closed: editor left, docs right, for the whole
+  narrative, which is also what using the extension actually looks like. That
+  removed the need to reopen the file at all, and with it the Explorer/Quick
+  Open flakiness the `Ctrl+Shift+T` workaround existed to dodge.
+  `expectPreviewVisible()` now asserts the panel at each of those moments, so
+  a capture that records the wrong thing fails instead of shipping
+  (S08-SR-19).
+
+  The first re-record attempt failed before reaching any of that, on
+  pre-existing code: step 3 aimed the cursor straight at the `.codicon-close`
+  icon of the *background* `person-valid.json` tab. VS Code reveals that icon
+  only on the active or hovered tab, and `glideToLocator` waits for visibility
+  before moving the pointer — so it waited for the very thing only the move
+  would produce. That had resolved by luck for a long time and stopped on VS
+  Code 1.136.1. The demo now glides to the tab, clicks it (which reveals its
+  close button), and falls back to the keyboard shortcut. Worth recording
+  because the class generalises: **a mouse demo must not target a control that
+  only appears on hover**, since the wait that precedes the move cannot be
+  satisfied by the move itself.
+
+  The second attempt then failed on the new assertion itself, which is the
+  guard behaving correctly about the wrong thing: it checked instantly, before
+  the multi-second beat that follows each Preview click, and preview rendering
+  shells out to a Python renderer. The instant check had been a deliberate
+  choice — "the panel should already be up, so waiting would mask a slow
+  reveal" — which is simply untrue at a site that has just *created* the panel.
+  It now waits, bounded, and each call sits after its beat, so what it asserts
+  is the state the recording actually contains.
+
+  The third attempt reached 2.2 of the run's ~4 minutes — past all three
+  preview assertions, so the layout fix itself held — and died at step 12,
+  waiting for "Generate Types from This Schema" in the More Actions menu. That
+  command had moved: `editor/title` now contributes the
+  `jsonschema.schemaMenu` **submenu**, and every non-icon command sits one
+  level down inside it. The restructuring landed earlier on the same branch,
+  and nothing caught it, because the two attempts above both died at step 3 —
+  this was the first full pass over the current `package.json` since. The
+  general rule: **restructuring a menu contribution invalidates every demo
+  that clicks through that menu**, and a demo only proves that when it runs
+  end to end. A demo failing early hides every later step's breakage, so a
+  fix that gets a demo further is not evidence that the rest still works.
+
+- **2026-09-04 (showcase scope)** — With the preview finally on screen where
+  it belonged, the recording's real problem became legible: it was two demos.
+  Act one authored a schema and previewed it; act two switched to a different
+  file to validate, inline-bind, re-validate and trigger IntelliSense, then
+  navigated back. That second act was ~45 of the 91 seconds, ran with a
+  full-width editor and no preview throughout, and every feature in it (F03
+  validate, F04 bind) already had its own focused demo on the docs site.
+
+  Cut to one story: infer → preview → live-edit → configure → generate code.
+  The schema editor and preview stay side by side from the moment the preview
+  opens until the end, so there is no longer any stretch of the tour where the
+  headline surface is absent.
+
+  One real cost, recorded rather than glossed: **F10 (inline `$schema`
+  binding) loses its only demo** — it was covered nowhere but that middle act.
+  It joins the backlog in the entry below at an S16 value of 13.2, which
+  places it **third**, above every remaining gap except F34 (18) and F12
+  (15.36) — so it is not a quiet demotion. Buried mid-tour it was not
+  discoverable anyway: a reader looking for "how do I bind a schema inline"
+  would not have found it 60 seconds into a video about authoring one.
+
+  The per-step pauses were also cut. They had been fixed `waitForTimeout`
+  values sized for a worst-case Python render; `expectPreviewRendered()` now
+  waits for the rendered content itself (the `Required` badge, emitted by both
+  templates the demo uses — verified by running json-schema-for-humans against
+  this fixture under each, not read off a GIF frame), so render time is
+  absorbed adaptively and the surrounding beats exist only for the reader.
+
+- **2026-09-02 (coverage audit)** — Of 34 feature specs, 16 had no demo at all.
+  Ranked by the S16 value estimate, the gaps were: F34 (18), F12 (15.36), F31
+  and F33 (11.52), F08 (10.56), F27 and F29 (7.68), F15 and F30 (7.04), F11,
+  F19 and F25 (5.28), F24 (4.8), F26 (3.52), F32 (2.4), F23 (1.35).
+
+  `outline` (F31) and `schema-tests` (F29) were added in that pass — the two
+  with the highest value among the interactions that reuse an existing demo
+  pattern outright. The rest remain a backlog, in that order. F12's demo needs
+  a local catalog fixture rather than SchemaStore (S08-NFR-02 forbids network
+  access), and F32's needs a language model, so neither is a straight copy of
+  an existing pattern.
+
+  New demo scripts cannot be run in a container without an X server and a VS
+  Code download, so the two added here are unverified until the next
+  `refresh-gifs` run. That is deliberately survivable: the smoke job is
+  non-blocking, `make-gifs.mjs` skips a demo whose frames are missing, and the
+  docs gallery renders a placeholder for a GIF that does not exist yet — a
+  broken new demo costs a missing image, not a red build.
 
 ## Out of Scope
 
@@ -321,6 +510,9 @@ mechanism.
   screenshot pipeline, which is simpler and has no external-binary dependency
   beyond the already-required `canvas`. The refresh-gifs workflow gained
   `ffmpeg`/`xdotool` apt packages and a `make-showcase-gif.mjs` step.
+  *(That last scoping decision was reversed on 2026-09-02 — see "History
+  (encoding)" above: all 17 demos now share the ffmpeg palette pipeline and
+  `canvas` is gone. The rest of this note still stands.)*
   The preview itself renders json-schema-for-humans' **flat** template
   (`PreviewWebPanel.ts` avoids the default accordion template, which would
   pull Bootstrap/jQuery from a CDN — a network request this zero-telemetry

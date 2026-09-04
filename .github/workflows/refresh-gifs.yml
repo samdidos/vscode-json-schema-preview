@@ -118,13 +118,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # canvas falls back to a from-source build when no prebuilt binary
-      # matches, hence the headers. ffmpeg/xdotool are for demo-showcase-mouse
-      # only, which records the real X11 display (helpers/recorder.ts).
-      - name: Install system libraries for canvas, ffmpeg, xdotool
+      # ffmpeg encodes every demo GIF (S08-SR-16) and converts the showcase
+      # recording; xdotool drives the real X11 pointer for demo-showcase-mouse
+      # (helpers/recorder.ts). No image-library headers: the pipeline no longer
+      # links a native encoder (S08-SR-17).
+      - name: Install system libraries for ffmpeg, xdotool
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ffmpeg xdotool
+          sudo apt-get install -y ffmpeg xdotool
 
       # The extension's preview feature shells out to json-schema-for-humans.
       - name: Install Python preview renderer
