@@ -210,10 +210,14 @@ mechanism.
   without teaching more. The 16 frame-stitched demos currently run 6.8–16.9 s,
   so the budget is headroom rather than a diet; it exists to keep a demo from
   quietly growing past the point where anyone watches it to the end.
-  `demo-showcase` is the deliberate exception at 92 s — it is the one
-  end-to-end narrative — but it SHOULD be trimmed toward the budget when it is
-  next re-recorded (shortening it means re-recording, which needs a real X11
-  session; it cannot be done by re-encoding).
+  `demo-showcase` is the deliberate exception — it is the one end-to-end
+  narrative — but it is held to the same principle: it MUST tell one story,
+  not several chained together. It ran 92 s carrying two acts (author a schema
+  and preview it; then validate and bind a different file); the second was cut
+  because every feature in it already had a focused demo, and a tour that
+  changes subject halfway is two demos in one file. Shortening it means
+  re-recording, which needs a real X11 session; it cannot be done by
+  re-encoding.
 
 ### Harness notes (implementation)
 
@@ -322,6 +326,34 @@ mechanism.
   that clicks through that menu**, and a demo only proves that when it runs
   end to end. A demo failing early hides every later step's breakage, so a
   fix that gets a demo further is not evidence that the rest still works.
+
+- **2026-09-04 (showcase scope)** — With the preview finally on screen where
+  it belonged, the recording's real problem became legible: it was two demos.
+  Act one authored a schema and previewed it; act two switched to a different
+  file to validate, inline-bind, re-validate and trigger IntelliSense, then
+  navigated back. That second act was ~45 of the 91 seconds, ran with a
+  full-width editor and no preview throughout, and every feature in it (F03
+  validate, F04 bind) already had its own focused demo on the docs site.
+
+  Cut to one story: infer → preview → live-edit → configure → generate code.
+  The schema editor and preview stay side by side from the moment the preview
+  opens until the end, so there is no longer any stretch of the tour where the
+  headline surface is absent.
+
+  One real cost, recorded rather than glossed: **F10 (inline `$schema`
+  binding) loses its only demo** — it was covered nowhere but that middle act.
+  It joins the backlog in the entry below at an S16 value of 13.2, which
+  places it **third**, above every remaining gap except F34 (18) and F12
+  (15.36) — so it is not a quiet demotion. Buried mid-tour it was not
+  discoverable anyway: a reader looking for "how do I bind a schema inline"
+  would not have found it 60 seconds into a video about authoring one.
+
+  The per-step pauses were also cut. They had been fixed `waitForTimeout`
+  values sized for a worst-case Python render; `expectPreviewRendered()` now
+  waits for the rendered content itself (the `Required` badge, emitted by both
+  templates the demo uses — verified by running json-schema-for-humans against
+  this fixture under each, not read off a GIF frame), so render time is
+  absorbed adaptively and the surrounding beats exist only for the reader.
 
 - **2026-09-02 (coverage audit)** — Of 34 feature specs, 16 had no demo at all.
   Ranked by the S16 value estimate, the gaps were: F34 (18), F12 (15.36), F31
