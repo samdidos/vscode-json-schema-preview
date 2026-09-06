@@ -3,7 +3,6 @@ import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import { execFileSync } from 'child_process';
 
 export const EXT_ROOT = path.resolve(__dirname, '../../../..');
 export const SHOWCASE_DIR = path.join(EXT_ROOT, 'showcase'); // source — never written to by tests
@@ -25,7 +24,6 @@ export const SHOWCASE_DIR = path.join(EXT_ROOT, 'showcase'); // source — never
 // fresh workspace/user-data dirs created for that launch.
 const pendingWorkspaceFiles: Array<{ relPath: string; contents: string }> = [];
 let pendingUserSettings: Record<string, unknown> | undefined;
-let pendingGitBaseline = false;
 
 /**
  * Stages a file to be written into the demo's workspace copy before launch.
@@ -43,25 +41,6 @@ export function seedWorkspaceFile(relPath: string, contents: string): void {
  */
 export function seedUserSettings(settings: Record<string, unknown>): void {
   pendingUserSettings = settings;
-}
-
-/**
- * Stages a `git init` + single commit of the whole workspace, run after every
- * other seed has been applied.
- *
- * Two features are defined against the *last committed* version of a schema and
- * cannot be demonstrated without one: the compatibility CodeLens (F26) reads
- * Git HEAD through the built-in `vscode.git` extension, and Diff Against
- * Baseline (F15) offers "Git HEAD" as its first baseline option — the only one
- * of its three that needs no native dialog. Both simply render nothing at all
- * in a non-repository folder, which would make for a demo of an absent feature.
- *
- * Committing here (rather than letting a demo shell out mid-recording) means
- * the repository exists before VS Code starts, so the git extension has found
- * it by the time the first frame is captured.
- */
-export function seedGitBaseline(): void {
-  pendingGitBaseline = true;
 }
 
 /** Creates the isolated dirs for one launch and applies any staged seeds. */
@@ -83,22 +62,6 @@ function prepareSessionDirs(): { userDataDir: string; workspaceDir: string } {
     pendingUserSettings = undefined;
   }
 
-  if (pendingGitBaseline) {
-    pendingGitBaseline = false;
-    // -c flags rather than `git config`: a CI runner has no global
-    // user.name/user.email, and this must not depend on (or write to) the
-    // machine's git configuration.
-    const git = (...args: string[]) =>
-      execFileSync('git', args, { cwd: workspaceDir, stdio: 'ignore' });
-    git('init', '--quiet', '--initial-branch=main');
-    git('add', '-A');
-    git(
-      '-c', 'user.name=Demo',
-      '-c', 'user.email=demo@example.invalid',
-      'commit', '--quiet', '-m', 'baseline',
-    );
-  }
-
   return { userDataDir, workspaceDir };
 }
 
@@ -111,22 +74,12 @@ const BASE_ARGS = [
   // Disable all other extensions so Copilot/Chat can't steal focus on a fresh
   // profile. --extensionDevelopmentPath still loads the extension under test.
   //
-  // This also disables **built-in** extensions, `vscode.git` among them — see
-  // BASE_ARGS_WITH_BUILTINS for the two demos that cannot live without it.
+  // It also disables **built-in** extensions, `vscode.git` among them, which is
+  // why F26's compatibility CodeLens cannot be demoed here — see the S08
+  // History note.
   '--disable-extensions',
   `--extensionDevelopmentPath=${EXT_ROOT}`,
 ];
-
-// Same, minus the blanket disable. `vscode.git` is a built-in, and
-// `--disable-extensions` takes built-ins down with everything else — so a
-// feature defined against Git HEAD (F26's compatibility CodeLens reads it
-// through `vscode.extensions.getExtension('vscode.git')`) silently has no
-// baseline and renders nothing at all. Nothing errors; the demo simply records
-// the feature being absent, which is the failure mode S08-SR-19 exists to
-// catch. Only demos that need git should use this: it re-admits whatever
-// built-in chat UI the VS Code build ships, which is what the blanket disable
-// was added to keep out of frame.
-const BASE_ARGS_WITH_BUILTINS = BASE_ARGS.filter(a => a !== '--disable-extensions');
 
 export interface VSCodeInstance {
   app: ElectronApplication;
@@ -150,11 +103,7 @@ function getExecutable(): Promise<string> {
   return executablePromise;
 }
 
-async function launch(
-  extraArgs: string[],
-  openRelPaths: string[] = [],
-  baseArgs: string[] = BASE_ARGS,
-): Promise<VSCodeInstance> {
+async function launch(extraArgs: string[], openRelPaths: string[] = []): Promise<VSCodeInstance> {
   const executablePath = await getExecutable();
   const { userDataDir, workspaceDir } = prepareSessionDirs();
   // Files to open pre-launch, resolved against this launch's own workspaceDir
@@ -163,7 +112,7 @@ async function launch(
   // preceding folder argument.
   const openPaths = openRelPaths.map(p => path.join(workspaceDir, p));
   const args = [
-    ...baseArgs,
+    ...BASE_ARGS,
     ...extraArgs,
     `--user-data-dir=${userDataDir}`,
     workspaceDir,
@@ -235,11 +184,3 @@ export const launchVSCode = (openRelPaths: string[] = []): Promise<VSCodeInstanc
 export const launchVSCodeUntrusted = (openRelPaths: string[] = []): Promise<VSCodeInstance> =>
   launch([], openRelPaths); // intentionally omits --disable-workspace-trust
 
-/**
- * Trusted launch that keeps VS Code's **built-in** extensions enabled, for the
- * demos that need `vscode.git` (see BASE_ARGS_WITH_BUILTINS). Use it nowhere
- * else: it re-admits the built-in chat UI the normal launch deliberately keeps
- * out of frame.
- */
-export const launchVSCodeWithBuiltins = (openRelPaths: string[] = []): Promise<VSCodeInstance> =>
-  launch(['--disable-workspace-trust'], openRelPaths, BASE_ARGS_WITH_BUILTINS);

@@ -355,8 +355,9 @@ mechanism.
   this fixture under each, not read off a GIF frame), so render time is
   absorbed adaptively and the surrounding beats exist only for the reader.
 
-- **2026-09-04 (closing the demo gap)** — Nine demos added, covering F34, F10,
-  F12, F08, F30, F15, F26, F24 and F23. F25 was closed without a new GIF: the
+- **2026-09-04 (closing the demo gap)** — Nine demos written, seven kept:
+  F34, F10, F12, F30, F15, F24 and F23. F08 and F26 were removed after
+  recording proved them undemoable in this harness (below). F25 was closed without a new GIF: the
   existing `quick-fix` demo's fixture types `"payed"` against an enum
   containing `"paid"`, so the ranked suggestion **is** F25 on screen, and a
   second recording of the same lightbulb would teach nothing. It was added to
@@ -364,19 +365,19 @@ mechanism.
 
   Three needed infrastructure that did not exist, all of it small and reusable:
 
-  - `seedGitBaseline()` (`helpers/launch.ts`) runs `git init` + one commit over
-    the seeded workspace before VS Code starts. F15's "Git HEAD" baseline and
-    F26's CodeLens are both defined against the last committed version and
-    render *nothing at all* in a non-repository folder — which would have made
-    for a demo of an absent feature rather than a failing one.
   - `helpers/fixtureServer.ts` serves fixtures over loopback HTTP, the
-    mechanism S08-NFR-02 already names. F08 refuses any binding that is not a
-    remote URL, and F12 fetches its catalog with `fetch()`, which in the
-    extension host is undici and does not support the `file:` scheme — so
-    neither can be demonstrated against a path on disk, however local it is.
+    mechanism S08-NFR-02 already names. F12 fetches its catalog with `fetch()`,
+    which in the extension host is undici and does not support the `file:`
+    scheme — so it cannot be demonstrated against a path on disk, however local
+    it is.
+  - F15 diffs against a **workspace file**, not Git HEAD: the "Git HEAD"
+    baseline row never appears under `--disable-extensions` (see F26 below).
+    The baseline is picked through a native dialog stubbed in the main
+    process.
   - `runDemo` now passes the `ElectronApplication` and the launch's
     `workspaceDir` to the demo body, for the native-dialog stubbing
-    `demo-showcase-mouse` already did by hand.
+    `demo-showcase-mouse` already did by hand — which is what makes the F15
+    dialog stub above possible.
 
   **A latent break found while doing this:** `clickEditorOverflowAction` still
   clicked the overflow menu's top level, which F34's submenu grouping had
@@ -386,6 +387,35 @@ mechanism.
   passed in the meantime only because none of them was re-recorded. The helper
   now traverses the submenu, and does so conditionally, so flattening the menu
   again would not silently break it a second time.
+
+  **Two of the nine did not survive recording, and both taught the same
+  lesson.** They were written, wired and merged before anything ran them, then
+  removed once CI showed what they actually did:
+
+  - **F26 (compatibility CodeLens)** — the lens reads Git HEAD through
+    `vscode.extensions.getExtension('vscode.git')`, and the harness launches
+    with `--disable-extensions`, which takes **built-in** extensions down as
+    well. Seeding a real repository did not help, and neither did a launch
+    variant that kept built-ins enabled. The harness cannot both show this lens
+    and keep the built-in chat UI out of frame, so F26 has no demo.
+  - **F08 (local schema cache)** — `jsonschema.cacheSchemaLocally` is
+    contributed to `commandPalette` with **`"when": "false"`**: it is
+    deliberately unreachable from the palette, and its real entry points are a
+    quick fix on an unresolvable remote `$schema` and a prompt from `$ref`
+    navigation. A demo of it has to arrange a *failing* fetch, which is a
+    different script from the one written here.
+
+  Both were caught only because the mouse twin failed. **Both plain twins
+  "passed" while doing nothing** — `runCommand` types a name, presses Enter on
+  whatever the palette highlights, and returns; with the command absent, that
+  is a no-op the demo cannot detect. F26's first recording passed the same way,
+  with its CodeLens wait wrapped in `.catch()`.
+
+  The rule that generalises, and the reason S08-SR-19 exists: **a demo step
+  that cannot fail cannot be trusted.** A `.catch()` on the wait that proves
+  the feature rendered, or a palette entry taken on faith, converts a broken
+  demo into a shipped GIF of nothing happening. Where a demo can assert its
+  subject is on screen, it MUST, and that assertion MUST be fatal.
 
   Five gaps remain, and none of them is a matter of effort:
 
