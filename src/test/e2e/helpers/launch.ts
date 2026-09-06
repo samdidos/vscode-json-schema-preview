@@ -3,6 +3,7 @@ import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { execFileSync } from 'child_process';
 
 export const EXT_ROOT = path.resolve(__dirname, '../../../..');
 export const SHOWCASE_DIR = path.join(EXT_ROOT, 'showcase'); // source — never written to by tests
@@ -24,6 +25,7 @@ export const SHOWCASE_DIR = path.join(EXT_ROOT, 'showcase'); // source — never
 // fresh workspace/user-data dirs created for that launch.
 const pendingWorkspaceFiles: Array<{ relPath: string; contents: string }> = [];
 let pendingUserSettings: Record<string, unknown> | undefined;
+let pendingGitBaseline = false;
 
 /**
  * Stages a file to be written into the demo's workspace copy before launch.
@@ -43,6 +45,25 @@ export function seedUserSettings(settings: Record<string, unknown>): void {
   pendingUserSettings = settings;
 }
 
+/**
+ * Stages a `git init` + single commit of the whole workspace, run after every
+ * other seed has been applied.
+ *
+ * Two features are defined against the *last committed* version of a schema and
+ * cannot be demonstrated without one: the compatibility CodeLens (F26) reads
+ * Git HEAD through the built-in `vscode.git` extension, and Diff Against
+ * Baseline (F15) offers "Git HEAD" as its first baseline option — the only one
+ * of its three that needs no native dialog. Both simply render nothing at all
+ * in a non-repository folder, which would make for a demo of an absent feature.
+ *
+ * Committing here (rather than letting a demo shell out mid-recording) means
+ * the repository exists before VS Code starts, so the git extension has found
+ * it by the time the first frame is captured.
+ */
+export function seedGitBaseline(): void {
+  pendingGitBaseline = true;
+}
+
 /** Creates the isolated dirs for one launch and applies any staged seeds. */
 function prepareSessionDirs(): { userDataDir: string; workspaceDir: string } {
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vscode-e2e-'));
@@ -60,6 +81,22 @@ function prepareSessionDirs(): { userDataDir: string; workspaceDir: string } {
     fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
     fs.writeFileSync(settingsPath, JSON.stringify(pendingUserSettings, null, 2));
     pendingUserSettings = undefined;
+  }
+
+  if (pendingGitBaseline) {
+    pendingGitBaseline = false;
+    // -c flags rather than `git config`: a CI runner has no global
+    // user.name/user.email, and this must not depend on (or write to) the
+    // machine's git configuration.
+    const git = (...args: string[]) =>
+      execFileSync('git', args, { cwd: workspaceDir, stdio: 'ignore' });
+    git('init', '--quiet', '--initial-branch=main');
+    git('add', '-A');
+    git(
+      '-c', 'user.name=Demo',
+      '-c', 'user.email=demo@example.invalid',
+      'commit', '--quiet', '-m', 'baseline',
+    );
   }
 
   return { userDataDir, workspaceDir };

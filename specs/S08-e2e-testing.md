@@ -355,6 +355,59 @@ mechanism.
   this fixture under each, not read off a GIF frame), so render time is
   absorbed adaptively and the surrounding beats exist only for the reader.
 
+- **2026-09-04 (closing the demo gap)** — Nine demos added, covering F34, F10,
+  F12, F08, F30, F15, F26, F24 and F23. F25 was closed without a new GIF: the
+  existing `quick-fix` demo's fixture types `"payed"` against an enum
+  containing `"paid"`, so the ranked suggestion **is** F25 on screen, and a
+  second recording of the same lightbulb would teach nothing. It was added to
+  that demo's `specs` instead.
+
+  Three needed infrastructure that did not exist, all of it small and reusable:
+
+  - `seedGitBaseline()` (`helpers/launch.ts`) runs `git init` + one commit over
+    the seeded workspace before VS Code starts. F15's "Git HEAD" baseline and
+    F26's CodeLens are both defined against the last committed version and
+    render *nothing at all* in a non-repository folder — which would have made
+    for a demo of an absent feature rather than a failing one.
+  - `helpers/fixtureServer.ts` serves fixtures over loopback HTTP, the
+    mechanism S08-NFR-02 already names. F08 refuses any binding that is not a
+    remote URL, and F12 fetches its catalog with `fetch()`, which in the
+    extension host is undici and does not support the `file:` scheme — so
+    neither can be demonstrated against a path on disk, however local it is.
+  - `runDemo` now passes the `ElectronApplication` and the launch's
+    `workspaceDir` to the demo body, for the native-dialog stubbing
+    `demo-showcase-mouse` already did by hand.
+
+  **A latent break found while doing this:** `clickEditorOverflowAction` still
+  clicked the overflow menu's top level, which F34's submenu grouping had
+  emptied of commands months earlier. Four shipped demos (`bundling`,
+  `codegen`, `migrate`, `sample-data`) go through that helper and would all
+  have failed on their next re-record — the same wall `demo-showcase` hit. They
+  passed in the meantime only because none of them was re-recorded. The helper
+  now traverses the submenu, and does so conditionally, so flattening the menu
+  again would not silently break it a second time.
+
+  Five gaps remain, and none of them is a matter of effort:
+
+  - **F11, F19 (TOML support and TOML IntelliSense)** — every TOML `when`
+    clause tests `resourceLangId == toml`, and this extension contributes no
+    `languages` entry, so the id only exists when a marketplace TOML extension
+    is installed. The demo harness launches with `--disable-extensions`
+    (S08-NFR-02, and the Copilot focus-stealing this file documents), so a
+    `.toml` file opens as plaintext and no command is offered. Demoing these
+    means either shipping a language contribution or installing a third-party
+    extension into the demo profile — a product decision, not a demo one.
+  - **F32 (AI-assisted authoring)** and the language-model half of **F33** need
+    a model behind VS Code's Language Model API, which means Copilot Chat: not
+    installed, not installable offline, and non-deterministic output even if it
+    were — a GIF whose content changes per run is not a demo.
+  - **F27 (CLI)** and the MCP half of **F33** are terminal surfaces, not editor
+    ones. They can be filmed in the integrated terminal, but `jstk` is not on
+    PATH in the demo workspace, so the recording would open with a shim or an
+    `export PATH=` line that is not how anyone uses the tool. `guide/cli.md`
+    and `guide/ai.md` already carry the exact commands as copyable text, which
+    is more useful than a video of someone typing them.
+
 - **2026-09-02 (coverage audit)** — Of 34 feature specs, 16 had no demo at all.
   Ranked by the S16 value estimate, the gaps were: F34 (18), F12 (15.36), F31
   and F33 (11.52), F08 (10.56), F27 and F29 (7.68), F15 and F30 (7.04), F11,

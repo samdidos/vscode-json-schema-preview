@@ -17,6 +17,20 @@ ext install samdidos.json-schema-preview
 
 Or search for **"JSON Schema Preview"** in the Extensions panel (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>).
 
+<!-- spec:F34 start -->
+## Finding your way around
+
+Every command sits behind one **`JSON Schema:`** prefix in the Command Palette,
+and every command without a toolbar icon of its own sits under a single grouped
+**JSON Schema** menu in the editor title bar — so the whole surface is two
+places, not thirty. A first install also registers a walkthrough
+(**Help → Welcome**, or *Welcome: Open Walkthrough*) that covers reading a
+schema, binding and validating data, starting from data you already have, and
+using a schema behind authentication.
+
+![The JSON Schema command prefix, the grouped toolbar menu, and the getting-started walkthrough](/demo-command-surface.gif)
+<!-- spec:F34 end -->
+
 <!-- spec:F01 start -->
 ## Opening a Preview
 

@@ -192,10 +192,22 @@ export function clickStatusBarItem(
 
 /**
  * Clicks a command that lives in the editor-title "..." (More Actions) overflow
- * menu instead of the always-visible navigation group — e.g. Generate Types,
- * which VS Code places in the `1_run` group. Opens the overflow, waits for the
- * dropdown, then clicks the matching menu entry by its visible text, so the
- * whole flow stays mouse-driven instead of falling back to the Command Palette.
+ * menu instead of the always-visible navigation group — e.g. Generate Types.
+ * Opens the overflow, waits for the dropdown, then clicks the matching entry by
+ * its visible text, so the whole flow stays mouse-driven instead of falling
+ * back to the Command Palette.
+ *
+ * The entries are **one level down**, inside a "JSON Schema" submenu: F34
+ * grouped every non-icon command under `contributes.submenus`'
+ * `jsonschema.schemaMenu`, so More Actions shows the submenu, not the commands.
+ * Hovering is what opens a monaco submenu.
+ *
+ * That restructuring silently broke every caller of this helper — the demos
+ * still passed for weeks because none of them was re-recorded in between, and a
+ * demo only proves a menu path when it actually runs. demo-showcase-mouse hit
+ * the same wall on its first full CI pass afterwards. The hover is therefore
+ * conditional rather than assumed: if a future change flattens the menu again,
+ * this keeps working instead of failing in the same silent way.
  */
 export async function clickEditorOverflowAction(
   window: Page,
@@ -209,12 +221,28 @@ export async function clickEditorOverflowAction(
   await clickSelector(window, capture, moreSel, `${label}-overflow`);
   await window.waitForSelector('.monaco-menu', { state: 'visible', timeout: 10_000 });
   await capture(`${label}-menu-open`);
-  await clickSelector(
-    window,
-    capture,
-    `.monaco-menu .action-item .action-label:has-text("${itemText}")`,
-    label,
-  );
+
+  const itemSel = `.monaco-menu .action-item .action-label:has-text("${itemText}")`;
+  const alreadyVisible = await window.locator(itemSel).first().isVisible().catch(() => false);
+  if (!alreadyVisible) {
+    const submenu = window.locator(
+      '.monaco-menu .action-item.monaco-submenu-item:has-text("JSON Schema"), ' +
+      '.monaco-menu .action-item:has(.submenu-indicator):has-text("JSON Schema")',
+    ).first();
+    await submenu.waitFor({ state: 'visible', timeout: 10_000 });
+    const box = await submenu.boundingBox();
+    if (box) {
+      // Move the animated cursor onto the submenu row as well as hovering it,
+      // so the recording shows the pointer travelling into the submenu rather
+      // than teleporting to the entry it opens.
+      await glide(window, capture, box.x + box.width / 2, box.y + box.height / 2, `${label}-submenu`);
+    }
+    await submenu.hover();
+    await window.waitForTimeout(600);
+    await capture(`${label}-submenu-open`);
+  }
+
+  await clickSelector(window, capture, itemSel, label);
 }
 
 /**
