@@ -30,10 +30,23 @@ export const DEMOS = [
   { name: 'ref-navigation', dir: 'ref-navigation-mouse', delay: 220, hold: 1_200, specs: ['F13'] },
   { name: 'schema-linting', dir: 'schema-linting-mouse', delay: 220, hold: 1_400, specs: ['F17'] },
   { name: 'workspace-validation', dir: 'workspace-validation-mouse', delay: 220, hold: 1_400, specs: ['F20'] },
-  { name: 'quick-fix', dir: 'quick-fix-mouse', delay: 220, hold: 1_400, specs: ['F21'] },
+  // F25 (nearest-match enum ranking) is what this demo already shows: the
+  // fixture's "payed" is one edit away from "paid", so the ranked suggestion
+  // *is* the feature on screen. A second GIF of the same lightbulb offering the
+  // same kind of fix would teach nothing the first does not.
+  { name: 'quick-fix', dir: 'quick-fix-mouse', delay: 220, hold: 1_400, specs: ['F21', 'F25'] },
   { name: 'draft-migration', dir: 'draft-migration-mouse', delay: 220, hold: 1_400, specs: ['F22'] },
   { name: 'outline', dir: 'outline-mouse', delay: 220, hold: 1_200, specs: ['F31'] },
   { name: 'schema-tests', dir: 'schema-tests-mouse', delay: 220, hold: 1_400, specs: ['F29'] },
+  { name: 'command-surface', dir: 'command-surface-mouse', delay: 220, hold: 1_600, specs: ['F34'] },
+  { name: 'inline-binding', dir: 'inline-binding-mouse', delay: 220, hold: 1_400, specs: ['F10'] },
+  { name: 'schema-catalog', dir: 'schema-catalog-mouse', delay: 220, hold: 1_400, specs: ['F12'] },
+  { name: 'schema-cache', dir: 'schema-cache-mouse', delay: 220, hold: 1_400, specs: ['F08'] },
+  { name: 'refactoring', dir: 'refactoring-mouse', delay: 220, hold: 1_400, specs: ['F30'] },
+  { name: 'schema-diff', dir: 'schema-diff-mouse', delay: 220, hold: 1_400, specs: ['F15'] },
+  { name: 'compat-verdict', dir: 'compat-verdict-mouse', delay: 220, hold: 1_600, specs: ['F26'] },
+  { name: 'ref-graph', dir: 'ref-graph-mouse', delay: 220, hold: 1_600, specs: ['F24'] },
+  { name: 'schema-coverage', dir: 'schema-coverage-mouse', delay: 220, hold: 1_400, specs: ['F23'] },
   // Chains inference (F06) -> preview (F01) -> live-edit (F02) -> configure
   // (F09) -> code generation (F18); see the History note in
   // specs/S08-e2e-testing.md for the exact narrative. A second act covering

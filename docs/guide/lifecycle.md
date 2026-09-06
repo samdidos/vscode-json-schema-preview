@@ -46,6 +46,8 @@ formatting and comments outside the edited span survive.
 | **Extract to `$defs`** | Refactor code action inside an object subschema | Moves it into `$defs` under a name you choose, leaving `{ "$ref": "#/$defs/<name>" }` behind |
 | **Inline a `$ref`** | Refactor code action on a local `$ref` | Replaces it with the definition's text |
 | **Rename a definition** | <kbd>F2</kbd> on a `$defs` key **or** on a `$ref` to it | Rewrites the key and every reference, including refs that point *into* it |
+
+![Extracting a repeated inline subschema into $defs from the lightbulb](/demo-refactoring.gif)
 | **Find all references** | <kbd>Shift</kbd>+<kbd>F12</kbd> | Every local `$ref` targeting the definition |
 | **Remove unused definitions** | Refactor code action | Deletes definitions nothing reaches |
 
@@ -139,6 +141,8 @@ The same verdict is available two other ways:
 `2 breaking changes vs HEAD`, computed in the background from the same
 classifier. Turn it off with `jsonschema.compat.codeLens`. No baseline in Git, or
 no changes, means no lens rather than an empty one.
+
+![The compatibility CodeLens flipping to "breaking changes vs HEAD" as a required property is added](/demo-compat-verdict.gif)
 
 **Headlessly, in CI:**
 

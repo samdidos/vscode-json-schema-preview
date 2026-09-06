@@ -77,7 +77,15 @@ Also available via **right-click** in the editor and the **Explorer** context me
 
 When a file has no explicit binding but VS Code already resolves a schema for it natively — from an installed extension's `jsonValidation` contribution, or a SchemaStore catalog match for a known config file (e.g. a commitlint config) — the status bar shows that schema with an **(auto)** suffix instead of "unbound", so it stays consistent with the validation VS Code provides. **Validate This File** uses that auto-resolved schema as well. Clicking still lets you set your own explicit binding.
 
+A catalog entry binds purely by file name — nothing is written into the document and nothing is configured per project:
+
+![A schema catalog binding a file by name, with the status bar showing the auto-resolved schema](/demo-schema-catalog.gif)
+
 ![Binding a data file to a schema from the Quick Pick, and the status bar picking it up](/demo-binding.gif)
+
+Choosing the **Inline** scope writes the reference into the document itself, so the binding travels with the file:
+
+![Binding a data file by writing $schema into the file itself](/demo-inline-binding.gif)
 
 | Toolbar | Command Palette | Context Menu |
 |---------|----------------|---|
@@ -181,6 +189,8 @@ Each unexercised property is highlighted on the schema file itself as a dimmed *
 
 Coverage is a **heuristic presence** check, not validation: it walks named `properties` (through nested objects, array `items`, `allOf`/`anyOf`/`oneOf`, and same-document `$ref`), but does not resolve remote `$ref`, evaluate conditional applicability (`if`/`then`), or reason about `patternProperties`. An unexercised property means "worth a look", not "provably dead".
 
+![Measuring which schema properties the data never exercises](/demo-schema-coverage.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | — | ✅ (on a data file) |
@@ -236,6 +246,8 @@ Remote refs resolve using stored credentials and prefer an existing local cache 
 
 Compares the active schema against a baseline — Git HEAD, another workspace file, or a remote URL — and classifies every change as **breaking**, **non-breaking**, **informational**, or **unclassified** for instance-document compatibility. Shows a one-line summary with a button to open the full grouped report (a read-only document listing each change's JSON Pointer path and old → new values).
 
+![Diffing a schema against its last committed version and reading the breaking changes](/demo-schema-diff.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | ✅ (diff icon, schema files only) | ✅ |
@@ -267,6 +279,8 @@ Opens a bird's-eye view of the active schema's `$ref` dependencies in a side pan
 The panel is a static, **script-free** rendering (locked-down CSP): a left-to-right layered diagram (nodes ordered by dependency depth from the root) plus a text adjacency list beside it, so it reads the same with or without the diagram. Each node also shows its `type` and a truncated `description` when the subschema declares them, right under its name. By default nothing is fetched — external references are shown as endpoints by their URI. If the schema has any, you're asked (every time, never automatically) whether to resolve them over the network; accepting fetches each external document using the same credentials (F07) and cache (F08) as [Bundle / Dereference](#json-schema-bundle-dereference-schema), follows its own `$defs`/refs the same way, and recurses up to `jsonschema.refGraph.maxDepth` documents deep (default 3, configurable) before leaving the rest as unfetched endpoints. A document that fails to resolve shows up as an error node instead of aborting the whole graph. A schema with no `$ref` reports "nothing to graph" and opens no panel.
 
 If the schema was itself produced by **Bundle** (below), each folded-in `$defs` entry still shows the external source it came from — bundling records that provenance in a `$comment` (`Bundled from <id>`) precisely so the graph can recover it later, rather than the origin disappearing once refs are flattened into local pointers.
+
+![Viewing a schema's $ref dependency graph, including a cycle](/demo-ref-graph.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -336,6 +350,8 @@ The command is also reachable from:
 **ID:** `jsonschema.cacheSchemaLocally`
 
 Downloads the remote schema (using stored credentials) and saves it as a local file. Rewrites the `json.schemas` / `yaml.schemas` entry to point at the local copy so VS Code's built-in JSON language server and the Red Hat YAML extension both see it — eliminating the red squiggle and restoring IntelliSense. Can also be revalidated automatically — see `jsonschema.cache.autoRefresh` in [Configuration](/guide/configuration).
+
+![Downloading a remote schema locally so validation keeps working offline](/demo-schema-cache.gif)
 
 | Toolbar | Command Palette |
 |---------|----------------|
