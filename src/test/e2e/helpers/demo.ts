@@ -1,6 +1,6 @@
 import { Page } from 'playwright';
 import { ElectronApplication } from 'playwright';
-import { launchVSCode, launchVSCodeUntrusted } from './launch';
+import { launchVSCode, launchVSCodeUntrusted, launchVSCodeWithBuiltins } from './launch';
 import { captureSequence } from './capture';
 
 export type CaptureFunction = (label: string) => Promise<void>;
@@ -39,6 +39,27 @@ export async function runDemo(
   openFiles: string[] = [],
 ): Promise<void> {
   const { app, window, workspaceDir } = await (trusted ? launchVSCode(openFiles) : launchVSCodeUntrusted(openFiles));
+  const capture = captureSequence(window, name);
+  try {
+    await fn(window, capture, { app, workspaceDir });
+  } finally {
+    await app.close();
+  }
+}
+
+/**
+ * Like {@link runDemo}, but keeps VS Code's built-in extensions enabled.
+ *
+ * Only for demos of a feature that reads `vscode.git` — the normal launch's
+ * `--disable-extensions` takes built-ins down too, so those features have no
+ * baseline and render nothing, with nothing erroring to say so.
+ */
+export async function runDemoWithBuiltins(
+  name: string,
+  fn: (window: Page, capture: CaptureFunction, ctx: DemoContext) => Promise<void>,
+  openFiles: string[] = [],
+): Promise<void> {
+  const { app, window, workspaceDir } = await launchVSCodeWithBuiltins(openFiles);
   const capture = captureSequence(window, name);
   try {
     await fn(window, capture, { app, workspaceDir });

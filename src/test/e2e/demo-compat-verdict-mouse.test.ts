@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import { runDemo } from './helpers/demo';
+import { runDemoWithBuiltins } from './helpers/demo';
 import { seedWorkspaceFile, seedGitBaseline } from './helpers/launch';
 import { installCursor, clickSelector, typeSlowly } from './helpers/mouse';
 
@@ -30,11 +30,30 @@ test('demo-compat-verdict-mouse: type a breaking change and watch the verdict fl
   seedWorkspaceFile(SCHEMA_REL_PATH, ORDER_SCHEMA);
   seedGitBaseline();
 
-  return runDemo('compat-verdict-mouse', async (window, capture) => {
+  return runDemoWithBuiltins('compat-verdict-mouse', async (window, capture) => {
     await installCursor(window);
     await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
 
-    await window.waitForSelector(LENS, { state: 'visible', timeout: 25_000 }).catch(() => undefined);
+    // FATAL, not guarded. The first run of this demo "passed" with the lens
+    // wait wrapped in .catch() — meaning it would have shipped a GIF of a
+    // feature that never rendered, which is exactly the silent failure
+    // S08-SR-19 exists to catch. If the lens is not there, the demo is worth
+    // nothing and must say so.
+    const expectLens = async (moment: string): Promise<void> => {
+      try {
+        await window.waitForSelector(LENS, { state: 'visible', timeout: 30_000 });
+      } catch {
+        throw new Error(
+          `The compatibility CodeLens is not on screen at "${moment}". This ` +
+          'demo is about that lens, so a capture without it shows nothing ' +
+          '(S08-SR-19). Most likely the workspace is not a git repository the ' +
+          'built-in vscode.git extension can see — the lens reads Git HEAD ' +
+          'through it, and renders nothing at all when there is no baseline.',
+        );
+      }
+    };
+
+    await expectLens('the unchanged schema');
     await window.waitForTimeout(1_200);
     await capture('verdict-compatible');
 
@@ -47,6 +66,7 @@ test('demo-compat-verdict-mouse: type a breaking change and watch the verdict fl
     await capture('edited');
 
     await window.waitForTimeout(3_500);
+    await expectLens('after the breaking edit');
     await capture('verdict-breaking');
 
     // The lens is a link: it runs Diff Against Baseline, which asks which
@@ -69,5 +89,5 @@ test('demo-compat-verdict-mouse: type a breaking change and watch the verdict fl
 
     await window.waitForTimeout(1_000);
     await capture('report-hold');
-  }, true, [SCHEMA_REL_PATH]);
+  }, [SCHEMA_REL_PATH]);
 });
