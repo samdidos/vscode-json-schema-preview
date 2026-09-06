@@ -211,13 +211,6 @@ const features = [
     desc: 'Point jsonschema.catalog.sources at SchemaStore or your own catalog and matching files bind themselves by name — nothing written into the file, nothing configured per project.',
   },
   {
-    id: 'schema-cache',
-    icon: '💾',
-    title: 'Local Schema Cache',
-    gif: 'demo-schema-cache.gif',
-    desc: 'Run JSON Schema: Cache Schema Locally to download a remote schema and repoint the binding at the copy, so validation keeps working on a plane.',
-  },
-  {
     id: 'refactoring',
     icon: '🔧',
     title: 'Refactorings',
@@ -230,13 +223,6 @@ const features = [
     title: 'Diff Against Baseline',
     gif: 'demo-schema-diff.gif',
     desc: 'Compare a schema against its last committed version, another workspace file, or a published URL — and see which changes are breaking.',
-  },
-  {
-    id: 'compat-verdict',
-    icon: '🚦',
-    title: 'Compatibility Verdict',
-    gif: 'demo-compat-verdict.gif',
-    desc: 'A CodeLens above line 1 answers "can I ship this?" while you type, counting breaking changes against Git HEAD — and clicks through to the full diff.',
   },
   {
     id: 'ref-graph',
