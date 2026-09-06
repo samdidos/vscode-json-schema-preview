@@ -457,6 +457,18 @@ mechanism.
   docs gallery renders a placeholder for a GIF that does not exist yet — a
   broken new demo costs a missing image, not a red build.
 
+  **Correction (2026-09-04):** that last clause is only half true, and the
+  half that is wrong breaks CI. The *gallery* (`QuickDemo.vue`) does degrade
+  gracefully — it swaps in a placeholder from an `@error` handler at runtime.
+  A **guide-page markdown embed does not**: `![…](/demo-x.gif)` is resolved by
+  Rollup at *build* time, so referencing a GIF that is not in `docs/public/`
+  yet fails `npm run build --prefix docs` outright with "Rollup failed to
+  resolve import". Adding a demo therefore has an ordering constraint the
+  earlier note denies: the guide embed cannot be committed before the GIF
+  exists, or the docs job goes red and stays red until the refresh run lands
+  the file. Either land the embed in the same change as the GIF, or add it in
+  a follow-up.
+
 ## Out of Scope
 
 - UI **pixel/screenshot** assertions. The mouse demo scripts remain a
