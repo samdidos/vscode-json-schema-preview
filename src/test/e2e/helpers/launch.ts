@@ -110,9 +110,23 @@ const BASE_ARGS = [
   '--skip-release-notes',
   // Disable all other extensions so Copilot/Chat can't steal focus on a fresh
   // profile. --extensionDevelopmentPath still loads the extension under test.
+  //
+  // This also disables **built-in** extensions, `vscode.git` among them — see
+  // BASE_ARGS_WITH_BUILTINS for the two demos that cannot live without it.
   '--disable-extensions',
   `--extensionDevelopmentPath=${EXT_ROOT}`,
 ];
+
+// Same, minus the blanket disable. `vscode.git` is a built-in, and
+// `--disable-extensions` takes built-ins down with everything else — so a
+// feature defined against Git HEAD (F26's compatibility CodeLens reads it
+// through `vscode.extensions.getExtension('vscode.git')`) silently has no
+// baseline and renders nothing at all. Nothing errors; the demo simply records
+// the feature being absent, which is the failure mode S08-SR-19 exists to
+// catch. Only demos that need git should use this: it re-admits whatever
+// built-in chat UI the VS Code build ships, which is what the blanket disable
+// was added to keep out of frame.
+const BASE_ARGS_WITH_BUILTINS = BASE_ARGS.filter(a => a !== '--disable-extensions');
 
 export interface VSCodeInstance {
   app: ElectronApplication;
@@ -136,7 +150,11 @@ function getExecutable(): Promise<string> {
   return executablePromise;
 }
 
-async function launch(extraArgs: string[], openRelPaths: string[] = []): Promise<VSCodeInstance> {
+async function launch(
+  extraArgs: string[],
+  openRelPaths: string[] = [],
+  baseArgs: string[] = BASE_ARGS,
+): Promise<VSCodeInstance> {
   const executablePath = await getExecutable();
   const { userDataDir, workspaceDir } = prepareSessionDirs();
   // Files to open pre-launch, resolved against this launch's own workspaceDir
@@ -145,7 +163,7 @@ async function launch(extraArgs: string[], openRelPaths: string[] = []): Promise
   // preceding folder argument.
   const openPaths = openRelPaths.map(p => path.join(workspaceDir, p));
   const args = [
-    ...BASE_ARGS,
+    ...baseArgs,
     ...extraArgs,
     `--user-data-dir=${userDataDir}`,
     workspaceDir,
@@ -216,3 +234,12 @@ export const launchVSCode = (openRelPaths: string[] = []): Promise<VSCodeInstanc
  */
 export const launchVSCodeUntrusted = (openRelPaths: string[] = []): Promise<VSCodeInstance> =>
   launch([], openRelPaths); // intentionally omits --disable-workspace-trust
+
+/**
+ * Trusted launch that keeps VS Code's **built-in** extensions enabled, for the
+ * demos that need `vscode.git` (see BASE_ARGS_WITH_BUILTINS). Use it nowhere
+ * else: it re-admits the built-in chat UI the normal launch deliberately keeps
+ * out of frame.
+ */
+export const launchVSCodeWithBuiltins = (openRelPaths: string[] = []): Promise<VSCodeInstance> =>
+  launch(['--disable-workspace-trust'], openRelPaths, BASE_ARGS_WITH_BUILTINS);

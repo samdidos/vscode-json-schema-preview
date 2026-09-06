@@ -1,6 +1,8 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
-import { installCursor, openFileVisible, clickSelector, typeSlowly } from './helpers/mouse';
+import { installCursor, clickSelector, typeSlowly } from './helpers/mouse';
+
+const SCHEMA_REL_PATH = 'schemas/person.schema.json';
 
 /**
  * Mouse-driven twin of demo-command-surface. Where the palette variant shows
@@ -15,8 +17,10 @@ import { installCursor, openFileVisible, clickSelector, typeSlowly } from './hel
 test('demo-command-surface-mouse: browse the grouped toolbar menu, then the walkthrough', () =>
   runDemo('command-surface-mouse', async (window, capture) => {
     await installCursor(window);
+    // Opened through VS Code's launch args — this demo used to wait for an
+    // editor before opening one, which never resolved.
     await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
-    await openFileVisible(window, capture, 'person.schema.json');
+    await capture('schema-open');
 
     // Open the editor-title overflow and hover the grouped submenu — the whole
     // command list on screen at once, without a palette.
@@ -86,4 +90,4 @@ test('demo-command-surface-mouse: browse the grouped toolbar menu, then the walk
 
     await window.waitForTimeout(1_500);
     await capture('walkthrough-hold');
-  }));
+  }, true, [SCHEMA_REL_PATH]));

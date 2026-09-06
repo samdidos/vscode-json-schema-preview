@@ -1,11 +1,12 @@
 import { test } from '@playwright/test';
+import path from 'path';
 import { runDemo } from './helpers/demo';
-import { seedWorkspaceFile, seedGitBaseline } from './helpers/launch';
-import { installCursor, clickEditorOverflowAction, clickSelector, typeSlowly } from './helpers/mouse';
+import { seedWorkspaceFile } from './helpers/launch';
+import { installCursor, clickEditorOverflowAction, clickSelector } from './helpers/mouse';
 
-// Same fixture as demo-schema-diff — see that file for why the edit is
-// deliberately breaking.
-const ORDER_SCHEMA = `{
+// Same fixtures as demo-schema-diff — see that file for why the baseline is a
+// workspace file rather than Git HEAD.
+const ORDER_V1 = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Order",
   "type": "object",
@@ -18,34 +19,43 @@ const ORDER_SCHEMA = `{
 }
 `;
 
+const ORDER_V2 = `{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Order",
+  "type": "object",
+  "required": ["id", "status"],
+  "properties": {
+    "id": { "type": "integer" },
+    "status": { "enum": ["open", "paid", "shipped"] },
+    "note": { "type": "string" }
+  }
+}
+`;
+
 const SCHEMA_REL_PATH = 'schemas/order.schema.json';
+const BASELINE_REL_PATH = 'schemas/order.v1.schema.json';
 
 /**
- * Mouse-driven twin of demo-schema-diff. Types the breaking edit on camera,
- * then reaches Diff Against Baseline through the editor toolbar — the diff is
- * only interesting once there is a change to diff, so the edit has to be part
- * of the recording rather than seeded.
+ * Mouse-driven twin of demo-schema-diff: reach the command through the editor
+ * toolbar's grouped menu, pick the baseline, read the verdict.
+ *
+ * The native open dialog is stubbed in the main process, so choosing the
+ * baseline file shows as a single click on "Workspace file…" and no OS chrome
+ * ever enters the frame.
  */
-test('demo-schema-diff-mouse: break compatibility, then diff against Git HEAD', () => {
-  seedWorkspaceFile(SCHEMA_REL_PATH, ORDER_SCHEMA);
-  seedGitBaseline();
+test('demo-schema-diff-mouse: diff a schema against its previous version', () => {
+  seedWorkspaceFile(SCHEMA_REL_PATH, ORDER_V2);
+  seedWorkspaceFile(BASELINE_REL_PATH, ORDER_V1);
 
-  return runDemo('schema-diff-mouse', async (window, capture) => {
+  return runDemo('schema-diff-mouse', async (window, capture, { app, workspaceDir }) => {
     await installCursor(window);
     await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
     await capture('schema-open');
 
-    // Click into the `required` line and widen it — every document without a
-    // `status` stops validating.
-    await clickSelector(window, capture, '.view-line:has-text("required")', 'click-required');
-    await window.keyboard.press('Home');
-    await window.keyboard.press('Shift+End');
-    await window.waitForTimeout(300);
-    await typeSlowly(window, capture, '  "required": ["id", "status"],', 'edit-required', 55);
-    await window.waitForTimeout(400);
-    await window.keyboard.press('Control+s');
-    await window.waitForTimeout(1_000);
-    await capture('edited');
+    await app.evaluate(({ dialog }, baselinePath) => {
+      dialog.showOpenDialog = (() =>
+        Promise.resolve({ canceled: false, filePaths: [baselinePath] })) as typeof dialog.showOpenDialog;
+    }, path.join(workspaceDir, BASELINE_REL_PATH));
 
     await clickEditorOverflowAction(window, capture, 'Diff Against Baseline', 'diff');
 
@@ -56,11 +66,11 @@ test('demo-schema-diff-mouse: break compatibility, then diff against Git HEAD', 
     await clickSelector(
       window,
       capture,
-      '.quick-input-list .monaco-list-row:has-text("Git HEAD")',
-      'pick-git-head',
+      '.quick-input-list .monaco-list-row:has-text("Workspace file")',
+      'pick-baseline',
     );
 
-    await window.waitForTimeout(2_500);
+    await window.waitForTimeout(3_000);
     await capture('diff-report');
 
     await window.waitForTimeout(1_200);

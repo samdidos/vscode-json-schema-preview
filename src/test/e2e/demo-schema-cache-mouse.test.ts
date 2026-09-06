@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
 import { seedWorkspaceFile } from './helpers/launch';
 import { startFixtureHttpServer } from './helpers/fixtureServer';
-import { installCursor, clickStatusBarItem, clickSelector, typeSlowly } from './helpers/mouse';
+import { installCursor, clickSelector, typeSlowly } from './helpers/mouse';
 
 const ORDER_SCHEMA = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -46,9 +46,12 @@ test('demo-schema-cache-mouse: pull a remote schema local so it survives going o
       await window.waitForTimeout(1_200);
       await capture('workspace');
 
-      // Hover the binding item — the tooltip names the remote origin.
-      await clickStatusBarItem(window, capture, 'Schema:', 'binding-statusbar').catch(() => undefined);
-      await window.keyboard.press('Escape');
+      // The status bar already shows the remote URL — just look at it. An
+      // earlier cut *clicked* it, which opened the schema picker; escaping out
+      // of that left focus outside the editor, and the palette then filtered
+      // Cache Schema Locally away entirely (its `when` clause needs an active
+      // data file). The plain twin, which never touched the status bar, passed
+      // the same run — so the command was fine and the gesture was the bug.
       await window.waitForTimeout(600);
       await capture('remote-binding');
 

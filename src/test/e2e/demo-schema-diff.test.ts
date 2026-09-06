@@ -1,12 +1,13 @@
 import { test } from '@playwright/test';
+import path from 'path';
 import { runDemo } from './helpers/demo';
-import { seedWorkspaceFile, seedGitBaseline } from './helpers/launch';
+import { seedWorkspaceFile } from './helpers/launch';
 import { runCommand } from './helpers/ui';
 
-// The committed version. The demo edits it on camera into something that
-// breaks compatibility — a widened `required` and a narrowed `enum` — so the
-// diff has a real verdict to report rather than a list of cosmetic moves.
-const ORDER_SCHEMA = `{
+// Two versions of the same schema. v2 tightens `required` and drops an enum
+// member — both breaking for documents that already exist, which is what makes
+// the report worth reading.
+const ORDER_V1 = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Order",
   "type": "object",
@@ -19,45 +20,61 @@ const ORDER_SCHEMA = `{
 }
 `;
 
+const ORDER_V2 = `{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Order",
+  "type": "object",
+  "required": ["id", "status"],
+  "properties": {
+    "id": { "type": "integer" },
+    "status": { "enum": ["open", "paid", "shipped"] },
+    "note": { "type": "string" }
+  }
+}
+`;
+
 const SCHEMA_REL_PATH = 'schemas/order.schema.json';
+const BASELINE_REL_PATH = 'schemas/order.v1.schema.json';
 
-test('demo-schema-diff: compare a schema against its last committed version', () => {
-  seedWorkspaceFile(SCHEMA_REL_PATH, ORDER_SCHEMA);
-  // "Git HEAD" is the one baseline option that needs no native dialog, and it
-  // only appears when the folder is a repository with this file committed.
-  seedGitBaseline();
+/**
+ * Diffs against a **workspace file**, not Git HEAD.
+ *
+ * The first cut used the "Git HEAD" baseline and failed in CI: the row never
+ * appears, because the demo harness launches with `--disable-extensions`, which
+ * takes VS Code's *built-in* extensions down too — `vscode.git` among them — so
+ * the command finds no git API and offers only the other two baselines. That is
+ * a property of the harness, not of the feature.
+ *
+ * Picking a file needs a native open dialog, which is stubbed in the main
+ * process before the command runs — the same technique demo-showcase-mouse uses
+ * for its save dialog, and the reason `runDemo` hands the body its
+ * `ElectronApplication`. Nothing appears on screen but the report.
+ */
+test('demo-schema-diff: compare a schema against a previous version', () => {
+  seedWorkspaceFile(SCHEMA_REL_PATH, ORDER_V2);
+  seedWorkspaceFile(BASELINE_REL_PATH, ORDER_V1);
 
-  return runDemo('schema-diff', async (window, capture) => {
+  return runDemo('schema-diff', async (window, capture, { app, workspaceDir }) => {
     await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
     await capture('schema-open');
 
-    // Make `status` required — a breaking change for every existing document
-    // that omits it.
-    await window.keyboard.press('Control+g');
-    await window.waitForTimeout(300);
-    await window.keyboard.type('5', { delay: 40 });
-    await window.keyboard.press('Enter');
-    await window.keyboard.press('Home');
-    await window.keyboard.press('Shift+End');
-    await window.keyboard.type('  "required": ["id", "status"],', { delay: 55 });
-    await window.waitForTimeout(500);
-    await window.keyboard.press('Control+s');
-    await window.waitForTimeout(1_000);
-    await capture('edited');
+    await app.evaluate(({ dialog }, baselinePath) => {
+      dialog.showOpenDialog = (() =>
+        Promise.resolve({ canceled: false, filePaths: [baselinePath] })) as typeof dialog.showOpenDialog;
+    }, path.join(workspaceDir, BASELINE_REL_PATH));
 
     await runCommand(window, 'JSON Schema: Diff Against Baseline');
     await window.waitForSelector('.quick-input-widget', { state: 'visible', timeout: 10_000 });
     await window.waitForTimeout(800);
     await capture('baseline-picker');
 
-    // "Git HEAD" is first in the list when a committed version exists.
     await window.waitForSelector(
-      '.quick-input-list .monaco-list-row:has-text("Git HEAD")',
+      '.quick-input-list .monaco-list-row:has-text("Workspace file")',
       { state: 'visible', timeout: 10_000 },
     );
     await window.keyboard.press('Enter');
 
-    await window.waitForTimeout(2_500);
+    await window.waitForTimeout(3_000);
     await capture('diff-report');
 
     await window.waitForTimeout(1_200);

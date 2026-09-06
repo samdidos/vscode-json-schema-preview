@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { runDemo } from './helpers/demo';
-import { openFile } from './helpers/ui';
+
+const SCHEMA_REL_PATH = 'schemas/person.schema.json';
 
 /**
  * F34 is about discoverability rather than any one command, so this demo shows
@@ -8,15 +9,16 @@ import { openFile } from './helpers/ui';
  * walkthrough it registers for a first-time user, and the single `JSON Schema:`
  * prefix that gathers every command in the palette.
  *
- * `person.schema.json` ships in the showcase workspace, so opening it first
- * means the toolbar is populated behind the palette rather than an empty
- * editor — the commands on screen are ones the reader can see apply to the file
- * they are looking at.
+ * `person.schema.json` ships in the showcase workspace and is opened through
+ * VS Code's own launch args, so the toolbar is populated behind the palette and
+ * the commands on screen are ones the reader can see apply to the file in front
+ * of them. It is opened that way rather than waited for: a demo that passes no
+ * `openFiles` gets no editor at all, which is what broke the first run of this
+ * script — a 15s wait on `.view-lines` against VS Code's empty state.
  */
 test('demo-command-surface: find the extension through its walkthrough and command prefix', () =>
   runDemo('command-surface', async (window, capture) => {
     await window.waitForSelector('.monaco-editor .view-lines', { state: 'visible', timeout: 15_000 });
-    await openFile(window, 'person.schema.json');
     await capture('schema-open');
 
     // One prefix, every command.
@@ -64,4 +66,4 @@ test('demo-command-surface: find the extension through its walkthrough and comma
 
     await window.waitForTimeout(1_500);
     await capture('walkthrough-hold');
-  }));
+  }, true, [SCHEMA_REL_PATH]));
