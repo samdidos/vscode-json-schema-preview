@@ -149,13 +149,24 @@ export async function openConfigFile(): Promise<void> {
     vscode.window.showErrorMessage(String(err));
     return;
   }
-  if (!fs.existsSync(filePath)) {
+  // Create-if-absent as one atomic step, not existsSync-then-write. The
+  // check-then-act form is a TOCTOU race (CodeQL js/file-system-race): between
+  // the check and the write, another window of this extension — or anything
+  // else in the workspace — can create the file, and the write then silently
+  // truncates whatever it holds. F09-FR-03 says opening an existing config
+  // MUST NOT overwrite existing values, so losing a config the user had just
+  // written is a correctness bug, not only a hardening one.
+  //
+  // `wx` fails with EEXIST instead of truncating, which makes the loser of the
+  // race take the same path it would have taken had it seen the file all along.
+  try {
     fs.writeFileSync(
       filePath,
       JSON.stringify({ $schema: CONFIG_SCHEMA_URL }, null, 2) + '\n',
-      'utf-8'
+      { encoding: 'utf-8', flag: 'wx' }
     );
-  } else {
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') { throw err; }
     injectSchemaField(filePath);
   }
   ensureConfigSchemaBinding().catch(() => { /* non-fatal */ });

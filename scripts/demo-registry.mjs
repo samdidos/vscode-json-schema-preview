@@ -41,6 +41,7 @@ export const DEMOS = [
   { name: 'command-surface', dir: 'command-surface-mouse', delay: 220, hold: 1_600, specs: ['F34'] },
   { name: 'inline-binding', dir: 'inline-binding-mouse', delay: 220, hold: 1_400, specs: ['F10'] },
   { name: 'schema-catalog', dir: 'schema-catalog-mouse', delay: 220, hold: 1_400, specs: ['F12'] },
+  { name: 'schema-cache', dir: 'schema-cache-mouse', delay: 220, hold: 1_400, specs: ['F08'] },
   { name: 'refactoring', dir: 'refactoring-mouse', delay: 220, hold: 1_400, specs: ['F30'] },
   { name: 'schema-diff', dir: 'schema-diff-mouse', delay: 220, hold: 1_400, specs: ['F15'] },
   { name: 'ref-graph', dir: 'ref-graph-mouse', delay: 220, hold: 1_600, specs: ['F24'] },

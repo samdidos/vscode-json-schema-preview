@@ -232,6 +232,13 @@ const features = [
     desc: 'Run JSON Schema: View $ref Dependency Graph to see how a schema references itself and its neighbours, including cycles that are hard to spot by reading.',
   },
   {
+    id: 'schema-cache',
+    icon: '💾',
+    title: 'Local Schema Cache',
+    gif: 'demo-schema-cache.gif',
+    desc: 'Put the cursor on a remote $schema line and the lightbulb offers to download it — the local copy is bound in its place, so validation and IntelliSense keep working offline.',
+  },
+  {
     id: 'schema-coverage',
     icon: '📊',
     title: 'Schema Coverage',
