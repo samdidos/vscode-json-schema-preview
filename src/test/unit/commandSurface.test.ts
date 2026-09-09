@@ -6,7 +6,7 @@ import * as vscodeMock from '../mocks/vscode';
 const {
   isJsonSchemaFile, looksLikeSchemaFileName, hasSchemaShape,
 } = require('../../PreviewWebPanel');
-const { getValidateOnSave } = require('../../settings');
+const { getValidateOnSave, getSchemaDetection } = require('../../settings');
 const { AGENT_TOOLS } = require('../../agentTools');
 
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', 'package.json'), 'utf-8'));
@@ -365,5 +365,96 @@ suite('[F34-NFR-02][F34-NFR-01] marketplace metadata', () => {
     const description = contributes.configuration.properties['jsonschema.lint.rules'].markdownDescription;
     assert.match(description, /valid-examples/);
     assert.match(description, /valid-default/);
+  });
+});
+
+suite('[F34-FR-13] schema detection — the jsonschema.schemaDetection preference', () => {
+  const setLevel = (level: string) =>
+    vscodeMock.setConfig('jsonschema', 'schemaDetection', level);
+
+  // The document the setting exists for: no `$schema`, an ordinary name, but
+  // `properties` alongside `type: "object"` — an OpenAPI fragment or a form
+  // definition looks exactly like this, and is data to its author.
+  const shapedData = () =>
+    doc('{"type":"object","properties":{"a":{"type":"string"}}}', '/w/thing.json');
+  const namedSchema = () => doc('{"properties":{"a":{"type":"string"}}}', '/w/order.schema.json');
+  const declared = () =>
+    doc('{"$schema":"http://json-schema.org/draft-07/schema#"}', '/w/thing.json');
+  // F34-FR-11: a `$schema` pointing at a real schema means this is bound data.
+  const boundData = () =>
+    doc('{"$schema":"./order.schema.json","type":"object","properties":{"a":{}}}', '/w/order.schema.json');
+
+  test('defaults to auto, including for an unrecognised value', () => {
+    assert.strictEqual(getSchemaDetection(), 'auto');
+    setLevel('nonsense');
+    assert.strictEqual(getSchemaDetection(), 'auto');
+    // A typo must not silently strip the toolbar off every schema in the
+    // workspace, which is what falling back to `strict` would do.
+    assert.strictEqual(isJsonSchemaFile(namedSchema()), true);
+  });
+
+  test('auto recognises the declaration, the name and the shape', () => {
+    setLevel('auto');
+    assert.strictEqual(isJsonSchemaFile(declared()), true);
+    assert.strictEqual(isJsonSchemaFile(namedSchema()), true);
+    assert.strictEqual(isJsonSchemaFile(shapedData()), true);
+  });
+
+  test('filename keeps the name convention but stops inferring from shape', () => {
+    setLevel('filename');
+    assert.strictEqual(isJsonSchemaFile(declared()), true);
+    assert.strictEqual(isJsonSchemaFile(namedSchema()), true);
+    assert.strictEqual(isJsonSchemaFile(shapedData()), false);
+  });
+
+  test('strict recognises the declaration alone', () => {
+    setLevel('strict');
+    assert.strictEqual(isJsonSchemaFile(declared()), true);
+    assert.strictEqual(isJsonSchemaFile(namedSchema()), false);
+    assert.strictEqual(isJsonSchemaFile(shapedData()), false);
+  });
+
+  test('a bound data file stays data at every level (F34-FR-11)', () => {
+    for (const level of ['auto', 'filename', 'strict']) {
+      setLevel(level);
+      assert.strictEqual(isJsonSchemaFile(boundData()), false, `bound data at ${level}`);
+    }
+  });
+
+  test('the unparsable-document fallback respects the level too', () => {
+    // Half-typed schema: auto/filename keep the toolbar by name, strict does not.
+    const typing = () => doc('{ "properties": {', '/w/order.schema.json');
+    setLevel('auto');
+    assert.strictEqual(isJsonSchemaFile(typing()), true);
+    setLevel('filename');
+    assert.strictEqual(isJsonSchemaFile(typing()), true);
+    setLevel('strict');
+    assert.strictEqual(isJsonSchemaFile(typing()), false);
+  });
+
+  test('YAML honours the level on both heuristics', () => {
+    const shapedYaml = () =>
+      doc('type: object\nproperties:\n  a:\n    type: string\n', '/w/thing.yaml', 'yaml');
+    const namedYaml = () =>
+      doc('properties:\n  a:\n    type: string\n', '/w/order.schema.yaml', 'yaml');
+    setLevel('auto');
+    assert.strictEqual(isJsonSchemaFile(shapedYaml()), true);
+    assert.strictEqual(isJsonSchemaFile(namedYaml()), true);
+    setLevel('filename');
+    assert.strictEqual(isJsonSchemaFile(shapedYaml()), false);
+    assert.strictEqual(isJsonSchemaFile(namedYaml()), true);
+    setLevel('strict');
+    assert.strictEqual(isJsonSchemaFile(namedYaml()), false);
+  });
+
+  test('the setting is contributed with all three values', () => {
+    const declaredSetting = contributes.configuration.properties['jsonschema.schemaDetection'];
+    assert.ok(declaredSetting, 'jsonschema.schemaDetection must be contributed');
+    assert.strictEqual(declaredSetting.default, 'auto');
+    assert.deepStrictEqual(declaredSetting.enum, ['auto', 'filename', 'strict']);
+    assert.strictEqual(
+      declaredSetting.enumDescriptions.length, declaredSetting.enum.length,
+      'every value needs a description in the Settings UI',
+    );
   });
 });
