@@ -117,3 +117,16 @@ per-workspace through ordinary settings.
    in the editor, creating it first if absent.
 5. `settings.json` shows autocomplete/validation for `jsonschema.config.template_name`
    restricted to the known template names.
+
+## History
+
+- **2026-09-09** — `openConfigFile` created the config with
+  `existsSync`-then-`writeFileSync`, a check-then-act race (CodeQL
+  `js/file-system-race`). Anything creating the file between the two steps —
+  a second window of this extension, a generator, the user — lost its content
+  to the truncating write, which contradicts F09-FR-03's "MUST NOT overwrite
+  existing values". Replaced with a single `wx` write that fails `EEXIST`
+  instead of truncating; the loser of the race then takes the same
+  inject-`$schema` path it would have taken had the file been there all along.
+  Worth recording because the fix is not a hardening nicety: the failure mode
+  was silent data loss in a file users are told they can commit and share.

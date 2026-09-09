@@ -351,6 +351,10 @@ The command is also reachable from:
 
 Downloads the remote schema (using stored credentials) and saves it as a local file. Rewrites the `json.schemas` / `yaml.schemas` entry to point at the local copy so VS Code's built-in JSON language server and the Red Hat YAML extension both see it — eliminating the red squiggle and restoring IntelliSense. Can also be revalidated automatically — see `jsonschema.cache.autoRefresh` in [Configuration](/guide/configuration).
 
+The command is hidden from the Command Palette on purpose — it needs a remote URL to act on, so it is offered where one exists: put the cursor on a remote `$schema` line and it appears in the quick fixes (<kbd>Ctrl</kbd>+<kbd>.</kbd>), alongside **Configure authentication**.
+
+![Caching a remote schema locally from the quick fix on the $schema line](/demo-schema-cache.gif)
+
 | Toolbar | Command Palette |
 |---------|----------------|
 | — | ✅ (hidden from palette by default) |

@@ -207,7 +207,7 @@ mechanism.
   seventeen inline GIFs would make that page unusable.
 - **S08-SR-21** A frame-stitched demo SHOULD stay under 30 seconds of
   playback. Past that a reader scrubs rather than watches, and the file grows
-  without teaching more. The 16 frame-stitched demos currently run 6.8–16.9 s,
+  without teaching more. The 25 frame-stitched demos currently run 5.4–19.9 s,
   so the budget is headroom rather than a diet; it exists to keep a demo from
   quietly growing past the point where anyone watches it to the end.
   `demo-showcase` is the deliberate exception — it is the one end-to-end
@@ -215,7 +215,9 @@ mechanism.
   not several chained together. It ran 92 s carrying two acts (author a schema
   and preview it; then validate and bind a different file); the second was cut
   because every feature in it already had a focused demo, and a tour that
-  changes subject halfway is two demos in one file. Shortening it means
+  changes subject halfway is two demos in one file. That took it to 40 s —
+  still over the 30 s budget, but close enough that the remaining gap is
+  pacing rather than scope. Shortening it means
   re-recording, which needs a real X11 session; it cannot be done by
   re-encoding.
 
@@ -400,12 +402,27 @@ mechanism.
     and keep the built-in chat UI out of frame, so F26 has no demo.
   - **F08 (local schema cache)** — `jsonschema.cacheSchemaLocally` is
     contributed to `commandPalette` with **`"when": "false"`**: it is
-    deliberately unreachable from the palette, and its real entry points are a
-    quick fix on an unresolvable remote `$schema` and a prompt from `$ref`
-    navigation. A demo of it has to arrange a *failing* fetch, which is a
-    different script from the one written here.
+    deliberately unreachable from the palette, so the demo written against the
+    palette could never have worked. **Rebuilt 2026-09-09** against its real
+    entry point, the `$schema`-line quick fix — see the note below.
 
-  Both were caught only because the mouse twin failed. **Both plain twins
+  The F08 removal was half wrong, and the correction is worth more than the
+  removal was. "Its real entry points ... need a *failing* fetch" was read off
+  the docs, not the provider: `SchemaAuthCodeActionProvider` gates the caching
+  action only on the cursor sitting on a line with a **remote** `$schema` URL.
+  Schema-load diagnostics merely make the action preferred and give it a
+  gutter lightbulb — they are not required for it to be offered, so a plain
+  <kbd>Ctrl</kbd>+<kbd>.</kbd> reaches it on a perfectly healthy schema. F08
+  has a demo again, driven that way, with a fatal wait on the "Schema cached"
+  confirmation: the `$schema` line does not change when the command succeeds,
+  only the binding behind it, so there is nothing else on screen to prove the
+  download happened.
+
+  The lesson repeats the one below at one remove: the first F08 script was
+  written from the command list, and the removal was argued from the guide
+  page. Neither is the provider. Read the code that gates the surface.
+
+  Both original failures were caught only because the mouse twin failed. **Both plain twins
   "passed" while doing nothing** — `runCommand` types a name, presses Enter on
   whatever the palette highlights, and returns; with the command absent, that
   is a no-op the demo cannot detect. F26's first recording passed the same way,
