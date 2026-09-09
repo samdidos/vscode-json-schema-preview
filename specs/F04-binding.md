@@ -33,13 +33,29 @@ recognise them.
 - **F04-FR-05** The status bar item MUST be visible whenever a supported data
   file (JSON, JSONC, JSONL, YAML, YML) is the active editor.
 - **F04-FR-06** When a schema is bound the status bar item MUST display
-  `$(check) Schema: <basename>` and a tooltip showing the full schema path and
-  a hint to click to change or remove. `<basename>` MUST be **start-truncated
-  to a bounded length of ~20 characters** (a single leading ellipsis eliding
-  the *beginning*, keeping the legible **end** — the distinguishing part and
-  the file extension) when it would otherwise be long, so the item cannot grow
-  unbounded and push other status-bar items off-screen; the **full,
-  untruncated** name MUST remain visible in the tooltip.
+  `$(check) <label>` and a tooltip showing the full schema path and a hint to
+  click to change or remove. The **whole visible label MUST be at most 20
+  characters** (the codicon is a glyph and does not count), so the item cannot
+  grow unbounded and push other status-bar items off-screen; the **full,
+  untruncated** path MUST remain visible in the tooltip.
+
+  Three rules make those 20 characters carry information rather than
+  punctuation:
+
+  1. **No `Schema: ` prefix on a bound state.** It cost 8 of the 20 characters
+     to repeat what the icon and the tooltip already say. The unbound state
+     keeps its wording (`Schema: unbound`) because there is no file name there
+     for the icon to be *about*.
+  2. **A redundant schema suffix MUST be dropped from the label** — a trailing
+     `.schema.json` / `.schema.yaml` / `.schema.yml` becomes nothing, and a
+     plain `.json` / `.yaml` / `.yml` extension is dropped too. Nearly every
+     schema file ends the same way, so those characters distinguish nothing:
+     `order-request.schema.json` shown as `order-request` is both shorter and
+     more informative than `…quest.schema.json`.
+  3. **What remains MUST be middle-truncated**, not start-truncated, keeping
+     the head and the tail around a single ellipsis. Once the common extension
+     is gone the *beginning* of a name is its most distinguishing part, which
+     start-truncation would be the one thing to throw away.
 - **F04-FR-07** When no schema is bound **and no native schema is detected
   (F04-FR-15)** the status bar item MUST display `$(circle-slash) Schema:
   unbound` with a tooltip offering to bind one.
@@ -136,3 +152,20 @@ recognise them.
    for files in folder A, and does not leak into folder B; a Workspace-scoped
    binding (folder-prefixed `fileMatch`) is recognised for the file it names
    regardless of which folder is currently active (F04-FR-14).
+
+## History
+
+- **2026-09-09** — Tightened F04-FR-06 from "the basename is ~20 characters" to
+  "the whole visible label is at most 20 characters". The old wording bounded
+  only the file name, so the item still rendered as `Schema: order.schema.json`
+  — 25 characters, because the `Schema: ` prefix and the shared extension were
+  both outside the budget.
+
+  Spending the 20 characters better mattered more than shrinking them. A
+  straight cut would have made `order-request.schema.json` read
+  `…quest.schema.json`, where twelve of the eighteen characters are the same
+  for every schema in the workspace, and where the two obvious siblings
+  `order-request` and `order-response` become indistinguishable. Dropping the
+  redundant extension and truncating the *middle* instead of the start keeps
+  the part that identifies the file: the same name now reads `order-request`,
+  whole and unelided. The full path stays in the tooltip, unchanged.

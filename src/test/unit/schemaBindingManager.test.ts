@@ -218,20 +218,36 @@ suite('SchemaBindingManager — refresh via editor change', () => {
     vscode.workspace.asRelativePath.callsFake(() => 'data.json');
     triggerEditorChange({ document: makeDoc('json') });
     assert.ok(statusBarItem.show.calledOnce);
-    assert.ok(statusBarItem.text.includes('myschema.json'));
+    assert.ok(statusBarItem.text.includes('myschema'));
   });
 
-  test('[F04-FR-06] start-truncates a long schema basename in the label but not the tooltip', () => {
+  test('[F04-FR-06] bounds the whole label at 20 characters, keeping the full name in the tooltip', () => {
     const longName = 'a-really-long-schema-name-that-exceeds-the-limit.schema.json';
     setConfig('json', 'schemas', [{ url: `./${longName}`, fileMatch: ['data.json'] }]);
     vscode.workspace.asRelativePath.callsFake(() => 'data.json');
     triggerEditorChange({ document: makeDoc('json') });
-    assert.ok(statusBarItem.text.includes('…'), 'label should be truncated with an ellipsis');
+    // The codicon is a glyph, not characters the user counts.
+    const visible = (statusBarItem.text as string).replace(/^\$\([a-z-]+\)\s*/, '');
+    assert.ok(visible.length <= 20, `label is ${visible.length} chars: ${visible}`);
+    assert.ok(visible.includes('…'), 'a name this long must be elided');
     assert.ok(!statusBarItem.text.includes(longName), 'label should not contain the full name');
-    // The beginning is elided but the legible end (extension) is kept.
-    assert.ok(statusBarItem.text.includes('.schema.json'), 'label should keep the end/extension');
-    assert.ok(!statusBarItem.text.includes('a-really-long'), 'label should drop the beginning');
+    // Middle-truncated: the head identifies the file, and the shared
+    // `.schema.json` is dropped rather than spending 12 of the 20 characters.
+    assert.ok(visible.startsWith('a-really'), `head should survive, got ${visible}`);
+    assert.ok(!visible.includes('.schema.json'), 'the shared extension is not worth the budget');
     assert.ok((statusBarItem.tooltip as string).includes(longName), 'tooltip should keep the full name');
+  });
+
+  test('[F04-FR-06] drops the "Schema: " prefix on a bound state but keeps it when unbound', () => {
+    setConfig('json', 'schemas', [{ url: './myschema.json', fileMatch: ['data.json'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.json');
+    triggerEditorChange({ document: makeDoc('json') });
+    assert.ok(!statusBarItem.text.includes('Schema:'), 'the icon and tooltip already say this');
+
+    setConfig('json', 'schemas', []);
+    triggerEditorChange({ document: makeDoc('json') });
+    // Nothing for the icon to be *about* here, so the word stays.
+    assert.ok(statusBarItem.text.includes('Schema: unbound'));
   });
 
   test('shows schema name when YAML binding exists', () => {
@@ -239,7 +255,7 @@ suite('SchemaBindingManager — refresh via editor change', () => {
     vscode.workspace.asRelativePath.callsFake(() => 'data.yaml');
     triggerEditorChange({ document: makeDoc('yaml') });
     assert.ok(statusBarItem.show.calledOnce);
-    assert.ok(statusBarItem.text.includes('myschema.json'));
+    assert.ok(statusBarItem.text.includes('myschema'));
   });
 
   test('shows schema name for YAML array pattern', () => {
@@ -247,7 +263,7 @@ suite('SchemaBindingManager — refresh via editor change', () => {
     vscode.workspace.asRelativePath.callsFake(() => 'data.yaml');
     triggerEditorChange({ document: makeDoc('yaml') });
     assert.ok(statusBarItem.show.calledOnce);
-    assert.ok(statusBarItem.text.includes('myschema.json'));
+    assert.ok(statusBarItem.text.includes('myschema'));
   });
 });
 
@@ -1086,7 +1102,7 @@ suite('SchemaBindingManager — TOML inline binding (F11)', () => {
     const cb = vscode.window.onDidChangeActiveTextEditor.lastCall.args[0];
     cb({ document: makeDoc('toml', '/ws/config.toml', '"$schema" = "./s.json"\ntitle = "x"\n') });
     assert.ok(statusBarItem.text.includes('file-symlink-file'));
-    assert.ok(statusBarItem.text.includes('s.json'));
+    assert.ok(statusBarItem.text.includes('s'));
   });
 });
 
@@ -1106,7 +1122,7 @@ suite('SchemaBindingManager — refresh() inline precedence', () => {
     vscode.workspace.asRelativePath.callsFake(() => 'data.json');
     trigger(makeDoc('json', '/ws/data.json', '{"$schema":"./inline.json","a":1}'));
     assert.ok(statusBarItem.text.includes('file-symlink-file'));
-    assert.ok(statusBarItem.text.includes('inline.json'));
+    assert.ok(statusBarItem.text.includes('inline'));
     assert.ok(statusBarItem.tooltip?.includes('other.json'));
   });
 
@@ -1114,7 +1130,7 @@ suite('SchemaBindingManager — refresh() inline precedence', () => {
     setConfig('json', 'schemas', []);
     vscode.workspace.asRelativePath.callsFake(() => 'data.json');
     trigger(makeDoc('json', '/ws/data.json', '{"$schema":"./inline.json"}'));
-    assert.ok(statusBarItem.text.includes('inline.json'));
+    assert.ok(statusBarItem.text.includes('inline'));
     assert.ok(!statusBarItem.tooltip?.includes('Note:'));
   });
 });
@@ -1143,7 +1159,7 @@ suite('[F04-FR-15] SchemaBindingManager — native schema detection', () => {
   test('shows an "auto" state for a SchemaStore-catalog match instead of unbound', () => {
     vscode.workspace.asRelativePath.callsFake(() => '.commitlintrc.json');
     withActive(makeDoc('json', '/ws/.commitlintrc.json'), commitlintCatalog);
-    assert.match(statusBarItem.text, /Schema: commitlint \(auto\)/);
+    assert.match(statusBarItem.text, /commitlint \(auto\)/);
     assert.ok(!statusBarItem.text.includes('unbound'));
     assert.match(String(statusBarItem.tooltip), /resolved automatically/i);
   });
@@ -1154,7 +1170,7 @@ suite('[F04-FR-15] SchemaBindingManager — native schema detection', () => {
     ] } } }];
     vscode.workspace.asRelativePath.callsFake(() => 'package.json');
     withActive(makeDoc('json', '/ws/package.json'));
-    assert.match(statusBarItem.text, /Schema: package\.json \(auto\)/);
+    assert.match(statusBarItem.text, /package \(auto\)/);
   });
 
   test('[F04-FR-07] still shows "unbound" when nothing matches', () => {
@@ -1172,7 +1188,7 @@ suite('[F04-FR-15] SchemaBindingManager — native schema detection', () => {
       warm: async () => {},
     };
     withActive(makeDoc('json', '/ws/data.json'), catalog);
-    assert.ok(statusBarItem.text.includes('s.json'));
+    assert.ok(statusBarItem.text.includes('s'));
     assert.ok(!statusBarItem.text.includes('auto'));
   });
 
