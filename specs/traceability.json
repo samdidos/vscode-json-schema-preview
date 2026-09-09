@@ -3972,6 +3972,16 @@
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },
+    "F34-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/settings.ts",
+        "src/PreviewWebPanel.ts",
+        "package.json"
+      ],
+      "note": "",
+      "specifiedAt": "2026-09-09"
+    },
     "F34-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -4643,6 +4653,69 @@
       "note": "manual demos/all workflow_dispatch override; unit-tested (detectChangedFeatures.test.ts's resolveForceOverride cases)",
       "specifiedAt": "2026-08-07",
       "implementedAt": "2026-08-10"
+    },
+    "S08-SR-16": {
+      "status": "implemented",
+      "impl": [
+        "scripts/make-gifs.mjs",
+        "scripts/make-showcase-gif.mjs"
+      ],
+      "note": "one ffmpeg two-pass palette encoder for every demo GIF; the pure ffconcat/frame-ordering helpers are unit-tested (makeGifs.test.ts), the encode itself by running npm run make-gifs",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S08-SR-17": {
+      "status": "implemented",
+      "impl": [
+        "package.json",
+        "scripts/bootstrap.mjs",
+        ".github/workflows/refresh-gifs.yml"
+      ],
+      "note": "canvas/gif-encoder-2 removed from the manifest; guarded by a makeGifs.test.ts assertion on package.json so the native build cannot come back unnoticed",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S08-SR-18": {
+      "status": "implemented",
+      "impl": [
+        "scripts/make-gifs.mjs"
+      ],
+      "note": "no scale filter in either ffmpeg pass; asserted in makeGifs.test.ts",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S08-SR-19": {
+      "status": "implemented",
+      "impl": [
+        "src/test/e2e/demo-validation.test.ts",
+        "src/test/e2e/demo-validation-mouse.test.ts",
+        "src/test/e2e/demo-showcase-mouse.test.ts"
+      ],
+      "note": "demo scripts must seed the state their feature needs AND keep the surface the step is about on screen; validation demos seed the binding, demo-showcase keeps the preview beside the editor and asserts it via expectPreviewVisible(); placement/seeding guarded by demoPlacement.test.ts",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S08-SR-20": {
+      "status": "implemented",
+      "impl": [
+        "docs/.vitepress/theme/QuickDemo.vue",
+        "docs/guide/commands.md",
+        "docs/guide/index.md",
+        "docs/guide/lifecycle.md",
+        "README.md"
+      ],
+      "note": "every registry demo is embedded in the landing gallery and in its guide section; the README stays showcase-only. Checked both ways (no orphan GIF, no dangling reference) by demoPlacement.test.ts",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
+    },
+    "S08-SR-21": {
+      "status": "implemented",
+      "impl": [
+        "docs/public"
+      ],
+      "note": "playback duration read from each committed GIF by a dependency-free GIF89a walk in makeGifs.test.ts; showcase is the declared exception",
+      "specifiedAt": "2026-09-02",
+      "implementedAt": "2026-09-02"
     },
     "S09-NFR-01": {
       "status": "manual",
@@ -5789,69 +5862,6 @@
         "src/ai/extract.ts"
       ],
       "note": "the model boundary is injected, so correctness is testable without a model",
-      "specifiedAt": "2026-09-02",
-      "implementedAt": "2026-09-02"
-    },
-    "S08-SR-16": {
-      "status": "implemented",
-      "impl": [
-        "scripts/make-gifs.mjs",
-        "scripts/make-showcase-gif.mjs"
-      ],
-      "note": "one ffmpeg two-pass palette encoder for every demo GIF; the pure ffconcat/frame-ordering helpers are unit-tested (makeGifs.test.ts), the encode itself by running npm run make-gifs",
-      "specifiedAt": "2026-09-02",
-      "implementedAt": "2026-09-02"
-    },
-    "S08-SR-17": {
-      "status": "implemented",
-      "impl": [
-        "package.json",
-        "scripts/bootstrap.mjs",
-        ".github/workflows/refresh-gifs.yml"
-      ],
-      "note": "canvas/gif-encoder-2 removed from the manifest; guarded by a makeGifs.test.ts assertion on package.json so the native build cannot come back unnoticed",
-      "specifiedAt": "2026-09-02",
-      "implementedAt": "2026-09-02"
-    },
-    "S08-SR-18": {
-      "status": "implemented",
-      "impl": [
-        "scripts/make-gifs.mjs"
-      ],
-      "note": "no scale filter in either ffmpeg pass; asserted in makeGifs.test.ts",
-      "specifiedAt": "2026-09-02",
-      "implementedAt": "2026-09-02"
-    },
-    "S08-SR-19": {
-      "status": "implemented",
-      "impl": [
-        "src/test/e2e/demo-validation.test.ts",
-        "src/test/e2e/demo-validation-mouse.test.ts",
-        "src/test/e2e/demo-showcase-mouse.test.ts"
-      ],
-      "note": "demo scripts must seed the state their feature needs AND keep the surface the step is about on screen; validation demos seed the binding, demo-showcase keeps the preview beside the editor and asserts it via expectPreviewVisible(); placement/seeding guarded by demoPlacement.test.ts",
-      "specifiedAt": "2026-09-02",
-      "implementedAt": "2026-09-02"
-    },
-    "S08-SR-20": {
-      "status": "implemented",
-      "impl": [
-        "docs/.vitepress/theme/QuickDemo.vue",
-        "docs/guide/commands.md",
-        "docs/guide/index.md",
-        "docs/guide/lifecycle.md",
-        "README.md"
-      ],
-      "note": "every registry demo is embedded in the landing gallery and in its guide section; the README stays showcase-only. Checked both ways (no orphan GIF, no dangling reference) by demoPlacement.test.ts",
-      "specifiedAt": "2026-09-02",
-      "implementedAt": "2026-09-02"
-    },
-    "S08-SR-21": {
-      "status": "implemented",
-      "impl": [
-        "docs/public"
-      ],
-      "note": "playback duration read from each committed GIF by a dependency-free GIF89a walk in makeGifs.test.ts; showcase is the declared exception",
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     }

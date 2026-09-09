@@ -174,3 +174,23 @@ export function getCompatCodeLensEnabled(): boolean {
   const cfg = vscode.workspace.getConfiguration('jsonschema.compat');
   return cfg.get<boolean>('codeLens') !== false;
 }
+
+// ── Schema detection (F34-FR-13) ─────────────────────────────────────────────
+
+export type SchemaDetection = 'auto' | 'filename' | 'strict';
+
+/**
+ * How far beyond a meta-`$schema` declaration detection is allowed to infer
+ * (F34-FR-13). `auto` uses the file name and the structural heuristic as well;
+ * `filename` drops the structural one; `strict` uses the declaration alone.
+ *
+ * Unrecognised values fall back to `auto` rather than to the narrowest level:
+ * a typo in the setting should not silently strip the toolbar off every schema
+ * file in the workspace, which is what `strict` would do to a project whose
+ * schemas are still being written.
+ */
+export function getSchemaDetection(): SchemaDetection {
+  const cfg = vscode.workspace.getConfiguration('jsonschema');
+  const raw = cfg.get<string>('schemaDetection');
+  return raw === 'filename' || raw === 'strict' ? raw : 'auto';
+}

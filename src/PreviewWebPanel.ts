@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as YAML from 'yaml';
 import { getPythonInterpreter, ensureInstalled, run } from './python';
-import { getRenderTimeoutMs, getPreviewRenderer, getSyncScrollEnabled } from './settings';
+import { getRenderTimeoutMs, getPreviewRenderer, getSyncScrollEnabled, getSchemaDetection } from './settings';
 import { computeAnchorCandidates, locateAnchorSegments } from './schemaPointer';
 import { renderSchemaHtml, isToolingUnavailable } from './fallbackRenderer';
 import { isYaml, stripJsoncComments } from './languages';
@@ -93,6 +93,13 @@ export function isJsonSchemaFile(document?: vscode.TextDocument) {
   if (!document) {
     return false;
   }
+  // F34-FR-13 — how far past a meta-`$schema` declaration we are allowed to
+  // infer. Both heuristics can take a working affordance away from a data file
+  // that merely looks schema-shaped, so each is separately switchable; the
+  // declaration itself is honoured at every level.
+  const detection = getSchemaDetection();
+  const byName = detection !== 'strict';
+  const byShape = detection === 'auto';
   if (document.languageId === 'json' || document.languageId === 'jsonc') {
     let json: unknown;
     try {
@@ -103,14 +110,16 @@ export function isJsonSchemaFile(document?: vscode.TextDocument) {
     } catch {
       // Unparsable: fall back to the file name so a schema being typed keeps
       // its toolbar between valid states.
-      return looksLikeSchemaFileName(document.uri?.path ?? '');
+      return byName && looksLikeSchemaFileName(document.uri?.path ?? '');
     }
     const declared = (json as Record<string, unknown> | null)?.$schema;
     // F34-FR-11 — a `$schema` pointing at anything but the meta-schema means
     // this document is *bound to* a schema (F10), so it is data whatever its
-    // name or shape. The declaration always wins over the two heuristics.
+    // name or shape. The declaration always wins over the two heuristics, and
+    // is honoured at every detection level (F34-FR-13).
     if (declared !== undefined) { return isJsonSchemaMetaRef(declared); }
-    return looksLikeSchemaFileName(document.uri?.path ?? '') || hasSchemaShape(json);
+    return (byName && looksLikeSchemaFileName(document.uri?.path ?? ''))
+      || (byShape && hasSchemaShape(json));
   }
   if (isYaml(document.languageId)) {
     const text = document.getText();
@@ -118,7 +127,8 @@ export function isJsonSchemaFile(document?: vscode.TextDocument) {
     if (match) {
       return isJsonSchemaMetaRef(match[1].trim().replace(/^["']|["']$/g, ''));
     }
-    if (looksLikeSchemaFileName(document.uri?.path ?? '')) { return true; }
+    if (byName && looksLikeSchemaFileName(document.uri?.path ?? '')) { return true; }
+    if (!byShape) { return false; }
     const keys = yamlTopLevelKeys(text);
     return keys.has('properties') && (keys.has('$defs') || keys.has('definitions') || /^type:\s*["']?object/m.test(text));
   }

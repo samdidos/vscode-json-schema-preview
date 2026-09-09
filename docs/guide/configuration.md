@@ -359,6 +359,36 @@ its Git `HEAD` version. Computed in the background from the same classifier as
 **Diff Against Baseline**, so typing is never blocked. No Git baseline, or no
 changes, means no lens.
 
+<!-- spec:F34 start -->
+## `jsonschema.schemaDetection`
+
+**Type:** `"auto"` | `"filename"` | `"strict"` · **Default:** `"auto"`
+
+How the extension decides a file is a JSON Schema. Detection is what gives a
+file its toolbar actions, diagnostics and quick fixes, so this is effectively
+"which of my files does this extension treat as schemas".
+
+| Value | Recognises a schema by |
+|-------|------------------------|
+| `auto` | a JSON Schema meta-`$schema`, the file name (`*.schema.json`, `schema.json`, `.yaml`/`.yml` equivalents), **or** the document's structure |
+| `filename` | the declaration or the file name |
+| `strict` | the declaration alone |
+
+**When to narrow it.** The structural test treats a root object with
+`properties` alongside `type: "object"` (or a `$defs`/`definitions` container)
+as a schema. That is a good guess for a schema being written before it has a
+`$schema` line — and a bad one for an OpenAPI fragment, a form definition or a
+UI component descriptor, which are data to their authors and look identical.
+When such a file is misread, it stops offering **Validate This File**,
+**Generate Schema from This File** and **Report Schema Coverage**, and starts
+attracting schema lint hints. Setting `filename` restores it without giving up
+the naming convention, which a file only ever matches on purpose.
+
+A file whose `$schema` points at a real schema — an inline binding — is treated
+as **data at every level**. The setting narrows what is inferred; it never
+overrides what a document declares about itself.
+<!-- spec:F34 end -->
+
 <!-- spec:F32 start -->
 ## `jsonschema.ai.enabled`
 

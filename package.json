@@ -420,6 +420,21 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Show a CodeLens on a schema's first line counting the breaking changes against its Git `HEAD` version. Uses the same classifier as **Diff Against Baseline**; computed in the background so typing is never blocked."
+        },
+        "jsonschema.schemaDetection": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "filename",
+            "strict"
+          ],
+          "enumDescriptions": [
+            "Recognise a schema by its $schema declaration, its file name (*.schema.json), or its structure (properties alongside type: \"object\" or $defs).",
+            "Recognise a schema by its $schema declaration or its file name only. Use this if a data file of yours is being mistaken for a schema because of its shape.",
+            "Recognise a schema only by a JSON Schema meta-$schema declaration — the behaviour before file-name and structural detection were added."
+          ],
+          "markdownDescription": "How this extension decides a file is a JSON Schema. Detection controls which toolbar actions, diagnostics and quick fixes a file gets, so narrowing it restores the data-file actions (**Validate This File**, **Generate Schema from This File**, **Report Schema Coverage**) on a file that has no `$schema` line but looks schema-shaped. A file whose `$schema` points at a real schema is always treated as data, at every level."
         }
       }
     },

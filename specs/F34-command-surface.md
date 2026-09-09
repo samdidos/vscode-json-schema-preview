@@ -76,6 +76,34 @@ and a grouped menu so the title bar stays legible as the command set grows.
 - **F34-FR-11** The structural heuristic MUST NOT classify a data file as a
   schema: a document whose `$schema` points at a non-meta schema (an inline
   binding, F10) MUST always be treated as data, regardless of its shape or name.
+- **F34-FR-13** The two heuristics F34-FR-10 adds beyond the `$schema`
+  declaration MUST be controllable by a `jsonschema.schemaDetection` setting
+  with three values:
+
+  | Value | Recognises a schema by |
+  |-------|------------------------|
+  | `auto` (default) | meta-`$schema`, file name, **and** structure |
+  | `filename` | meta-`$schema` and file name |
+  | `strict` | meta-`$schema` only |
+
+  A meta-`$schema` declaration MUST be honoured at every level — the setting
+  narrows the heuristics, never the declaration — and F34-FR-11's precedence
+  MUST hold unchanged at every level.
+
+  The setting exists because F34-FR-10 is the one change in this feature that
+  can take a working affordance *away*. A file with no `$schema` that happens
+  to carry `properties` alongside `type: "object"` — an OpenAPI fragment, a
+  form definition, a UI component descriptor — is data to its author but
+  matches the structural heuristic, and reclassifying it as a schema removes
+  the Validate / Generate Schema / Coverage toolbar actions it used to offer.
+  Recovery would otherwise mean editing the document to add a `$schema` line,
+  which is a change to the user's data to work around our inference.
+
+  `filename` exists as a distinct level rather than folding into `strict`
+  because the two heuristics are not equally risky: `*.schema.json` is a naming
+  convention a file only matches on purpose, while the structural test is an
+  inference about content. A user bitten by the latter should not have to give
+  up the former.
 
 ### Notifications
 
@@ -134,3 +162,22 @@ and a grouped menu so the title bar stays legible as the command set grows.
 - **2026-09-02** — Added F34-FR-12: action-less success confirmations move from
   toasts to a transient status-bar message. The extension had grown past ninety
   notification calls; the ones that only say "done" are the noise.
+
+- **2026-09-09** — Added F34-FR-13, the `jsonschema.schemaDetection` setting.
+  A pre-release review of this branch asked what could break an existing
+  install; the answer was that nothing changes a default, removes a command or
+  moves an engine floor — except F34-FR-10, which is the one change that can
+  take a working affordance *away*. An unbound file carrying `properties`
+  alongside `type: "object"` is reclassified from data to schema and loses
+  **Validate This File**, **Generate Schema from This File** and **Report
+  Schema Coverage**, with no way back other than editing the document to add a
+  `$schema` line — a change to the user's data to work around our inference.
+
+  Three levels rather than a boolean, because the two heuristics are not
+  equally risky: `*.schema.json` is a convention a file matches on purpose,
+  while the structural test is an inference about content. `filename` lets
+  someone bitten by the second keep the first.
+
+  The unrecognised-value fallback is `auto`, not the narrowest level: a typo in
+  the setting should not silently strip the toolbar off every schema in a
+  workspace whose files are still being written.
