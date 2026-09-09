@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { modify, parseTree, Edit as JsoncEdit, FormattingOptions } from 'jsonc-parser';
 import { isSupported, isYaml, isToml, stripJsoncComments } from './languages';
-import { truncateStart } from './statusBarFormat';
+import { schemaLabel } from './statusBarFormat';
 import type { CatalogEntry } from './schemaCatalog';
 import {
   jsonValidationSources, catalogSources, matchNativeSchema, nativeSchemaLabel,
@@ -122,21 +122,25 @@ export class SchemaBindingManager {
     const settingsBinding = findBoundSchemaPath(doc);
     const native = (!inline && !settingsBinding) ? this.detectNativeSchema(doc) : undefined;
     if (inline) {
-      this.statusBar.text = `$(file-symlink-file) Schema: ${truncateStart(path.basename(inline))}`;
+      // No "Schema: " prefix on a bound state (F04-FR-06): it spent 8 of the
+      // 20 visible characters repeating what the icon and tooltip already say.
+      this.statusBar.text = `$(file-symlink-file) ${schemaLabel(path.basename(inline))}`;
       this.statusBar.tooltip = settingsBinding
         ? `Inline $schema in this file: ${inline}\n` +
           `Note: a settings binding also exists (${settingsBinding}) but is overridden by the inline value\n` +
           `Click to change or remove`
         : `Inline $schema in this file: ${inline}\nClick to change or remove`;
     } else if (settingsBinding) {
-      this.statusBar.text = `$(check) Schema: ${truncateStart(path.basename(settingsBinding))}`;
+      this.statusBar.text = `$(check) ${schemaLabel(path.basename(settingsBinding))}`;
       this.statusBar.tooltip = `Schema bound: ${settingsBinding}\nClick to change or remove`;
     } else if (native) {
       // No explicit binding — but VS Code resolves a schema natively
       // (F04-FR-15). Reflect that instead of a misleading "unbound".
-      const label = truncateStart(nativeSchemaLabel(native));
+      // The "(auto)" marker is inside the 20-character budget, not exempt
+      // from it — it is part of what the user actually sees.
+      const label = schemaLabel(nativeSchemaLabel(native), ' (auto)');
       const via = native.origin === 'catalog' ? 'the schema catalog' : 'an installed extension';
-      this.statusBar.text = `$(check) Schema: ${label} (auto)`;
+      this.statusBar.text = `$(check) ${label}`;
       this.statusBar.tooltip =
         `Schema resolved automatically by VS Code (via ${via}):\n${native.url}\n\n` +
         `JSON Schema Preview's own features (preview, validate, sample data) use this ` +
