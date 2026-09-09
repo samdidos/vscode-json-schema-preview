@@ -79,7 +79,16 @@ test('demo-schema-cache: cache a remote schema locally from the $schema quick fi
         '.action-widget .monaco-list-row:has-text("Cache schema locally")',
       ).first();
       await cacheRow.waitFor({ state: 'visible', timeout: 10_000 });
-      await cacheRow.click();
+      // `force` skips Playwright's actionability check, which this row passes
+      // on every count except stability: the code-action list resolves its
+      // providers asynchronously and re-lays-out as results arrive, so the
+      // bounding box keeps moving and the click times out waiting for two
+      // identical frames. Visibility is already asserted on the line above,
+      // and the mouse twin — which computes a bounding box and clicks the
+      // coordinates, bypassing actionability entirely — passed the same run
+      // this one failed, which is what identified the check rather than the
+      // element as the problem.
+      await cacheRow.click({ force: true });
 
       // FATAL. The download is the whole feature, and it is the part with
       // nothing else on screen to give it away — the `$schema` line does not
