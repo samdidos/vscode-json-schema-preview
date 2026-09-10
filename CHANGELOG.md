@@ -4,6 +4,58 @@ All notable changes to the "json-schema-preview" extension will be documented in
 
 ## [0.20.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.19.0...v0.20.0) (2026-09-10)
 
+### Highlights
+
+The largest feature release so far: schema **test suites**, **refactorings**, an
+**outline**, **agent tools**, and **opt-in AI authoring**. Most of it landed in a
+single commit (`56cbbde`), so the generated list below understates it — this
+section is the readable summary.
+
+**Schema test suites.** Write a `*.schema.test.json` next to a schema and run
+*JSON Schema: Run Schema Tests*. Cases assert that a document validates or
+fails, and a failing case can name the keyword it expects — so a test cannot
+pass for the wrong reason. Also available as `jstk test`, and the workspace
+sweep now checks suites alongside schemas and data.
+
+**Refactorings** (JSON/JSONC). *Extract to `$defs…`*, *Inline this `$ref`*, and
+*Remove Unused Definitions*, plus rename (<kbd>F2</kbd>) and find-all-references
+across `$ref`s. Every refactoring preserves which documents validate: the ones
+that could not make that guarantee — inlining a `$ref` with siblings, recursion,
+or a non-local target — refuse with a reason instead of silently changing
+meaning.
+
+**Outline.** Schemas now populate the Outline view, breadcrumbs, and Go to
+Symbol, with required properties marked and `$ref` targets shown without
+expanding.
+
+**Agent tools over MCP.** Eight deterministic tools — `jsonschema_validate`,
+`lint`, `diff`, `bundle`, `infer`, `sample`, `coverage`, `test` — exposed both as
+VS Code language-model tools and over MCP. They are argv builders over the same
+CLI, so an agent and a human cannot get different answers.
+
+**AI authoring — off by default.** Six commands (*Describe Properties*, *Draft a
+Schema from a Description*, *Enrich Inferred Schema*, *Explain This Finding*,
+*Generate Realistic Sample Data*, *Write Migration Notes*). Nothing reaches a
+model unless you set `jsonschema.ai.enabled`; with it off, the commands explain
+that and make no request. Results are verified before they are applied, and each
+lands as one undoable edit.
+
+**New settings**
+
+| Setting | Default | What it does |
+|---|---|---|
+| `jsonschema.ai.enabled` | `false` | Master switch for every AI command |
+| `jsonschema.ai.maxAttempts` | `3` | Retries when a result fails verification |
+| `jsonschema.schemaDetection` | `auto` | `auto` \| `filename` \| `strict` — how a file is judged to be a schema |
+| `jsonschema.validation.onSave` | `off` | `off` \| `bound` \| `always` — silent re-validation on save |
+| `jsonschema.compat.codeLens` | `true` | Breaking-change lens against Git `HEAD` |
+
+**Note on the entries below.** Most of the `demos`/`gifs` items are internal
+recording infrastructure, not user-facing changes: all 17 demos moved to one
+ffmpeg encoder (~28 MB → ~3.4 MB) and `canvas` was dropped, so `npm ci` no
+longer needs a native build.
+
+
 
 ### Features
 
