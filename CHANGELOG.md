@@ -2,6 +2,39 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.20.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.19.0...v0.20.0) (2026-09-10)
+
+
+### Features
+
+* **demos:** add nine missing feature demos and place them in the docs ([41647a5](https://github.com/samdidos/vscode-json-schema-preview/commit/41647a5f2fdbafb69d6d576dc5118abe6eb5b349))
+* **demos:** add outline and schema-tests demos, record the coverage audit ([a859f82](https://github.com/samdidos/vscode-json-schema-preview/commit/a859f82f8641b3c6369c656bc195d9394e948126))
+* **detection:** add the jsonschema.schemaDetection preference ([17a2eca](https://github.com/samdidos/vscode-json-schema-preview/commit/17a2eca6db2f5c3e123824203e22d550a2ef8a2e))
+* finish the analysis follow-ups — inference enrichment, MCP distribution, quiet confirmations ([d152a83](https://github.com/samdidos/vscode-json-schema-preview/commit/d152a835e855ca81068913636448891b25afb1d4))
+* **specs:** schema tests, refactorings, outline, agent tools & AI authoring ([56cbbde](https://github.com/samdidos/vscode-json-schema-preview/commit/56cbbde531d06c4bbd1b5820786034da19c62f76))
+
+
+### Bug Fixes
+
+* **config:** create the config file atomically, and rebuild the F08 demo ([909d79e](https://github.com/samdidos/vscode-json-schema-preview/commit/909d79ebc45f2cdc7352e8586297b1a34714c25d))
+* **demos:** drop the two demos recording proved undemoable ([b2aa834](https://github.com/samdidos/vscode-json-schema-preview/commit/b2aa8343e17a109aa6d0ac9b096fe13f05053220))
+* **demos:** force the quick-fix click in the schema-cache smoke twin ([1760bed](https://github.com/samdidos/vscode-json-schema-preview/commit/1760bedf581a14927bc245d855390003b2346612))
+* **demos:** keep the preview on screen through the showcase narrative ([636c1e1](https://github.com/samdidos/vscode-json-schema-preview/commit/636c1e10496abc332369c74fef46e21f1fb70999))
+* **demos:** let the preview assertion wait for the render it follows ([36c2f91](https://github.com/samdidos/vscode-json-schema-preview/commit/36c2f91d2f5d72297cfa2929ee5a3131421cf5e0))
+* **demos:** make the validation demo validate, and show every demo somewhere ([ad93d3a](https://github.com/samdidos/vscode-json-schema-preview/commit/ad93d3ab11250203d809a264547c3493b8f912a6))
+* **demos:** reach Generate Types through the JSON Schema submenu ([61489d4](https://github.com/samdidos/vscode-json-schema-preview/commit/61489d4473aa88b41b233821925d4cc75a5317d1))
+* **demos:** repair the three demos that failed their first recording ([c704d9d](https://github.com/samdidos/vscode-json-schema-preview/commit/c704d9d47a76bb2390ac086fc3afc6223f9c88bb))
+* **demos:** stop aiming the showcase cursor at a hover-only close button ([a3f3e11](https://github.com/samdidos/vscode-json-schema-preview/commit/a3f3e11f0e7b3cfed20df4546a1759d8ffbcebbf))
+* **deps:** raise the fast-uri and qs override floors past new advisories ([0322a7c](https://github.com/samdidos/vscode-json-schema-preview/commit/0322a7c173be3741855d2fe3d4166a0470191958))
+* **F29:** confine suite-supplied schema and fixture paths to the workspace ([861c117](https://github.com/samdidos/vscode-json-schema-preview/commit/861c1178b9c631c37cecddb2c5c34f8172b6a95d))
+* linear-time format checks, no unused exports, knip in the local gate ([60819d3](https://github.com/samdidos/vscode-json-schema-preview/commit/60819d31ab446629e879db62b3f168f407d738a4))
+* **status-bar:** bound the whole binding label at 20 characters ([d57ec41](https://github.com/samdidos/vscode-json-schema-preview/commit/d57ec41be97beb7e9287adfa3986b65a43c36979))
+
+
+### Performance Improvements
+
+* **gifs:** encode every demo with ffmpeg's palette pipeline, drop canvas ([2c0f2b2](https://github.com/samdidos/vscode-json-schema-preview/commit/2c0f2b2fcf6e39d2866c52f90d48914f1064f562))
+
 ## [0.19.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.18.0...v0.19.0) (2026-09-01)
 
 
