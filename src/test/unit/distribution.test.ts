@@ -11,6 +11,30 @@ const { confirm, CONFIRMATION_MS } = require('../../notify');
 const { registerSchemaDiff } = require('../../SchemaDiffCommand');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
+
+/** The checkout as it was authored: `ROOT` itself normally, the parent
+ *  repository when the tests run from Stryker's sandbox copy
+ *  (`<repo>/.stryker-tmp/sandbox-xxxxxx`, per stryker.config.json's default
+ *  `tempDirName`).
+ *
+ *  Load-bearing for the source scan below, which is a lint over source *text*.
+ *  Stryker instruments everything it mutates: string literals become
+ *  `stryMutAct_9fa48(…) ? … : …` ternaries and a call spread over several
+ *  lines collapses onto one. The sandbox therefore contains lines the authored
+ *  sources never did — SchemaBundleCommand.ts's multi-line toast collapses into
+ *  exactly the one-line shape this scan treats as an offender, even though it
+ *  reports a stripped-keyword outcome rather than a bare confirmation and so is
+ *  not what F34-FR-12 bans. That failed Stryker's initial test run, which aborts the
+ *  whole mutation run before a single mutant is tested. Scanning the pristine
+ *  sources makes the lint assert the same thing in both places, and costs
+ *  nothing in mutation terms: file text is identical for every mutant, so this
+ *  test can kill none of them either way.
+ */
+const CHECKOUT = ((): string => {
+  const escaped = ROOT.replace(/[/\\]\.stryker-tmp[/\\]sandbox-[^/\\]+$/, '');
+  return fs.existsSync(path.join(escaped, 'src')) ? escaped : ROOT;
+})();
+
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
 const cliPkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'cli', 'package.json'), 'utf-8'));
 const serverJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'cli', 'server.json'), 'utf-8'));
@@ -90,7 +114,7 @@ suite('[F34-FR-12] confirm() — quiet success confirmations', () => {
   });
 
   test('no action-less success confirmation remains a toast in the sources', () => {
-    const src = path.join(ROOT, 'src');
+    const src = path.join(CHECKOUT, 'src');
     const offenders: string[] = [];
     const walk = (dir: string): void => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -104,12 +128,15 @@ suite('[F34-FR-12] confirm() — quiet success confirmations', () => {
           // Checked by scanning rather than a pattern: the obvious regex needs
           // two unbounded `[^,]*` runs, which is the shape CodeQL flags.
           const trimmed = line.trim();
+          // Belt and braces for CHECKOUT above: an instrumented line is not an
+          // authored one, so it is never evidence of an offender.
+          if (trimmed.includes('stryMutAct_')) { continue; }
           const isBare = trimmed.startsWith('vscode.window.showInformationMessage(')
             && trimmed.endsWith(');')
             && !trimmed.includes("',")
             && !trimmed.includes('`,');
           if (isBare && DONE_WORDS.some(w => trimmed.includes(w))) {
-            offenders.push(`${path.relative(ROOT, full)}: ${trimmed}`);
+            offenders.push(`${path.relative(CHECKOUT, full)}: ${trimmed}`);
           }
         }
       }
