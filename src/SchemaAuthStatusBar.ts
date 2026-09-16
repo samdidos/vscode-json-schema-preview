@@ -11,7 +11,15 @@ export class SchemaAuthStatusBar {
     context: vscode.ExtensionContext,
   ) {
     // Priority 1 places this to the left of the binding status bar (priority 2).
-    this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
+    // F07-FR-16 — explicit id and `name`: the label is icon-only (F07-FR-10),
+    // so `name` is the only text identifying this entry in the status bar's
+    // right-click menu.
+    this.item = vscode.window.createStatusBarItem(
+      'jsonschema.auth',
+      vscode.StatusBarAlignment.Right,
+      1,
+    );
+    this.item.name = 'JSON Schema Authentication';
     context.subscriptions.push(this.item);
 
     const refresh = (doc?: vscode.TextDocument) => this.update(doc);

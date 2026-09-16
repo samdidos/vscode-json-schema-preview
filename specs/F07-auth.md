@@ -69,6 +69,13 @@ tokens, and Basic auth.
   **icon-only** (🔒 when configured, 🔓 otherwise); the schema **host** MUST be
   shown in the item's **tooltip** rather than in its label, so the item does
   not widen with the host's domain length.
+- **F07-FR-16** The status bar item MUST be created with an explicit entry
+  **id** and MUST set a human-readable **`name`**, for the reasons given in
+  F04-FR-16: VS Code labels the entry in its right-click *hide* menu by `name`
+  and remembers the choice by id, so an unnamed item is indistinguishable from
+  the binding item (F04-FR-16) and its hidden state is not stable across
+  changes to creation order. Because this item's label is icon-only
+  (F07-FR-10), the `name` is the **only** text identifying it in that menu.
 - **F07-FR-11** When VS Code cannot load a remote schema a **code action
   (lightbulb)** MUST appear on the `$schema` line offering to configure auth.
 - **F07-FR-12** When the **Validate This File** command returns a 401/403, the
@@ -96,6 +103,11 @@ tokens, and Basic auth.
 
 - 2026-07-19 — Added F07-FR-14: warn (once per host per session, non-blocking)
   when credentials are sent over plain `http://`.
+- 2026-09-16 — Added F07-FR-16: give the status bar item an explicit id and
+  `name` so it is individually identifiable in VS Code's status bar hide menu
+  (see F04-FR-16). This item needed it most: its label is icon-only, so before
+  the change it was a lock glyph whose menu row read only "JSON Schema
+  Preview".
 - 2026-07-22 — Added F07-FR-15: an unauthenticated 404 from a GitHub host is
   treated as authentication-required, since GitHub returns 404 (not 401/403)
   for private-repo content without access — previously this silently produced

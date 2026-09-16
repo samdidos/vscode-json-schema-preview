@@ -58,7 +58,16 @@ export class SchemaBindingManager {
   ) {
     this.ctx = context;
     this.catalog = catalog;
-    this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 2);
+    // F04-FR-16 — an explicit id keeps the user's "hide this entry" choice
+    // stable, and `name` is what VS Code shows for it in the status bar's
+    // right-click menu (without it both of our entries read "JSON Schema
+    // Preview").
+    this.statusBar = vscode.window.createStatusBarItem(
+      'jsonschema.binding',
+      vscode.StatusBarAlignment.Right,
+      2,
+    );
+    this.statusBar.name = 'JSON Schema Binding';
     this.statusBar.command = 'jsonschema.bindToCurrentFile';
     context.subscriptions.push(this.statusBar);
 

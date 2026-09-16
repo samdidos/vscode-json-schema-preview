@@ -65,6 +65,47 @@ authenticate to. The extension can fetch it for you:
 
 See [Authentication](/guide/authentication).
 
+<!-- spec:F04 start -->
+
+## VS Code shows its own schema status next to mine
+
+VS Code's built-in JSON support contributes a **language status item** called
+**JSON Validation Status**, whose text is `Schema validated` or
+`No schema validation`. It says roughly what this extension's own status bar
+item already says, and it can be much wider.
+
+There is **no `json.*` setting that turns it off** — but it is almost certainly
+only taking up room because it has been *pinned*. By default every language
+status item collapses into a single compact icon next to the language mode
+indicator; pinning one gives it a full-width status bar entry showing its whole
+text. The pin button sits inside the hover you would open to inspect the
+schema, so it is easy to hit by accident.
+
+To put it back:
+
+1. Click the language status icon in the status bar to open its hover.
+2. Next to **JSON Validation Status**, click the filled pin — its tooltip reads
+   **Remove from Status Bar**.
+
+Right-clicking the status bar and unchecking **JSON Validation Status (Language
+Status)** does the same thing, because hiding a pinned entry also unpins it.
+
+To hide language status for *every* language — TypeScript, ESLint and the rest,
+not just JSON — right-click the status bar and uncheck **Editor Language
+Status** instead.
+
+::: tip This is a UI toggle, not a setting
+VS Code stores the pin state in profile storage, not in `settings.json`, so it
+cannot be committed to a workspace or shared through `.vscode/settings.json`.
+It does travel with Settings Sync.
+:::
+
+This extension's own two entries are named **JSON Schema Binding** and **JSON
+Schema Authentication**, so you can hide either one individually from the same
+status bar right-click menu.
+
+<!-- spec:F04 end -->
+
 ## Validation says "no schema bound" but the file has `$schema`
 
 Check that the `$schema` value resolves. A relative path is resolved against the

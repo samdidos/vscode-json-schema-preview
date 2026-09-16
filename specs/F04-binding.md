@@ -75,6 +75,16 @@ recognise them.
   reusing F12's fetch under its existing `jsonschema.catalog` config gate — it
   introduces no new network category beyond the catalog fetch F12 already makes.
   An explicit binding (F04-FR-06) always takes precedence over the auto state.
+- **F04-FR-16** The status bar item MUST be created with an explicit entry
+  **id** and MUST set a human-readable **`name`**. VS Code lists status bar
+  entries in its right-click *hide* menu by `name`, falling back to the
+  contributing extension's display name when none is set, and persists a
+  user's hide choice by entry id. Without both, this extension's two entries
+  (this one and F07-FR-16's) appear in that menu as two identically labelled
+  **JSON Schema Preview** rows, so a user who wants to hide one cannot tell
+  which is which — and the generated id is positional, so the hidden entry can
+  change when creation order does. The `name` MUST describe the entry, not the
+  extension.
 
 ### Context and Explorer Menus
 
@@ -154,6 +164,14 @@ recognise them.
    regardless of which folder is currently active (F04-FR-14).
 
 ## History
+
+- **2026-09-16** — Added F04-FR-16: give the status bar item an explicit id and
+  `name`. Both of the extension's status bar entries previously fell back to
+  the extension's display name, which made VS Code's own "hide this entry"
+  context menu list two indistinguishable **JSON Schema Preview** rows. Naming
+  them is what makes the entry individually hideable — the same control a user
+  reaches for when this item and VS Code's native *JSON Validation Status*
+  language-status item say overlapping things.
 
 - **2026-09-09** — Tightened F04-FR-06 from "the basename is ~20 characters" to
   "the whole visible label is at most 20 characters". The old wording bounded

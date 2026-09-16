@@ -543,6 +543,15 @@
       ],
       "note": "status bar shows an auto state when VS Code resolves a schema natively (jsonValidation or SchemaStore catalog) instead of unbound"
     },
+    "F04-FR-16": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "explicit entry id + name so the item is individually identifiable in VS Code's status-bar hide menu (unit-tested via the vscode mock)",
+      "specifiedAt": "2026-09-16",
+      "implementedAt": "2026-09-16"
+    },
     "F05-FR-01": {
       "status": "manual",
       "impl": [
@@ -828,6 +837,15 @@
         "src/SchemaAuthManager.ts"
       ],
       "note": "isAuthRequiredStatus() treats an unauthenticated GitHub 404 as auth-required"
+    },
+    "F07-FR-16": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaAuthStatusBar.ts"
+      ],
+      "note": "explicit entry id + name; the icon-only label (F07-FR-10) makes name the only text identifying this entry (unit-tested via the vscode mock)",
+      "specifiedAt": "2026-09-16",
+      "implementedAt": "2026-09-16"
     },
     "F07-NFR-01": {
       "status": "manual",

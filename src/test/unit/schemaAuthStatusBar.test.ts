@@ -27,8 +27,24 @@ suite('[F07-FR-10] SchemaAuthStatusBar construction', () => {
   test('creates a right-aligned status bar item at priority 1 and tracks it', () => {
     const ctx = makeContext();
     new SchemaAuthStatusBar({ isConfigured: async () => false }, ctx);
-    assert.ok(vscode.window.createStatusBarItem.calledWith(vscode.StatusBarAlignment.Right, 1));
+    assert.ok(
+      vscode.window.createStatusBarItem.calledWith(
+        'jsonschema.auth', vscode.StatusBarAlignment.Right, 1,
+      ),
+    );
     assert.ok(ctx.subscriptions.includes(statusBarItem));
+  });
+
+  test('[F07-FR-16] names the entry so it is identifiable in the status bar hide menu', () => {
+    new SchemaAuthStatusBar({ isConfigured: async () => false }, makeContext());
+    assert.strictEqual(statusBarItem.name, 'JSON Schema Authentication');
+  });
+
+  test('[F07-FR-16] creates the entry with an explicit, stable id', () => {
+    new SchemaAuthStatusBar({ isConfigured: async () => false }, makeContext());
+    assert.strictEqual(
+      vscode.window.createStatusBarItem.firstCall.args[0], 'jsonschema.auth',
+    );
   });
 
   test('registers onDidChangeActiveTextEditor and onDidChangeSessions listeners', () => {
