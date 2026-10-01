@@ -1,9 +1,9 @@
 {
   "$comment": "Cached OpenSSF Scorecard grade read by scripts/maturity-score.mjs. Refresh with `npm run maturity:ossf`.",
   "source": "https://api.securityscorecards.dev/projects/github.com/samdidos/vscode-json-schema-preview",
-  "fetchedAt": "2026-09-01",
-  "scorecardDate": "2026-08-18",
-  "score": 5.5,
+  "fetchedAt": "2026-10-01",
+  "scorecardDate": "2026-09-29",
+  "score": 5.8,
   "checks": [
     {
       "name": "Binary-Artifacts",
@@ -15,7 +15,7 @@
     },
     {
       "name": "CI-Tests",
-      "score": 6
+      "score": 8
     },
     {
       "name": "CII-Best-Practices",
@@ -75,7 +75,7 @@
     },
     {
       "name": "Vulnerabilities",
-      "score": 2
+      "score": 5
     }
   ]
 }
