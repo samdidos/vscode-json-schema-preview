@@ -125,7 +125,7 @@
   12 ships `lib/cli/run-helpers` as `.cjs`, which
   `@stryker-mutator/mocha-runner` (through 10.1.1) requires extension-less,
   so `npm run test:mutation` dies with `Cannot find TestRunner plugin
-  "mocha"`. Stryker only runs in the weekly `mutation.yml`, never per-PR, so
+  "mocha"`. Stryker only runs in the scheduled `mutation.yml`, never per-PR, so
   a dependency bump that breaks it merges green — after touching mocha or
   Stryker versions, run `npx stryker run --dryRunOnly` (about two minutes)
   before trusting CI.
