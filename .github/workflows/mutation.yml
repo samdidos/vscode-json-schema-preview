@@ -2,13 +2,28 @@ name: Mutation testing
 
 # Stryker measures whether the tests would actually catch a regression (a
 # stronger signal than line coverage) by re-running them against thousands of
-# mutations. Slow, so it runs on demand and weekly rather than on every push —
-# stryker.config.json's break threshold still gates it as a real signal,
+# mutations. Slow, so it runs on demand and on a schedule rather than on every
+# push — stryker.config.json's break threshold still gates it as a real signal,
 # just without adding its runtime to every PR's required checks.
+#
+# A cold run re-tests every mutant and takes hours (4h25m for 13,660 mutants in
+# November 2026, against a 6h job limit), so the run restores Stryker's
+# incremental file and only re-tests mutants whose source or covering tests
+# changed (S18-SR-06). The refreshed score is then proposed back to the
+# repository by a separate job (S18-SR-07).
 on:
   workflow_dispatch:
+    inputs:
+      full:
+        description: Ignore the cached results and re-test every mutant (hours)
+        type: boolean
+        default: false
   schedule:
-    - cron: '0 4 * * 0' # Sundays, 04:00 UTC
+    # Sundays and Wednesdays, 04:00 UTC. Twice a week on purpose: GitHub evicts
+    # a cache nothing has read for 7 days, and a weekly run that starts late
+    # would find its predecessor's results already gone and fall back to a
+    # full run. An incremental run is minutes, so the extra one is cheap.
+    - cron: '0 4 * * 0,3'
 
 permissions:
   contents: read
@@ -26,8 +41,40 @@ jobs:
 
       - run: npm ci
 
+      # The key ends in the run id because a cache entry is immutable: every
+      # run saves a new one and restores the newest earlier one by prefix. A
+      # change to stryker.config.json changes the prefix, so results measured
+      # under different settings are never reused.
+      - name: Restore Stryker's incremental results
+        id: incremental
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental.json
+          key: stryker-incremental-${{ hashFiles('stryker.config.json') }}-${{ github.run_id }}
+          restore-keys: |
+            stryker-incremental-${{ hashFiles('stryker.config.json') }}-
+
+      # Incremental mode only notices changes to mutated sources and their
+      # tests — not to dependencies or tooling — so `full` exists to re-measure
+      # from scratch when that matters.
       - name: Run Stryker mutation tests
-        run: npm run test:mutation
+        env:
+          FULL: ${{ inputs.full }}
+        run: |
+          if [ "$FULL" = "true" ]; then
+            npm run test:mutation -- --force
+          else
+            npm run test:mutation
+          fi
+
+      # Saved even when the run fails the break threshold: the results are
+      # still correct, and discarding them would make the next run a cold one.
+      - name: Save Stryker's incremental results
+        if: always() && hashFiles('reports/stryker-incremental.json') != ''
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental.json
+          key: ${{ steps.incremental.outputs.cache-primary-key }}
 
       # Without this the score would only ever be refreshed by hand, and a
       # committed mutation-score.json would quietly rot (S18-SR-03 makes the
@@ -51,3 +98,85 @@ jobs:
           name: mutation-score
           path: mutation-score.json
           retention-days: 90
+
+  # S18-SR-07 — without this the committed mutation-score.json is only ever
+  # refreshed by hand: the score above is measured on every run and then
+  # expires with its artifact, while the repository keeps showing an old one.
+  # A separate job so the write token never exists in the job that installs
+  # dependencies and runs the test suite.
+  publish:
+    needs: stryker
+    # Only a score measured on the default branch describes the default
+    # branch. `always()` so a run that fails the break threshold still
+    # publishes — a score below the gate is exactly the one worth seeing.
+    if: always() && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download the published score
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: mutation-score
+          path: ${{ runner.temp }}/mutation-score
+
+      - name: Propose the refreshed score in the standing PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          FRESH: ${{ runner.temp }}/mutation-score/mutation-score.json
+        run: |
+          set -euo pipefail
+
+          # Publish when the scores moved, or when the committed measurement is
+          # two weeks old (the cadence maturity-refresh.yml uses) — so the date
+          # shown next to the score (S18-SR-03) stays honest without a PR that
+          # carries nothing but a new date stamp twice a week.
+          due=$(node -e '
+            const fs = require("fs");
+            const read = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
+            const fresh = read(process.argv[1]);
+            if (!fs.existsSync("mutation-score.json")) { console.log("true"); process.exit(0); }
+            const committed = read("mutation-score.json");
+            const scores = (o) => JSON.stringify({ overall: o.overall, files: o.files });
+            const ageDays = (Date.parse(fresh.generatedAt) - Date.parse(committed.generatedAt)) / 86400000;
+            console.log(scores(fresh) !== scores(committed) || !(ageDays < 14));
+          ' "$FRESH")
+
+          # A run that produced no report re-uploads the committed file, which
+          # is neither different nor newer — so it lands here too.
+          if [ "$due" != "true" ]; then
+            echo "Scores unchanged and the committed measurement is recent — no commit, no PR."
+            exit 0
+          fi
+
+          cp "$FRESH" mutation-score.json
+          git add -- mutation-score.json
+          if git diff --staged --quiet; then
+            echo "Nothing to publish."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          BRANCH=chore/refresh-mutation-score
+          git checkout -B "$BRANCH"
+          # Bot-authored data commit; skip the local pre-commit hook.
+          git commit --no-verify -m "chore: refresh mutation score"
+          git push --force origin "$BRANCH"
+
+          if [ -z "$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // ""')" ]; then
+            gh pr create --repo "$REPO" --base "$GITHUB_REF_NAME" --head "$BRANCH" \
+              --title "chore: refresh mutation score" \
+              --body "Refreshes \`mutation-score.json\` (S18) from the latest run of \`.github/workflows/mutation.yml\`.
+
+          Opened when the per-file scores changed, or when the committed measurement is more than two weeks old. Everything lands on one standing branch, so this PR is updated in place rather than replaced.
+
+          Review the deltas and merge if they look right."
+          else
+            echo "The standing refresh PR already exists — updated by the force-push."
+          fi

@@ -66,3 +66,54 @@ suite('S09 — CI workflow guarantees', () => {
     }
   });
 });
+
+suite('S18 — the scheduled mutation run keeps the published score current', () => {
+  const mutation = directivesOf(read('.github/workflows/mutation.yml'));
+  /** The YAML of one top-level job, up to the next job or the end of file. */
+  const job = (name: string) => {
+    const start = mutation.indexOf(`\n  ${name}:\n`);
+    assert.notEqual(start, -1, `mutation.yml has a ${name} job`);
+    const rest = mutation.slice(start + 1);
+    const next = rest.slice(1).search(/\n {2}[a-z][\w-]*:\n/);
+    return next === -1 ? rest : rest.slice(0, next + 1);
+  };
+
+  test('[S18-SR-06] incremental results are restored before the run and saved after it, even on failure', () => {
+    const stryker = job('stryker');
+    const incrementalFile = JSON.parse(read('stryker.config.json')).incrementalFile;
+    const restore = stryker.indexOf('actions/cache/restore@');
+    const run = stryker.indexOf('npm run test:mutation');
+    const save = stryker.indexOf('actions/cache/save@');
+    assert.ok(restore !== -1 && restore < run && run < save, 'restore → run → save, in that order');
+    // Both steps must name the file Stryker is configured to write.
+    assert.equal(stryker.split(`path: ${incrementalFile}`).length - 1, 2);
+    assert.match(stryker, /if: always\(\) && hashFiles\('reports\/stryker-incremental\.json'\) != ''/);
+  });
+
+  test('[S18-SR-06] results are never reused across a Stryker config change, and a full run can be forced', () => {
+    const stryker = job('stryker');
+    assert.match(stryker, /key: stryker-incremental-\$\{\{ hashFiles\('stryker\.config\.json'\) \}\}-\$\{\{ github\.run_id \}\}/);
+    assert.match(stryker, /restore-keys: \|\n\s+stryker-incremental-\$\{\{ hashFiles\('stryker\.config\.json'\) \}\}-\n/);
+    assert.match(mutation, /workflow_dispatch:\n\s+inputs:\n\s+full:/);
+    assert.match(stryker, /npm run test:mutation -- --force/);
+  });
+
+  test('[S18-SR-07] the write token lives only in the job that publishes, which runs nothing from the repo', () => {
+    const stryker = job('stryker');
+    const publish = job('publish');
+    assert.doesNotMatch(stryker, /contents: write|pull-requests: write/);
+    assert.match(mutation, /^permissions:\n {2}contents: read$/m);
+    assert.match(publish, /permissions:\n\s+contents: write\n\s+pull-requests: write/);
+    assert.doesNotMatch(publish, /npm (ci|install|run|test)|npx /);
+  });
+
+  test('[S18-SR-07] the score is proposed as a pull request from the default branch only, never pushed to it', () => {
+    const publish = job('publish');
+    assert.match(publish, /if: always\(\) && github\.ref_name == github\.event\.repository\.default_branch/);
+    assert.match(publish, /BRANCH=chore\/refresh-mutation-score/);
+    assert.match(publish, /git push --force origin "\$BRANCH"/);
+    assert.match(publish, /gh pr create/);
+    // Published when the scores moved or the committed date is two weeks old.
+    assert.match(publish, /scores\(fresh\) !== scores\(committed\) \|\| !\(ageDays < 14\)/);
+  });
+});

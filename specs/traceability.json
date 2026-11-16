@@ -5701,6 +5701,24 @@
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     },
+    "S18-SR-06": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/mutation.yml"
+      ],
+      "note": "cache restore/save around the Stryker step, keyed on stryker.config.json; `full` dispatch input forces a cold run",
+      "specifiedAt": "2026-11-16",
+      "implementedAt": "2026-11-16"
+    },
+    "S18-SR-07": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/mutation.yml"
+      ],
+      "note": "separate write-scoped publish job opens/updates the standing chore/refresh-mutation-score PR from the default branch",
+      "specifiedAt": "2026-11-16",
+      "implementedAt": "2026-11-16"
+    },
     "S19-NFR-01": {
       "status": "implemented",
       "impl": [

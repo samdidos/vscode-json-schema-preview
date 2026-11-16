@@ -60,6 +60,26 @@ too expensive to make a scoring input. This spec does not change that.
   recorded with a zero or null score, so "not mutated by policy" is never read
   as "badly tested".
 
+### Keeping the published score current
+
+- **S18-SR-06** The mutation workflow (`.github/workflows/mutation.yml`) MUST
+  carry Stryker's incremental results from one run to the next, so a run
+  re-tests only the mutants whose source or covering tests changed instead of
+  all of them: a cold run already takes most of the hosted runner's six-hour
+  job limit, and the mutant count only grows. The results MUST be saved even
+  when the run fails the `break` threshold, MUST NOT be reused across a change
+  to `stryker.config.json`, and the workflow MUST offer a manually triggered
+  full run that ignores them — incremental mode sees changes to mutated
+  sources and their tests, not to dependencies or tooling.
+- **S18-SR-07** A run on the default branch MUST propose the regenerated
+  `mutation-score.json` back to the repository as a pull request — never a
+  direct push — whenever the scores differ from the committed artifact or the
+  committed measurement is at least 14 days old. Otherwise the artifact is only
+  ever as fresh as the last time someone refreshed it by hand, which is what
+  S18-SR-03's date exists to expose, not to excuse. The write-scoped token MUST
+  be confined to a job that does not install dependencies or run the test
+  suite, and a run that produced no report MUST NOT propose anything.
+
 ## Non-Functional Requirements
 
 - **S18-NFR-01** The generator MUST be plain Node with no third-party
@@ -73,8 +93,9 @@ too expensive to make a scoring input. This spec does not change that.
 
 ## Out of Scope
 
-- Running mutation testing in CI, or gating a pull request on the score — the
-  `break` threshold already fails a local run below 60, which is the gate.
+- Running mutation testing on every pull request, or gating a pull request on
+  the score — the `break` threshold fails a local or scheduled run below 60,
+  which is the gate. (The scheduled run itself is in scope: S18-SR-06/07.)
 - A time series of mutation scores; the artifact is a current snapshot, and
   trend reporting belongs to the maturity history if it is ever wanted.
 - Per-requirement mutation scores. Stryker reports per file; the file → spec
@@ -103,3 +124,9 @@ too expensive to make a scoring input. This spec does not change that.
   90% and 99%: the 80% gate compresses the population so far that coverage
   cannot discriminate test strength. Mutation data was already being produced
   by every `npm run test:mutation` run and thrown away with the HTML report.
+- 2026-11-16 — Added S18-SR-06 and S18-SR-07. The scheduled run had been
+  failing unnoticed for two months, and once repaired a cold run took 4h25m
+  for 13,660 mutants against a six-hour job limit; meanwhile the committed
+  artifact still carried its July date, because nothing but a manual refresh
+  ever wrote it back. Out of Scope narrowed accordingly: the scheduled run
+  exists and is now specified, per-pull-request runs remain excluded.
