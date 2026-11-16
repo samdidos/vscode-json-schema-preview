@@ -243,6 +243,12 @@ suite('parseSchemaText()', () => {
   test('returns undefined on malformed input', () => {
     assert.strictEqual(parseSchemaText('{bad', 'json'), undefined);
   });
+  test('[F08-FR-18] YAML with a syntax error is not a parsed schema', () => {
+    // The YAML parser records errors instead of throwing and still returns
+    // what it salvaged, so a broken document used to come back as a value.
+    assert.strictEqual(parseSchemaText('a: [1, 2\nb: }', 'yaml'), undefined);
+    assert.strictEqual(parseSchemaText('type: object\n  bad: : indent', 'yaml'), undefined);
+  });
 });
 
 suite('[F28-FR-09] computeAnchorCandidates()', () => {

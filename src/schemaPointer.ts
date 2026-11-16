@@ -246,8 +246,11 @@ function locateInYamlDoc(doc: YamlDoc, segments: string[]): SourceSpan | undefin
 export function parseSchemaText(text: string, languageId: string): unknown {
   try {
     if (isYaml(languageId)) {
+      // `parseDocument` never throws on a syntax error — it records it and
+      // returns whatever it could salvage, which callers would then treat as
+      // the schema. A document with errors is not a parsed schema.
       const doc = parseDocument(text);
-      return doc.toJS();
+      return doc.errors.length ? undefined : doc.toJS();
     }
     return JSON.parse(languageId === 'jsonc' ? stripJsoncComments(text) : text);
   } catch {
