@@ -121,6 +121,14 @@
   issue the one time that peer range starts allowing TS 7 — nothing else
   watches for this, so don't remove the ignore rule without checking that
   issue (or rerunning the check) first.
+- **`mocha`'s major-version bumps are ignored in `dependabot.yml`**: mocha
+  12 ships `lib/cli/run-helpers` as `.cjs`, which
+  `@stryker-mutator/mocha-runner` (through 10.1.1) requires extension-less,
+  so `npm run test:mutation` dies with `Cannot find TestRunner plugin
+  "mocha"`. Stryker only runs in the weekly `mutation.yml`, never per-PR, so
+  a dependency bump that breaks it merges green — after touching mocha or
+  Stryker versions, run `npx stryker run --dryRunOnly` (about two minutes)
+  before trusting CI.
 
 ## Agnosticity & standardization (project principle)
 
