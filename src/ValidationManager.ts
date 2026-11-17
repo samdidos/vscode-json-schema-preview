@@ -15,7 +15,7 @@ import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
 import { classifyFetchFailure, shouldFallbackToCache } from './reliability';
 import { createAjv } from './ajvFactory';
-import { buildFixes } from './validationFix';
+import { buildFixes, diagnosticCode } from './validationFix';
 import type { ValidationFixProvider } from './ValidationFixProvider';
 
 export const validationDiagnostics =
@@ -134,17 +134,20 @@ export function validateCurrentFile(
 
     validationDiagnostics.delete(doc.uri);
     const diags: vscode.Diagnostic[] = [];
-    // F21: collect quick fixes for the single-item JSON/JSONC case only, where a
-    // data pointer maps unambiguously to one node and `modify` can edit it.
-    const fixable = items.length === 1 && (doc.languageId === 'json' || doc.languageId === 'jsonc');
-    let collectedFixes: ReturnType<typeof buildFixes> = [];
+    // F21: collect quick fixes for every supported format. A JSONL file is many
+    // instances, so each fix and diagnostic there is tied to its record's index
+    // (F21-FR-12) — the same instance path recurs on every line.
+    const collectedFixes: ReturnType<typeof buildFixes> = [];
 
-    for (const data of items) {
+    for (const [index, data] of items.entries()) {
       if (!validate(data)) {
         const errors = validate.errors ?? [];
-        if (fixable) { collectedFixes = buildFixes(errors, schema, data); }
+        const record = doc.languageId === 'jsonl' ? index : undefined;
+        for (const fix of buildFixes(errors, schema, data)) {
+          collectedFixes.push(record === undefined ? fix : { ...fix, record });
+        }
         for (const err of errors) {
-          const range = locateInDocument(doc, err.instancePath ?? '');
+          const range = locateInDocument(doc, err.instancePath ?? '', record);
           const label = err.instancePath || '(root)';
           const diagnostic = new vscode.Diagnostic(
             range,
@@ -157,7 +160,7 @@ export function validateCurrentFile(
           diagnostic.source = 'JSON Schema';
           // F21-FR-08: carry the error's instance path so the quick-fix provider
           // can match a fix to the diagnostics present at the cursor (`/` = root).
-          diagnostic.code = err.instancePath || '/';
+          diagnostic.code = diagnosticCode(err.instancePath ?? '', record);
           diags.push(diagnostic);
         }
       }
@@ -236,8 +239,8 @@ function parseSchema(text: string, source: string): unknown {
 
 /** Range of an Ajv instance path via the shared F03/F20 locator (AST-exact
  *  for JSON/JSONC/YAML, text-scan fallback); document start when unlocatable. */
-function locateInDocument(doc: vscode.TextDocument, instancePath: string): vscode.Range {
-  const span = locateInstanceSpan(doc.getText(), doc.languageId, instancePath);
+function locateInDocument(doc: vscode.TextDocument, instancePath: string, record?: number): vscode.Range {
+  const span = locateInstanceSpan(doc.getText(), doc.languageId, instancePath, record);
   if (!span) { return new vscode.Range(0, 0, 0, 0); }
   return new vscode.Range(doc.positionAt(span.start), doc.positionAt(span.end));
 }

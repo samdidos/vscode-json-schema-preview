@@ -3,7 +3,8 @@
 // QuickFix code actions on the validation diagnostics. All fix *logic* lives in
 // the pure `validationFix` module; this class is thin glue.
 import * as vscode from 'vscode';
-import { type ValidationFix, computeFixEdits, fixTargetPointer } from './validationFix';
+import { type ValidationFix, computeFixEdits, computeFixAllEdits, fixDiagnosticCode } from './validationFix';
+import type { Edit } from 'jsonc-parser';
 
 const VALIDATION_SOURCE = 'JSON Schema';
 
@@ -44,14 +45,8 @@ export class ValidationFixProvider implements vscode.CodeActionProvider {
     const diagnosticPaths = new Set(diagnostics.map(d => String(d.code ?? '')));
 
     const text = document.getText();
-    const actions: vscode.CodeAction[] = [];
-    for (const fix of fixes) {
-      if (!diagnosticPaths.has(fixTargetPointer(fix))) { continue; }
-
-      const edits = computeFixEdits(text, fix);
-      if (!edits.length) { continue; } // stale / target gone (F21-FR-06)
-
-      const action = new vscode.CodeAction(fix.title, vscode.CodeActionKind.QuickFix);
+    const toAction = (title: string, edits: Edit[]): vscode.CodeAction => {
+      const action = new vscode.CodeAction(title, vscode.CodeActionKind.QuickFix);
       const edit = new vscode.WorkspaceEdit();
       for (const e of edits) {
         const r = new vscode.Range(document.positionAt(e.offset), document.positionAt(e.offset + e.length));
@@ -59,9 +54,28 @@ export class ValidationFixProvider implements vscode.CodeActionProvider {
       }
       action.edit = edit;
       action.diagnostics = diagnostics;
-      // F25: the closest enum near-miss is the editor's default fix.
+      return action;
+    };
+
+    const actions: vscode.CodeAction[] = [];
+    for (const fix of fixes) {
+      if (!diagnosticPaths.has(fixDiagnosticCode(fix))) { continue; }
+
+      const edits = computeFixEdits(text, fix, undefined, document.languageId);
+      if (!edits.length) { continue; } // stale / target gone (F21-FR-06)
+
+      const action = toAction(fix.title, edits);
+      // F25: the closest near-miss is the editor's default fix.
       if (fix.preferred) { action.isPreferred = true; }
       actions.push(action);
+    }
+
+    // F21-FR-13: one action for every unambiguous fix in the document, offered
+    // from any validation diagnostic — but only when it would do more than the
+    // single fix already listed above.
+    const all = computeFixAllEdits(text, fixes, undefined, document.languageId);
+    if (all.applied > 1) {
+      actions.push(toAction(`Fix all ${all.applied} auto-fixable validation problems`, all.edits));
     }
     return actions;
   }

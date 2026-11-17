@@ -113,11 +113,17 @@ If the file already has an inline `$schema` field the bound schema is inferred f
 <!-- spec:F21 start -->
 ### Quick fixes for validation errors
 
-For JSON and JSONC files, the validation errors above carry a **lightbulb** (💡) offering a one-click repair when the fix is unambiguous: insert a **missing required property** with a type-appropriate placeholder, **remove an unexpected property**, replace a value that is outside an `enum`/`const` with an allowed one, or **coerce a mistyped scalar** (e.g. `"5"` → `5`) when the conversion is lossless. Only safe, mechanical fixes are offered — errors whose correct value can't be known (a `pattern`, a numeric bound, a `format`) have no quick fix. Fixes are computed against the file's current text, so they stay correct after edits and a fix whose target you've already removed simply disappears.
+In JSON, JSONC, JSONL, YAML and TOML files, the validation errors above carry a **lightbulb** (💡) offering a one-click repair when the fix is unambiguous: insert a **missing required property** with a type-appropriate placeholder, **remove an unexpected property**, replace a value that is outside an `enum`/`const` with an allowed one, or **coerce a mistyped scalar** (e.g. `"5"` → `5`) when the conversion is lossless. Only safe, mechanical fixes are offered — errors whose correct value can't be known (a `pattern`, a numeric bound, a `format`) have no quick fix. Fixes are computed against the file's current text, so they stay correct after edits and a fix whose target you've already removed simply disappears.
+
+Each format is edited in place, in its own syntax: a YAML or TOML fix changes only the token or the lines involved and leaves your indentation, comments and line endings alone, and a JSONL fix stays on the line of the record it repairs. For those three formats every edit is checked before it is offered — the result must parse to exactly your data plus that one fix — so where a change can't be made cleanly (removing a whole TOML `[table]`, adding to an inline table, restructuring a YAML file whose layout can't be reproduced) no fix is shown rather than a risky one.
+
+When a file has several problems that need no decision, the lightbulb also offers **Fix all N auto-fixable validation problems**: every missing required property, `const` and lossless coercion, plus an `enum` value or property name that is a clear near-miss. It never removes an unexpected property for you — that deletes data, so it stays an individual choice.
 <!-- spec:F21 end -->
 
 <!-- spec:F25 -->
 For an `enum` mismatch the allowed values are **ranked by how close they are to what you typed**, so the likely-intended value is offered first rather than in schema order — type `"prod"` where the schema allows `["development", "staging", "production"]` and `Change to "production" (closest match)` leads the list. When the closest value is a clear near-miss (a typo, a wrong-case value, or an abbreviation like `prod`→`production`) it's marked the editor's **preferred** fix, so a single <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>.</kbd> applies it.
+
+The same matching applies to **property names**: an unexpected property that is one slip away from a declared one the object doesn't have yet — `descripton` for `description`, `prot` for `port` — is offered `Rename to "description" (closest match)` ahead of the removal, as the preferred fix. Only the key is rewritten; its value stays put.
 
 ![Applying a validation quick fix from the lightbulb](/demo-quick-fix.gif)
 

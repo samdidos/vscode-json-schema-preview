@@ -6,7 +6,11 @@
 // correct value cannot be known has no fix.
 
 import { modify, applyEdits, parseTree, findNodeAtLocation, type Edit, type FormattingOptions } from 'jsonc-parser';
+import { parse as parseYaml } from 'yaml';
 import { parseJsonPointer, isObject } from './schemaPointer';
+import { isYaml, isToml, parseToml, parseJsonl, jsonlRecordSpans } from './languages';
+import { yamlFixEdits } from './dataFixYaml';
+import { tomlFixEdits } from './dataFixToml';
 
 /** The subset of an Ajv `ErrorObject` this module needs (kept structural so it
  *  neither imports ajv nor couples to a specific ajv version). */
@@ -43,6 +47,8 @@ export interface ValidationFix {
   newName?: string;
   /** F25: the editor's default/preferred quick fix (a clear near-miss). */
   preferred?: boolean;
+  /** JSONL only: index of the record (line) this fix repairs (F21-FR-12). */
+  record?: number;
 }
 
 /** Coerce numeric-looking pointer tokens to numbers for jsonc-parser paths. */
@@ -321,11 +327,80 @@ function readAt(data: unknown, segments: string[]): unknown {
 const DEFAULT_FORMATTING: FormattingOptions = { insertSpaces: true, tabSize: 2 };
 
 /**
- * Compute the jsonc-parser edits that apply `fix` to `text` (F21-FR-06). Returns
- * an empty array when the target no longer exists or the edit is a no-op, so a
- * stale fix produces no action.
+ * Compute the edits that apply `fix` to `text` (F21-FR-06), in the document's
+ * own format. Returns an empty array when the target no longer exists or the
+ * edit is a no-op, so a stale fix produces no action.
+ *
+ * JSON/JSONC go through jsonc-parser's `modify`. YAML, TOML and JSONL each have
+ * their own edit builder, and every edit those produce is checked before it is
+ * returned (F21-FR-14): the edited text must parse to exactly the original data
+ * with this one fix applied, or no edit is offered at all.
  */
-export function computeFixEdits(text: string, fix: ValidationFix, formatting: FormattingOptions = DEFAULT_FORMATTING): Edit[] {
+export function computeFixEdits(
+  text: string,
+  fix: ValidationFix,
+  formatting: FormattingOptions = DEFAULT_FORMATTING,
+  languageId = 'json',
+): Edit[] {
+  if (isYaml(languageId)) { return verified(text, yamlFixEdits(text, fix), fix, parseYaml); }
+  if (isToml(languageId)) { return verified(text, tomlFixEdits(text, fix), fix, parseToml); }
+  if (languageId === 'jsonl') { return verified(text, jsonlFixEdits(text, fix), fix, parseJsonl); }
+  return jsonFixEdits(text, fix, formatting);
+}
+
+/** A JSONL fix is a JSON fix on its record's line, written without reformatting
+ *  so the record stays on that one line. */
+function jsonlFixEdits(text: string, fix: ValidationFix): Edit[] {
+  const line = fix.record === undefined ? undefined : jsonlRecordSpans(text)[fix.record];
+  if (!line) { return []; }
+  return jsonFixEdits(text.slice(line.start, line.end), fix, undefined)
+    .map(edit => ({ ...edit, offset: edit.offset + line.start }));
+}
+
+/** `edits` when applying them yields the intended data, else none (F21-FR-14). */
+function verified(text: string, edits: Edit[], fix: ValidationFix, parse: (text: string) => unknown): Edit[] {
+  if (!edits.length) { return edits; }
+  try {
+    const expected = applyFixToData(parse(text), fix);
+    return sameData(parse(applyEdits(text, edits)), expected) ? edits : [];
+  } catch {
+    return [];
+  }
+}
+
+/** The data `fix` is meant to produce from `data` — for a JSONL fix, `data` is
+ *  the list of records and only the fix's own record changes. */
+function applyFixToData(data: unknown, fix: ValidationFix): unknown {
+  const root = structuredClone(data);
+  const path = fix.record === undefined ? fix.path : [fix.record, ...fix.path];
+  if (!path.length) { return fix.value; }
+  let parent = root as Record<string | number, unknown>;
+  for (const segment of path.slice(0, -1)) { parent = parent[segment] as Record<string | number, unknown>; }
+  const name = path[path.length - 1];
+  if (fix.kind === 'remove-additional') { delete parent[name]; }
+  else if (fix.kind === 'rename-property') {
+    parent[fix.newName as string] = parent[name];
+    delete parent[name];
+  } else { parent[name] = fix.value; }
+  return root;
+}
+
+/** Structural equality of parsed data: key order is irrelevant, dates compare
+ *  by instant (TOML parses date-times to `Date`s). */
+function sameData(a: unknown, b: unknown): boolean {
+  if (a === b) { return true; }
+  if (a instanceof Date || b instanceof Date) {
+    return a instanceof Date && b instanceof Date && a.getTime() === b.getTime();
+  }
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((item, i) => sameData(item, b[i]));
+  }
+  if (!isObject(a) || !isObject(b)) { return false; }
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every(key => key in b && sameData(a[key], b[key]));
+}
+
+function jsonFixEdits(text: string, fix: ValidationFix, formatting: FormattingOptions | undefined): Edit[] {
   const tree = parseTree(text);
   if (!tree) { return []; }
   // Honour F21-FR-06: never resurrect a deleted node. `modify` would happily
@@ -350,12 +425,79 @@ export function computeFixEdits(text: string, fix: ValidationFix, formatting: Fo
     return [{ offset: key.offset, length: key.length, content: JSON.stringify(fix.newName) }];
   }
   const value = fix.remove ? undefined : fix.value;
-  return modify(text, fix.path, value, { formattingOptions: formatting });
+  return modify(text, fix.path, value, formatting ? { formattingOptions: formatting } : {});
 }
 
 /** Convenience for tests: the text after applying `fix`. */
-export function applyFix(text: string, fix: ValidationFix, formatting: FormattingOptions = DEFAULT_FORMATTING): string {
-  return applyEdits(text, computeFixEdits(text, fix, formatting));
+export function applyFix(
+  text: string,
+  fix: ValidationFix,
+  formatting: FormattingOptions = DEFAULT_FORMATTING,
+  languageId = 'json',
+): string {
+  return applyEdits(text, computeFixEdits(text, fix, formatting, languageId));
+}
+
+// ── Fix all (F21-FR-13) ──────────────────────────────────────────────────────
+
+/** Kinds with exactly one right answer, safe to apply without being chosen. */
+const UNAMBIGUOUS: ReadonlySet<FixKind> = new Set(['add-required', 'set-const', 'coerce-type']);
+
+/**
+ * The fixes "fix all" applies (F21-FR-13): those with a single possible outcome,
+ * plus an enum change or a rename only when it is the preferred near-miss.
+ * Removing an unexpected property is never among them — it deletes data, which
+ * has to be an individual decision — and neither is any second fix for a node
+ * an earlier one already handles.
+ */
+export function selectAutoFixes(fixes: ValidationFix[]): ValidationFix[] {
+  const handled = new Set<string>();
+  return fixes.filter(fix => {
+    const auto = UNAMBIGUOUS.has(fix.kind)
+      || ((fix.kind === 'set-enum' || fix.kind === 'rename-property') && fix.preferred === true);
+    const node = JSON.stringify([fix.record ?? null, fix.path]);
+    if (!auto || handled.has(node)) { return false; }
+    handled.add(node);
+    return true;
+  });
+}
+
+/**
+ * One edit applying every auto-fix to `text`, and how many took effect. Fixes
+ * are applied in turn, each computed against the text the previous ones left,
+ * so they cannot invalidate one another's positions; a fix that no longer
+ * applies is skipped rather than failing the rest.
+ */
+export function computeFixAllEdits(
+  text: string,
+  fixes: ValidationFix[],
+  formatting: FormattingOptions = DEFAULT_FORMATTING,
+  languageId = 'json',
+): { edits: Edit[]; applied: number } {
+  let current = text;
+  let applied = 0;
+  for (const fix of selectAutoFixes(fixes)) {
+    const edits = computeFixEdits(current, fix, formatting, languageId);
+    if (!edits.length) { continue; }
+    current = applyEdits(current, edits);
+    applied++;
+  }
+  return { edits: minimalEdit(text, current), applied };
+}
+
+/** The single edit turning `before` into `after`, or none when they are equal. */
+function minimalEdit(before: string, after: string): Edit[] {
+  if (before === after) { return []; }
+  let start = 0;
+  const max = Math.min(before.length, after.length);
+  while (start < max && before[start] === after[start]) { start++; }
+  let endBefore = before.length;
+  let endAfter = after.length;
+  while (endBefore > start && endAfter > start && before[endBefore - 1] === after[endAfter - 1]) {
+    endBefore--;
+    endAfter--;
+  }
+  return [{ offset: start, length: endBefore - start, content: after.slice(start, endAfter) }];
 }
 
 /** Escape a JSON Pointer reference token (RFC 6901), so the pointer this module
@@ -384,4 +526,19 @@ export function fixTargetPointer(fix: ValidationFix): string {
     ? fix.path.slice(0, -1)
     : fix.path;
   return pointerOf(segments);
+}
+
+/**
+ * The `code` a validation diagnostic carries so a fix can be matched to it
+ * (F21-FR-08): the error's instance path, prefixed for JSONL with the 1-based
+ * number of the record it is in — the same path recurs in every record, so the
+ * path alone would attach one record's fix to another's diagnostic.
+ */
+export function diagnosticCode(instancePath: string, record?: number): string {
+  return (record === undefined ? '' : `#${record + 1}`) + (instancePath || '/');
+}
+
+/** The {@link diagnosticCode} of the diagnostic `fix` belongs to. */
+export function fixDiagnosticCode(fix: ValidationFix): string {
+  return diagnosticCode(fixTargetPointer(fix), fix.record);
 }

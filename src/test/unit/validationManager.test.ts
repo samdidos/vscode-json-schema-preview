@@ -486,12 +486,48 @@ suite('[F21-FR-09] validateCurrentFile() — records quick fixes', () => {
     assert.deepStrictEqual(fixes.calls[0].fixes, []);
   });
 
-  test('does not record fixes for a YAML document (out of scope)', async () => {
+  test('[F21-FR-10] records fixes for a YAML document', async () => {
     activate(makeDoc('yaml', '$schema: https://example.com/s.json\n'));
     const schema = { type: 'object', required: ['name'], properties: { name: { type: 'string' } } };
     const fixes = recorder();
     await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any, undefined, fixes as any)();
-    // Invalid → records, but the list must be empty since YAML edits are unsupported.
-    assert.ok(fixes.calls.every(c => c.fixes.length === 0));
+    assert.deepStrictEqual(fixes.calls[0].fixes.map((f: any) => [f.kind, f.path, f.record]), [['add-required', ['name'], undefined]]);
+    assert.strictEqual(validationDiagnostics.set.firstCall.args[1][0].code, '/');
+  });
+
+  test('[F21-FR-11] records fixes for a TOML document, located on the exact key', async () => {
+    const text = '"$schema" = "https://example.com/s.json"\nport = 1\n\n[server]\nport = "80"\n';
+    activate(makeDoc('toml', text, '/ws/data.toml'));
+    const schema = { type: 'object', properties: { server: { type: 'object', properties: { port: { type: 'integer' } } } } };
+    const fixes = recorder();
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any, undefined, fixes as any)();
+    assert.deepStrictEqual(fixes.calls[0].fixes.map((f: any) => [f.kind, f.path, f.value]), [['coerce-type', ['server', 'port'], 80]]);
+    const [diag] = validationDiagnostics.set.firstCall.args[1];
+    assert.strictEqual(diag.code, '/server/port');
+    // The second `port`, under [server] — not the root one two lines above.
+    assert.deepStrictEqual([diag.range.start.line, diag.range.start.character], [4, 0]);
+  });
+
+  test('[F21-FR-12] ties each JSONL fix and diagnostic to its record', async () => {
+    setConfig('json', 'schemas', [{ url: 'https://example.com/s.json', fileMatch: ['data.jsonl'] }]);
+    vscode.workspace.asRelativePath.callsFake(() => 'data.jsonl');
+    const text = '{"age":"1"}\n{"age":2}\n\n{"age":"3"}\n[]\n';
+    activate(makeDoc('jsonl', text, '/ws/data.jsonl'));
+    const schema = { type: 'object', properties: { age: { type: 'integer' } } };
+    const fixes = recorder();
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(schema)) as any, undefined, fixes as any)();
+    assert.deepStrictEqual(
+      fixes.calls[0].fixes.map((f: any) => [f.kind, f.path, f.value, f.record]),
+      [['coerce-type', ['age'], 1, 0], ['coerce-type', ['age'], 3, 2]],
+    );
+    const diags = validationDiagnostics.set.firstCall.args[1];
+    assert.deepStrictEqual(diags.map((d: any) => d.code), ['#1/age', '#3/age', '#4/']);
+    // Each diagnostic sits on its own record's line; a root error spans the record.
+    assert.deepStrictEqual(diags.map((d: any) => d.range.start.line), [0, 3, 4]);
+    assert.deepStrictEqual(
+      [diags[1].range.start.character, diags[1].range.end.character],
+      [1, 6],
+    );
+    assert.deepStrictEqual([diags[2].range.start.character, diags[2].range.end.character], [0, 2]);
   });
 });

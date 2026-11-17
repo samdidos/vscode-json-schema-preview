@@ -121,6 +121,115 @@ suite('[F25-FR-03] ValidationFixProvider — preferred enum near-miss', () => {
   });
 });
 
+suite('[F25-FR-05] ValidationFixProvider — preferred property rename', () => {
+  test('offers the rename ahead of the removal, as the editor default', () => {
+    const text = '{ "descripton": "x" }';
+    const provider = new ValidationFixProvider();
+    const doc = makeDoc(text);
+    const schema = { type: 'object', additionalProperties: false, properties: { description: { type: 'string' } } };
+    provider.record(doc.uri, buildFixes(
+      [{ keyword: 'additionalProperties', instancePath: '', params: { additionalProperty: 'descripton' } }],
+      schema,
+      { descripton: 'x' },
+    ));
+    const actions = provider.provideCodeActions(doc, wholeRange(text), ctx([validationDiag('/')]));
+    assert.deepStrictEqual(actions.map(a => a.title), [
+      'Rename to "description" (closest match)',
+      'Remove unexpected property "descripton"',
+    ]);
+    assert.deepStrictEqual(actions.map(a => a.isPreferred === true), [true, false]);
+    assert.strictEqual((actions[0].edit as any).edits[0].newText, '"description"');
+  });
+});
+
+suite('[F21-FR-10][F21-FR-11][F21-FR-12] ValidationFixProvider — edits in the document\'s own format', () => {
+  const typeFix = (record?: number) => {
+    const [fix] = buildFixes([{ keyword: 'type', instancePath: '/age', params: { type: 'integer' } }], {}, { age: '5' });
+    return record === undefined ? fix : { ...fix, record };
+  };
+  const docIn = (languageId: string, text: string) => ({ ...makeDoc(text, `/ws/data.${languageId}`), languageId });
+
+  test('a YAML document is edited as YAML', () => {
+    const text = 'age: "5" # years';
+    const provider = new ValidationFixProvider();
+    const doc = docIn('yaml', text);
+    provider.record(doc.uri, [typeFix()]);
+    const [action] = provider.provideCodeActions(doc, wholeRange(text), ctx([validationDiag('/age')]));
+    const [edit] = (action.edit as any).edits;
+    assert.strictEqual(edit.newText, '5');
+    assert.deepStrictEqual([edit.range.start.character, edit.range.end.character], [5, 8]);
+  });
+
+  test('a TOML document is edited as TOML', () => {
+    const text = 'age = "5" # years';
+    const provider = new ValidationFixProvider();
+    const doc = docIn('toml', text);
+    provider.record(doc.uri, [typeFix()]);
+    const [action] = provider.provideCodeActions(doc, wholeRange(text), ctx([validationDiag('/age')]));
+    const [edit] = (action.edit as any).edits;
+    assert.strictEqual(edit.newText, '5');
+    assert.deepStrictEqual([edit.range.start.character, edit.range.end.character], [6, 9]);
+  });
+
+  test('a JSONL fix is offered only on its own record\'s diagnostic', () => {
+    const text = '{"age":"5"} {"age":"5"}'.replace(' ', '\n');
+    const provider = new ValidationFixProvider();
+    const doc = docIn('jsonl', text);
+    provider.record(doc.uri, [typeFix(1)]);
+    assert.deepStrictEqual(provider.provideCodeActions(doc, wholeRange(text), ctx([validationDiag('#1/age')])), []);
+    assert.deepStrictEqual(provider.provideCodeActions(doc, wholeRange(text), ctx([validationDiag('/age')])), []);
+    const [action] = provider.provideCodeActions(doc, wholeRange(text), ctx([validationDiag('#2/age')]));
+    const [edit] = (action.edit as any).edits;
+    assert.strictEqual(edit.newText, '5');
+    // In the second record, 12 characters in.
+    assert.deepStrictEqual([edit.range.start.character, edit.range.end.character], [19, 22]);
+  });
+});
+
+suite('[F21-FR-13] ValidationFixProvider — fix all', () => {
+  const schema = { type: 'object', required: ['name'], properties: { name: { type: 'string' }, age: { type: 'integer' } } };
+  const errors = [
+    { keyword: 'required', instancePath: '', params: { missingProperty: 'name' } },
+    { keyword: 'type', instancePath: '/age', params: { type: 'integer' } },
+    { keyword: 'additionalProperties', instancePath: '', params: { additionalProperty: 'extra' } },
+  ];
+  const text = '{"age":"5","extra":1}';
+
+  test('is offered from any validation diagnostic once more than one fix needs no decision', () => {
+    const provider = new ValidationFixProvider();
+    const doc = makeDoc(text);
+    provider.record(doc.uri, buildFixes(errors, schema, { age: '5', extra: 1 }));
+    const diag = validationDiag('/age');
+    const actions = provider.provideCodeActions(doc, wholeRange(text), ctx([diag]));
+    assert.deepStrictEqual(actions.map(a => a.title), ['Change to 5', 'Fix all 2 auto-fixable validation problems']);
+    const all = actions[1];
+    assert.strictEqual(all.isPreferred, undefined);
+    assert.strictEqual((all.diagnostics as any[])[0], diag);
+    const [edit] = (all.edit as any).edits;
+    const fixed = text.slice(0, edit.range.start.character) + edit.newText + text.slice(edit.range.end.character);
+    // Both auto-fixes applied; the unexpected property is left for the user.
+    assert.deepStrictEqual(JSON.parse(fixed), { age: 5, extra: 1, name: '' });
+  });
+
+  test('is not offered for a single auto-fixable problem, or when only removals remain', () => {
+    const provider = new ValidationFixProvider();
+    const doc = makeDoc(text);
+    provider.record(doc.uri, buildFixes(errors.slice(1), schema, { age: '5', extra: 1 }));
+    const titles = provider.provideCodeActions(doc, wholeRange(text), ctx([validationDiag('/age'), validationDiag('/')]))
+      .map(a => a.title);
+    assert.deepStrictEqual(titles, ['Change to 5', 'Remove unexpected property "extra"']);
+  });
+
+  test('counts only the fixes that still apply to the current text', () => {
+    const provider = new ValidationFixProvider();
+    const stale = '{"extra":1}'; // `age` was deleted after validation
+    const doc = makeDoc(stale);
+    provider.record(doc.uri, buildFixes(errors, schema, { age: '5', extra: 1 }));
+    const titles = provider.provideCodeActions(doc, wholeRange(stale), ctx([validationDiag('/')])).map(a => a.title);
+    assert.deepStrictEqual(titles, ['Add missing required property "name"', 'Remove unexpected property "extra"']);
+  });
+});
+
 suite('[F21-FR-09] ValidationFixProvider — lifecycle', () => {
   const text = '{ "kind": "other" }';
 

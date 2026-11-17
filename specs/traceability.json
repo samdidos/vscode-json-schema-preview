@@ -2313,6 +2313,57 @@
       ],
       "note": "cleared on change/close (extension.ts) and replaced per run"
     },
+    "F21-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "src/dataFixYaml.ts",
+        "src/validationFix.ts"
+      ],
+      "note": "yamlFixEdits: token edits by parser range; add/remove as a line hunk between two printings, only when the printing aligns with the source",
+      "specifiedAt": "2026-11-17",
+      "implementedAt": "2026-11-17"
+    },
+    "F21-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/dataFixToml.ts",
+        "src/tomlLocator.ts"
+      ],
+      "note": "tomlFixEdits positioned by scanToml; refuses header/dotted/inline restructuring and null",
+      "specifiedAt": "2026-11-17",
+      "implementedAt": "2026-11-17"
+    },
+    "F21-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts",
+        "src/ValidationManager.ts",
+        "src/workspaceValidation.ts",
+        "src/languages.ts"
+      ],
+      "note": "fix.record + jsonlRecordSpans; diagnostic code carries the record number; locateInstanceSpan locates inside the record line",
+      "specifiedAt": "2026-11-17",
+      "implementedAt": "2026-11-17"
+    },
+    "F21-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts",
+        "src/ValidationFixProvider.ts"
+      ],
+      "note": "selectAutoFixes/computeFixAllEdits; provider offers the action when more than one fix takes effect",
+      "specifiedAt": "2026-11-17",
+      "implementedAt": "2026-11-17"
+    },
+    "F21-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "verified(): edited text must parse to the original data with the one fix applied",
+      "specifiedAt": "2026-11-17",
+      "implementedAt": "2026-11-17"
+    },
     "F21-NFR-01": {
       "status": "implemented",
       "impl": [
