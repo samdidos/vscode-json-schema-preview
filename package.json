@@ -993,6 +993,7 @@
     "test": "tsc -p tsconfig.test.json && c8 mocha --ui tdd --require ./out/test/mocks/setup.js 'out/test/unit/**/*.test.js'",
     "test:coverage": "npm test && node scripts/check-coverage.js",
     "test:mutation": "stryker run",
+    "test:mutation:smoke": "stryker run --dryRunOnly",
     "mutation:score": "node scripts/mutation-score.mjs",
     "test:e2e": "npm run compile && playwright test --config playwright.e2e.config.ts",
     "test:integration": "npm run compile && tsc -p tsconfig.integration.json && node ./out/test/integration/runTest.js",
@@ -1043,7 +1044,9 @@
     "undici": "^7.29.0",
     "brace-expansion@2": "^5.0.9",
     "brace-expansion@5": "^5.0.9",
-    "linkify-it": "^5.0.2"
+    "linkify-it": "^5.0.2",
+    "minimatch": "^11.0.9",
+    "glob": "^14.0.6"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
