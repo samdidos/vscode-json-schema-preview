@@ -102,6 +102,15 @@ Inside a schema file, <kbd>Ctrl</kbd>+click (or <kbd>⌘</kbd>+click) a `$ref` v
 
 ![Ctrl+clicking a $ref to jump to its definition in another file](/demo-ref-navigation.gif)
 
+In an inline-bound JSON, JSONC, YAML or TOML data file, use **Go to Definition**
+on the `$schema` value to open the schema. YAML's
+`# yaml-language-server: $schema=...` directive also supports this navigation.
+Relative paths use the data file's workspace folder, or its directory when
+outside a workspace. Remote URLs open their local cached copy; when one is
+missing, Go to Definition offers **Cache Schema Locally**. Hover shows the
+schema's title and description using only local files or cached content and
+never downloads a schema.
+
 <!-- spec:S04 -->
 ## Offline & Stale-Cache Behaviour
 

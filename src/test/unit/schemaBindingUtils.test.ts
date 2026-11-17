@@ -574,3 +574,81 @@ suite('computeYamlSchemaRemoveEdit() [F10-FR-10]', () => {
     assert.strictEqual(computeYamlSchemaRemoveEdit('foo: 1\n'), undefined);
   });
 });
+
+suite('Newly recognized bindings remain editable [F10-FR-09] [F10-FR-10] [F11-FR-16] [F11-FR-17]', () => {
+  const apply = (text: string, edit: { offset: number; length: number; content: string }) =>
+    text.slice(0, edit.offset) + edit.content + text.slice(edit.offset + edit.length);
+
+  test('updates and removes literal TOML keys without adding duplicates', () => {
+    const text = "'$schema' = './person schema.json' # binding\ntitle = 'Keep me'\n";
+    const updated = apply(text, computeTomlSchemaUpsertEdit(text, './new.json'));
+    assert.strictEqual(extractInlineSchemaUrl({ languageId: 'toml', getText: () => updated } as any), './new.json');
+    assert.strictEqual((updated.match(/\$schema/g) || []).length, 1);
+    assert.strictEqual(apply(text, computeTomlSchemaRemoveEdit(text)!), "title = 'Keep me'\n");
+  });
+
+  test('does not update fake TOML assignments inside multiline data', () => {
+    const text = 'description = """\n"$schema" = "./fake.json"\n"""\n';
+    const updated = apply(text, computeTomlSchemaUpsertEdit(text, './new.json'));
+    assert.ok(updated.includes('"$schema" = "./fake.json"'));
+    assert.strictEqual(extractInlineSchemaUrl({ languageId: 'toml', getText: () => updated } as any), './new.json');
+    assert.strictEqual(computeTomlSchemaRemoveEdit(text), undefined);
+  });
+
+  test('updates quoted YAML keys and values without leaving broken quotes or fragments', () => {
+    for (const text of ["'$schema': './person schema.json' # binding\nname: Keep\n", '$schema: ./person schema.json # binding\nname: Keep\n']) {
+      const updated = apply(text, computeYamlSchemaUpsertEdit(text, './new.json', false));
+      assert.strictEqual(extractInlineSchemaUrl({ languageId: 'yaml', getText: () => updated } as any), './new.json');
+      assert.strictEqual(apply(text, computeYamlSchemaRemoveEdit(text)!), 'name: Keep\n');
+    }
+  });
+
+  test('removes a YAML flow binding without deleting other fields', () => {
+    for (const text of ['{$schema: ./old.json, name: Keep}', '{name: Keep, $schema: ./old.json}', '{$schema: ./old.json}']) {
+      const updated = apply(text, computeYamlSchemaUpsertEdit(text, './new.json', false));
+      assert.strictEqual(extractInlineSchemaUrl({ languageId: 'yaml', getText: () => updated } as any), './new.json');
+      const removed = apply(text, computeYamlSchemaRemoveEdit(text)!);
+      assert.strictEqual(extractInlineSchemaUrl({ languageId: 'yaml', getText: () => removed } as any), undefined);
+      assert.deepStrictEqual(require('yaml').parse(removed), text.includes('Keep') ? { name: 'Keep' } : {});
+    }
+  });
+});
+
+suite('YAML edits preserve surrounding data [F10-FR-09] [F10-FR-10]', () => {
+  const YAML = require('yaml');
+  const apply = (text: string, edit: { offset: number; length: number; content: string }) =>
+    text.slice(0, edit.offset) + edit.content + text.slice(edit.offset + edit.length);
+
+  test('updating or removing a block scalar preserves every following field', () => {
+    for (const style of ['>-', '|-', '>', '|']) {
+      for (const newline of ['\n', '\r\n']) {
+        const text = `$schema: ${style}${newline}  ./old.json${newline}name: Ada${newline}age: 29${newline}`;
+        const updated = apply(text, computeYamlSchemaUpsertEdit(text, './new.json', false));
+        assert.deepStrictEqual(YAML.parse(updated), { $schema: './new.json', name: 'Ada', age: 29 });
+        const removed = apply(text, computeYamlSchemaRemoveEdit(text)!);
+        assert.deepStrictEqual(YAML.parse(removed), { name: 'Ada', age: 29 });
+      }
+    }
+  });
+
+  test('removing flow pairs handles commas on either neighboring line', () => {
+    for (const text of [
+      '{\n  $schema: ./old.json\n  , name: Ada\n}',
+      '{\n  name: Ada,\n  $schema: ./old.json\n}',
+      '{ $schema: ./old.json, name: Ada }',
+      '{$schema: ./old.json # schema comment\n, name: Ada}',
+      '{name: Ada, # keep comment\n $schema: ./old.json}',
+    ]) {
+      const removed = apply(text, computeYamlSchemaRemoveEdit(text)!);
+      assert.deepStrictEqual(YAML.parse(removed), { name: 'Ada' });
+    }
+  });
+
+  test('replacing null or numeric values replaces the existing key rather than duplicating it', () => {
+    for (const value of ['null', '42', '']) {
+      const text = `$schema: ${value}\nname: Ada\n`;
+      const updated = apply(text, computeYamlSchemaUpsertEdit(text, './new.json', false));
+      assert.deepStrictEqual(YAML.parse(updated), { $schema: './new.json', name: 'Ada' });
+    }
+  });
+});
