@@ -127,7 +127,8 @@ and a grouped menu so the title bar stays legible as the command set grows.
 
 ## Out of Scope
 
-- Localisation of command titles and walkthrough copy.
+- Localisation of command titles and walkthrough copy — tracked in
+  [#253](https://github.com/samdidos/vscode-json-schema-preview/issues/253).
 - A custom side-bar view container. The outline (F31) reuses the editor's own
   Outline view precisely to avoid one.
 - Rebinding or hiding commands per user — that is the editor's own

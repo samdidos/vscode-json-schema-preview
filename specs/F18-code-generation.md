@@ -179,7 +179,9 @@ engine supporting them.
 - Writing into the project without an explicit user-chosen destination —
   output goes to an untitled editor by default, or to a file the user picks
   in the save dialog (F18-FR-11); the extension never chooses a path itself.
-- Runtime validator code generation (Ajv standalone) — future work.
+- Runtime validator code generation (Ajv standalone) — future work. This and
+  further languages are tracked in
+  [#248](https://github.com/samdidos/vscode-json-schema-preview/issues/248).
 
 ## Acceptance Criteria
 

@@ -79,7 +79,8 @@ into a single committable file.
 - Draft migration (e.g. draft-07 → 2020-12) — the output keeps the input's
   draft.
 - Bundling *data* files or non-schema documents.
-- Watching and re-bundling on change.
+- Watching and re-bundling on change — tracked in
+  [#246](https://github.com/samdidos/vscode-json-schema-preview/issues/246).
 
 ## Acceptance Criteria
 

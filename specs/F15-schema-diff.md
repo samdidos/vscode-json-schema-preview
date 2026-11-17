@@ -80,7 +80,8 @@ leaving the editor.
 - Full semantic equivalence/subsumption checking (undecidable in general) —
   classification is rule-based and conservative, hence **unclassified**.
 - Diffing external `$ref` targets (refs are compared by their ref string;
-  bundle first via F14 for a deep compare).
+  bundle first via F14 for a deep compare) — tracked in
+  [#249](https://github.com/samdidos/vscode-json-schema-preview/issues/249).
 - CI enforcement — pairs with the long-term companion-CLI idea.
 
 ## Acceptance Criteria

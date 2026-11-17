@@ -78,7 +78,8 @@ differentiator: frictionless work with private schemas.
 
 - Protocol-specific registries (Confluent Schema Registry, Apicurio,
   AWS Glue) — a follow-up spec can add adapters; this spec covers the
-  SchemaStore catalog *format* only.
+  SchemaStore catalog *format* only. Tracked in
+  [#241](https://github.com/samdidos/vscode-json-schema-preview/issues/241).
 - Automatic (prompt-less) binding based on `fileMatch` — suggestions require
   an explicit user selection.
 - Publishing/pushing schemas to a registry.
@@ -100,6 +101,7 @@ differentiator: frictionless work with private schemas.
 
 - Q1 — Should `fileMatch` suggestion also surface as a code action on unbound
   data files ("Bind suggested schema …")? Leaning yes, as a follow-up FR.
+  Tracked in [#240](https://github.com/samdidos/vscode-json-schema-preview/issues/240).
 
 ## Relation to Existing Specs
 

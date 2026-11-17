@@ -110,7 +110,8 @@ span survive untouched — a reserialise-the-whole-document approach would not.
 
 - YAML sources. Offset-accurate structural edits over YAML's block/flow forms,
   anchors and comment attachment are a materially different problem; JSON/JSONC
-  only, as with F17's autofixes.
+  only, as with F17's autofixes. Tracked in
+  [#242](https://github.com/samdidos/vscode-json-schema-preview/issues/242).
 - Cross-file refactorings (renaming a definition another file `$ref`s, moving a
   definition to another document). Workspace-wide `$ref` rewriting needs F14's
   resolution machinery and is a candidate follow-up.

@@ -97,7 +97,8 @@ severities in parentheses.
 ## Out of Scope
 
 - Custom user-defined rules / Spectral ruleset compatibility (evaluate once
-  the built-in set proves out).
+  the built-in set proves out) — tracked in
+  [#245](https://github.com/samdidos/vscode-json-schema-preview/issues/245).
 - Auto-fix-on-save.
 - Linting data files (F03's domain) or non-schema JSON.
 

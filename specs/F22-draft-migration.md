@@ -81,7 +81,8 @@ untouched (the same conservative stance as F15's `unclassified`).
 - `$recursiveRef`/`$recursiveAnchor` ↔ `$dynamicRef`/`$dynamicAnchor`
   conversion — the 2019-09 and 2020-12 semantics differ enough that an automatic
   rewrite would be lossy; these are left untouched (a change note MAY advise
-  manual review in a later revision).
+  manual review in a later revision — tracked in
+  [#251](https://github.com/samdidos/vscode-json-schema-preview/issues/251)).
 - Draft-04/06 as *targets* (only as recognised legacy *sources* via FR-03/04).
 - Format-vocabulary / `$vocabulary` declaration management.
 - In-place rewriting of the source file (output is always a new editor).

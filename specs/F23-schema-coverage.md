@@ -100,6 +100,8 @@ real documents.
 - Coverage of `required` vs optional distinctions, or branch (`oneOf`) selection
   coverage.
 
+All three are tracked in [#243](https://github.com/samdidos/vscode-json-schema-preview/issues/243).
+
 ## Acceptance Criteria
 
 1. A data file `{ "a": 1 }` bound to a schema declaring properties `a` and `b`

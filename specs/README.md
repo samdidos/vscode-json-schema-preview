@@ -65,7 +65,10 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 
 ## Scope
 
-The extension targets VS Code **≥ 1.96.0** on desktop (not virtual workspaces).
+The extension targets VS Code **≥ 1.96.0** on desktop (not virtual workspaces;
+web and virtual-workspace support is tracked in
+[#256](https://github.com/samdidos/vscode-json-schema-preview/issues/256), and publishing to Open VSX in
+[#254](https://github.com/samdidos/vscode-json-schema-preview/issues/254)).
 The richest preview output uses **Python 3** on the user's PATH with
 `json-schema-for-humans` installed, but Python is **optional**: without it (or
 with `jsonschema.preview.renderer: "builtin"`) the dependency-free built-in

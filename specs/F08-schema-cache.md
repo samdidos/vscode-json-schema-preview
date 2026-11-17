@@ -47,7 +47,7 @@ server's inability to fetch authenticated endpoints.
 - **F08-FR-10** If no cached schema is found for the active file the command MUST
   show an informational message.
 
-### Freshness — Automatic Revalidation (planned)
+### Freshness — Automatic Revalidation
 
 - **F08-FR-14** A setting `jsonschema.cache.autoRefresh` MUST control automatic
   cache revalidation with the values `off` (default), `onOpen` (revalidate a
