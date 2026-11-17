@@ -7,6 +7,7 @@ import * as YAML from 'yaml';
 import { isYaml, isToml, stripJsoncComments, parseJsonl, parseToml } from './languages';
 import { createAjv } from './ajvFactory';
 import { parseJsonPointer, locatePointerTarget, type SourceSpan } from './schemaPointer';
+import { locateTomlPath } from './tomlLocator';
 
 /** Files above this size are skipped with a note (F20-FR-03). */
 export const MAX_FILE_BYTES = 1024 * 1024;
@@ -99,8 +100,9 @@ export function validateInstances(items: unknown[], schema: unknown, text: strin
  * Best-effort source span of an Ajv instance path — the single locator behind
  * both the editor diagnostics (F03) and the workspace report (F20). JSON,
  * JSONC, and YAML resolve the exact path through the document AST, so a key
- * name that appears more than once lands on the right occurrence; TOML and
- * JSONL (which have no AST locator) fall back to a text scan for the deepest
+ * name that appears more than once lands on the right occurrence, and TOML
+ * resolves it through a positional scan of the document (F11-FR-20). JSONL —
+ * and any path those cannot place — falls back to a text scan for the deepest
  * locatable key. `undefined` for a root path or when nothing matches.
  */
 export function locateInstanceSpan(text: string, languageId: string, instancePath: string): SourceSpan | undefined {
@@ -108,6 +110,10 @@ export function locateInstanceSpan(text: string, languageId: string, instancePat
   if (!segments.length) { return undefined; }
   if (languageId === 'json' || languageId === 'jsonc' || isYaml(languageId)) {
     const span = locatePointerTarget(text, languageId, segments);
+    if (span) { return span; }
+  }
+  if (isToml(languageId)) {
+    const span = locateTomlPath(text, segments);
     if (span) { return span; }
   }
   for (let i = segments.length - 1; i >= 0; i--) {
