@@ -1,22 +1,26 @@
 #!/usr/bin/env bash
 # Determines whether a push/PR diff touches source-relevant paths (S09-SR-02)
-# and/or docs/** paths (S09-SR-09), shared by ci.yml's and codeql.yml's
+# and/or docs/** paths (S09-SR-09) and/or the files that decide whether the
+# mutation run can start (S09-SR-11), shared by ci.yml's and codeql.yml's
 # `changes` jobs so each path set is defined exactly once.
 #
 # Reads BASE_SHA (empty/unresolvable = "no usable base, run everything") and
 # HEAD_SHA (defaults to $GITHUB_SHA) from the environment. Writes `src=true`
-# or `src=false`, and `docs=true`/`docs=false`, as step outputs to
+# or `src=false`, `docs=true`/`docs=false` and `deps=true`/`deps=false`, as
+# step outputs to
 # $GITHUB_OUTPUT (falls back to stdout so this is runnable locally for
 # testing).
 set -euo pipefail
 
 SRC_PATTERN='^(src/|scripts/|package(-lock)?\.json$|webpack\.config\.js$|tsconfig[^/]*\.json$|eslint\.config\.js$|knip\.json$|stryker\.config\.json$|commitlint\.config\.js$|playwright\.e2e\.config\.ts$|\.github/workflows/)'
 DOCS_PATTERN='^docs/'
+DEPS_PATTERN='^(package(-lock)?\.json|stryker\.config\.json)$'
 
 HEAD_SHA="${HEAD_SHA:-${GITHUB_SHA:-HEAD}}"
 
 src_result=true
 docs_result=true
+deps_result=true
 if [ -n "${BASE_SHA:-}" ] && git cat-file -e "$BASE_SHA" 2>/dev/null; then
   changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
 
@@ -31,6 +35,12 @@ if [ -n "${BASE_SHA:-}" ] && git cat-file -e "$BASE_SHA" 2>/dev/null; then
   else
     docs_result=false
   fi
+
+  if grep -qE "$DEPS_PATTERN" <<<"$changed"; then
+    deps_result=true
+  else
+    deps_result=false
+  fi
 else
   echo "No usable base commit (new branch/history rewrite) — running everything." >&2
 fi
@@ -38,4 +48,5 @@ fi
 {
   echo "src=$src_result"
   echo "docs=$docs_result"
+  echo "deps=$deps_result"
 } >> "${GITHUB_OUTPUT:-/dev/stdout}"

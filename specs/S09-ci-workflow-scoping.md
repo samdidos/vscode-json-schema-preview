@@ -117,6 +117,17 @@ drift on the PRs most likely to introduce it.
   second workflow-level path trigger — for the same reason SR-03 requires it
   for `src` (a path-filtered trigger leaves a required check permanently
   "Expected — Waiting" on a non-matching diff instead of passing).
+- **S09-SR-11** `ci.yml` MUST include a `mutation-smoke` job that, whenever the
+  triggering diff touches `package.json`, `package-lock.json` or
+  `stryker.config.json`, runs a Stryker **dry run**
+  (`npm run test:mutation:smoke`): load the configured plugins, build the
+  sandbox and run the test suite once, without testing any mutant. The full
+  mutation run is scheduled-only (S18-SR-06), so nothing on a pull request
+  otherwise exercises Stryker at all — a dependency update that breaks its
+  start-up merges green and the scheduled job then fails where no review sees
+  it. The job's skip condition MUST follow SR-03's pattern: a job-level `if:`
+  fed by a `deps` output the shared `changes` job computes alongside `src` and
+  `docs`.
 
 ## Non-Functional Requirements
 
@@ -179,6 +190,11 @@ drift on the PRs most likely to introduce it.
 
 ## History
 
+- 2026-11-17 — Added S09-SR-11: a `mutation-smoke` job scoped to the manifest,
+  lockfile and Stryker config. The mocha 12 bump of 2026-09-15 passed every
+  per-PR check and broke the scheduled mutation run for two months, because no
+  pull-request job starts Stryker. A dry run costs minutes and catches exactly
+  that class of failure.
 - 2026-09-01 — Added S09-SR-09/10: a `docs` job, scoped to `docs/**` the
   same way SR-02's jobs are scoped to `src/**`. Found by gap, not by design:
   a Snyk weekly scan flagged high-severity nanoid/postcss advisories in
