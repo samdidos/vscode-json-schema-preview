@@ -167,7 +167,12 @@ export function activate(context: vscode.ExtensionContext) {
     ),
     // ── Validation quick fixes (F21): lightbulb on validation diagnostics ──────
     vscode.languages.registerCodeActionsProvider(
-      [{ language: 'json' }, { language: 'jsonc' }],
+      // Every format validation supports (F21-FR-10..12), under each id the
+      // installed YAML/TOML/JSONL extensions may register for it.
+      [
+        { language: 'json' }, { language: 'jsonc' }, { language: 'jsonl' },
+        { language: 'yaml' }, { language: 'yml' }, { language: 'toml' },
+      ],
       validationFixProvider,
       { providedCodeActionKinds: ValidationFixProvider.providedCodeActionKinds },
     ),

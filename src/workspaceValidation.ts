@@ -4,7 +4,7 @@
 // (F20-NFR-01); all I/O and UI live in WorkspaceValidateCommand.ts.
 
 import * as YAML from 'yaml';
-import { isYaml, isToml, stripJsoncComments, parseJsonl, parseToml } from './languages';
+import { isYaml, isToml, stripJsoncComments, parseJsonl, parseToml, jsonlRecordSpans } from './languages';
 import { createAjv } from './ajvFactory';
 import { parseJsonPointer, locatePointerTarget, type SourceSpan } from './schemaPointer';
 import { locateTomlPath } from './tomlLocator';
@@ -83,13 +83,14 @@ export function validateInstances(items: unknown[], schema: unknown, text: strin
   const ajv = createAjv(schema, { allErrors: true, strict: false });
   const validate = ajv.compile(schema as object);
   const issues: ValidationIssue[] = [];
-  for (const data of items) {
+  for (const [index, data] of items.entries()) {
     if (validate(data)) { continue; }
+    const record = languageId === 'jsonl' ? index : undefined;
     for (const err of validate.errors ?? []) {
       const label = err.instancePath || '(root)';
       issues.push({
         message: `${label}: ${err.message ?? 'validation error'}`,
-        line: locateInstancePath(text, err.instancePath ?? '', languageId),
+        line: locateInstancePath(text, err.instancePath ?? '', languageId, record),
       });
     }
   }
@@ -101,12 +102,22 @@ export function validateInstances(items: unknown[], schema: unknown, text: strin
  * both the editor diagnostics (F03) and the workspace report (F20). JSON,
  * JSONC, and YAML resolve the exact path through the document AST, so a key
  * name that appears more than once lands on the right occurrence, and TOML
- * resolves it through a positional scan of the document (F11-FR-20). JSONL —
- * and any path those cannot place — falls back to a text scan for the deepest
- * locatable key. `undefined` for a root path or when nothing matches.
+ * resolves it through a positional scan of the document (F11-FR-20). A JSONL
+ * error is located inside its own record's line when `record` — the index of
+ * the failing record — is given (F21-FR-12), the record itself standing in for
+ * a root path. Any path those cannot place falls back to a text scan for the
+ * deepest locatable key. `undefined` for a root path or when nothing matches.
  */
-export function locateInstanceSpan(text: string, languageId: string, instancePath: string): SourceSpan | undefined {
+export function locateInstanceSpan(text: string, languageId: string, instancePath: string, record?: number): SourceSpan | undefined {
   const segments = parseJsonPointer(instancePath);
+  if (languageId === 'jsonl' && record !== undefined) {
+    const line = jsonlRecordSpans(text)[record];
+    if (!line) { return undefined; }
+    const inner = segments.length
+      ? locatePointerTarget(text.slice(line.start, line.end), 'json', segments)
+      : undefined;
+    return inner ? { start: line.start + inner.start, end: line.start + inner.end } : line;
+  }
   if (!segments.length) { return undefined; }
   if (languageId === 'json' || languageId === 'jsonc' || isYaml(languageId)) {
     const span = locatePointerTarget(text, languageId, segments);
@@ -125,8 +136,8 @@ export function locateInstanceSpan(text: string, languageId: string, instancePat
 }
 
 /** 0-based line form of {@link locateInstanceSpan}, for the text-only report. */
-export function locateInstancePath(text: string, instancePath: string, languageId = 'json'): number | undefined {
-  const span = locateInstanceSpan(text, languageId, instancePath);
+export function locateInstancePath(text: string, instancePath: string, languageId = 'json', record?: number): number | undefined {
+  const span = locateInstanceSpan(text, languageId, instancePath, record);
   return span ? lineAt(text, span.start) : undefined;
 }
 

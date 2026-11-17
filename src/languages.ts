@@ -80,9 +80,27 @@ export function stripJsoncComments(text: string): string {
  * Blank lines and lines starting with // are skipped.
  */
 export function parseJsonl(text: string): unknown[] {
-  return text
-    .split('\n')
-    .map(l => l.trim())
-    .filter(l => l.length > 0 && !l.startsWith('//'))
-    .map(l => JSON.parse(l));
+  return jsonlRecordSpans(text).map(span => JSON.parse(text.slice(span.start, span.end)));
+}
+
+/**
+ * Source span of each JSONL record, in order — one per line that is neither
+ * blank nor a `//` comment, trimmed of surrounding whitespace. Index `i` here
+ * is index `i` of {@link parseJsonl}'s result, which is what lets an error in
+ * record `i` be located on, and repaired in, its own line (F21-FR-12).
+ */
+export function jsonlRecordSpans(text: string): Array<{ start: number; end: number }> {
+  const spans: Array<{ start: number; end: number }> = [];
+  let lineStart = 0;
+  while (lineStart <= text.length) {
+    let lineEnd = text.indexOf('\n', lineStart);
+    if (lineEnd === -1) { lineEnd = text.length; }
+    let start = lineStart;
+    let end = lineEnd;
+    while (start < end && /\s/.test(text[start])) { start++; }
+    while (end > start && /\s/.test(text[end - 1])) { end--; }
+    if (end > start && !text.startsWith('//', start)) { spans.push({ start, end }); }
+    lineStart = lineEnd + 1;
+  }
+  return spans;
 }

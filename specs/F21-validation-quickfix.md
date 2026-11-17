@@ -73,6 +73,56 @@ mechanical fix MUST NOT offer one" (F17-FR-12).
   closes, and replaced wholesale on each re-validation, so the lightbulb never
   offers a fix derived from a superseded validation run.
 
+### Other data formats
+
+The fixes of F21-FR-02..05 (and F25's ranking and rename) are the same for every
+format validation supports; what differs is how an edit is written.
+
+- **F21-FR-10** **YAML.** Changing a value or renaming a key MUST rewrite only
+  that node's own token, located by the YAML parser's source range. Adding or
+  removing a property MUST change only the lines the property occupies: the
+  indentation, comments, line endings and final-line-break state of the rest of
+  the document MUST be preserved. Where the document's layout cannot be
+  reproduced line for line by the parser's own serialiser — so the changed lines
+  cannot be isolated — no add/remove fix MUST be offered, rather than a fix that
+  reformats the file.
+- **F21-FR-11** **TOML.** Edits MUST be positioned by the F11-FR-20 scan: a
+  value fix rewrites the value literal; a rename rewrites the key token of a
+  `key = value` pair; a removal deletes the pair's whole statement, including a
+  multi-line value and its line break; an addition writes a new `key = value`
+  line at the end of the owning table's own pairs (for the root table with no
+  pairs: ahead of the first header), indented like its siblings. No edit MUST be
+  produced where the change would restructure the document or cannot be
+  expressed: the property is itself a `[table]`, a dotted-key table or an
+  array of tables; the owning table is inline or exists only through dotted
+  keys; or the value has no TOML spelling (`null`).
+- **F21-FR-12** **JSONL.** Every record is validated on its own, so each fix
+  MUST be tied to the record that produced it and its edit confined to that
+  record's line, written without reformatting so the record stays on one line.
+  A JSONL diagnostic MUST be located inside its record's line (the whole record
+  for a root-level error) and MUST carry the record's number alongside the
+  instance path (F21-FR-08), so a fix for one record is never offered on
+  another record's identical path.
+- **F21-FR-14** For YAML, TOML and JSONL an edit MUST be offered only after it
+  has been checked: applying it to the current text MUST yield a document that
+  parses to exactly the original data with that one fix applied. An edit that
+  fails the check — or whose result no longer parses — MUST be discarded, so
+  these formats can lose a fix but never gain a wrong one.
+
+### Fix all
+
+- **F21-FR-13** When more than one of a document's recorded fixes can be
+  applied without a choice, the lightbulb MUST additionally offer a single
+  action — `Fix all N auto-fixable validation problems` — that applies them
+  together. "Without a choice" means: every missing required property, `const`
+  and lossless type coercion, plus an `enum` change or a property rename **only**
+  when it is the preferred near-miss (F25-FR-03 / F25-FR-05). It MUST NOT
+  include removing an unexpected property (that deletes data) or an `enum`
+  change that is not preferred, and MUST apply at most one fix per node. The
+  fixes MUST be applied in sequence, each computed against the text the previous
+  ones produced, with a fix that no longer applies skipped rather than failing
+  the rest; `N` is the number that took effect.
+
 ## Non-Functional Requirements
 
 - **F21-NFR-01** Fix computation MUST run in-process and MUST NOT perform
@@ -83,12 +133,13 @@ mechanical fix MUST NOT offer one" (F17-FR-12).
 
 ## Out of Scope
 
-- Quick fixes for YAML, TOML, or JSONL documents — `modify` is JSON/JSONC-only,
-  and per-line JSONL pointers are ambiguous. Data-format support MAY be added
-  once the JSON/JSONC fixes prove out.
+- Multi-document YAML files, and TOML changes that would restructure the
+  document (F21-FR-11 lists them) — those yield no fix.
 - Fixes for keywords with no knowable correct value (`pattern`, `format`,
   numeric bounds, `minLength`/`maxLength`, `uniqueItems`).
-- Fix-all / batch application and fix-on-save.
+- Fix-on-save, and a fix-all that spans several files. Fixes are recorded for
+  the text version that was validated and dropped on the next edit
+  (F21-FR-09), so there is nothing reliable to apply at save time.
 - Repairing the *schema* (that is F17's domain); this repairs the *data*.
 
 ## Acceptance Criteria
@@ -104,6 +155,17 @@ mechanical fix MUST NOT offer one" (F17-FR-12).
    coercion whose result is `{ "age": 5 }`; `{ "age": "5.5" }` offers none.
 5. Editing the document after validation and then invoking the lightbulb applies
    against current text (no corruption); a fix whose node was deleted disappears.
+6. In a YAML file indented with four spaces whose values carry aligned trailing
+   comments, adding a missing property to a nested mapping inserts one line at
+   that mapping's indentation and changes no other line.
+7. In a TOML file, a missing property of `[server]` is added as the last line of
+   that table's block; an unexpected property that is itself a `[server.extra]`
+   table offers no removal.
+8. In a JSONL file where records 2 and 5 both fail at `/age`, the fix offered on
+   record 2 edits line 2 only.
+9. A document with a missing required property, a `"5"` that should be `5`, a
+   mistyped enum value and an unexpected property offers `Fix all 3 auto-fixable
+   validation problems`; applying it leaves only the unexpected property.
 
 ## Relation to Existing Specs
 
@@ -113,3 +175,13 @@ mechanical fix MUST NOT offer one" (F17-FR-12).
   the `SchemaLintManager` code-action pattern.
 - **S03**: in-process, no I/O; **S06**: actions carry descriptive titles and are
   reachable from the standard VS Code lightbulb (keyboard-accessible).
+
+## History
+
+- 2026-11-17 — Added F21-FR-10..14: YAML, TOML and JSONL fixes, the
+  parse-back check that guards them, and fix-all — all previously Out of Scope.
+  `modify` being JSON-only stopped being a reason once F11-FR-20 gave TOML
+  positions and the YAML parser's own ranges and serialiser could be used; the
+  JSONL ambiguity is resolved by tying each fix and diagnostic to its record.
+  Fix-all deliberately excludes removals: it is the one fix kind that destroys
+  data.
