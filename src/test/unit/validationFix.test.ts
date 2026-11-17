@@ -193,3 +193,124 @@ suite('[F21-FR-06] computeFixEdits() — computed against current text', () => {
     assert.strictEqual(applyFix(edited, fix), '{ "added": true, "kind": "fixed" }');
   });
 });
+
+// ── F25: near-miss property names ────────────────────────────────────────────
+
+suite('[F25-FR-05] buildFixes() — an unexpected key that is a near-miss of a declared one', () => {
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      description: { type: 'string' },
+      name: { type: 'string' },
+      server: { type: 'object', properties: { port: { type: 'integer' }, host: { type: 'string' } } },
+      jobs: { type: 'array', items: { type: 'object', properties: { command: { type: 'string' } } } },
+    },
+  };
+  const fixesFor = (instancePath: string, name: string, data: unknown, keyword = 'additionalProperties') =>
+    buildFixes([err(keyword, instancePath, keyword === 'additionalProperties'
+      ? { additionalProperty: name }
+      : { unevaluatedProperty: name })], schema, data);
+
+  test('offers the rename first, preferred, and still offers the removal', () => {
+    const fixes = fixesFor('', 'descripton', { descripton: 'x' });
+    assert.deepStrictEqual(fixes.map(f => f.kind), ['rename-property', 'remove-additional']);
+    assert.strictEqual(fixes[0].title, 'Rename to "description" (closest match)');
+    assert.strictEqual(fixes[0].newName, 'description');
+    assert.strictEqual(fixes[0].preferred, true);
+    assert.deepStrictEqual(fixes[0].path, ['descripton']);
+    assert.strictEqual(fixes[1].preferred, undefined);
+    assert.strictEqual(fixes[1].title, 'Remove unexpected property "descripton"');
+  });
+
+  test('a case-only difference and swapped letters both count as near-misses', () => {
+    assert.strictEqual(fixesFor('', 'Name', { Name: 'x' })[0].newName, 'name');
+    assert.strictEqual(fixesFor('', 'nmae', { nmae: 'x' })[0].newName, 'name');
+  });
+
+  test('follows the instance path through properties and array items', () => {
+    const nested = fixesFor('/server', 'prot', { server: { prot: 1 } });
+    assert.strictEqual(nested[0].newName, 'port');
+    assert.deepStrictEqual(nested[0].path, ['server', 'prot']);
+    const inArray = fixesFor('/jobs/1', 'comand', { jobs: [{}, { comand: 'x' }] });
+    assert.strictEqual(inArray[0].newName, 'command');
+    assert.deepStrictEqual(inArray[0].path, ['jobs', 1, 'comand']);
+  });
+
+  test('unevaluatedProperties errors get the same suggestion', () => {
+    const fixes = fixesFor('', 'nam', { nam: 'x' }, 'unevaluatedProperties');
+    assert.deepStrictEqual(fixes.map(f => f.kind), ['rename-property', 'remove-additional']);
+    assert.strictEqual(fixes[0].newName, 'name');
+  });
+
+  test('a name the object already has is never suggested — the next free one is', () => {
+    // `nam` is closest to `name`, but `name` is taken; nothing else is near.
+    assert.deepStrictEqual(fixesFor('', 'nam', { nam: 'x', name: 'y' }).map(f => f.kind), ['remove-additional']);
+    // `hots` is one swap from `host`; with `host` present, `port` is not a near-miss.
+    assert.deepStrictEqual(
+      fixesFor('/server', 'hots', { server: { hots: 'a', host: 'b' } }).map(f => f.kind),
+      ['remove-additional'],
+    );
+  });
+
+  test('a distant name, an unresolvable subschema and a schema without properties suggest nothing', () => {
+    assert.deepStrictEqual(fixesFor('', 'zzzzzz', { zzzzzz: 1 }).map(f => f.kind), ['remove-additional']);
+    assert.deepStrictEqual(fixesFor('/nowhere', 'nam', { nowhere: { nam: 1 } }).map(f => f.kind), ['remove-additional']);
+    assert.deepStrictEqual(
+      buildFixes([err('additionalProperties', '', { additionalProperty: 'nam' })], { additionalProperties: false }, { nam: 1 })
+        .map(f => f.kind),
+      ['remove-additional'],
+    );
+    // The instance at the path is not an object (stale data): still safe.
+    assert.strictEqual(fixesFor('/server', 'prot', { server: 5 })[0].newName, 'port');
+  });
+});
+
+suite('[F25-FR-06] rename-property — rewrites the key and nothing else', () => {
+  const rename = (path: (string | number)[], newName: string): ValidationFix =>
+    ({ title: 't', kind: 'rename-property', path, newName, preferred: true });
+
+  test('only the key token changes; the value, comments and layout are untouched', () => {
+    const text = '{\n  // why\n  "descripton" :   { "a": [1, 2] }, "n": 1\n}';
+    assert.strictEqual(
+      applyFix(text, rename(['descripton'], 'description')),
+      '{\n  // why\n  "description" :   { "a": [1, 2] }, "n": 1\n}',
+    );
+    assert.deepStrictEqual(computeFixEdits(text, rename(['descripton'], 'description')), [
+      { offset: text.indexOf('"descripton"'), length: '"descripton"'.length, content: '"description"' },
+    ]);
+  });
+
+  test('renames a nested key inside an array element, escaping the new name', () => {
+    const text = '{"jobs":[{},{"comand":"x"}]}';
+    assert.strictEqual(applyFix(text, rename(['jobs', 1, 'comand'], 'com"mand')), '{"jobs":[{},{"com\\"mand":"x"}]}');
+  });
+
+  test('produces no edit when the key is gone, the new name is taken, or no name is given', () => {
+    assert.deepStrictEqual(computeFixEdits('{"other":1}', rename(['descripton'], 'description')), []);
+    assert.deepStrictEqual(computeFixEdits('{"descripton":1,"description":2}', rename(['descripton'], 'description')), []);
+    assert.deepStrictEqual(
+      computeFixEdits('{"descripton":1}', { title: 't', kind: 'rename-property', path: ['descripton'] }),
+      [],
+    );
+    assert.deepStrictEqual(computeFixEdits('not json', rename(['a'], 'b')), []);
+  });
+
+  test('the fix belongs to the diagnostic on the parent object', () => {
+    assert.strictEqual(fixTargetPointer(rename(['server', 'prot'], 'port')), '/server');
+    assert.strictEqual(fixTargetPointer(rename(['prot'], 'port')), '/');
+  });
+
+  test('[F25-FR-04] the other fix kinds are unchanged by the rename suggestion', () => {
+    const schema = { type: 'object', required: ['name'], properties: { name: { type: 'string' }, kind: { enum: ['a', 'b'] } } };
+    const fixes = buildFixes([
+      err('required', '', { missingProperty: 'name' }),
+      err('enum', '/kind', { allowedValues: ['a', 'b'] }),
+      err('const', '/c', { allowedValue: 1 }),
+      err('type', '/n', { type: 'number' }),
+    ], schema, { kind: 'z', c: 2, n: '5' });
+    assert.deepStrictEqual(fixes.map(f => f.kind), ['add-required', 'set-enum', 'set-enum', 'set-const', 'coerce-type']);
+    assert.ok(fixes.every(f => f.newName === undefined));
+  });
+});
+

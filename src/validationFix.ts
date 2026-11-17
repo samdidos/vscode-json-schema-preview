@@ -21,6 +21,7 @@ export interface AjvErrorLike {
 type FixKind =
   | 'add-required'
   | 'remove-additional'
+  | 'rename-property'
   | 'set-enum'
   | 'set-const'
   | 'coerce-type';
@@ -38,7 +39,9 @@ export interface ValidationFix {
   /** Value to write; ignored when `remove` is true. */
   value?: unknown;
   remove?: boolean;
-  /** F25: the editor's default/preferred quick fix (a clear enum near-miss). */
+  /** `rename-property` only: the key `path`'s last segment is renamed to. */
+  newName?: string;
+  /** F25: the editor's default/preferred quick fix (a clear near-miss). */
   preferred?: boolean;
 }
 
@@ -125,11 +128,16 @@ function coerce(value: unknown, expected: unknown): { ok: true; value: unknown }
 
 const MAX_ENUM_FIXES = 6;
 
-/** Levenshtein edit distance between two strings (F25-FR-02). */
-export function levenshtein(a: string, b: string): number {
+/**
+ * Edit distance between two strings (F25-FR-02): Levenshtein's insertions,
+ * deletions and substitutions, plus a swap of two adjacent characters counted
+ * as one edit rather than two — `prot` is one slip from `port`, not two.
+ */
+export function editDistance(a: string, b: string): number {
   if (a === b) { return 0; }
   if (a.length === 0) { return b.length; }
   if (b.length === 0) { return a.length; }
+  let prev2 = new Array<number>(b.length + 1);
   let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
   let curr = new Array<number>(b.length + 1);
   for (let i = 1; i <= a.length; i++) {
@@ -137,8 +145,11 @@ export function levenshtein(a: string, b: string): number {
     for (let j = 1; j <= b.length; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
       curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        curr[j] = Math.min(curr[j], prev2[j - 2] + 1);
+      }
     }
-    [prev, curr] = [curr, prev];
+    [prev2, prev, curr] = [prev, curr, prev2];
   }
   return prev[b.length];
 }
@@ -169,8 +180,8 @@ export function rankEnumCandidates(current: unknown, candidates: unknown[]): Ran
     return {
       value,
       index,
-      ci: levenshtein(currentStr.toLowerCase(), value.toLowerCase()),
-      cs: levenshtein(currentStr, value),
+      ci: editDistance(currentStr.toLowerCase(), value.toLowerCase()),
+      cs: editDistance(currentStr, value),
     };
   });
   scored.sort((a, b) => a.ci - b.ci || a.cs - b.cs || a.index - b.index);
@@ -189,6 +200,22 @@ export function rankEnumCandidates(current: unknown, candidates: unknown[]): Ran
     }
     return { value: s.value, closest: isClosest, preferred };
   });
+}
+
+/**
+ * The declared property an unexpected key most plausibly meant (F25-FR-05/06):
+ * the closest name among the object's `properties` that the object does not
+ * already have, and only when it is a genuine near-miss by the same test that
+ * marks an enum candidate preferred. `undefined` when there is no such name —
+ * including when the governing subschema cannot be resolved.
+ */
+function nearestDeclaredProperty(name: string, schema: unknown, objectSegments: string[], object: unknown): string | undefined {
+  const declared = resolveDataSubschema(schema, objectSegments)?.properties;
+  if (!isObject(declared)) { return undefined; }
+  const present = isObject(object) ? object : {};
+  const free = Object.keys(declared).filter(key => !(key in present));
+  const [closest] = rankEnumCandidates(name, free);
+  return closest?.preferred ? (closest.value as string) : undefined;
 }
 
 /**
@@ -217,6 +244,18 @@ export function buildFixes(errors: AjvErrorLike[], schema: unknown, data: unknow
       case 'unevaluatedProperties': {
         const name = String(err.params.additionalProperty ?? err.params.unevaluatedProperty ?? '');
         if (!name) { break; }
+        // F25-FR-05: an unexpected key that is a near-miss of a declared one is
+        // far more likely a typo than data to delete, so offer the rename first.
+        const intended = nearestDeclaredProperty(name, schema, segments, readAt(data, segments));
+        if (intended !== undefined) {
+          fixes.push({
+            title: `Rename to ${JSON.stringify(intended)} (closest match)`,
+            kind: 'rename-property',
+            path: [...path, name],
+            newName: intended,
+            preferred: true,
+          });
+        }
         fixes.push({
           title: `Remove unexpected property "${name}"`,
           kind: 'remove-additional',
@@ -300,6 +339,16 @@ export function computeFixEdits(text: string, fix: ValidationFix, formatting: Fo
     const node = fix.path.length ? findNodeAtLocation(tree, fix.path) : tree;
     if (!node) { return []; }
   }
+  if (fix.kind === 'rename-property') {
+    // The target exists (checked above), so its parent is a property node whose
+    // first child is the key. Renaming onto a key the object already has would
+    // create a duplicate, so that — like any other stale fix — yields no edit.
+    const property = findNodeAtLocation(tree, fix.path)!.parent!;
+    const key = property.children![0];
+    const taken = property.parent!.children!.some(sibling => sibling.children?.[0]?.value === fix.newName);
+    if (fix.newName === undefined || taken) { return []; }
+    return [{ offset: key.offset, length: key.length, content: JSON.stringify(fix.newName) }];
+  }
   const value = fix.remove ? undefined : fix.value;
   return modify(text, fix.path, value, { formattingOptions: formatting });
 }
@@ -323,15 +372,15 @@ export function pointerOf(segments: (string | number)[]): string {
 
 /**
  * The `instancePath` of the *error* a fix addresses — i.e. the diagnostic it
- * belongs to. `add-required`/`remove-additional` edit a child keyed by the last
- * path segment, so their error sits on the *parent* object; the value edits
+ * belongs to. `add-required`/`remove-additional`/`rename-property` edit a child
+ * keyed by the last path segment, so their error sits on the *parent* object; the value edits
  * (`set-enum`/`set-const`/`coerce-type`) sit on the node itself. Used to match a
  * fix to the validation diagnostics present at the cursor (F21-FR-08), which is
  * robust to the diagnostic range sitting on a key while the edit rewrites the
  * value.
  */
 export function fixTargetPointer(fix: ValidationFix): string {
-  const segments = fix.kind === 'add-required' || fix.kind === 'remove-additional'
+  const segments = fix.kind === 'add-required' || fix.kind === 'remove-additional' || fix.kind === 'rename-property'
     ? fix.path.slice(0, -1)
     : fix.path;
   return pointerOf(segments);
