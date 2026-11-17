@@ -1352,6 +1352,16 @@
       ],
       "note": "preview/edit/configure require isJsonSchema, never target toml"
     },
+    "F11-FR-20": {
+      "status": "implemented",
+      "impl": [
+        "src/tomlLocator.ts",
+        "src/workspaceValidation.ts"
+      ],
+      "note": "scanToml/locateTomlPath: positional scan checked against smol-toml by a property test; locateInstanceSpan falls back to the name scan",
+      "specifiedAt": "2026-11-17",
+      "implementedAt": "2026-11-17"
+    },
     "F11-NFR-01": {
       "status": "implemented",
       "impl": [

@@ -77,6 +77,18 @@ value tree, so date/time values are validated as strings.
   being passed to `genson-js`, so they are inferred as `{ type: "string" }`
   rather than causing inference errors.
 
+### Error Location
+
+- **F11-FR-20** A validation error in a TOML file MUST be located at the exact
+  key its instance path names, resolved through a positional scan of the
+  document — `[table]` and `[[array-of-tables]]` headers, dotted keys, quoted
+  keys, inline tables and arrays, multi-line strings and arrays — so a key name
+  that appears more than once lands on the right occurrence, with the same
+  key-preferred span JSON and YAML already use. The scan is a locator, not a
+  second parser: it MUST be pure, add no dependency, never throw, and yield
+  nothing for text it does not recognise; a path it cannot place MUST fall back
+  to the earlier name-based scan rather than lose the location entirely.
+
 ### Schema Binding
 
 - **F11-FR-11** The status bar item MUST be visible when a TOML file is the
@@ -144,8 +156,6 @@ value tree, so date/time values are validated as strings.
 - Supporting TOML Schema (an experimental schema format for TOML) — this spec
   covers JSON Schema validation of TOML data only.
 - Live preview updates for TOML (live-update is schema-preview specific, F02).
-- Full TOML-aware error location (exact column ranges for validation errors
-  require a TOML AST; deferred to a follow-up spec).
 
 ## Acceptance Criteria
 
@@ -167,6 +177,9 @@ value tree, so date/time values are validated as strings.
    treated as strings).
 9. The "Validate", "Generate Schema", and "Bind Schema…" commands do NOT appear
    for `.toml` files in the Preview / Edit Schema menu group.
+10. With `name` declared at the root, under `[server]` and in two `[[job]]`
+    entries, an error at `/job/1/name` is reported on the second `[[job]]`'s
+    `name` key — not on the first `name` in the file.
 
 ## Open Questions
 
@@ -204,3 +217,11 @@ Q2 — Settings-based binding when no TOML extension installed [resolved by user
   needed. Binding writes remain async (VS Code config API).
 - Requires **constitution amendment** to add `TOML parsing: smol-toml` to
   Article II's technology table.
+
+## History
+
+- 2026-11-17 — Added F11-FR-20 (exact error location). It had been listed
+  under Out of Scope as needing "a TOML AST"; a positional scan of text the
+  parser has already accepted turned out to be enough, with no new dependency.
+  Before it, an error was placed on the first key of that name anywhere in the
+  file, which is the wrong line as soon as two tables share a key.
