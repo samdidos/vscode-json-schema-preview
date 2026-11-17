@@ -1,4 +1,4 @@
-# F25 — Nearest-Match Ranking for `enum` Quick Fixes
+# F25 — Nearest-Match Ranking for `enum` and Property-Name Quick Fixes
 
 ## Overview
 
@@ -28,8 +28,10 @@ value — and it extends F21 without touching any other fix kind.
   *before* the fix-count cap is applied, so the cap keeps the nearest candidates
   rather than the first-declared ones.
 - **F25-FR-02** Similarity between two string values MUST use a Levenshtein edit
-  distance, compared case-insensitively first with the case-sensitive distance
-  as a tie-break, and a stable fall-back to schema order for equal distances.
+  distance in which a swap of two adjacent characters counts as a single edit
+  (the commonest typo — `prot` for `port` — is one slip, not two), compared
+  case-insensitively first with the case-sensitive distance as a tie-break, and
+  a stable fall-back to schema order for equal distances.
   When the offending value or a candidate is not a string, that candidate MUST
   fall back to schema order (ranking never throws and never reorders values it
   cannot compare).
@@ -40,8 +42,27 @@ value — and it extends F21 without touching any other fix kind.
   a small fraction of the candidate's length. A distant closest value is still
   offered first but MUST NOT be marked preferred.
 - **F25-FR-04** This ranking MUST NOT change the behaviour of any other fix kind
-  (`required`, `additionalProperties`, `const`, `type`): `const` has a single
-  allowed value and is unaffected.
+  (`required`, `const`, `type`): `const` has a single allowed value and is
+  unaffected. The `additionalProperties` *removal* fix (F21-FR-03) is likewise
+  unchanged and always still offered; F25-FR-05 only adds a fix beside it.
+
+### Near-miss property names
+
+- **F25-FR-05** When an `additionalProperties` / `unevaluatedProperties` error
+  names a key that is a near-miss of a property the governing subschema
+  **declares** and the object does **not already have**, a *rename* fix MUST be
+  offered ahead of the removal fix, titled with the intended name (e.g.
+  `Rename to "description" (closest match)`) and marked preferred. "Near-miss"
+  is the same test F25-FR-03 uses to mark an enum candidate preferred, over the
+  ranking of F25-FR-02. No rename MUST be offered when the closest free name is
+  not a near-miss, or when the subschema cannot be resolved by F21-FR-02's
+  structural walk — an unexpected key is then only removable, as before.
+- **F25-FR-06** The rename MUST rewrite the key token only: the property's value,
+  its position, and the surrounding comments and formatting MUST be left exactly
+  as they are. Computed against current text like every other fix (F21-FR-06),
+  it MUST yield no edit when the key no longer exists or when the object has
+  meanwhile gained a property of the intended name, so it can never create a
+  duplicate key.
 
 ## Non-Functional Requirements
 
@@ -55,8 +76,9 @@ value — and it extends F21 without touching any other fix kind.
 
 ## Out of Scope
 
-- Fuzzy-matching for keywords other than `enum` (e.g. suggesting a near-miss
-  property name for an `additionalProperties` error) — a possible future spec.
+- Fuzzy-matching against names the schema declares only through `$ref`,
+  `allOf` or `patternProperties` — the suggestion follows the same conservative
+  structural walk as F21-FR-02's placeholders.
 - Semantic/synonym matching (`"prod"` ↔ `"production"` works by edit distance,
   but `"live"` ↔ `"production"` does not) — this is lexical similarity only.
 - Changing how `enum` errors are detected or flagged (that is F03/AJV).
@@ -71,8 +93,13 @@ value — and it extends F21 without touching any other fix kind.
    but the closest is **not** marked preferred (too distant).
 4. A numeric offending value against a numeric enum keeps schema order and never
    throws.
-5. `const`, `required`, `additionalProperties`, and `type` fixes are byte-for-byte
-   unchanged.
+5. `const`, `required`, and `type` fixes are byte-for-byte unchanged, and the
+   `additionalProperties` removal fix is still offered exactly as before.
+6. `{ "descripton": "x" }` against a schema declaring `description` with
+   `additionalProperties: false` offers `Rename to "description" (closest
+   match)` first, preferred, then the removal; applying it changes only the key.
+7. With `description` already present in the same object, only the removal is
+   offered.
 
 ## Relation to Existing Specs
 
@@ -81,3 +108,13 @@ value — and it extends F21 without touching any other fix kind.
   preferred flag are added.
 - Honours **S03** (no new I/O or latency) and the F17/F21 discipline of offering
   only safe, mechanical fixes.
+
+## History
+
+- 2026-11-17 — Added F25-FR-05 and F25-FR-06 (near-miss property names), taken
+  out of Out of Scope: an unexpected key that is one typo from a declared
+  property was offered only for deletion, which throws away the value the user
+  meant to keep. F25-FR-02 now counts an adjacent swap as one edit, since under
+  plain Levenshtein a transposed short name (`prot`) was two edits away and
+  never qualified as a near-miss. F25-FR-04 reworded so it still says what it means — the
+  removal fix is unchanged, a fix is added beside it.

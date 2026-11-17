@@ -2686,6 +2686,24 @@
       ],
       "note": "const/required/additionalProperties/type fixes unchanged"
     },
+    "F25-FR-05": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "nearestDeclaredProperty in buildFixes: rename offered before the removal when the closest free declared name is a near-miss",
+      "specifiedAt": "2026-11-17",
+      "implementedAt": "2026-11-17"
+    },
+    "F25-FR-06": {
+      "status": "implemented",
+      "impl": [
+        "src/validationFix.ts"
+      ],
+      "note": "rename-property edits the key token only; no edit when the key is gone or the new name is taken",
+      "specifiedAt": "2026-11-17",
+      "implementedAt": "2026-11-17"
+    },
     "F25-NFR-01": {
       "status": "implemented",
       "impl": [

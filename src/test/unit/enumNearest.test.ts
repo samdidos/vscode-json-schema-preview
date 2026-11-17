@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 
-const { levenshtein, rankEnumCandidates, buildFixes } = require('../../validationFix');
+const { editDistance, rankEnumCandidates, buildFixes } = require('../../validationFix');
 
 const ENUM = ['development', 'staging', 'production'];
 const enumError = (allowedValues: unknown[]) => ({
@@ -9,16 +9,28 @@ const enumError = (allowedValues: unknown[]) => ({
   params: { allowedValues },
 });
 
-suite('[F25-FR-02] levenshtein()', () => {
+suite('[F25-FR-02] editDistance()', () => {
   test('is zero for equal strings and symmetric', () => {
-    assert.strictEqual(levenshtein('prod', 'prod'), 0);
-    assert.strictEqual(levenshtein('prod', 'production'), levenshtein('production', 'prod'));
+    assert.strictEqual(editDistance('prod', 'prod'), 0);
+    assert.strictEqual(editDistance('prod', 'production'), editDistance('production', 'prod'));
   });
 
   test('counts single edits', () => {
-    assert.strictEqual(levenshtein('prod', 'prad'), 1); // substitution
-    assert.strictEqual(levenshtein('prod', 'pro'), 1); // deletion
-    assert.strictEqual(levenshtein('', 'abc'), 3);
+    assert.strictEqual(editDistance('prod', 'prad'), 1); // substitution
+    assert.strictEqual(editDistance('prod', 'pro'), 1); // deletion
+    assert.strictEqual(editDistance('', 'abc'), 3);
+    assert.strictEqual(editDistance('abc', ''), 3);
+    assert.strictEqual(editDistance('prod', 'prodx'), 1); // insertion
+  });
+
+  test('counts a swap of adjacent characters as one edit, not two', () => {
+    assert.strictEqual(editDistance('prot', 'port'), 1);
+    assert.strictEqual(editDistance('nmae', 'name'), 1);
+    assert.strictEqual(editDistance('ab', 'ba'), 1);
+    assert.strictEqual(editDistance('abcd', 'badc'), 2); // two separate swaps
+    assert.strictEqual(editDistance('abc', 'cba'), 2); // not adjacent: two substitutions
+    assert.strictEqual(editDistance('ca', 'abc'), 3); // a swap is not combined with another edit
+    assert.strictEqual(editDistance('aab', 'aba'), 1);
   });
 });
 
