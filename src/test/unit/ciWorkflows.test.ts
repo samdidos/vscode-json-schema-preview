@@ -67,6 +67,35 @@ suite('S09 — CI workflow guarantees', () => {
   });
 });
 
+suite('S09 — a dependency change cannot break the mutation run unseen', () => {
+  const ci = directivesOf(read('.github/workflows/ci.yml'));
+  const detect = read('scripts/ci-detect-source-changes.sh');
+
+  test('[S09-SR-11] ci.yml dry-runs Stryker, gated on the shared `deps` output', () => {
+    const start = ci.indexOf('\n  mutation-smoke:\n');
+    assert.notEqual(start, -1, 'ci.yml has a mutation-smoke job');
+    const job = ci.slice(start);
+    assert.match(job, /needs: changes\n\s+if: needs\.changes\.outputs\.deps == 'true'/);
+    assert.match(job, /run: npm run test:mutation:smoke/);
+    assert.match(ci, /deps: \$\{\{ steps\.filter\.outputs\.deps \}\}/);
+    const scripts = JSON.parse(read('package.json')).scripts;
+    assert.equal(scripts['test:mutation:smoke'], 'stryker run --dryRunOnly');
+  });
+
+  test('[S09-SR-11] `deps` is true exactly for the manifest, the lockfile and the Stryker config', () => {
+    const source = /DEPS_PATTERN='([^']+)'/.exec(detect)?.[1];
+    assert.ok(source, 'the detection script defines DEPS_PATTERN');
+    const pattern = new RegExp(source);
+    for (const hit of ['package.json', 'package-lock.json', 'stryker.config.json']) {
+      assert.ok(pattern.test(hit), `${hit} triggers the dry run`);
+    }
+    for (const miss of ['docs/package-lock.json', 'src/extension.ts', 'README.md', 'package.json.bak', 'tsconfig.json']) {
+      assert.ok(!pattern.test(miss), `${miss} does not trigger the dry run`);
+    }
+    assert.match(detect, /echo "deps=\$deps_result"/);
+  });
+});
+
 suite('S18 — the scheduled mutation run keeps the published score current', () => {
   const mutation = directivesOf(read('.github/workflows/mutation.yml'));
   /** The YAML of one top-level job, up to the next job or the end of file. */

@@ -16,6 +16,7 @@ jobs:
     outputs:
       src: ${{ steps.filter.outputs.src }}
       docs: ${{ steps.filter.outputs.docs }}
+      deps: ${{ steps.filter.outputs.deps }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -276,3 +277,26 @@ jobs:
       - run: npm ci --prefix docs
       - run: npm run build --prefix docs
       - run: npm run check:docs-audit
+
+  mutation-smoke:
+    name: Mutation run can start (Stryker dry run)
+    needs: changes
+    # Stryker itself only runs on a schedule (mutation.yml), so a dependency
+    # bump that stops it loading used to merge green and leave the scheduled
+    # job red until someone looked — two months, when mocha 12 broke the mocha
+    # runner. A dry run loads the plugins, builds the sandbox and runs the
+    # suite once without testing a single mutant: minutes, not hours. Scoped
+    # to the files that can cause that failure (S09-SR-11), via the `changes`
+    # job's `deps` output for the reason S09-SR-03 gives for `src`.
+    if: needs.changes.outputs.deps == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run test:mutation:smoke
