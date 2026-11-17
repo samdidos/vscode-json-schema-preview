@@ -92,7 +92,8 @@ file.
 - A CLI / headless mode for CI pipelines (would be a separate spec; the
   Markdown report is the interim CI story).
 - Auto-fixing findings in bulk (F17 quick fixes stay per-file).
-- Watching the workspace and re-validating continuously.
+- Watching the workspace and re-validating continuously — tracked in
+  [#246](https://github.com/samdidos/vscode-json-schema-preview/issues/246).
 
 ## Acceptance Criteria
 

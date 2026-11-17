@@ -127,6 +127,8 @@ consumes it.
   consent model simple; F30's refactorings remain user-driven.
 - Bundling an agent, a model, or a vendor's client with the extension (S20-SR-06).
 
+The first three are tracked in [#252](https://github.com/samdidos/vscode-json-schema-preview/issues/252).
+
 ## Acceptance Criteria
 
 1. `tools/list` returns the same tool names the extension contributes, proven by

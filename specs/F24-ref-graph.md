@@ -139,6 +139,9 @@ command has always made.
 - Click-to-navigate from a graph node to its source line (F13 already provides
   go-to-definition in the editor).
 
+Interactive manipulation and click-to-navigate are tracked in
+[#247](https://github.com/samdidos/vscode-json-schema-preview/issues/247).
+
 ## Acceptance Criteria
 
 1. A schema with `$defs` `A`→`B` and an unreferenced `C` renders three definition

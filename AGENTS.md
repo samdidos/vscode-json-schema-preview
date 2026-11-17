@@ -128,7 +128,8 @@
   "mocha"`. Stryker only runs in the scheduled `mutation.yml`, never per-PR, so
   a dependency bump that breaks it merges green — after touching mocha or
   Stryker versions, run `npx stryker run --dryRunOnly` (about two minutes)
-  before trusting CI.
+  before trusting CI. Lifting the pin is tracked in
+  [#258](https://github.com/samdidos/vscode-json-schema-preview/issues/258).
 
 ## Agnosticity & standardization (project principle)
 

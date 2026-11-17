@@ -52,7 +52,8 @@ updates:
       # the per-PR path runs Stryker, so the bump merged green and the
       # scheduled job stayed red for two months. Only the major is ignored.
       # Revisit once a Stryker release runs `npx stryker run --dryRunOnly`
-      # cleanly against mocha 12.
+      # cleanly against mocha 12 — tracked in
+      # https://github.com/samdidos/vscode-json-schema-preview/issues/258
       - dependency-name: "mocha"
         update-types: ["version-update:semver-major"]
 

@@ -79,7 +79,8 @@ schema *authors*.
   spec's pointer parsing and AST locators.
 - Resolving `$id`-based / `$anchor` URI bases (bundler-grade resolution lives
   in F14); this spec resolves location-based refs only.
-- `$ref` completion (IntelliSense suggestions while typing a ref).
+- `$ref` completion (IntelliSense suggestions while typing a ref) — tracked in
+  [#238](https://github.com/samdidos/vscode-json-schema-preview/issues/238).
 
 ## Acceptance Criteria
 
@@ -96,7 +97,8 @@ schema *authors*.
 ## Open Questions
 
 - Q1 — Should the providers also activate on *data* files' `$schema` values
-  (jump to the bound schema)? Cheap to add; leaning yes.
+  (jump to the bound schema)? Cheap to add; leaning yes. Tracked in
+  [#237](https://github.com/samdidos/vscode-json-schema-preview/issues/237).
 
 ## Relation to Existing Specs
 

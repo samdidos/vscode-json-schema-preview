@@ -125,7 +125,8 @@ once in [S20](S20-ai-assistance.md); this spec covers the features themselves.
   save, or type.
 - A chat participant. The commands plus the agent tools (F33) cover the same
   ground through surfaces that already exist; a participant is a candidate
-  follow-up once the tool surface has proven out.
+  follow-up once the tool surface has proven out — tracked in
+  [#255](https://github.com/samdidos/vscode-json-schema-preview/issues/255).
 - Using a model anywhere in the deterministic engines (validation, diff,
   bundling, codegen) — those MUST stay reproducible.
 

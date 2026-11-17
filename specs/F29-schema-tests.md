@@ -129,8 +129,10 @@ A suite is a JSON (or JSONC) document whose file name ends in
 - Generating suites from existing data — inference (F06) and coverage (F23)
   already cover the "start from data" direction.
 - Watch mode / test-on-save. The sweep (F20) and CI (F27) are the automation
-  points; an editor watcher is a future spec if it proves wanted.
-- YAML suites. The format is JSON/JSONC only for now, mirroring F30's scope.
+  points; an editor watcher is a future spec if it proves wanted — tracked in
+  [#246](https://github.com/samdidos/vscode-json-schema-preview/issues/246).
+- YAML suites. The format is JSON/JSONC only for now, mirroring F30's scope —
+  tracked in [#242](https://github.com/samdidos/vscode-json-schema-preview/issues/242).
 
 ## Acceptance Criteria
 

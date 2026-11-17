@@ -462,7 +462,8 @@ mechanism.
 
   `outline` (F31) and `schema-tests` (F29) were added in that pass — the two
   with the highest value among the interactions that reuse an existing demo
-  pattern outright. The rest remain a backlog, in that order. F12's demo needs
+  pattern outright. The rest remain a backlog, in that order (tracked in
+  [#257](https://github.com/samdidos/vscode-json-schema-preview/issues/257)). F12's demo needs
   a local catalog fixture rather than SchemaStore (S08-NFR-02 forbids network
   access), and F32's needs a language model, so neither is a straight copy of
   an existing pattern.

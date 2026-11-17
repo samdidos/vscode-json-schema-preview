@@ -72,11 +72,11 @@ stable fixtures suitable for committing.
 
 ## Out of Scope
 
-- Invalid/negative-case generation (fuzzing) — future spec.
+- Invalid/negative-case generation (fuzzing) — future spec, tracked in
+  [#244](https://github.com/samdidos/vscode-json-schema-preview/issues/244).
 - Guaranteed satisfaction of arbitrary `pattern`/`not`/complex `if-then-else`
   schemas — unsatisfied cases must fail loudly per F16-FR-08, never silently
   emit invalid data.
-- Bulk generation (N documents / JSONL output).
 
 ## Acceptance Criteria
 
@@ -111,3 +111,7 @@ stable fixtures suitable for committing.
   generator varies enum/example/branch choices and steps scalars per instance so
   the output is N distinct documents rather than N copies of one — while staying
   deterministic for a given schema and count.
+- **2026-11-17** — Out of Scope corrected: "Bulk generation" was still listed
+  there although F16-FR-10 has specified it since 2026-09-02. Negative-case
+  generation remains out of scope and is tracked in
+  [#244](https://github.com/samdidos/vscode-json-schema-preview/issues/244).

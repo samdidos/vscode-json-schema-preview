@@ -70,7 +70,8 @@ additional UI cost.
 
 ## Out of Scope
 
-- Expanding `$ref` targets inline (F31-FR-04), and cross-file outlines.
+- Expanding `$ref` targets inline (F31-FR-04), and cross-file outlines —
+  tracked in [#239](https://github.com/samdidos/vscode-json-schema-preview/issues/239).
 - A bespoke tree view in the side bar. The document-symbol contribution reuses
   four existing surfaces; a custom view would duplicate them.
 - Editing from the outline (drag-to-reorder, rename-in-place) — rename lives in

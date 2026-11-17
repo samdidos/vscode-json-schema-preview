@@ -77,9 +77,11 @@ existing consumers).
 ## Out of Scope
 
 - Deep comparison across external `$ref` targets (bundle via F14 first) — the
-  same limitation F15 documents.
+  same limitation F15 documents, tracked in
+  [#249](https://github.com/samdidos/vscode-json-schema-preview/issues/249).
 - A hosted GitHub Action wrapper — the npm script is the CI primitive; wiring it
   into a specific workflow is the consumer's choice (an example is documented).
+  Tracked in [#250](https://github.com/samdidos/vscode-json-schema-preview/issues/250).
 - Changing F15's classification rules; F26 only *aggregates* them.
 
 ## Acceptance Criteria
