@@ -162,6 +162,20 @@ suite('SchemaBindingManager — constructor & status bar', () => {
     assert.strictEqual(statusBarItem.command, 'jsonschema.bindToCurrentFile');
   });
 
+  test('[F04-FR-16] names the entry so it is identifiable in the status bar hide menu', () => {
+    new SchemaBindingManager(makeContext());
+    assert.strictEqual(statusBarItem.name, 'JSON Schema Binding');
+  });
+
+  test('[F04-FR-16] creates the entry with an explicit, stable id', () => {
+    new SchemaBindingManager(makeContext());
+    assert.ok(
+      vscode.window.createStatusBarItem.calledWith(
+        'jsonschema.binding', vscode.StatusBarAlignment.Right, 2,
+      ),
+    );
+  });
+
   test('pushes subscriptions into context', () => {
     const ctx = makeContext();
     new SchemaBindingManager(ctx);
