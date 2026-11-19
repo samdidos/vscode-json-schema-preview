@@ -441,7 +441,7 @@
         "src/workspaceValidation.ts",
         "src/ValidationManager.ts"
       ],
-      "note": "withoutBindingKeyErrors drops root additionalProperties/unevaluatedProperties/propertyNames errors naming a string $schema; shared by editor and workspace/CLI validation, unit-tested (workspaceValidation.test.ts, validationManager.test.ts)",
+      "note": "bindingFreeInstance validates a copy without the root string $schema (first instance, non-JSONL) unless the schema root declares/requires it; shared by editor and workspace/CLI validation; unit-tested incl. oneOf, map subschema, maxProperties (workspaceValidation.test.ts, validationManager.test.ts)",
       "specifiedAt": "2026-11-19",
       "implementedAt": "2026-11-19"
     },

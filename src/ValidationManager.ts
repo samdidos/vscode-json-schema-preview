@@ -9,7 +9,7 @@ import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './Schema
 import type { NativeSchemaMatch } from './nativeSchema';
 import { isSupported, languageForSchemaSource } from './languages';
 import { parseSchemaText } from './schemaPointer';
-import { parseDataText, locateInstanceSpan, withoutBindingKeyErrors } from './workspaceValidation';
+import { parseDataText, locateInstanceSpan, bindingFreeInstance } from './workspaceValidation';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
@@ -139,12 +139,14 @@ export function validateCurrentFile(
     // (F21-FR-12) — the same instance path recurs on every line.
     const collectedFixes: ReturnType<typeof buildFixes> = [];
 
-    for (const [index, data] of items.entries()) {
+    for (const [index, item] of items.entries()) {
+      // F03-FR-18: the file's own inline `$schema` binding is validated as
+      // absent, so it is never an "unexpected property" — not as a
+      // diagnostic, nor as a quick fix.
+      const data = bindingFreeInstance(item, schema, index, doc.languageId);
       if (!validate(data)) {
         const record = doc.languageId === 'jsonl' ? index : undefined;
-        // F03-FR-18: the file's own inline `$schema` binding is never an
-        // "unexpected property" — not as a diagnostic, nor as a quick fix.
-        const errors = withoutBindingKeyErrors(validate.errors ?? [], data, record);
+        const errors = validate.errors ?? [];
         for (const fix of buildFixes(errors, schema, data)) {
           collectedFixes.push(record === undefined ? fix : { ...fix, record });
         }

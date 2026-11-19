@@ -74,34 +74,29 @@ export function parseDataText(text: string, languageId: string): unknown[] {
   return [JSON.parse(text)];
 }
 
-/** The Ajv error fields this module reads. */
-interface AjvErrorLike {
-  instancePath?: string;
-  keyword?: string;
-  params?: Record<string, unknown>;
-  /** Set by Ajv on the errors a `propertyNames` subschema produces. */
-  propertyName?: string;
-}
-
 /**
- * F03-FR-18 — `errors` without those that only object to the document's own
- * inline `$schema` binding: a root-level additionalProperties /
- * unevaluatedProperties / propertyNames error naming a string `$schema` on the
- * root object. Anything else a schema says about `$schema` still stands, and a
- * JSONL record (`record` given) has no document-level binding to exempt.
+ * F03-FR-18 — the instance to validate: `data` itself, or, when it is the
+ * document's first (normally only) instance and its root object carries a
+ * string inline `$schema` binding, a shallow copy without that key. Removing
+ * the key before validation (rather than filtering errors afterwards) means it
+ * cannot fail a combinator branch, an `additionalProperties` subschema or a
+ * property count either. The key is kept when the schema's root declares
+ * (`properties`) or requires (`required`) `$schema`, so a schema that speaks
+ * about the binding is still obeyed. JSONL records are data, never bindings.
  */
-export function withoutBindingKeyErrors<E extends AjvErrorLike>(errors: E[], data: unknown, record?: number): E[] {
-  if (record !== undefined || data === null || typeof data !== 'object' || Array.isArray(data)) { return errors; }
-  if (typeof (data as Record<string, unknown>).$schema !== 'string') { return errors; }
-  return errors.filter(err => {
-    if (err.instancePath) { return true; }
-    const p = err.params ?? {};
-    const key = err.keyword === 'additionalProperties' ? p.additionalProperty
-      : err.keyword === 'unevaluatedProperties' ? p.unevaluatedProperty
-        : err.keyword === 'propertyNames' ? p.propertyName
-          : err.propertyName;
-    return key !== '$schema';
-  });
+export function bindingFreeInstance(data: unknown, schema: unknown, index = 0, languageId = 'json'): unknown {
+  if (index !== 0 || languageId === 'jsonl') { return data; }
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) { return data; }
+  if (typeof (data as Record<string, unknown>).$schema !== 'string') { return data; }
+  if (schema !== null && typeof schema === 'object') {
+    const root = schema as { properties?: unknown; required?: unknown };
+    const declared = root.properties !== null && typeof root.properties === 'object'
+      && Object.prototype.hasOwnProperty.call(root.properties, '$schema');
+    const required = Array.isArray(root.required) && root.required.includes('$schema');
+    if (declared || required) { return data; }
+  }
+  const { $schema: _binding, ...rest } = data as Record<string, unknown>;
+  return rest;
 }
 
 /**
@@ -113,10 +108,11 @@ export function validateInstances(items: unknown[], schema: unknown, text: strin
   const ajv = createAjv(schema, { allErrors: true, strict: false });
   const validate = ajv.compile(schema as object);
   const issues: ValidationIssue[] = [];
-  for (const [index, data] of items.entries()) {
+  for (const [index, item] of items.entries()) {
+    const data = bindingFreeInstance(item, schema, index, languageId);
     if (validate(data)) { continue; }
     const record = languageId === 'jsonl' ? index : undefined;
-    for (const err of withoutBindingKeyErrors(validate.errors ?? [], data, record)) {
+    for (const err of validate.errors ?? []) {
       const label = err.instancePath || '(root)';
       issues.push({
         message: `${label}: ${err.message ?? 'validation error'}`,

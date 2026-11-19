@@ -67,17 +67,20 @@ Errors are reported as VS Code diagnostics in the Problems panel.
   `jsonschema.validateFile`; F16's sample-data self-check deliberately strips
   `$schema` and stays on the default dialect — see F16.)
 - **F03-FR-18** A data document's own inline binding — a string-valued
-  `$schema` property on its root object (F10) — MUST NOT be reported as an
-  unexpected property. A root-level `additionalProperties`,
-  `unevaluatedProperties` or `propertyNames` error that names that `$schema`
-  key MUST be dropped, both from the diagnostics and from the errors quick
-  fixes are built from (F21), in the editor and in workspace/CLI validation
-  (F20, F27) alike. Every other constraint a schema places on `$schema`
-  (`required`, `type`, `const`, …) MUST still apply. This exemption is limited
-  to the root `$schema` key: other `$`-prefixed properties, and `$schema` on a
-  nested object or a JSONL record, are ordinary data and are validated
-  normally. The JSON Schema spec reserves `$` keywords inside *schemas*, not
-  instance data, where such keys are often real data (`$type`, `$oid`).
+  `$schema` property on the root object of its first instance (F10) — MUST be
+  validated as if it were absent, so it is never an unexpected property and
+  cannot fail a combinator branch (`oneOf`/`anyOf`/`if`–`then`), an
+  `additionalProperties` subschema or a property count (`maxProperties`). The
+  key MUST be removed from a copy of the instance *before* validation, not
+  filtered from the errors after it, so that no error built from it — and no
+  quick fix built from those errors (F21) — survives. This MUST hold in the
+  editor and in workspace/CLI validation (F20, F27) alike. When the schema's
+  root declares `$schema` in `properties` or lists it in `required`, the key
+  MUST be kept and validated normally, so a schema that constrains the binding
+  is still obeyed. Only that root key is exempt: other `$`-prefixed properties,
+  `$schema` on a nested object, in a JSONL record or in a later document, are
+  ordinary data. The JSON Schema spec reserves `$` keywords inside *schemas*,
+  not instance data, where such keys are often real data (`$type`, `$oid`).
 
 ### Diagnostics
 
@@ -118,7 +121,10 @@ Errors are reported as VS Code diagnostics in the Problems panel.
   longer an "unexpected property" under a closed schema. Before, binding a file
   inline to any schema with `additionalProperties: false` produced an error on
   the very line that binds it, and the only workaround was declaring `$schema`
-  in every such schema.
+  in every such schema. The first version filtered the binding's errors after
+  validation; review showed the key still failed `oneOf` branches,
+  `additionalProperties` subschemas and `maxProperties`, so it is now removed
+  before validation instead.
 
 - **2026-09-02** — Added F03-FR-17: opt-in re-validation on save
   (`jsonschema.validation.onSave`, default `off`). Automatic runs are silent and
