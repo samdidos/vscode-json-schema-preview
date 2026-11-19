@@ -35,7 +35,7 @@ const DATA_REL_PATH = 'data/order.json';
  *
  * The file opens through VS Code's own launch args rather than Quick Open: it
  * is freshly seeded, so its search-index visibility isn't something to depend
- * on (the failure demo-quickfix-mouse documents).
+ * on (the failure demo-quick-fix-mouse documents).
  */
 test('demo-inline-binding-mouse: write the binding into the file through its $schema field', () => {
   seedWorkspaceFile('schemas/order.schema.json', ORDER_SCHEMA);

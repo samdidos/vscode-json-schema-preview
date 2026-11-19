@@ -33,7 +33,7 @@ const SCHEMA_REL_PATH = 'schemas/legacy.schema.json';
  * file-search for this fixture, not environmental flakiness. Pre-opening via
  * CLI args sidesteps that code path entirely.
  */
-test('demo-migrate: migrate a schema to a newer draft', () => {
+test('demo-draft-migration: migrate a schema to a newer draft', () => {
   seedWorkspaceFile(SCHEMA_REL_PATH, LEGACY_SCHEMA);
 
   return runDemo('draft-migration', async (window, capture) => {

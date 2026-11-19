@@ -36,7 +36,7 @@ const SCHEMA_REL_PATH = 'schemas/legacy.schema.json';
  * (Ctrl+P + typing) in this variant too — the mouse-driven moments are the
  * toolbar/menu clicks below, which are unaffected.
  */
-test('demo-migrate-mouse: migrate a schema to a newer draft from the editor toolbar', () => {
+test('demo-draft-migration-mouse: migrate a schema to a newer draft from the editor toolbar', () => {
   seedWorkspaceFile(SCHEMA_REL_PATH, LEGACY_SCHEMA);
 
   return runDemo('draft-migration-mouse', async (window, capture) => {

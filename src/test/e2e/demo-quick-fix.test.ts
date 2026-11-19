@@ -42,7 +42,7 @@ const DATA_REL_PATH = 'data/purchase.json';
  * The schema only needs to exist on disk for validation to resolve it, not
  * to be open.
  */
-test('demo-quickfix: apply a validation quick fix from the diagnostics', () => {
+test('demo-quick-fix: apply a validation quick fix from the diagnostics', () => {
   seedWorkspaceFile('schemas/order.schema.json', ORDER_SCHEMA);
   seedWorkspaceFile(DATA_REL_PATH, ORDER_DATA);
 

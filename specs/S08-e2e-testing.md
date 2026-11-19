@@ -522,6 +522,18 @@ mechanism.
 
 ## History
 
+- **2026-11-19** — `quick-fix` and `draft-migration` had not been recorded
+  since 2026-09-09. Their test files had been named `demo-quickfix*` and
+  `demo-migrate*`, but `refresh-gifs.yml` selects recordings with a `--grep`
+  built from registry names (`demo-quick-fix-mouse:`), so every refresh
+  matched neither, captured no frames, and `make-gifs.mjs` skipped both GIFs
+  with only a warning. The tests are renamed after their registry entries,
+  and `demoRegistry.test.ts` now fails when a registry name has no
+  `demo-<name>:` and `demo-<name>-mouse:` test (S08-SR-13). `demo-quick-fix-mouse`
+  was also moved to a YAML file with two near-miss typos, so the GIF shows
+  the closest-name rename (F25-FR-05) and "Fix all" (F21-FR-13/14) rather
+  than a single JSON enum fix.
+
 - **2026-08** — Rewrote `demo-showcase`/`demo-showcase-mouse`'s narrative from
   five steps to thirteen, widening its constituent specs from F01/F02/F06 to
   F01/F02/F03/F04/F06/F09/F10/F18 (S08-SR-13). New narrative: open a good JSON
