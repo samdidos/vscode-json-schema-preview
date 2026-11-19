@@ -534,6 +534,12 @@ mechanism.
   the closest-name rename (F25-FR-05) and "Fix all" (F21-FR-13/14) rather
   than a single JSON enum fix.
 
+  `schema-diff` is now also mapped to **F26**: its closing frame already
+  shows the backward-compatibility verdict ("Schema diff — NOT
+  backward-compatible: 2 breaking, …") that F26 adds to the diff report, so
+  F26's editor half was on camera without being credited. F26's CLI gate
+  stays undemoed for the same reason as F27 below.
+
 - **2026-08** — Rewrote `demo-showcase`/`demo-showcase-mouse`'s narrative from
   five steps to thirteen, widening its constituent specs from F01/F02/F06 to
   F01/F02/F03/F04/F06/F09/F10/F18 (S08-SR-13). New narrative: open a good JSON

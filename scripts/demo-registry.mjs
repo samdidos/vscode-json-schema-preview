@@ -43,7 +43,7 @@ export const DEMOS = [
   { name: 'schema-catalog', dir: 'schema-catalog-mouse', delay: 220, hold: 1_400, specs: ['F12'] },
   { name: 'schema-cache', dir: 'schema-cache-mouse', delay: 220, hold: 1_400, specs: ['F08'] },
   { name: 'refactoring', dir: 'refactoring-mouse', delay: 220, hold: 1_400, specs: ['F30'] },
-  { name: 'schema-diff', dir: 'schema-diff-mouse', delay: 220, hold: 1_400, specs: ['F15'] },
+  { name: 'schema-diff', dir: 'schema-diff-mouse', delay: 220, hold: 1_400, specs: ['F15', 'F26'] },
   { name: 'ref-graph', dir: 'ref-graph-mouse', delay: 220, hold: 1_600, specs: ['F24'] },
   { name: 'schema-coverage', dir: 'schema-coverage-mouse', delay: 220, hold: 1_400, specs: ['F23'] },
   // Chains inference (F06) -> preview (F01) -> live-edit (F02) -> configure
