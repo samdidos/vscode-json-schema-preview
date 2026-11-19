@@ -6,9 +6,8 @@ import { installCursor, clickEditorAction, clickSelector } from './helpers/mouse
 // A closed schema with an enum and a forbidden extra property, and a YAML data
 // file with two typos — a misspelt enum value (`shiped`) and a misspelt
 // property name (`nots`). Both are clear near-misses (F25), so the lightbulb
-// offers "Rename to \"notes\" (closest match)" and also "Fix all 2
-// auto-fixable validation problems" (F21-FR-14), which repairs both at once in
-// YAML syntax (F21-FR-10). The data file binds to the schema via an inline
+// offers "Fix all 2 auto-fixable validation problems" (F21-FR-13), which
+// changes the value and renames the key at once in YAML syntax (F21-FR-10). The data file binds to the schema via an inline
 // relative `$schema` key (resolved from the workspace root).
 const ORDER_SCHEMA = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -34,9 +33,9 @@ const DATA_REL_PATH = 'data/purchase.yaml';
 
 /**
  * Mouse-driven demo of F21/F25 validation quick fixes in a YAML file: validate
- * an invalid data file, click the lightbulb on the misspelt property, show the
- * menu (rename to the closest declared name, remove, fix all), then apply
- * "Fix all" to repair both typos live. Falls back to the Ctrl+. quick-fix
+ * an invalid data file, click the lightbulb on the misspelt enum value, show
+ * the menu (closest value first, then "Fix all"), then apply "Fix all" to
+ * repair both typos live — the value and the misspelt property name. Falls back to the Ctrl+. quick-fix
  * shortcut if the lightbulb icon's DOM shape has shifted across VS Code
  * releases (same defensive pattern as demo-schema-linting-mouse).
  *
@@ -64,8 +63,11 @@ test('demo-quick-fix-mouse: apply a validation quick fix from the lightbulb', ()
     await window.waitForTimeout(3_000);
     await capture('validation-errors');
 
-    // Put the cursor on the misspelt property and open the quick-fix menu.
-    await clickSelector(window, capture, '.view-line:has-text("nots")', 'error-line');
+    // Put the cursor on the misspelt enum value and open the quick-fix menu.
+    // (Not the misspelt key: an additionalProperties error is reported at its
+    // parent object, so the `nots` line itself carries no diagnostic. "Fix all"
+    // is offered from any validation diagnostic and repairs both typos.)
+    await clickSelector(window, capture, '.view-line:has-text("shiped")', 'error-line');
     try {
       await clickSelector(
         window,
@@ -80,8 +82,8 @@ test('demo-quick-fix-mouse: apply a validation quick fix from the lightbulb', ()
     await window.waitForSelector('.action-widget .monaco-list-row', { state: 'visible', timeout: 10_000 });
     await capture('quick-fix-menu');
 
-    // The menu offers the near-miss rename first; pick "Fix all" to repair the
-    // property name and the enum value in one edit.
+    // The menu leads with the closest enum value; pick "Fix all" to repair the
+    // enum value and rename the property in one edit.
     await clickSelector(window, capture, '.action-widget .monaco-list-row:has-text("Fix all")', 'apply-fix');
     await window.waitForTimeout(1_500);
     await capture('fixed');

@@ -531,8 +531,12 @@ mechanism.
   and `demoRegistry.test.ts` now fails when a registry name has no
   `demo-<name>:` and `demo-<name>-mouse:` test (S08-SR-13). `demo-quick-fix-mouse`
   was also moved to a YAML file with two near-miss typos, so the GIF shows
-  the closest-name rename (F25-FR-05) and "Fix all" (F21-FR-13/14) rather
-  than a single JSON enum fix.
+  "Fix all" (F21-FR-13/14) changing the enum value and renaming the
+  misspelt key (F25-FR-05) in one edit, rather than a single JSON enum fix.
+  It opens the menu from the enum line: an `additionalProperties` error is
+  reported at its parent object, so the misspelt key's own line carries no
+  diagnostic and offers no lightbulb (the first recording attempt timed out
+  on exactly that).
 
   `schema-diff` is now also mapped to **F26**: its closing frame already
   shows the backward-compatibility verdict ("Schema diff — NOT
