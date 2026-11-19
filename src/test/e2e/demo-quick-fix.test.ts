@@ -3,8 +3,10 @@ import { runDemo } from './helpers/demo';
 import { seedWorkspaceFile } from './helpers/launch';
 import { runCommand } from './helpers/ui';
 
-// A closed schema (enum + no additional properties) and a data file that
-// violates both.
+// The same fixture as demo-quick-fix-mouse: a closed schema and a YAML data
+// file with a misspelt enum value and a misspelt property name. The closed
+// schema does not declare `$schema` — the inline binding is validated as
+// absent (F03-FR-18).
 const ORDER_SCHEMA = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Order",
@@ -12,25 +14,25 @@ const ORDER_SCHEMA = `{
   "required": ["status", "total"],
   "properties": {
     "status": { "enum": ["open", "paid", "shipped"] },
-    "total": { "type": "integer" }
+    "total": { "type": "integer" },
+    "notes": { "type": "string" }
   },
   "additionalProperties": false
 }
 `;
 
-const ORDER_DATA = `{
-  "$schema": "./schemas/order.schema.json",
-  "status": "payed",
-  "total": 42,
-  "notes": "rush"
-}
+const ORDER_DATA = `$schema: ./schemas/order.schema.json
+status: shiped
+total: 42
+nots: rush
 `;
 
-const DATA_REL_PATH = 'data/purchase.json';
+const DATA_REL_PATH = 'data/purchase.yaml';
 
 /**
- * Command-palette twin of demo-quickfix-mouse (no animated cursor). Runs the
- * validate command, then opens the quick-fix menu with Ctrl+. and applies a fix.
+ * Command-palette twin of demo-quick-fix-mouse (no animated cursor). Runs the
+ * validate command, then opens the quick-fix menu with Ctrl+. and applies the
+ * first offered fix.
  * This variant is the CI UI-smoke signal (S08-SR-10); its frames are not used
  * for GIFs.
  *

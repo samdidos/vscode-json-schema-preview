@@ -66,7 +66,7 @@ suite('S08 — demo registry', () => {
     const e2eDir = resolve(ROOT, 'src/test/e2e');
     const titles = readdirSync(e2eDir)
       .filter((n) => n.endsWith('.test.ts'))
-      .flatMap((n) => [...readFileSync(resolve(e2eDir, n), 'utf8').matchAll(/^test\('([^']+)'/gm)].map((m) => m[1]));
+      .flatMap((n) => [...readFileSync(resolve(e2eDir, n), 'utf8').matchAll(/^\s*test\(\s*(['"`])(.+?)\1/gm)].map((m) => m[2]));
     for (const demo of DEMOS) {
       for (const prefix of [`demo-${demo.name}-mouse:`, `demo-${demo.name}:`]) {
         assert.ok(titles.some((t) => t.startsWith(prefix)), `no e2e test titled "${prefix} …" for demo "${demo.name}"`);
