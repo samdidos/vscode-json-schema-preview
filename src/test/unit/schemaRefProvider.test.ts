@@ -515,4 +515,38 @@ suite('Inline schema navigation [F13-FR-11] [F13-FR-12] [F13-FR-13]', () => {
     assert.ok(md.includes('\\<script\\>'));
     assert.ok(md.includes('\\[click\\]\\(command:bad\\)'));
   });
+
+  test('keeps $ref navigation in a YAML schema whose directive names the meta-schema', () => {
+    const text = '# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema\n'
+      + 'type: object\n$defs:\n  name:\n    title: Name\nproperties:\n  name:\n    $ref: "#/$defs/name"\n';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'yaml', path.join(dir, 'person.yaml'));
+    const position = posAt(text.indexOf('#/$defs/name') + 2);
+    const loc = provider.provideDefinition(doc, position);
+    assert.ok(loc, 'expected the $ref to resolve in the same document');
+    assert.strictEqual(loc.uri, doc.uri);
+    const md = provider.provideHover(doc, position)?.contents[0].value;
+    assert.match(md, /\*\*\$ref\*\*/);
+    assert.match(md, /Name/);
+  });
+
+  test('shows remote URLs in hover headings without Markdown escapes', () => {
+    const text = '{"$schema":"https://example.com/person.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'data.json'));
+    const md = provider.provideHover(doc, posAt(text.indexOf('example') + 2))?.contents[0].value;
+    assert.ok(md.startsWith('**$schema** `https://example.com/person.json`'), md);
+  });
+
+  test('resolves a relative inline binding from the workspace folder, like validation', () => {
+    fs.mkdirSync(path.join(dir, 'schemas'));
+    fs.mkdirSync(path.join(dir, 'data'));
+    fs.writeFileSync(path.join(dir, 'schemas', 'person.json'), '{"title":"Person"}');
+    (vscode.workspace.getWorkspaceFolder as any).returns({ uri: { fsPath: dir } });
+    const text = '{"$schema":"./schemas/person.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'data', 'data.json'));
+    const loc = provider.provideDefinition(doc, posAt(text.indexOf('./schemas') + 2));
+    assert.strictEqual(loc?.uri.fsPath, path.join(dir, 'schemas', 'person.json'));
+  });
 });

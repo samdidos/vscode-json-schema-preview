@@ -75,6 +75,16 @@ binding via the same command. JSONL is explicitly excluded (see Out of Scope).
 - **F10-FR-16** The extension MUST NOT change the notation style of a YAML
   file that already has a schema reference — switching forms is an explicit
   out-of-scope change for this feature.
+- **F10-FR-17** The YAML and TOML inline write and remove commands MUST NOT
+  edit a file that has syntax errors (for YAML, any parser error other than a
+  multi-document stream; for TOML, text `smol-toml` rejects), nor add a TOML
+  `"$schema"` key when the root table already has a non-string one. They MUST
+  show an error instead: offsets taken from a partly parsed document could
+  corrupt the file or add a duplicate `$schema` line. A path containing
+  whitespace MUST NOT be written into a `# yaml-language-server:` directive,
+  whose value ends at the first whitespace (F13-FR-11): a new binding uses the
+  `$schema:` key instead, and replacing an existing directive's value MUST
+  show an error rather than change its notation (F10-FR-16).
 
 ### Removing an Inline Binding
 

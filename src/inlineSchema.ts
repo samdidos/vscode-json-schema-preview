@@ -3,6 +3,7 @@
 import { parseTree, type ParseError } from 'jsonc-parser';
 import { parseDocument, isMap, isNode, isScalar, visit } from 'yaml';
 import { parse as parseToml } from 'smol-toml';
+import { scanToml, findTomlNode, type TomlNode, type TomlSpan } from './tomlLocator';
 
 export interface InlineSchemaReference {
   url: string;
@@ -11,6 +12,8 @@ export interface InlineSchemaReference {
   directive?: boolean;
   keyStart?: number;
   flow?: boolean;
+  /** TOML only: the whole `key = value` statement, line break included. */
+  statement?: TomlSpan;
 }
 
 export function inlineSchemaReference(
@@ -24,11 +27,13 @@ export function inlineSchemaReference(
       visit(doc, (_key, node) => {
         if (isScalar(node) && node.range) { scalars.push(node.range); }
       });
-      for (const directive of text.matchAll(/^#[ \t]*yaml-language-server:[ \t]*\$schema=([^\r\n]+)/gim)) {
+      // The value ends at the first whitespace, as in yaml-language-server's
+      // modeline parser, so a trailing `# note` is not part of the path.
+      for (const directive of text.matchAll(/^#[ \t]*yaml-language-server[ \t]*:[^\r\n]*?\$schema=(\S+)/gim)) {
         if (scalars.some(range => directive.index >= range[0] && directive.index < range[1])) { continue; }
-        const url = directive[1].trim();
-        const start = directive.index + directive[0].indexOf('=') + 1 + directive[1].indexOf(url);
-        return url ? { url, start, end: start + url.length, directive: true, keyStart: directive.index } : undefined;
+        const url = directive[1];
+        const start = directive.index + directive[0].length - url.length;
+        return { url, start, end: start + url.length, directive: true, keyStart: directive.index };
       }
       if (!isMap(doc.contents)) { return undefined; }
       const pair = doc.contents.items.find(item => isScalar(item.key) && item.key.value === '$schema');
@@ -56,61 +61,56 @@ export function inlineSchemaReference(
   }
 }
 
-/** Offset immediately after a TOML string token. This also skips multiline
- * descriptions while the rest of the document is still being edited. */
-function stringEnd(text: string, start: number): number {
-  const quote = text[start];
-  const multiline = text.slice(start, start + 3) === quote.repeat(3);
-  let i = start + (multiline ? 3 : 1);
-  while (i < text.length) {
-    if (quote === '"' && text[i] === '\\') { i += 2; continue; }
-    if (text[i] === quote) {
-      if (!multiline) { return i + 1; }
-      if (text.slice(i, i + 3) === quote.repeat(3)) {
-        i += 3;
-        // TOML permits one or two quote characters before the closing delimiter.
-        while (text[i] === quote) { i++; }
-        return i;
-      }
-    }
-    i++;
-  }
-  return text.length;
+/** True when `text` has YAML syntax errors. The parser recovers from them,
+ * so offsets in such a document cannot be trusted for edits (F10-FR-17). */
+export function yamlHasSyntaxErrors(text: string): boolean {
+  // A multi-document stream is valid YAML; the binding lives in the first one.
+  return parseDocument(text).errors.some(error => error.code !== 'MULTIPLE_DOCS');
 }
 
+/** `text` parsed by `smol-toml`, or undefined when it is not valid TOML (F10-FR-17). */
+export function tryParseToml(text: string): Record<string, unknown> | undefined {
+  try { return parseToml(text); } catch { return undefined; }
+}
+
+/** A `"$schema"` key at the start of a line: where a root binding could begin. */
+const TOML_SCHEMA_KEY_LINE = /^[ \t]*(?:"\$schema"|'\$schema')[ \t]*=/gm;
+/** How many lines past its key a binding's value may span in the prefix retry. */
+const TOML_PREFIX_LINES = 10;
+
 function tomlReference(text: string): InlineSchemaReference | undefined {
-  let depth = 0;
-  for (let i = 0; i < text.length;) {
-    const ch = text[i];
-    if (ch === '#') {
-      const newline = text.indexOf('\n', i);
-      i = newline < 0 ? text.length : newline + 1;
-    } else if (ch === '"' || ch === "'") {
-      const end = stringEnd(text, i);
-      const lineStart = text.lastIndexOf('\n', i - 1) + 1;
-      if (depth === 0 && /^[ \t]*$/.test(text.slice(lineStart, i))) {
-        const assignment = /^[ \t]*=[ \t]*/.exec(text.slice(end));
-        if (assignment) {
-          const start = end + assignment[0].length;
-          if (text[start] === '"' || text[start] === "'") {
-            const valueEnd = stringEnd(text, start);
-            const statement = parseToml(text.slice(i, valueEnd));
-            if (typeof statement.$schema === 'string') {
-              return { url: statement.$schema, start, end: valueEnd, keyStart: i };
-            }
-          }
-        }
+  const full = scanToml(text);
+  if (full) { return tomlBinding(text, full); }
+  // A file being edited does not scan, yet completions need its binding while
+  // the user types (F19-FR-04). A line-aligned prefix that scans and ends after
+  // the binding has the same root table up to that point, so its `"$schema"`
+  // is the document's own (F11-FR-15).
+  for (const key of text.matchAll(TOML_SCHEMA_KEY_LINE)) {
+    let end = key.index;
+    for (let line = 0; line < TOML_PREFIX_LINES; line++) {
+      const newline = text.indexOf('\n', end);
+      end = newline < 0 ? text.length : newline + 1;
+      const prefix = scanToml(text.slice(0, end));
+      if (prefix) {
+        const found = tomlBinding(text, prefix);
+        if (found) { return found; }
+        break;
       }
-      i = end;
-    } else if (depth === 0 && ch === '[' && /^[ \t]*$/.test(text.slice(text.lastIndexOf('\n', i - 1) + 1, i))) {
-      // Root-table assignments precede the first real table header. Headers
-      // inside multiline strings were already skipped as a single token.
-      return undefined;
-    } else {
-      if (ch === '[' || ch === '{') { depth++; }
-      if (ch === ']' || ch === '}') { depth--; }
-      i++;
+      if (newline < 0) { break; }
     }
   }
   return undefined;
+}
+
+function tomlBinding(text: string, root: TomlNode): InlineSchemaReference | undefined {
+  // Root-scoped by construction: a `"$schema"` under a [table] header or a
+  // dotted key is a child of that table, not of the document root (F11-FR-15).
+  const node = findTomlNode(root, ['$schema']);
+  if (node?.kind !== 'value' || !node.value || !node.key || !node.statement) { return undefined; }
+  const raw = text.slice(node.value.start, node.value.end);
+  if (raw[0] !== '"' && raw[0] !== "'") { return undefined; }
+  const url = (parseToml(`v = ${raw}`) as { v: unknown }).v;
+  return typeof url === 'string'
+    ? { url, start: node.value.start, end: node.value.end, keyStart: node.key.start, statement: node.statement }
+    : undefined;
 }

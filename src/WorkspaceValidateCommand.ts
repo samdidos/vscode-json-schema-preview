@@ -21,7 +21,7 @@ import {
   type ValidationIssue,
   type RunMeta,
 } from './workspaceValidation';
-import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './SchemaBindingManager';
+import { findBoundSchemaPath, extractInlineSchemaUrl, resolveLocalSchemaPath } from './SchemaBindingManager';
 import { lintSchema } from './schemaLinter';
 import { isJsonSchemaFile } from './PreviewWebPanel';
 import { parseTestSuite, runTestSuite, isSuitePath } from './schemaTests';
@@ -389,13 +389,7 @@ class WorkspaceRun {
 
   private resolveRef(schemaRef: string, dataUri: vscode.Uri): string {
     if (SchemaAuthManager.isRemoteUrl(schemaRef)) { return schemaRef; }
-    let fsPath = schemaRef.startsWith('file://') ? vscode.Uri.parse(schemaRef).fsPath : schemaRef;
-    if (!path.isAbsolute(fsPath)) {
-      const folder = vscode.workspace.getWorkspaceFolder(dataUri);
-      const base = folder?.uri.fsPath ?? path.dirname(dataUri.fsPath);
-      fsPath = path.join(base, normalise(fsPath));
-    }
-    return fsPath;
+    return resolveLocalSchemaPath(schemaRef, dataUri);
   }
 
   private async loadResolved(resolved: string): Promise<LoadOutcome> {

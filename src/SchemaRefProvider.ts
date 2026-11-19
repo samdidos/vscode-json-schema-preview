@@ -13,16 +13,17 @@ import {
   parseSchemaAst,
   resolvePointer,
   describeRefTarget,
-  escapeMarkdown,
+  codeSpan,
   parseSchemaText,
   type SchemaAst,
   type RefHit,
 } from './schemaPointer';
-import { isJsonSchemaFile, isJsonSchemaMetaRef } from './PreviewWebPanel';
+import { isJsonSchemaFile } from './PreviewWebPanel';
 import { SchemaAuthManager } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { languageForSchemaSource } from './languages';
-import { extractInlineSchemaReference } from './SchemaBindingManager';
+import { getSchemaDetection } from './settings';
+import { extractInlineSchemaReference, resolveLocalSchemaPath } from './SchemaBindingManager';
 
 const SELECTOR: vscode.DocumentSelector = [
   { language: 'json' },
@@ -62,6 +63,8 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
     document: vscode.TextDocument;
     version: number;
     languageId: string;
+    detection: string;
+    schema: boolean;
     binding: ReturnType<typeof extractInlineSchemaReference>;
   } | undefined;
 
@@ -111,7 +114,8 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
     const { uri, fragment } = parseRef(hit.ref);
     const segments = parseJsonPointer(fragment);
     const kind = refKind(hit.ref);
-    const heading = `**${inline ? '$schema' : '$ref'}** \`${escapeMarkdown(hit.ref)}\``;
+    const label = inline ? '$schema' : '$ref';
+    const heading = `**${label}** ${codeSpan(hit.ref)}`;
 
     let root: unknown;
     if (kind === 'local') {
@@ -135,12 +139,10 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
     const value = resolvePointer(root, segments);
     if (value === undefined) {
       return new vscode.Hover(new vscode.MarkdownString(
-        `${heading}\n\n_Pointer \`${escapeMarkdown(fragment || '#')}\` does not resolve in the target document._`,
+        `${heading}\n\n_Pointer ${codeSpan(fragment || '#')} does not resolve in the target document._`,
       ));
     }
-    const summary = describeRefTarget(value, hit.ref);
-    const md = new vscode.MarkdownString(inline ? summary.replace('**$ref**', '**$schema**') : summary);
-    return new vscode.Hover(md);
+    return new vscode.Hover(new vscode.MarkdownString(describeRefTarget(value, hit.ref, label)));
   }
 
   // ── Shared helpers ───────────────────────────────────────────────────────────
@@ -149,27 +151,36 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
     document: vscode.TextDocument,
     position: vscode.Position,
   ): { hit: RefHit; parsed?: ParsedDoc; inline: boolean } | undefined {
-    if (!this.source || this.source.document !== document || this.source.version !== document.version
-      || this.source.languageId !== document.languageId) {
-      const binding = extractInlineSchemaReference(document);
-      this.source = { document, version: document.version, languageId: document.languageId, binding };
-    }
-    const { binding } = this.source;
-    // Detection preferences may change without any document edit. An explicit
-    // data binding takes precedence, and TOML is always a data-only format.
-    const schema = binding
-      ? document.languageId !== 'toml' && !binding.directive && isJsonSchemaMetaRef(binding.url)
-      : isJsonSchemaFile(document);
-    if (!schema) {
-      const offset = document.offsetAt(position);
-      if (!binding || offset < binding.start || offset >= binding.end) { return undefined; }
-      return { hit: { ref: binding.url, valueStart: binding.start, valueEnd: binding.end }, inline: true };
-    }
-    const parsed = this.getParsed(document);
-    if (!parsed) { return undefined; }
     const offset = document.offsetAt(position);
-    const hit = findRefInAst(parsed.ast, offset);
-    return hit ? { hit, parsed, inline: false } : undefined;
+    const { schema, binding } = this.classify(document);
+    if (schema) {
+      const parsed = this.getParsed(document);
+      const hit = parsed && findRefInAst(parsed.ast, offset);
+      if (hit) { return { hit, parsed, inline: false }; }
+    }
+    // A schema file's own `$schema` is its meta-schema, not a binding; only a
+    // yaml-language-server directive binds it to another schema (F13-FR-11).
+    if (!binding || (schema && !binding.directive)) { return undefined; }
+    if (offset < binding.start || offset >= binding.end) { return undefined; }
+    return { hit: { ref: binding.url, valueStart: binding.start, valueEnd: binding.end }, inline: true };
+  }
+
+  /** Whether `document` is a schema (the same decision as the rest of the
+   *  extension, F34) and its inline binding, computed once per document version
+   *  and detection setting so hovers on an unchanged file never re-read it
+   *  (F13-NFR-02). */
+  private classify(
+    document: vscode.TextDocument,
+  ): { schema: boolean; binding: ReturnType<typeof extractInlineSchemaReference> } {
+    const detection = getSchemaDetection();
+    if (!this.source || this.source.document !== document || this.source.version !== document.version
+      || this.source.languageId !== document.languageId || this.source.detection !== detection) {
+      this.source = {
+        document, version: document.version, languageId: document.languageId, detection,
+        schema: isJsonSchemaFile(document), binding: extractInlineSchemaReference(document),
+      };
+    }
+    return this.source;
   }
 
   /** Parses `document` once and reuses the result across calls for the same
@@ -234,11 +245,13 @@ export class SchemaRefProvider implements vscode.DefinitionProvider, vscode.Hove
 
   private readRelative(document: vscode.TextDocument, relUri: string, inline = false): TargetDoc | undefined {
     try {
-      const baseDir = (inline && vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath)
-        || path.dirname(document.uri.fsPath);
-      const filePath = relUri.startsWith('file://')
-        ? vscode.Uri.parse(relUri).fsPath
-        : path.resolve(baseDir, relUri);
+      // An inline binding follows the validator's resolution (F13-FR-12); a
+      // `$ref` resolves against the schema file that contains it.
+      const filePath = inline
+        ? resolveLocalSchemaPath(relUri, document.uri)
+        : relUri.startsWith('file://')
+          ? vscode.Uri.parse(relUri).fsPath
+          : path.resolve(path.dirname(document.uri.fsPath), relUri);
       const text = fs.readFileSync(filePath, 'utf-8');
       return { text, languageId: languageForSchemaSource(filePath), uri: vscode.Uri.file(filePath) };
     } catch {

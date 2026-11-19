@@ -1233,6 +1233,14 @@
       ],
       "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
+    "F10-FR-17": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts",
+        "src/inlineSchema.ts"
+      ],
+      "note": "YAML/TOML inline write and remove refuse files with syntax errors instead of editing a partly parsed document."
+    },
     "F10-NFR-01": {
       "status": "implemented",
       "impl": [

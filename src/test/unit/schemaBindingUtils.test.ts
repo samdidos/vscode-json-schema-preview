@@ -3,6 +3,7 @@
 // found to be executed-but-unverified — they assert exact return values across
 // every branch so a flipped condition or operator fails a test (i.e. is killed).
 import * as assert from 'assert';
+import * as path from 'path';
 import { applyEdits } from 'jsonc-parser';
 import * as vscode from '../mocks/vscode';
 import { setConfig, setScopedConfig } from '../mocks/vscode';
@@ -20,6 +21,7 @@ const {
   computeYamlSchemaRemoveEdit,
   computeTomlSchemaUpsertEdit,
   computeTomlSchemaRemoveEdit,
+  resolveLocalSchemaPath,
 } = require('../../SchemaBindingManager');
 
 const { ConfigurationTarget } = vscode;
@@ -650,5 +652,63 @@ suite('YAML edits preserve surrounding data [F10-FR-09] [F10-FR-10]', () => {
       const updated = apply(text, computeYamlSchemaUpsertEdit(text, './new.json', false));
       assert.deepStrictEqual(YAML.parse(updated), { $schema: './new.json', name: 'Ada' });
     }
+  });
+});
+
+suite('YAML/TOML inline edits refuse files with syntax errors [F10-FR-17]', () => {
+  const refused = (result: any) => assert.match(result?.error ?? '', /syntax errors/);
+
+  test('YAML upsert and remove refuse a partly parsed document', () => {
+    const text = '$schema: ./old.json\nbroken: [\n';
+    refused(computeYamlSchemaUpsertEdit(text, './new.json', false));
+    refused(computeYamlSchemaUpsertEdit(text, './new.json', true));
+    refused(computeYamlSchemaRemoveEdit(text));
+  });
+
+  test('a multi-document YAML stream is valid and still edited', () => {
+    const text = '$schema: ./old.json\na: 1\n---\nb: 2\n';
+    assert.strictEqual(applyYamlEdit(text, computeYamlSchemaUpsertEdit(text, './new.json', false)),
+      '$schema: ./new.json\na: 1\n---\nb: 2\n');
+    assert.strictEqual(applyYamlEdit(text, computeYamlSchemaRemoveEdit(text)), 'a: 1\n---\nb: 2\n');
+  });
+
+  test('TOML upsert and remove refuse TOML that does not parse, even with a locatable binding', () => {
+    for (const text of ['"$schema" = "./old.json"\ntitle = \n', '"$schema" = "./old.json"\ntitle = bogus\n']) {
+      refused(computeTomlSchemaUpsertEdit(text, './new.json'));
+      refused(computeTomlSchemaRemoveEdit(text));
+    }
+  });
+
+  test('TOML upsert refuses a non-string root "$schema" instead of adding a second key', () => {
+    for (const text of ['"$schema" = 42\n', '"$schema".x = 1\n']) {
+      assert.match(computeTomlSchemaUpsertEdit(text, './new.json').error, /not a string/);
+    }
+  });
+
+  test('a path with whitespace is never written into a yaml-language-server directive', () => {
+    const inserted = computeYamlSchemaUpsertEdit('name: x\n', './my schemas/s.json', true);
+    assert.strictEqual(inserted.content, '$schema: ./my schemas/s.json\n');
+    const existing = '# yaml-language-server: $schema=./old.json\nname: x\n';
+    assert.match(computeYamlSchemaUpsertEdit(existing, './my schemas/s.json', true).error, /first space/);
+  });
+});
+
+suite('resolveLocalSchemaPath() [F10-FR-05] [F13-FR-12]', () => {
+  const dataUri = vscode.Uri.file(path.join('/ws', 'data', 'd.json'));
+
+  test('resolves a relative path from the data file\'s workspace folder', () => {
+    (vscode.workspace.getWorkspaceFolder as any).returns({ uri: { fsPath: '/ws' } });
+    assert.strictEqual(resolveLocalSchemaPath('./schemas/s.json', dataUri), path.join('/ws', 'schemas', 's.json'));
+  });
+
+  test('outside a workspace, resolves from the data file\'s directory', () => {
+    (vscode.workspace.getWorkspaceFolder as any).returns(undefined);
+    assert.strictEqual(resolveLocalSchemaPath('./s.json', dataUri), path.join('/ws', 'data', 's.json'));
+  });
+
+  test('keeps absolute paths and converts file:// URIs', () => {
+    const abs = path.resolve('/abs/s.json');
+    assert.strictEqual(resolveLocalSchemaPath(abs, dataUri), abs);
+    assert.strictEqual(resolveLocalSchemaPath('file:///abs/s.json', dataUri), '/abs/s.json');
   });
 });

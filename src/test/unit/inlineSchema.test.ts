@@ -60,6 +60,16 @@ suite('Inline binding source locations [F13-FR-11] [F13-NFR-02]', () => {
     }
   });
 
+  test('a half-edited TOML file never yields a nested or post-error "$schema"', () => {
+    for (const text of [
+      'port = \n"$schema" = "./late.json"\n',
+      '[tool]\n"$schema" = "./nested.json"\nport = \n',
+      'a = """\n"$schema" = "./in-string.json"\n',
+    ]) {
+      assert.strictEqual(inlineSchemaReference(text, 'toml'), undefined, text);
+    }
+  });
+
   test('ignores nested bindings, malformed syntax, nonstrings and unsupported formats', () => {
     for (const [text, lang] of [
       ['[tool]\n"$schema" = "./nested.json"', 'toml'],
@@ -78,5 +88,25 @@ suite('Inline binding source locations [F13-FR-11] [F13-NFR-02]', () => {
     const text = '$schema: https://json-schema.org/draft/2020-12/schema\n# yaml-language-server: $schema=./real.json\n';
     assert.strictEqual(inlineSchemaReference(text, 'yaml')?.url, './real.json');
     assert.strictEqual(inlineSchemaReference(text, 'yaml')?.directive, true);
+  });
+
+  test('a YAML directive value ends at the first whitespace, as yaml-language-server reads it', () => {
+    const text = '# yaml-language-server: $schema=./s.json # note\nname: x\n';
+    const result = inlineSchemaReference(text, 'yaml');
+    assert.strictEqual(result?.url, './s.json');
+    assert.strictEqual(text.slice(result!.start, result!.end), './s.json');
+  });
+
+  test('a YAML directive may list other modeline options before $schema', () => {
+    const text = '# yaml-language-server: foo=1 $schema=./s.json\n';
+    assert.strictEqual(inlineSchemaReference(text, 'yaml')?.url, './s.json');
+  });
+
+  test('TOML reports the whole root statement', () => {
+    const text = '# header\n"$schema" = \'./s.json\' # note\ntitle = "x"\n';
+    const result = inlineSchemaReference(text, 'toml');
+    assert.strictEqual(result?.url, './s.json');
+    assert.strictEqual(text.slice(result!.start, result!.end), "'./s.json'");
+    assert.strictEqual(text.slice(result!.statement!.start, result!.statement!.end), '"$schema" = \'./s.json\' # note\n');
   });
 });

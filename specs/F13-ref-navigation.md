@@ -59,7 +59,8 @@ schema *authors*.
   type (same labelling rules as the fallback renderer's `describeType`),
   `description`, and — for objects — up to the first 10 property names.
 - **F13-FR-09** Hover content MUST be plain Markdown with all schema-derived
-  strings escaped; it MUST NOT execute or embed HTML.
+  strings escaped, or placed in code spans, whose content renders literally and
+  so MUST NOT be escaped; it MUST NOT execute or embed HTML.
 - **F13-FR-10** Hover MUST NOT perform network I/O: remote refs show hover
   content only when the target is already cached; otherwise the hover states
   that the schema is not cached and names the command to cache it.
@@ -71,9 +72,11 @@ schema *authors*.
   `extractInlineSchemaUrl` semantics (including YAML directive precedence
   and TOML root-table scope). Only the binding's value MUST trigger navigation
   or hover; nested keys, ordinary comments, unrelated strings and JSONL MUST NOT.
-  Quoted YAML paths, paths containing spaces and JSONC trailing commas MUST
-  be supported. Assignment-like text inside TOML multiline values MUST NOT
-  be treated as a binding.
+  Quoted YAML paths, paths containing spaces in a `$schema` key value and
+  JSONC trailing commas MUST be supported. A YAML directive value MUST end at
+  the first whitespace, as yaml-language-server reads it, so a trailing
+  `# comment` is not part of the path. Assignment-like text inside TOML
+  multiline values MUST NOT be treated as a binding.
 - **F13-FR-12** Go to Definition on an inline binding MUST open its local
   schema or the actual cached file for a remote URL, resolving JSON Pointer
   fragments when present. Relative local paths MUST follow F10-FR-05's

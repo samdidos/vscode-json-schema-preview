@@ -82,12 +82,28 @@ export function escapeMarkdown(s: string): string {
 }
 
 /**
+ * Wraps `s` in a Markdown code span. Backslash escapes are literal inside a
+ * code span, so the text is never escaped: the fence is one backtick longer
+ * than the longest backtick run in `s`, padded when `s` starts or ends with
+ * one (CommonMark 6.1).
+ */
+export function codeSpan(text: string): string {
+  // A blank line would end the span and the paragraph; code spans fold line breaks anyway.
+  const s = text.replace(/\r\n?|\n/g, ' ');
+  if (!s) { return '` `'; }
+  const longest = Math.max(0, ...(s.match(/`+/g) ?? []).map(run => run.length));
+  const fence = '`'.repeat(longest + 1);
+  const pad = /^`|`$/.test(s) ? ' ' : '';
+  return `${fence}${pad}${s}${pad}${fence}`;
+}
+
+/**
  * Build a plain-Markdown summary of a referenced subschema: title, effective
  * type (via {@link describeType}), description, and — for objects — up to the
  * first 10 property names (F13-FR-08). Never embeds HTML.
  */
-export function describeRefTarget(target: unknown, ref: string): string {
-  const lines: string[] = [`**$ref** \`${escapeMarkdown(ref)}\``];
+export function describeRefTarget(target: unknown, ref: string, label: '$ref' | '$schema' = '$ref'): string {
+  const lines: string[] = [`**${label}** ${codeSpan(ref)}`];
   const o = target && typeof target === 'object' && !Array.isArray(target)
     ? (target as Record<string, unknown>)
     : undefined;
@@ -98,7 +114,7 @@ export function describeRefTarget(target: unknown, ref: string): string {
   if (typeof o.title === 'string' && o.title.trim()) {
     lines.push(`### ${escapeMarkdown(o.title)}`);
   }
-  lines.push(`**type:** \`${escapeMarkdown(describeType(o))}\``);
+  lines.push(`**type:** ${codeSpan(describeType(o))}`);
   if (typeof o.description === 'string' && o.description.trim()) {
     lines.push(escapeMarkdown(o.description));
   }
@@ -106,7 +122,7 @@ export function describeRefTarget(target: unknown, ref: string): string {
     ? Object.keys(o.properties as Record<string, unknown>)
     : [];
   if (props.length) {
-    const shown = props.slice(0, 10).map(n => `\`${escapeMarkdown(n)}\``).join(', ');
+    const shown = props.slice(0, 10).map(codeSpan).join(', ');
     lines.push(`**properties:** ${shown}${props.length > 10 ? ', …' : ''}`);
   }
   return lines.join('\n\n');
