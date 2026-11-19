@@ -1026,7 +1026,7 @@ export function computeYamlSchemaRemoveEdit(text: string): InlineEditResult | un
   if (existing.flow) {
     let start = existing.keyStart ?? existing.start;
     let end = existing.end;
-    const after = /^(?:\s|#[^\r\n]*(?:\r?\n|$))*,/.exec(text.slice(end));
+    const after = /^(?:\s|#[^\r\n]*\r?\n)*,/.exec(text.slice(end));
     const before = /,(?:\s|#[^\r\n]*(?:\r?\n|$))*$/.exec(text.slice(0, start));
     let content = '';
     if (after) { end += after[0].length; }
