@@ -152,7 +152,7 @@ const features = [
     icon: '💡',
     title: 'Quick Fixes',
     gif: 'demo-quick-fix.gif',
-    desc: 'Validation errors carry a lightbulb when the repair is unambiguous — insert a missing required property, drop an unexpected one, or swap a value for the closest allowed enum member.',
+    desc: 'Validation errors in JSON, YAML, TOML and JSONL carry a lightbulb when the repair is unambiguous — insert a missing required property, rename a misspelt one to its closest declared name, or swap a value for the closest allowed enum member. Fix all applies every safe fix at once.',
   },
   {
     id: 'draft-migration',

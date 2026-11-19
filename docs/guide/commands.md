@@ -125,7 +125,7 @@ For an `enum` mismatch the allowed values are **ranked by how close they are to 
 
 The same matching applies to **property names**: an unexpected property that is one slip away from a declared one the object doesn't have yet — `descripton` for `description`, `prot` for `port` — is offered `Rename to "description" (closest match)` ahead of the removal, as the preferred fix. Only the key is rewritten; its value stays put.
 
-![Applying a validation quick fix from the lightbulb](/demo-quick-fix.gif)
+![Fixing a misspelt enum value and a misspelt property name in a YAML file with Fix all, then revalidating](/demo-quick-fix.gif)
 
 
 ---
