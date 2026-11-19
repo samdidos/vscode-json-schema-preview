@@ -66,6 +66,18 @@ Errors are reported as VS Code diagnostics in the Problems panel.
   the schema's `$schema` string. (This applies to on-demand
   `jsonschema.validateFile`; F16's sample-data self-check deliberately strips
   `$schema` and stays on the default dialect — see F16.)
+- **F03-FR-18** A data document's own inline binding — a string-valued
+  `$schema` property on its root object (F10) — MUST NOT be reported as an
+  unexpected property. A root-level `additionalProperties`,
+  `unevaluatedProperties` or `propertyNames` error that names that `$schema`
+  key MUST be dropped, both from the diagnostics and from the errors quick
+  fixes are built from (F21), in the editor and in workspace/CLI validation
+  (F20, F27) alike. Every other constraint a schema places on `$schema`
+  (`required`, `type`, `const`, …) MUST still apply. This exemption is limited
+  to the root `$schema` key: other `$`-prefixed properties, and `$schema` on a
+  nested object or a JSONL record, are ordinary data and are validated
+  normally. The JSON Schema spec reserves `$` keywords inside *schemas*, not
+  instance data, where such keys are often real data (`$type`, `$oid`).
 
 ### Diagnostics
 
@@ -96,8 +108,17 @@ Errors are reported as VS Code diagnostics in the Problems panel.
 2. Opening `person-valid.json` and validating produces zero diagnostics and a
    success notification.
 3. Validation works without an explicit binding when `$schema` is present inline.
+4. A file bound inline by `$schema` to a schema with
+   `additionalProperties: false` that does not declare `$schema` validates
+   cleanly; a misspelt `$typ` beside it is still reported.
 
 ## History
+
+- **2026-11-19** — Added F03-FR-18: the inline `$schema` binding key is no
+  longer an "unexpected property" under a closed schema. Before, binding a file
+  inline to any schema with `additionalProperties: false` produced an error on
+  the very line that binds it, and the only workaround was declaring `$schema`
+  in every such schema.
 
 - **2026-09-02** — Added F03-FR-17: opt-in re-validation on save
   (`jsonschema.validation.onSave`, default `off`). Automatic runs are silent and

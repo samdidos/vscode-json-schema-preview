@@ -5,6 +5,7 @@ const {
   isMetaSchemaRef,
   parseDataText,
   validateInstances,
+  withoutBindingKeyErrors,
   locateInstancePath,
   lineOfMatch,
   summarize,
@@ -154,5 +155,64 @@ suite('[F20-FR-07] workspaceValidation — Markdown report', () => {
     assert.match(report, /2 file\(s\) over 1 MiB skipped/);
     assert.match(report, /Untrusted workspace/);
     assert.match(report, /### Workspace \(1 file\(s\)\)/);
+  });
+});
+
+suite('[F03-FR-18] the inline $schema binding is not an unexpected property', () => {
+  const closed = {
+    type: 'object',
+    properties: { name: { type: 'string' } },
+    additionalProperties: false,
+  };
+
+  test('a closed schema accepts the file\'s own root $schema binding', () => {
+    const text = '{"$schema":"./s.json","name":"x"}';
+    assert.deepStrictEqual(validateInstances([JSON.parse(text)], closed, text), []);
+  });
+
+  test('every other unexpected property is still reported, $-prefixed ones included', () => {
+    const data = { $schema: './s.json', name: 'x', $typ: 'a', extra: 1 };
+    const messages = validateInstances([data], closed, JSON.stringify(data)).map((i: any) => i.message);
+    assert.strictEqual(messages.length, 2);
+    assert.ok(messages.every((m: string) => m.includes('must NOT have additional properties')));
+  });
+
+  test('unevaluatedProperties and propertyNames errors about the binding are dropped too', () => {
+    const data = { $schema: './s.json', name: 'x' };
+    const unevaluated = { $schema: 'https://json-schema.org/draft/2020-12/schema', properties: { name: {} }, unevaluatedProperties: false };
+    assert.deepStrictEqual(validateInstances([data], unevaluated, JSON.stringify(data)), []);
+    const names = { type: 'object', propertyNames: { pattern: '^[a-z]+$' } };
+    assert.deepStrictEqual(validateInstances([data], names, JSON.stringify(data)), []);
+  });
+
+  test('what a schema itself says about $schema still applies', () => {
+    const typed = { type: 'object', properties: { $schema: { type: 'string', const: './other.json' } }, additionalProperties: false };
+    const data = { $schema: './s.json' };
+    assert.strictEqual(validateInstances([data], typed, JSON.stringify(data)).length, 1);
+  });
+
+  test('only a string root $schema is a binding: non-string, nested and JSONL ones are data', () => {
+    const err = { instancePath: '', keyword: 'additionalProperties', params: { additionalProperty: '$schema' } };
+    assert.deepStrictEqual(withoutBindingKeyErrors([err], { $schema: './s.json' }), []);
+    assert.deepStrictEqual(withoutBindingKeyErrors([err], { $schema: 42 }), [err]);
+    assert.deepStrictEqual(withoutBindingKeyErrors([err], { $schema: './s.json' }, 0), [err]);
+    assert.deepStrictEqual(withoutBindingKeyErrors([err], ['$schema']), [err]);
+    assert.deepStrictEqual(withoutBindingKeyErrors([err], null), [err]);
+    const nested = { ...err, instancePath: '/child' };
+    assert.deepStrictEqual(withoutBindingKeyErrors([nested], { $schema: './s.json' }), [nested]);
+    const other = { instancePath: '', keyword: 'additionalProperties', params: { additionalProperty: '$id' } };
+    assert.deepStrictEqual(withoutBindingKeyErrors([other], { $schema: './s.json' }), [other]);
+    const required = { instancePath: '', keyword: 'required', params: { missingProperty: 'name' } };
+    assert.deepStrictEqual(withoutBindingKeyErrors([required], { $schema: './s.json' }), [required]);
+    const inner = { instancePath: '', keyword: 'pattern', params: { pattern: '^[a-z]+$' }, propertyName: '$schema' };
+    assert.deepStrictEqual(withoutBindingKeyErrors([inner], { $schema: './s.json' }), []);
+    const noParams = { instancePath: '', keyword: 'type' };
+    assert.deepStrictEqual(withoutBindingKeyErrors([noParams], { $schema: './s.json' }), [noParams]);
+  });
+
+  test('a JSONL record\'s $schema is still an unexpected property', () => {
+    const text = '{"$schema":"./s.json","name":"x"}';
+    const issues = validateInstances(parseDataText(text, 'jsonl'), closed, text, 'jsonl');
+    assert.strictEqual(issues.length, 1);
   });
 });

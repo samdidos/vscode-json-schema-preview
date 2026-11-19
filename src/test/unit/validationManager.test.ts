@@ -176,6 +176,32 @@ suite('[F03-FR-14] validateCurrentFile() — schema document format', () => {
   });
 });
 
+// ── Inline binding key (F03-FR-18) ──────────────────────────────────────────────
+
+suite('[F03-FR-18] validateCurrentFile() — the inline $schema binding key', () => {
+  const uri = 'https://example.com/closed.json';
+  const closed = { type: 'object', properties: { name: { type: 'string' } }, additionalProperties: false };
+
+  test('a file bound inline to a closed schema validates cleanly (YAML)', async () => {
+    activate(makeDoc('yaml', `$schema: ${uri}\nname: api\n`, '/ws/server.yaml'));
+    vscode.workspace.asRelativePath.callsFake(() => 'server.yaml');
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(closed)) as any)();
+    assert.ok(vscode.window.showInformationMessage.calledWithMatch(/✓ server\.yaml is valid/));
+  });
+
+  test('a real extra property is still reported, and no fix offers to remove the binding', async () => {
+    const recorded: any[] = [];
+    const fixes = { record: (_uri: unknown, list: any[]) => { recorded.push(...list); } };
+    activate(makeDoc('json', `{"$schema":"${uri}","name":"api","extra":1}`, '/ws/server.json'));
+    vscode.workspace.asRelativePath.callsFake(() => 'server.json');
+    await validateCurrentFile(fakeAuth(async () => JSON.stringify(closed)) as any, undefined, fixes as any)();
+    const diags = validationDiagnostics.set.lastCall.args[1];
+    assert.strictEqual(diags.length, 1);
+    assert.ok(recorded.some(f => f.path?.includes('extra')));
+    assert.ok(!recorded.some(f => f.path?.includes('$schema')));
+  });
+});
+
 // ── TOML validation (F11-FR-06) ─────────────────────────────────────────────────
 
 suite('[F11-FR-06] validateCurrentFile() — TOML', () => {

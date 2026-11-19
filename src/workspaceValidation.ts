@@ -74,6 +74,36 @@ export function parseDataText(text: string, languageId: string): unknown[] {
   return [JSON.parse(text)];
 }
 
+/** The Ajv error fields this module reads. */
+interface AjvErrorLike {
+  instancePath?: string;
+  keyword?: string;
+  params?: Record<string, unknown>;
+  /** Set by Ajv on the errors a `propertyNames` subschema produces. */
+  propertyName?: string;
+}
+
+/**
+ * F03-FR-18 — `errors` without those that only object to the document's own
+ * inline `$schema` binding: a root-level additionalProperties /
+ * unevaluatedProperties / propertyNames error naming a string `$schema` on the
+ * root object. Anything else a schema says about `$schema` still stands, and a
+ * JSONL record (`record` given) has no document-level binding to exempt.
+ */
+export function withoutBindingKeyErrors<E extends AjvErrorLike>(errors: E[], data: unknown, record?: number): E[] {
+  if (record !== undefined || data === null || typeof data !== 'object' || Array.isArray(data)) { return errors; }
+  if (typeof (data as Record<string, unknown>).$schema !== 'string') { return errors; }
+  return errors.filter(err => {
+    if (err.instancePath) { return true; }
+    const p = err.params ?? {};
+    const key = err.keyword === 'additionalProperties' ? p.additionalProperty
+      : err.keyword === 'unevaluatedProperties' ? p.unevaluatedProperty
+        : err.keyword === 'propertyNames' ? p.propertyName
+          : err.propertyName;
+    return key !== '$schema';
+  });
+}
+
 /**
  * Validate parsed instances against a schema with the F03 Ajv pipeline
  * (draft-aware via `createAjv`, F03-FR-15). Returns one issue per Ajv error,
@@ -86,7 +116,7 @@ export function validateInstances(items: unknown[], schema: unknown, text: strin
   for (const [index, data] of items.entries()) {
     if (validate(data)) { continue; }
     const record = languageId === 'jsonl' ? index : undefined;
-    for (const err of validate.errors ?? []) {
+    for (const err of withoutBindingKeyErrors(validate.errors ?? [], data, record)) {
       const label = err.instancePath || '(root)';
       issues.push({
         message: `${label}: ${err.message ?? 'validation error'}`,

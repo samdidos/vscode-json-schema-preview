@@ -103,7 +103,7 @@ Validates the active JSON, YAML, or TOML file against its bound schema (see [Bin
 
 ![Validating a data file and seeing errors in the Problems panel](/demo-validation.gif)
 
-If the file already has an inline `$schema` field the bound schema is inferred from it — no explicit binding needed. If it has no binding at all but VS Code resolves a schema for it natively (the **(auto)** state shown in the status bar — see [Bind Schema…](#json-schema-bind-schema)), validation uses that schema too, rather than reporting "no schema bound".
+If the file already has an inline `$schema` field the bound schema is inferred from it — no explicit binding needed. That field is never reported as an unexpected property, even by a schema with `additionalProperties: false` that doesn't declare it; anything the schema does say about `$schema` still applies, and every other property, `$`-prefixed or not, is validated as data. If it has no binding at all but VS Code resolves a schema for it natively (the **(auto)** state shown in the status bar — see [Bind Schema…](#json-schema-bind-schema)), validation uses that schema too, rather than reporting "no schema bound".
 
 | Toolbar | Command Palette |
 |---------|----------------|

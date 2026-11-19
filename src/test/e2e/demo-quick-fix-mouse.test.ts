@@ -8,8 +8,9 @@ import { installCursor, clickEditorAction, clickSelector } from './helpers/mouse
 // property name (`nots`). Both are clear near-misses (F25), so the lightbulb
 // offers "Fix all 2 auto-fixable validation problems" (F21-FR-13), which
 // changes the value and renames the key at once in YAML syntax (F21-FR-10). The data file binds to the schema via an inline
-// relative `$schema` key (resolved from the workspace root), which the closed
-// schema declares so the binding itself is not an "unexpected property".
+// relative `$schema` key (resolved from the workspace root). The schema's
+// `$schema` property is optional: the binding key is exempt from
+// additionalProperties anyway (F03-FR-18).
 const ORDER_SCHEMA = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Order",

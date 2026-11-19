@@ -9,7 +9,7 @@ import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './Schema
 import type { NativeSchemaMatch } from './nativeSchema';
 import { isSupported, languageForSchemaSource } from './languages';
 import { parseSchemaText } from './schemaPointer';
-import { parseDataText, locateInstanceSpan } from './workspaceValidation';
+import { parseDataText, locateInstanceSpan, withoutBindingKeyErrors } from './workspaceValidation';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
 import { getRemoteFetchTimeoutMs } from './settings';
@@ -141,8 +141,10 @@ export function validateCurrentFile(
 
     for (const [index, data] of items.entries()) {
       if (!validate(data)) {
-        const errors = validate.errors ?? [];
         const record = doc.languageId === 'jsonl' ? index : undefined;
+        // F03-FR-18: the file's own inline `$schema` binding is never an
+        // "unexpected property" — not as a diagnostic, nor as a quick fix.
+        const errors = withoutBindingKeyErrors(validate.errors ?? [], data, record);
         for (const fix of buildFixes(errors, schema, data)) {
           collectedFixes.push(record === undefined ? fix : { ...fix, record });
         }
