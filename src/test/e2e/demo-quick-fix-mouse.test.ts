@@ -8,13 +8,15 @@ import { installCursor, clickEditorAction, clickSelector } from './helpers/mouse
 // property name (`nots`). Both are clear near-misses (F25), so the lightbulb
 // offers "Fix all 2 auto-fixable validation problems" (F21-FR-13), which
 // changes the value and renames the key at once in YAML syntax (F21-FR-10). The data file binds to the schema via an inline
-// relative `$schema` key (resolved from the workspace root).
+// relative `$schema` key (resolved from the workspace root), which the closed
+// schema declares so the binding itself is not an "unexpected property".
 const ORDER_SCHEMA = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Order",
   "type": "object",
   "required": ["status", "total"],
   "properties": {
+    "$schema": { "type": "string" },
     "status": { "enum": ["open", "paid", "shipped"] },
     "total": { "type": "integer" },
     "notes": { "type": "string" }
@@ -88,7 +90,13 @@ test('demo-quick-fix-mouse: apply a validation quick fix from the lightbulb', ()
     await window.waitForTimeout(1_500);
     await capture('fixed');
 
+    // Validate again so the demo ends on a clean file, not on the previous
+    // run's now-stale squiggles (S08-SR-19).
+    await clickEditorAction(window, capture, 'JSON Schema: Validate This File', 'revalidate-icon');
+    await window.waitForTimeout(2_000);
+    await capture('valid');
+
     await window.waitForTimeout(800);
-    await capture('fixed-hold');
+    await capture('valid-hold');
   }, true, [DATA_REL_PATH]);
 });
