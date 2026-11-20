@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as sinon from 'sinon';
 import * as vscode from '../mocks/vscode';
 
 const { SchemaRefProvider, positionAt } = require('../../SchemaRefProvider');
@@ -23,7 +24,10 @@ function posAt(offset: number) {
 }
 
 function fakeCache(map: Record<string, string> = {}) {
-  return { readCached: (url: string) => (url in map ? map[url] : undefined) } as any;
+  return {
+    readCached: (url: string) => (url in map ? map[url] : undefined),
+    getCachedPath: (url: string) => (url in map ? '/cache/schema.json' : undefined),
+  } as any;
 }
 
 setup(() => vscode.resetAll());
@@ -111,6 +115,7 @@ suite('[F13-FR-06] provideDefinition() — remote ref', () => {
     const doc = makeDoc(text);
     const loc = provider.provideDefinition(doc, posAt(text.indexOf(url) + 5));
     assert.ok(loc);
+    assert.strictEqual(loc.uri.fsPath, '/cache/schema.json');
   });
 
   test('[F13-FR-06] offers to cache when the remote ref is uncached', () => {
@@ -251,3 +256,297 @@ function offsetOf(text: string, line: number, char: number): number {
   for (let i = 0; i < line; i++) { off += lines[i].length + 1; }
   return off + char;
 }
+
+suite('Inline schema navigation [F13-FR-11] [F13-FR-12] [F13-FR-13]', () => {
+  let dir: string;
+  setup(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-inline-nav-')); });
+  teardown(() => { fs.rmSync(dir, { recursive: true, force: true }); });
+
+  const forms = [
+    { lang: 'json', text: '{"$schema":"./person.json", "name":"Ada"}' },
+    { lang: 'jsonc', text: '{/* ./person.json */ "$schema":"./person.json", "name":"Ada"}' },
+    { lang: 'yaml', text: '$schema: ./person.json\nname: Ada\n' },
+    { lang: 'yml', text: '# yaml-language-server: $schema=./person.json\nname: Ada\n' },
+    { lang: 'toml', text: '"$schema" = "./person.json"\nname = "Ada"\n' },
+  ];
+  for (const { lang, text } of forms) {
+    test(`navigates and shows the local schema summary from ${lang}`, () => {
+      const schemaPath = path.join(dir, 'person.json');
+      fs.writeFileSync(schemaPath, JSON.stringify({ title: 'Person', description: 'A person', type: 'object' }));
+      const provider = new SchemaRefProvider(fakeCache());
+      const doc = makeDoc(text, lang, path.join(dir, `data.${lang}`));
+      const position = posAt(text.lastIndexOf('./person.json') + 3);
+      assert.strictEqual(provider.provideDefinition(doc, position)?.uri.fsPath, schemaPath);
+      const md = provider.provideHover(doc, position)?.contents[0].value;
+      assert.match(md, /\*\*\$schema\*\*/);
+      assert.match(md, /Person/);
+      assert.match(md, /A person/);
+      assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('$schema'))), undefined);
+      assert.strictEqual(provider.provideHover(doc, posAt(text.indexOf('Ada'))), undefined);
+    });
+  }
+
+  test('supports quoted YAML paths, spaces and JSONC trailing commas', () => {
+    fs.writeFileSync(path.join(dir, 'person schema.json'), '{"title":"Person"}');
+    for (const [lang, text] of [
+      ['yaml', '$schema: "./person schema.json"'],
+      ['yaml', '$schema: ./person schema.json'],
+      ['jsonc', '{"$schema":"./person schema.json",}'],
+    ]) {
+      const provider = new SchemaRefProvider(fakeCache());
+      const doc = makeDoc(text, lang, path.join(dir, 'data'));
+      const position = posAt(text.indexOf('./person') + 4);
+      assert.strictEqual(provider.provideDefinition(doc, position)?.uri.fsPath, path.join(dir, 'person schema.json'));
+      assert.match(provider.provideHover(doc, position)?.contents[0].value, /Person/);
+    }
+  });
+
+  test('honors a YAML directive over a meta-schema key', () => {
+    fs.writeFileSync(path.join(dir, 'person.json'), '{"title":"Person"}');
+    const text = '# yaml-language-server: $schema=./person.json\n$schema: https://json-schema.org/draft/2020-12/schema';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'yaml', path.join(dir, 'data.yaml'));
+    const position = posAt(text.indexOf('./person') + 4);
+    assert.ok(provider.provideDefinition(doc, position));
+    assert.match(provider.provideHover(doc, position)?.contents[0].value, /Person/);
+  });
+
+  test('recognizes cache entries saved under either the document URL or full reference', () => {
+    const url = 'https://example.com/person.json';
+    const ref = `${url}#/$defs/person`;
+    for (const cacheKey of [url, ref]) {
+      const text = JSON.stringify({ $schema: ref });
+      const provider = new SchemaRefProvider(fakeCache({ [cacheKey]: '{"$defs":{"person":{"title":"Person"}}}' }));
+      const doc = makeDoc(text);
+      const position = posAt(text.indexOf(url) + 5);
+      assert.strictEqual(provider.provideDefinition(doc, position)?.uri.fsPath, '/cache/schema.json');
+      assert.match(provider.provideHover(doc, position)?.contents[0].value, /Person/);
+      assert.ok(vscode.window.showInformationMessage.notCalled);
+    }
+  });
+
+  test('does not re-read an unchanged inline document on ordinary field hovers', () => {
+    const doc = makeDoc('{"$schema":"./person.json", "name":"Ada"}');
+    const getText = sinon.spy(doc, 'getText');
+    const provider = new SchemaRefProvider(fakeCache());
+    provider.provideHover(doc, posAt(40));
+    getText.resetHistory();
+    provider.provideHover(doc, posAt(40));
+    assert.ok(getText.notCalled);
+    doc.version++;
+    provider.provideHover(doc, posAt(40));
+    assert.ok(getText.called);
+  });
+
+  test('reopening the same URI at version one does not reuse its old binding or AST', () => {
+    fs.writeFileSync(path.join(dir, 'old.json'), '{"title":"Old"}');
+    fs.writeFileSync(path.join(dir, 'new.json'), '{"title":"New"}');
+    const provider = new SchemaRefProvider(fakeCache());
+    for (const file of ['old', 'new']) {
+      const text = JSON.stringify({ $schema: `./${file}.json` });
+      const doc = makeDoc(text, 'json', path.join(dir, 'data.json'), 1);
+      assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('./') + 2))?.uri.fsPath,
+        path.join(dir, `${file}.json`));
+    }
+    for (const title of ['Old', 'New']) {
+      const text = JSON.stringify({ $schema: 'http://json-schema.org/draft-07/schema#',
+        $defs: { person: { title } }, use: { $ref: '#/$defs/person' } });
+      const doc = makeDoc(text, 'json', path.join(dir, 'schema.json'), 1);
+      assert.match(provider.provideHover(doc, posAt(text.indexOf('#/$defs') + 3))?.contents[0].value,
+        new RegExp(title));
+    }
+  });
+
+  test('honors schemaDetection changes without editing an open document', () => {
+    const text = JSON.stringify({ type: 'object', properties: {}, $defs: { person: { title: 'Person' } },
+      use: { $ref: '#/$defs/person' } });
+    const doc = makeDoc(text, 'json', path.join(dir, 'ordinary.json'));
+    const provider = new SchemaRefProvider(fakeCache());
+    const position = posAt(text.indexOf('#/$defs') + 2);
+    vscode.setConfig('jsonschema', 'schemaDetection', 'auto');
+    assert.ok(provider.provideDefinition(doc, position));
+    vscode.setConfig('jsonschema', 'schemaDetection', 'strict');
+    assert.strictEqual(provider.provideDefinition(doc, position), undefined);
+    vscode.setConfig('jsonschema', 'schemaDetection', 'auto');
+    assert.ok(provider.provideHover(doc, position));
+  });
+
+  test('TOML remains data when its binding points to json-schema.org', () => {
+    const url = 'https://json-schema.org/draft/2020-12/schema';
+    const text = `"$schema" = "${url}"`;
+    const doc = makeDoc(text, 'toml');
+    const position = posAt(text.indexOf(url) + 5);
+    assert.match(new SchemaRefProvider(fakeCache()).provideHover(doc, position)?.contents[0].value, /not cached/);
+    const cached = new SchemaRefProvider(fakeCache({ [url]: '{"title":"Meta schema"}' }));
+    assert.strictEqual(cached.provideDefinition(doc, position)?.uri.fsPath, '/cache/schema.json');
+    assert.match(cached.provideHover(doc, position)?.contents[0].value, /Meta schema/);
+  });
+
+  test('registers TOML along with the existing language selectors', () => {
+    SchemaRefProvider.register(fakeCache());
+    const selector = vscode.languages.registerDefinitionProvider.firstCall.args[0];
+    assert.ok(selector.some((entry: any) => entry.language === 'toml'));
+  });
+
+  test('uses the data file workspace folder even when the file is nested', () => {
+    fs.writeFileSync(path.join(dir, 'person.json'), '{"title":"Person"}');
+    vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: dir } });
+    const text = '{"$schema":"./person.json"}';
+    const doc = makeDoc(text, 'json', path.join(dir, 'nested', 'data.json'));
+    const provider = new SchemaRefProvider(fakeCache());
+    assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('./person') + 2))?.uri.fsPath,
+      path.join(dir, 'person.json'));
+  });
+
+  test('handles absolute paths, file URIs and JSON Pointer fragments', () => {
+    const schemaPath = path.join(dir, 'person.json');
+    fs.writeFileSync(schemaPath, '{"$defs":{"name":{"title":"Name"}}}');
+    for (const ref of [schemaPath, `file://${schemaPath}`]) {
+      const text = JSON.stringify({ $schema: `${ref}#/$defs/name` });
+      const provider = new SchemaRefProvider(fakeCache());
+      const doc = makeDoc(text, 'json');
+      const position = posAt(text.indexOf('#/') + 2);
+      const loc = provider.provideDefinition(doc, position);
+      assert.strictEqual(loc?.uri.fsPath, schemaPath);
+      const schemaText = fs.readFileSync(schemaPath, 'utf-8');
+      assert.strictEqual(schemaText.slice(
+        offsetOf(schemaText, loc.range.startLine, loc.range.startChar),
+        offsetOf(schemaText, loc.range.endLine, loc.range.endChar),
+      ), '"name"');
+      assert.match(provider.provideHover(doc, position)?.contents[0].value, /Name/);
+    }
+  });
+
+  test('navigates to the actual cached file and parses remote YAML by its original URL', () => {
+    const url = 'https://example.com/person.yaml';
+    const cachedPath = path.join(dir, 'hash.json');
+    const content = 'title: Person\ndescription: A person\ntype: object\n';
+    fs.writeFileSync(cachedPath, content);
+    const { SchemaCache } = require('../../SchemaCache');
+    const cache = new SchemaCache({ globalState: { get: () => [{ originalUrl: url, cachedPath }] } }, {});
+    const text = JSON.stringify({ $schema: url });
+    const provider = new SchemaRefProvider(cache);
+    const doc = makeDoc(text, 'json');
+    const position = posAt(text.indexOf(url) + 5);
+    assert.strictEqual(provider.provideDefinition(doc, position)?.uri.fsPath, cachedPath);
+    assert.match(provider.provideHover(doc, position)?.contents[0].value, /A person/);
+  });
+
+  test('[F13-FR-10] never fetches, downloads or prompts during hover, including uncached URLs', () => {
+    const fetch = sinon.stub().rejects(new Error('network forbidden'));
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetch;
+    try {
+      for (const cached of [false, true]) {
+        const url = 'https://example.com/person.json';
+        const cache = fakeCache(cached ? { [url]: '{"title":"Person"}' } : {});
+        cache.download = sinon.stub().rejects(new Error('download forbidden'));
+        const text = JSON.stringify({ $schema: url });
+        const provider = new SchemaRefProvider(cache);
+        const hover = provider.provideHover(makeDoc(text), posAt(text.indexOf(url) + 5));
+        assert.match(hover?.contents[0].value, cached ? /Person/ : /not cached/);
+        assert.ok(cache.download.notCalled);
+      }
+      assert.ok(fetch.notCalled);
+      assert.ok(vscode.window.showInformationMessage.notCalled);
+      assert.ok(vscode.commands.executeCommand.notCalled);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test('offers caching on definition, but runs the cache command only after acceptance', async () => {
+    const url = 'https://example.com/person.json';
+    const text = JSON.stringify({ $schema: url });
+    const doc = makeDoc(text);
+    const provider = new SchemaRefProvider(fakeCache());
+    vscode.window.showInformationMessage.resolves(undefined);
+    assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf(url) + 5)), undefined);
+    await Promise.resolve();
+    assert.ok(vscode.commands.executeCommand.notCalled);
+    vscode.window.showInformationMessage.resolves('Cache Schema Locally');
+    provider.provideDefinition(doc, posAt(text.indexOf(url) + 5));
+    await Promise.resolve();
+    assert.ok(vscode.commands.executeCommand.calledWith('jsonschema.cacheSchemaLocally', url, doc.uri));
+  });
+
+  test('uses the YAML directive in preference to a plain key and ignores other occurrences', () => {
+    const text = '# yaml-language-server: $schema=./person.json\n$schema: ./ignored.json\nnote: ./person.json\n';
+    fs.writeFileSync(path.join(dir, 'person.json'), '{"title":"Person"}');
+    const doc = makeDoc(text, 'yaml', path.join(dir, 'data.yaml'));
+    const provider = new SchemaRefProvider(fakeCache());
+    assert.ok(provider.provideDefinition(doc, posAt(text.indexOf('./person.json') + 2)));
+    assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('./ignored.json') + 2)), undefined);
+    assert.strictEqual(provider.provideHover(doc, posAt(text.lastIndexOf('./person.json') + 2)), undefined);
+  });
+
+  test('ignores nested keys, TOML table bindings, comments, malformed data and JSONL', () => {
+    const examples = [
+      ['json', '{"nested":{"$schema":"./person.json"}}'],
+      ['json', '{"$schema": 42, "note":"./person.json"}'],
+      ['json', '{"$schema":"./person.json"'],
+      ['jsonc', '{/* "$schema":"./person.json" */ "name":"Ada"}'],
+      ['toml', '[tool]\n"$schema" = "./person.json"'],
+      ['toml', 'description = """\n"$schema" = "./person.json"\n"""'],
+      ['yaml', '# $schema: ./person.json\nname: Ada'],
+      ['yaml', 'nested:\n  $schema: ./person.json'],
+      ['jsonl', '{"$schema":"./person.json"}'],
+    ];
+    for (const [lang, text] of examples) {
+      const provider = new SchemaRefProvider(fakeCache());
+      const doc = makeDoc(text, lang);
+      const position = posAt(text.indexOf('./person.json') + 2);
+      assert.strictEqual(provider.provideDefinition(doc, position), undefined, text);
+      assert.strictEqual(provider.provideHover(doc, position), undefined, text);
+    }
+  });
+
+  test('escapes schema-derived Markdown and tolerates missing or invalid targets', () => {
+    const schemaPath = path.join(dir, 'person.json');
+    const text = '{"$schema":"./person.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'data.json'));
+    const position = posAt(text.indexOf('./person.json') + 2);
+    assert.strictEqual(provider.provideDefinition(doc, position), undefined);
+    fs.writeFileSync(schemaPath, 'not json');
+    assert.strictEqual(provider.provideDefinition(doc, position), undefined);
+    fs.writeFileSync(schemaPath, JSON.stringify({ title: '<script>', description: '[click](command:bad)' }));
+    const md = provider.provideHover(doc, position).contents[0].value;
+    assert.ok(md.includes('\\<script\\>'));
+    assert.ok(md.includes('\\[click\\]\\(command:bad\\)'));
+  });
+
+  test('keeps $ref navigation in a YAML schema whose directive names the meta-schema', () => {
+    const text = '# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema\n'
+      + 'type: object\n$defs:\n  name:\n    title: Name\nproperties:\n  name:\n    $ref: "#/$defs/name"\n';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'yaml', path.join(dir, 'person.yaml'));
+    const position = posAt(text.indexOf('#/$defs/name') + 2);
+    const loc = provider.provideDefinition(doc, position);
+    assert.ok(loc, 'expected the $ref to resolve in the same document');
+    assert.strictEqual(loc.uri, doc.uri);
+    const md = provider.provideHover(doc, position)?.contents[0].value;
+    assert.match(md, /\*\*\$ref\*\*/);
+    assert.match(md, /Name/);
+  });
+
+  test('shows remote URLs in hover headings without Markdown escapes', () => {
+    const text = '{"$schema":"https://example.com/person.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'data.json'));
+    const md = provider.provideHover(doc, posAt(text.indexOf('example') + 2))?.contents[0].value;
+    assert.ok(md.startsWith('**$schema** `https://example.com/person.json`'), md);
+  });
+
+  test('resolves a relative inline binding from the workspace folder, like validation', () => {
+    fs.mkdirSync(path.join(dir, 'schemas'));
+    fs.mkdirSync(path.join(dir, 'data'));
+    fs.writeFileSync(path.join(dir, 'schemas', 'person.json'), '{"title":"Person"}');
+    (vscode.workspace.getWorkspaceFolder as any).returns({ uri: { fsPath: dir } });
+    const text = '{"$schema":"./schemas/person.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'data', 'data.json'));
+    const loc = provider.provideDefinition(doc, posAt(text.indexOf('./schemas') + 2));
+    assert.strictEqual(loc?.uri.fsPath, path.join(dir, 'schemas', 'person.json'));
+  });
+});

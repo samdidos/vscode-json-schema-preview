@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { modify, parseTree, Edit as JsoncEdit, FormattingOptions } from 'jsonc-parser';
-import { isSupported, isYaml, isToml, stripJsoncComments } from './languages';
+import { isSupported, isYaml, isToml } from './languages';
+import { inlineSchemaReference, yamlHasSyntaxErrors, tryParseToml, type InlineSchemaReference } from './inlineSchema';
 import { schemaLabel } from './statusBarFormat';
 import type { CatalogEntry } from './schemaCatalog';
 import {
@@ -439,9 +440,13 @@ export class SchemaBindingManager {
 
     if (isYaml(doc.languageId)) {
       const yamlExtensionInstalled = vscode.extensions.getExtension('redhat.vscode-yaml') !== undefined;
-      edits = [computeYamlSchemaUpsertEdit(text, schemaRef, yamlExtensionInstalled)];
+      const result = computeYamlSchemaUpsertEdit(text, schemaRef, yamlExtensionInstalled);
+      if ('error' in result) { vscode.window.showErrorMessage(result.error); return; }
+      edits = [result];
     } else if (isToml(doc.languageId)) {
-      edits = [computeTomlSchemaUpsertEdit(text, schemaRef)];
+      const result = computeTomlSchemaUpsertEdit(text, schemaRef);
+      if ('error' in result) { vscode.window.showErrorMessage(result.error); return; }
+      edits = [result];
     } else {
       const result = computeJsonSchemaInsertEdits(text, schemaRef, this.formattingOptionsFor(doc));
       if ('error' in result) {
@@ -475,10 +480,10 @@ export class SchemaBindingManager {
 
     const text = doc.getText();
     let edits: JsoncEdit[];
-    if (isYaml(doc.languageId)) {
-      edits = [computeYamlSchemaRemoveEdit(text)].filter((e): e is JsoncEdit => e !== undefined);
-    } else if (isToml(doc.languageId)) {
-      edits = [computeTomlSchemaRemoveEdit(text)].filter((e): e is JsoncEdit => e !== undefined);
+    if (isYaml(doc.languageId) || isToml(doc.languageId)) {
+      const result = isYaml(doc.languageId) ? computeYamlSchemaRemoveEdit(text) : computeTomlSchemaRemoveEdit(text);
+      if (result && 'error' in result) { vscode.window.showErrorMessage(result.error); return; }
+      edits = result ? [result] : [];
     } else {
       edits = computeJsonSchemaRemoveEdits(text, this.formattingOptionsFor(doc));
     }
@@ -745,27 +750,16 @@ export class SchemaBindingManager {
 // Utilities
 // ---------------------------------------------------------------------------
 
-// Shared between extractInlineSchemaUrl (read) and the inline-write helpers
-// below (write) so detection and writing always agree on notation.
-const YAML_DIRECTIVE_RE = /^#\s*yaml-language-server:\s*\$schema=(\S+)/im;
-const YAML_KEY_RE = /^\$schema:\s*(\S+)/m;
-// TOML inline `$schema` key (F11-FR-15). TOML requires the quoted-key form
-// because `$` is not a bare-key character.
-const TOML_SCHEMA_KEY_RE = /^"\$schema"\s*=\s*"([^"]+)"/m;
-// A `[table]` or `[[array-of-table]]` header line — everything from here on
-// belongs to that table, not the document root (F11-FR-15/16/17).
-const TOML_TABLE_HEADER_RE = /^[ \t]*\[\[?[^\]\r\n]+\]?\][ \t]*(#.*)?$/m;
+/** An inline-binding edit, or why it was refused (F10-FR-17). */
+export type InlineEditResult = JsoncEdit | { error: string };
 
-/**
- * The text preceding the first `[table]`/`[[array-of-table]]` header — the
- * document's root table, and the only place a document-level `"$schema"`
- * binding can live. A `"$schema"` key found after a header belongs to that
- * table (e.g. `tool.foo."$schema"`), not the document's own binding.
- */
-function tomlRootTableText(text: string): string {
-  const header = TOML_TABLE_HEADER_RE.exec(text);
-  return header ? text.slice(0, header.index) : text;
-}
+const INLINE_SYNTAX_ERROR =
+  'Cannot edit the inline $schema binding: fix the syntax errors in this file first.';
+const DIRECTIVE_WHITESPACE_ERROR =
+  'A yaml-language-server directive ends at the first space, so it cannot hold this path. '
+  + 'Remove the inline binding and add it again, or use a path without spaces.';
+const TOML_NON_STRING_ERROR =
+  'The root "$schema" key is not a string. Fix or remove it, then bind again.';
 
 /** Escapes a value for embedding in a TOML basic string ("..."). TOML basic
  *  strings share JSON's core escape sequences (`\\`, `\"`, `\uXXXX`-escaped
@@ -776,15 +770,6 @@ function tomlRootTableText(text: string): string {
  *  the whole file fail to parse (F11-FR-16). */
 function escapeTomlBasicString(value: string): string {
   return JSON.stringify(value).slice(1, -1);
-}
-
-/** Reverses {@link escapeTomlBasicString} (F11-FR-15). */
-function unescapeTomlBasicString(value: string): string {
-  try {
-    return JSON.parse(`"${value}"`);
-  } catch {
-    return value;
-  }
 }
 
 /**
@@ -869,6 +854,20 @@ export function stripEmbeddedUrlToken(url: string): string {
   return url;
 }
 
+/**
+ * Resolves a local schema reference bound to the data file at `dataUri` to a
+ * filesystem path. Validation and navigation share it so they always open the
+ * same file (F10-FR-05, F13-FR-12): `file://` URIs become paths, and relative
+ * paths resolve from the data file's workspace folder, or from its own
+ * directory outside a workspace.
+ */
+export function resolveLocalSchemaPath(ref: string, dataUri: vscode.Uri): string {
+  const fsPath = ref.startsWith('file://') ? vscode.Uri.parse(ref).fsPath : ref;
+  if (path.isAbsolute(fsPath)) { return fsPath; }
+  const folder = vscode.workspace.getWorkspaceFolder(dataUri);
+  return path.join(folder?.uri.fsPath ?? path.dirname(dataUri.fsPath), normalise(fsPath));
+}
+
 /** Strip leading ./ so that "./foo.json" and "foo.json" compare equal. */
 export function normalise(p: string): string {
   return p.startsWith('./') ? p.slice(2) : p;
@@ -925,30 +924,24 @@ export function pickInspectValue<T>(
  * Exported for use by ValidationManager and SchemaAuthStatusBar.
  */
 export function extractInlineSchemaUrl(doc: vscode.TextDocument): string | undefined {
-  try {
-    if (isYaml(doc.languageId)) {
-      const text = doc.getText();
-      // yaml-language-server directive comment — value may be a URL or a local
-      // relative/absolute path (F10 inline bindings can embed either).
-      const directive = YAML_DIRECTIVE_RE.exec(text);
-      if (directive) { return directive[1]; }
-      // top-level $schema key
-      const inline = YAML_KEY_RE.exec(text);
-      return inline?.[1];
-    }
-    if (isToml(doc.languageId)) {
-      // Lightweight regex rather than full TOML parsing, matching how YAML
-      // inline extraction works, restricted to the root table (F11-FR-15).
-      const inline = TOML_SCHEMA_KEY_RE.exec(tomlRootTableText(doc.getText()));
-      return inline ? unescapeTomlBasicString(inline[1]) : undefined;
-    }
-    const text = doc.languageId === 'jsonc' ? stripJsoncComments(doc.getText()) : doc.getText();
-    const parsed = JSON.parse(text);
-    const s = (parsed as Record<string, unknown>).$schema;
-    return typeof s === 'string' ? s : undefined;
-  } catch {
-    return undefined;
-  }
+  return extractInlineSchemaReference(doc)?.url;
+}
+
+const inlineReferenceCache = new WeakMap<vscode.TextDocument, {
+  version: number; languageId: string; reference: InlineSchemaReference | undefined;
+}>();
+
+/** The active inline binding and its value's source range (F13-FR-11).
+ * Shared with extraction so navigation obeys the same precedence and scope.
+ * Cached per document version and language (F13-NFR-03); a stand-in document
+ * without a version is always re-read. */
+export function extractInlineSchemaReference(doc: vscode.TextDocument): InlineSchemaReference | undefined {
+  const { version, languageId } = doc;
+  const cached = inlineReferenceCache.get(doc);
+  if (cached && cached.version === version && cached.languageId === languageId) { return cached.reference; }
+  const reference = inlineSchemaReference(doc.getText(), languageId);
+  if (typeof version === 'number') { inlineReferenceCache.set(doc, { version, languageId, reference }); }
+  return reference;
 }
 
 // ---------------------------------------------------------------------------
@@ -1003,24 +996,29 @@ export function computeJsonSchemaRemoveEdits(
  * following the priority order in F10-FR-09: update an existing directive or
  * plain key in place; otherwise insert a fresh first line, choosing the
  * directive form when the redhat.vscode-yaml extension is installed and a
- * plain `$schema:` key otherwise.
+ * plain `$schema:` key otherwise (or when the path has whitespace, which a
+ * directive cannot hold). Returns an error instead of an edit when the YAML
+ * has syntax errors: offsets from a partly parsed document could corrupt it
+ * or add a duplicate `$schema` line (F10-FR-17).
  */
 export function computeYamlSchemaUpsertEdit(
   text: string,
   schemaRef: string,
   yamlExtensionInstalled: boolean
-): JsoncEdit {
-  const directive = YAML_DIRECTIVE_RE.exec(text);
-  if (directive) {
-    const valueOffset = directive.index + directive[0].lastIndexOf(directive[1]);
-    return { offset: valueOffset, length: directive[1].length, content: schemaRef };
+): InlineEditResult {
+  if (yamlHasSyntaxErrors(text)) { return { error: INLINE_SYNTAX_ERROR }; }
+  const whitespace = /\s/.test(schemaRef);
+  const existing = inlineSchemaReference(text, 'yaml', true);
+  if (existing) {
+    // The directive form is kept (F10-FR-16), but it cannot carry whitespace.
+    if (existing.directive && whitespace) { return { error: DIRECTIVE_WHITESPACE_ERROR }; }
+    const quoted = !existing.directive && (existing.flow || /^["']/.test(text.slice(existing.start))
+      || /[\r\n#]/.test(schemaRef));
+    const trailingBreak = /\r?\n$/.exec(text.slice(existing.start, existing.end))?.[0] ?? '';
+    return { offset: existing.start, length: existing.end - existing.start,
+      content: (quoted ? JSON.stringify(schemaRef) : schemaRef) + trailingBreak };
   }
-  const key = YAML_KEY_RE.exec(text);
-  if (key) {
-    const valueOffset = key.index + key[0].lastIndexOf(key[1]);
-    return { offset: valueOffset, length: key[1].length, content: schemaRef };
-  }
-  const line = yamlExtensionInstalled
+  const line = yamlExtensionInstalled && !whitespace
     ? `# yaml-language-server: $schema=${schemaRef}\n`
     : `$schema: ${schemaRef}\n`;
   return { offset: 0, length: 0, content: line };
@@ -1030,14 +1028,27 @@ export function computeYamlSchemaUpsertEdit(
  * Computes the edit needed to remove an inline YAML schema reference —
  * either the whole directive-comment line or the whole `$schema:` key line,
  * including its trailing newline. Returns undefined when neither form is
- * present (F10-FR-10).
+ * present (F10-FR-10), or an error when the YAML has syntax errors (F10-FR-17).
  */
-export function computeYamlSchemaRemoveEdit(text: string): JsoncEdit | undefined {
-  const directiveLine = /^#\s*yaml-language-server:\s*\$schema=\S+\r?\n?/im.exec(text);
-  if (directiveLine) {return { offset: directiveLine.index, length: directiveLine[0].length, content: '' };}
-  const keyLine = /^\$schema:\s*\S+\r?\n?/m.exec(text);
-  if (keyLine) {return { offset: keyLine.index, length: keyLine[0].length, content: '' };}
-  return undefined;
+export function computeYamlSchemaRemoveEdit(text: string): InlineEditResult | undefined {
+  if (yamlHasSyntaxErrors(text)) { return { error: INLINE_SYNTAX_ERROR }; }
+  const existing = inlineSchemaReference(text, 'yaml');
+  if (!existing) { return undefined; }
+  if (existing.flow) {
+    let start = existing.keyStart ?? existing.start;
+    let end = existing.end;
+    const after = /^(?:\s|#[^\r\n]*\r?\n)*,/.exec(text.slice(end));
+    const before = /,(?:\s|#[^\r\n]*(?:\r?\n|$))*$/.exec(text.slice(0, start));
+    let content = '';
+    if (after) { end += after[0].length; }
+    else if (before) {
+      start -= before[0].length;
+      // Keep comments and whitespace after the previous pair's comma.
+      content = before[0].slice(1);
+    }
+    return { offset: start, length: end - start, content };
+  }
+  return removeBindingLine(text, existing.keyStart ?? existing.start, existing.end);
 }
 
 // ---------------------------------------------------------------------------
@@ -1053,18 +1064,22 @@ export function computeYamlSchemaRemoveEdit(text: string): JsoncEdit | undefined
  * replace an existing `"$schema" = "<ref>"` value in place, or insert a fresh
  * `"$schema" = "<ref>"` line before the first non-comment, non-blank line so it
  * sits above any `[table]` header (TOML requires top-level keys to precede
- * table sections). (F11-FR-16)
+ * table sections). (F11-FR-16) Returns an error instead when the TOML does not
+ * parse, or its root `"$schema"` is not a string value, rather than risk a
+ * duplicate key (F10-FR-17).
  */
-export function computeTomlSchemaUpsertEdit(text: string, schemaRef: string): JsoncEdit {
+export function computeTomlSchemaUpsertEdit(text: string, schemaRef: string): InlineEditResult {
+  const parsed = tryParseToml(text);
+  if (!parsed) { return { error: INLINE_SYNTAX_ERROR }; }
   const escapedRef = escapeTomlBasicString(schemaRef);
-  // Restricted to the root table so a nested `"$schema"` key under a
-  // `[table]` header isn't mistaken for the document's own binding (F11-FR-15).
-  const existing = TOML_SCHEMA_KEY_RE.exec(tomlRootTableText(text));
+  const existing = inlineSchemaReference(text, 'toml');
   if (existing) {
-    // Replace just the quoted value, preserving surrounding whitespace.
-    const valueOffset = existing.index + existing[0].lastIndexOf(existing[1]);
-    return { offset: valueOffset, length: existing[1].length, content: escapedRef };
+    return { offset: existing.start, length: existing.end - existing.start,
+      content: `"${escapedRef}"` };
   }
+  // Not a locatable string, yet the root table has one: inserting would
+  // duplicate the key (e.g. `"$schema" = 42` or `"$schema".x = 1`).
+  if (parsed.$schema !== undefined) { return { error: TOML_NON_STRING_ERROR }; }
 
   // Find the first line that is neither blank nor a `#` comment.
   const lines = text.split('\n');
@@ -1081,12 +1096,19 @@ export function computeTomlSchemaUpsertEdit(text: string, schemaRef: string): Js
 /**
  * Computes the edit needed to remove an inline TOML schema reference — the whole
  * `"$schema" = "..."` line including its trailing newline. Returns undefined
- * when no such line is present (F11-FR-17).
+ * when no such line is present (F11-FR-17), or an error when the TOML does not
+ * parse (F10-FR-17).
  */
-export function computeTomlSchemaRemoveEdit(text: string): JsoncEdit | undefined {
-  // Restricted to the root table, mirroring computeTomlSchemaUpsertEdit (F11-FR-15/17).
-  const rootText = tomlRootTableText(text);
-  const line = /^"\$schema"\s*=\s*"[^"]*"[^\n]*\r?\n?/m.exec(rootText);
-  if (line) {return { offset: line.index, length: line[0].length, content: '' };}
-  return undefined;
+export function computeTomlSchemaRemoveEdit(text: string): InlineEditResult | undefined {
+  if (!tryParseToml(text)) { return { error: INLINE_SYNTAX_ERROR }; }
+  const statement = inlineSchemaReference(text, 'toml')?.statement;
+  return statement ? { offset: statement.start, length: statement.end - statement.start, content: '' } : undefined;
+}
+
+/** Remove the binding statement, including multiline values and a final comment. */
+function removeBindingLine(text: string, keyStart: number, valueEnd: number): JsoncEdit {
+  const start = text.lastIndexOf('\n', keyStart - 1) + 1;
+  const newline = text[valueEnd - 1] === '\n' ? valueEnd - 1 : text.indexOf('\n', valueEnd);
+  const end = newline < 0 ? text.length : newline + 1;
+  return { offset: start, length: end - start, content: '' };
 }

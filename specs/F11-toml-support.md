@@ -106,13 +106,14 @@ value tree, so date/time values are validated as strings.
 ### Inline `$schema` for TOML (extends F10)
 
 - **F11-FR-15** `extractInlineSchemaUrl` MUST be extended to detect TOML
-  files and extract the `"$schema"` key value using a lightweight regex
-  (`/^"\$schema"\s*=\s*"([^"]+)"/m`) rather than full TOML parsing, consistent
-  with how YAML inline extraction uses a regex. The search MUST be restricted
-  to the text **before the first `[table]` or `[[array-of-table]]` header
-  line** — a `"$schema"` key appearing after such a header is a nested key
-  (e.g. `tool.foo."$schema"`), not the document's own binding, and MUST NOT
-  be mistaken for one.
+  files and extract the `"$schema"` string value of the **root table**, located
+  with the positional scanner in `src/tomlLocator.ts`. A `"$schema"` key under
+  a `[table]` or `[[array-of-table]]` header, or reached through a dotted key
+  (e.g. `tool.foo."$schema"`), is a nested key, not the document's own binding,
+  and MUST NOT be mistaken for one. While a file is being edited into an
+  invalid state, the binding MUST still be found when the text up to and
+  including it scans as TOML, so completions keep working as the user types
+  (F19-FR-04).
 - **F11-FR-16** The F10 inline binding write path MUST support TOML: inserting
   or replacing `"$schema" = "<ref>"` as the first non-comment line of the file
   (searched under the same root-table restriction as F11-FR-15), using a

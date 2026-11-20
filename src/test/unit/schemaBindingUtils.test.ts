@@ -3,6 +3,7 @@
 // found to be executed-but-unverified — they assert exact return values across
 // every branch so a flipped condition or operator fails a test (i.e. is killed).
 import * as assert from 'assert';
+import * as path from 'path';
 import { applyEdits } from 'jsonc-parser';
 import * as vscode from '../mocks/vscode';
 import { setConfig, setScopedConfig } from '../mocks/vscode';
@@ -20,6 +21,7 @@ const {
   computeYamlSchemaRemoveEdit,
   computeTomlSchemaUpsertEdit,
   computeTomlSchemaRemoveEdit,
+  resolveLocalSchemaPath,
 } = require('../../SchemaBindingManager');
 
 const { ConfigurationTarget } = vscode;
@@ -275,6 +277,39 @@ suite('validateSchemaRefInput()', () => {
 
 suite('extractInlineSchemaUrl()', () => {
   const doc = (languageId: string, text: string) => ({ languageId, getText: () => text } as any);
+
+  test('[F13-NFR-03] reuses the result for an unchanged version and re-reads a new one', () => {
+    let text = '$schema: ./a.json\n';
+    let reads = 0;
+    const d = { languageId: 'yaml', version: 1, getText: () => { reads++; return text; } } as any;
+    assert.strictEqual(extractInlineSchemaUrl(d), './a.json');
+    assert.strictEqual(extractInlineSchemaUrl(d), './a.json');
+    assert.strictEqual(reads, 1);
+    text = '$schema: ./b.json\n'; d.version = 2;
+    assert.strictEqual(extractInlineSchemaUrl(d), './b.json');
+    d.languageId = 'json';
+    assert.strictEqual(extractInlineSchemaUrl(d), undefined);
+    assert.strictEqual(reads, 3);
+  });
+
+  test('[F13-NFR-03] a large YAML file with a binding is parsed once per version', () => {
+    const text = '$schema: ./a.json\n' + Array.from({ length: 1_500 },
+      (_, i) => `service_${i}:\n  image: "registry.example.com/team/app:1.2.3"\n  replicas: 3\n`).join('');
+    const d = { languageId: 'yaml', version: 7, getText: () => text } as any;
+    const time = () => { const s = performance.now(); assert.strictEqual(extractInlineSchemaUrl(d), './a.json'); return performance.now() - s; };
+    const first = time();
+    const repeat = Math.max(time(), time(), time());
+    console.log(`[F13-NFR-03] ${(text.length / 1024).toFixed(0)} KB YAML with $schema: first call ${first.toFixed(1)} ms, repeat ${repeat.toFixed(3)} ms`);
+    assert.ok(repeat < 5, `expected a cached repeat < 5 ms, measured ${repeat.toFixed(1)} ms`);
+  });
+
+  test('[F13-NFR-03] a document without a version is never cached', () => {
+    let text = '$schema: ./a.json\n';
+    const d = { languageId: 'yaml', getText: () => text } as any;
+    assert.strictEqual(extractInlineSchemaUrl(d), './a.json');
+    text = 'foo: 1\n';
+    assert.strictEqual(extractInlineSchemaUrl(d), undefined);
+  });
 
   test('json $schema string', () =>
     assert.strictEqual(
@@ -572,5 +607,141 @@ suite('computeYamlSchemaRemoveEdit() [F10-FR-10]', () => {
 
   test('returns undefined when there is nothing to remove', () => {
     assert.strictEqual(computeYamlSchemaRemoveEdit('foo: 1\n'), undefined);
+  });
+});
+
+suite('Newly recognized bindings remain editable [F10-FR-09] [F10-FR-10] [F11-FR-16] [F11-FR-17]', () => {
+  const apply = (text: string, edit: { offset: number; length: number; content: string }) =>
+    text.slice(0, edit.offset) + edit.content + text.slice(edit.offset + edit.length);
+
+  test('updates and removes literal TOML keys without adding duplicates', () => {
+    const text = "'$schema' = './person schema.json' # binding\ntitle = 'Keep me'\n";
+    const updated = apply(text, computeTomlSchemaUpsertEdit(text, './new.json'));
+    assert.strictEqual(extractInlineSchemaUrl({ languageId: 'toml', getText: () => updated } as any), './new.json');
+    assert.strictEqual((updated.match(/\$schema/g) || []).length, 1);
+    assert.strictEqual(apply(text, computeTomlSchemaRemoveEdit(text)!), "title = 'Keep me'\n");
+  });
+
+  test('does not update fake TOML assignments inside multiline data', () => {
+    const text = 'description = """\n"$schema" = "./fake.json"\n"""\n';
+    const updated = apply(text, computeTomlSchemaUpsertEdit(text, './new.json'));
+    assert.ok(updated.includes('"$schema" = "./fake.json"'));
+    assert.strictEqual(extractInlineSchemaUrl({ languageId: 'toml', getText: () => updated } as any), './new.json');
+    assert.strictEqual(computeTomlSchemaRemoveEdit(text), undefined);
+  });
+
+  test('updates quoted YAML keys and values without leaving broken quotes or fragments', () => {
+    for (const text of ["'$schema': './person schema.json' # binding\nname: Keep\n", '$schema: ./person schema.json # binding\nname: Keep\n']) {
+      const updated = apply(text, computeYamlSchemaUpsertEdit(text, './new.json', false));
+      assert.strictEqual(extractInlineSchemaUrl({ languageId: 'yaml', getText: () => updated } as any), './new.json');
+      assert.strictEqual(apply(text, computeYamlSchemaRemoveEdit(text)!), 'name: Keep\n');
+    }
+  });
+
+  test('removes a YAML flow binding without deleting other fields', () => {
+    for (const text of ['{$schema: ./old.json, name: Keep}', '{name: Keep, $schema: ./old.json}', '{$schema: ./old.json}']) {
+      const updated = apply(text, computeYamlSchemaUpsertEdit(text, './new.json', false));
+      assert.strictEqual(extractInlineSchemaUrl({ languageId: 'yaml', getText: () => updated } as any), './new.json');
+      const removed = apply(text, computeYamlSchemaRemoveEdit(text)!);
+      assert.strictEqual(extractInlineSchemaUrl({ languageId: 'yaml', getText: () => removed } as any), undefined);
+      assert.deepStrictEqual(require('yaml').parse(removed), text.includes('Keep') ? { name: 'Keep' } : {});
+    }
+  });
+});
+
+suite('YAML edits preserve surrounding data [F10-FR-09] [F10-FR-10]', () => {
+  const YAML = require('yaml');
+  const apply = (text: string, edit: { offset: number; length: number; content: string }) =>
+    text.slice(0, edit.offset) + edit.content + text.slice(edit.offset + edit.length);
+
+  test('updating or removing a block scalar preserves every following field', () => {
+    for (const style of ['>-', '|-', '>', '|']) {
+      for (const newline of ['\n', '\r\n']) {
+        const text = `$schema: ${style}${newline}  ./old.json${newline}name: Ada${newline}age: 29${newline}`;
+        const updated = apply(text, computeYamlSchemaUpsertEdit(text, './new.json', false));
+        assert.deepStrictEqual(YAML.parse(updated), { $schema: './new.json', name: 'Ada', age: 29 });
+        const removed = apply(text, computeYamlSchemaRemoveEdit(text)!);
+        assert.deepStrictEqual(YAML.parse(removed), { name: 'Ada', age: 29 });
+      }
+    }
+  });
+
+  test('removing flow pairs handles commas on either neighboring line', () => {
+    for (const text of [
+      '{\n  $schema: ./old.json\n  , name: Ada\n}',
+      '{\n  name: Ada,\n  $schema: ./old.json\n}',
+      '{ $schema: ./old.json, name: Ada }',
+      '{$schema: ./old.json # schema comment\n, name: Ada}',
+      '{name: Ada, # keep comment\n $schema: ./old.json}',
+    ]) {
+      const removed = apply(text, computeYamlSchemaRemoveEdit(text)!);
+      assert.deepStrictEqual(YAML.parse(removed), { name: 'Ada' });
+    }
+  });
+
+  test('replacing null or numeric values replaces the existing key rather than duplicating it', () => {
+    for (const value of ['null', '42', '']) {
+      const text = `$schema: ${value}\nname: Ada\n`;
+      const updated = apply(text, computeYamlSchemaUpsertEdit(text, './new.json', false));
+      assert.deepStrictEqual(YAML.parse(updated), { $schema: './new.json', name: 'Ada' });
+    }
+  });
+});
+
+suite('YAML/TOML inline edits refuse files with syntax errors [F10-FR-17]', () => {
+  const refused = (result: any) => assert.match(result?.error ?? '', /syntax errors/);
+
+  test('YAML upsert and remove refuse a partly parsed document', () => {
+    const text = '$schema: ./old.json\nbroken: [\n';
+    refused(computeYamlSchemaUpsertEdit(text, './new.json', false));
+    refused(computeYamlSchemaUpsertEdit(text, './new.json', true));
+    refused(computeYamlSchemaRemoveEdit(text));
+  });
+
+  test('a multi-document YAML stream is valid and still edited', () => {
+    const text = '$schema: ./old.json\na: 1\n---\nb: 2\n';
+    assert.strictEqual(applyYamlEdit(text, computeYamlSchemaUpsertEdit(text, './new.json', false)),
+      '$schema: ./new.json\na: 1\n---\nb: 2\n');
+    assert.strictEqual(applyYamlEdit(text, computeYamlSchemaRemoveEdit(text)), 'a: 1\n---\nb: 2\n');
+  });
+
+  test('TOML upsert and remove refuse TOML that does not parse, even with a locatable binding', () => {
+    for (const text of ['"$schema" = "./old.json"\ntitle = \n', '"$schema" = "./old.json"\ntitle = bogus\n']) {
+      refused(computeTomlSchemaUpsertEdit(text, './new.json'));
+      refused(computeTomlSchemaRemoveEdit(text));
+    }
+  });
+
+  test('TOML upsert refuses a non-string root "$schema" instead of adding a second key', () => {
+    for (const text of ['"$schema" = 42\n', '"$schema".x = 1\n']) {
+      assert.match(computeTomlSchemaUpsertEdit(text, './new.json').error, /not a string/);
+    }
+  });
+
+  test('a path with whitespace is never written into a yaml-language-server directive', () => {
+    const inserted = computeYamlSchemaUpsertEdit('name: x\n', './my schemas/s.json', true);
+    assert.strictEqual(inserted.content, '$schema: ./my schemas/s.json\n');
+    const existing = '# yaml-language-server: $schema=./old.json\nname: x\n';
+    assert.match(computeYamlSchemaUpsertEdit(existing, './my schemas/s.json', true).error, /first space/);
+  });
+});
+
+suite('resolveLocalSchemaPath() [F10-FR-05] [F13-FR-12]', () => {
+  const dataUri = vscode.Uri.file(path.join('/ws', 'data', 'd.json'));
+
+  test('resolves a relative path from the data file\'s workspace folder', () => {
+    (vscode.workspace.getWorkspaceFolder as any).returns({ uri: { fsPath: '/ws' } });
+    assert.strictEqual(resolveLocalSchemaPath('./schemas/s.json', dataUri), path.join('/ws', 'schemas', 's.json'));
+  });
+
+  test('outside a workspace, resolves from the data file\'s directory', () => {
+    (vscode.workspace.getWorkspaceFolder as any).returns(undefined);
+    assert.strictEqual(resolveLocalSchemaPath('./s.json', dataUri), path.join('/ws', 'data', 's.json'));
+  });
+
+  test('keeps absolute paths and converts file:// URIs', () => {
+    const abs = path.resolve('/abs/s.json');
+    assert.strictEqual(resolveLocalSchemaPath(abs, dataUri), abs);
+    assert.strictEqual(resolveLocalSchemaPath('file:///abs/s.json', dataUri), '/abs/s.json');
   });
 });

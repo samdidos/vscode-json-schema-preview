@@ -1233,6 +1233,14 @@
       ],
       "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
+    "F10-FR-17": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts",
+        "src/inlineSchema.ts"
+      ],
+      "note": "YAML/TOML inline write and remove refuse files with syntax errors instead of editing a partly parsed document."
+    },
     "F10-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -1588,6 +1596,27 @@
       ],
       "note": "hover never fetches; uncached remote states not-cached + command hint"
     },
+    "F13-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/inlineSchema.ts",
+        "src/SchemaBindingManager.ts",
+        "src/SchemaRefProvider.ts"
+      ]
+    },
+    "F13-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefProvider.ts",
+        "src/SchemaCache.ts"
+      ]
+    },
+    "F13-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefProvider.ts"
+      ]
+    },
     "F13-NFR-01": {
       "status": "manual",
       "impl": [
@@ -1599,9 +1628,17 @@
     "F13-NFR-02": {
       "status": "implemented",
       "impl": [
-        "src/schemaPointer.ts"
+        "src/schemaPointer.ts",
+        "src/inlineSchema.ts"
       ],
       "note": "schemaPointer is a pure module unit-tested incl escapes/missing/arrays/YAML"
+    },
+    "F13-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/inlineSchema.ts",
+        "src/SchemaBindingManager.ts"
+      ]
     },
     "F14-FR-01": {
       "status": "implemented",

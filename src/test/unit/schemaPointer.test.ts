@@ -7,6 +7,7 @@ import {
   resolvePointer,
   escapeMarkdown,
   describeRefTarget,
+  codeSpan,
   findRefAtOffset,
   locatePointerTarget,
   parseSchemaText,
@@ -399,5 +400,24 @@ suite('[F28-FR-13] locateAnchorSegments()', () => {
     const span = locateAnchorSegments(nestedJson, 'json', candidates[0].split('_'));
     assert.ok(span);
     assert.strictEqual(nestedJson.slice(span!.start, span!.end), '"city"');
+  });
+});
+
+suite('[F13-FR-09] codeSpan()', () => {
+  test('keeps the text literal, with no backslash escapes', () => {
+    assert.strictEqual(codeSpan('https://example.com/a.json'), '`https://example.com/a.json`');
+  });
+  test('uses a longer fence, padded, around backticks', () => {
+    assert.strictEqual(codeSpan('a`b'), '``a`b``');
+    assert.strictEqual(codeSpan('`x'), '`` `x ``');
+  });
+  test('folds line breaks so a blank line cannot end the span', () => {
+    assert.strictEqual(codeSpan('a\n\nb'), '`a  b`');
+  });
+  test('[F13-FR-13] describeRefTarget takes a heading label and leaves code spans unescaped', () => {
+    const md = describeRefTarget({ type: 'object', properties: { 'a.b': {} } }, 'https://example.com/s.json', '$schema');
+    assert.ok(md.startsWith('**$schema** `https://example.com/s.json`'), md);
+    assert.match(md, /`a\.b`/);
+    assert.ok(!md.includes('\\.'), md);
   });
 });

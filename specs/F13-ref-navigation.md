@@ -24,11 +24,12 @@ schema *authors*.
 ### Scope of Providers
 
 - **F13-FR-01** A `DefinitionProvider` and a `HoverProvider` MUST be registered
-  for `json`, `jsonc`, `yaml`, and `yml` documents, active only where
+  for `json`, `jsonc`, `yaml`, `yml`, and `toml` documents, active only where
   `jsonschema.isJsonSchema` semantics apply (the document is a schema file per
-  F01-FR-02).
+  F01-FR-02), plus inline-bound data files as specified in F13-FR-11.
 - **F13-FR-02** Providers MUST trigger only when the cursor is on the string
-  value of a `$ref` key (or the key itself).
+  value of a `$ref` key (or the key itself), or an inline binding value per
+  F13-FR-11.
 
 ### Reference Resolution
 
@@ -58,10 +59,36 @@ schema *authors*.
   type (same labelling rules as the fallback renderer's `describeType`),
   `description`, and — for objects — up to the first 10 property names.
 - **F13-FR-09** Hover content MUST be plain Markdown with all schema-derived
-  strings escaped; it MUST NOT execute or embed HTML.
+  strings escaped, or placed in code spans, whose content renders literally and
+  so MUST NOT be escaped; it MUST NOT execute or embed HTML.
 - **F13-FR-10** Hover MUST NOT perform network I/O: remote refs show hover
   content only when the target is already cached; otherwise the hover states
   that the schema is not cached and names the command to cache it.
+
+### Inline Data Bindings
+
+- **F13-FR-11** Providers MUST also support the active inline `$schema`
+  binding of JSON/JSONC, YAML/YML and TOML data files. Detection MUST reuse
+  `extractInlineSchemaUrl` semantics (including YAML directive precedence
+  and TOML root-table scope). Only the binding's value MUST trigger navigation
+  or hover; nested keys, ordinary comments, unrelated strings and JSONL MUST NOT.
+  Quoted YAML paths, paths containing spaces in a `$schema` key value and
+  JSONC trailing commas MUST be supported. A YAML directive value MUST end at
+  the first whitespace, as yaml-language-server reads it, so a trailing
+  `# comment` is not part of the path. Assignment-like text inside TOML
+  multiline values MUST NOT be treated as a binding.
+- **F13-FR-12** Go to Definition on an inline binding MUST open its local
+  schema or the actual cached file for a remote URL, resolving JSON Pointer
+  fragments when present. Relative local paths MUST follow F10-FR-05's
+  workspace-folder convention; outside a workspace they MUST resolve from
+  the data file's directory. Uncached remote bindings MUST offer the existing
+  cache command and MUST NOT fetch without the user choosing that action.
+  Cache lookup MUST accept existing entries keyed by either the document URL
+  or the full reference including its fragment.
+- **F13-FR-13** Hover on an inline binding MUST show the target schema's
+  title and description using escaped Markdown, or uncached guidance for
+  an unavailable remote schema. It MUST NOT fetch, download, or prompt.
+  Cached YAML MUST be parsed using the original URL's format (F13-FR-06).
 
 ## Non-Functional Requirements
 
@@ -71,6 +98,11 @@ schema *authors*.
 - **F13-NFR-02** Pointer-resolution logic MUST be a pure module with unit
   tests covering escapes, missing paths, arrays, and YAML documents
   (≥ 80 % coverage, Article V).
+- **F13-NFR-03** Inline binding extraction runs on hot paths (status bar on
+  every editor switch, validation on save), so it MUST NOT parse a document
+  whose text does not contain the literal `$schema`, and MUST reuse its result
+  for an unchanged document version and language. A key spelled only through
+  escapes (e.g. `"\u0024schema"`) is therefore not a binding.
 
 ## Out of Scope
 
@@ -93,12 +125,20 @@ schema *authors*.
    **Cache Schema Locally**, hover shows the target summary.
 5. A ref to a missing pointer shows a message naming the pointer and does not
    throw.
+6. Go to Definition on an inline-bound JSON/JSONC, YAML/YML or TOML data
+   file's `$schema` value opens the local schema. A nested data file uses its
+   workspace folder as the base for a relative binding.
+7. A YAML `yaml-language-server: $schema=` directive supports the same
+   navigation, taking precedence over a plain `$schema` key.
+8. A remote inline binding opens the actual cached file, including schemas
+   authored as YAML. An uncached binding offers the cache command only on
+   Go to Definition.
+9. Hover on an inline binding shows escaped title/description or uncached
+   guidance without network I/O or a prompt. Other positions do not trigger.
 
 ## Open Questions
 
-- Q1 — Should the providers also activate on *data* files' `$schema` values
-  (jump to the bound schema)? Cheap to add; leaning yes. Tracked in
-  [#237](https://github.com/samdidos/vscode-json-schema-preview/issues/237).
+Q1 is resolved by F13-FR-11 through F13-FR-13 (issue #237).
 
 ## Relation to Existing Specs
 

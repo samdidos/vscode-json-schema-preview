@@ -57,7 +57,7 @@ that starts *after* that:
 |---|---|
 | **Preview** | Renders a schema as live, navigable HTML documentation in a side panel, scroll-synced with the editor. <kbd>Ctrl</kbd>+<kbd>K</kbd> <kbd>V</kbd>. |
 | **Outline** | The Outline view, breadcrumbs and Go-to-Symbol show the *schema's* shape — properties, types, what's required — not the document's. |
-| **`$ref` navigation** | <kbd>Ctrl</kbd>+click a `$ref` to jump to it; hover for a summary. |
+| **Schema navigation** | <kbd>Ctrl</kbd>+click a `$ref` or a data file's inline `$schema` value to open its target; hover for a summary. |
 | **`$ref` graph** | A bird's-eye diagram of which definitions reference which, and every external document pulled in. |
 
 <!-- spec:F03,F04,F17,F29 -->

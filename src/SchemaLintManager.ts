@@ -134,6 +134,7 @@ export class SchemaLintManager implements vscode.CodeActionProvider {
       // A schema file's meta-schema is a plain `$schema:` key, not a
       // yaml-language-server binding directive — hence `false`.
       const e = computeYamlSchemaUpsertEdit(text, draft, false);
+      if ('error' in e) { vscode.window.showErrorMessage(e.error); return; }
       const r = new vscode.Range(doc.positionAt(e.offset), doc.positionAt(e.offset + e.length));
       edit.replace(doc.uri, r, e.content);
     } else {
