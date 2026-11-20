@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { findBoundSchemaPath, extractInlineSchemaUrl, normalise } from './SchemaBindingManager';
+import { findBoundSchemaPath, extractInlineSchemaUrl, resolveLocalSchemaPath } from './SchemaBindingManager';
 import type { NativeSchemaMatch } from './nativeSchema';
 import { isSupported, languageForSchemaSource } from './languages';
 import { parseSchemaText } from './schemaPointer';
@@ -215,14 +215,9 @@ async function loadSchema(
       throw e;
     }
   }
-  // file:// URIs are written by redirectBindingToLocalCache; convert to a plain fs path.
-  let resolved = schemaPath.startsWith('file://')
-    ? vscode.Uri.parse(schemaPath).fsPath
-    : schemaPath;
-  if (!path.isAbsolute(resolved)) {
-    const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
-    if (folder) { resolved = path.join(folder.uri.fsPath, normalise(resolved)); }
-  }
+  // file:// URIs are written by redirectBindingToLocalCache; relative paths
+  // follow the shared rule navigation also uses (F10-FR-17).
+  const resolved = resolveLocalSchemaPath(schemaPath, doc.uri);
   return { schema: parseSchema(fs.readFileSync(resolved, 'utf-8'), resolved), stale: false };
 }
 

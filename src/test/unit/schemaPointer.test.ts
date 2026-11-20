@@ -7,6 +7,7 @@ import {
   resolvePointer,
   escapeMarkdown,
   describeRefTarget,
+  markdownCode,
   findRefAtOffset,
   locatePointerTarget,
   parseSchemaText,
@@ -111,6 +112,25 @@ suite('[F13-FR-09] escapeMarkdown() / describeRefTarget()', () => {
   test('does not embed raw HTML from a malicious title', () => {
     const md = describeRefTarget({ title: '<script>alert(1)</script>' }, '#/x');
     assert.ok(!md.includes('<script>alert(1)</script>'));
+  });
+});
+
+suite('[F13-FR-13] markdownCode() / describeRefTarget() labels', () => {
+  test('shows the value verbatim — no backslash escapes inside a code span', () =>
+    assert.strictEqual(markdownCode('https://example.com/s_1.json#/a'), '`https://example.com/s_1.json#/a`'));
+  test('fences a value containing backticks with a longer run', () =>
+    assert.strictEqual(markdownCode('a ``b`` c'), '```a ``b`` c```'));
+  test('pads a value that starts or ends with a backtick, and an empty value', () => {
+    assert.strictEqual(markdownCode('`x'), '`` `x ``');
+    assert.strictEqual(markdownCode(''), '` `');
+  });
+  test('turns line breaks into spaces', () =>
+    assert.strictEqual(markdownCode('a\r\nb\nc'), '`a b c`'));
+  test('describeRefTarget labels the heading and keeps code spans verbatim', () => {
+    const md = describeRefTarget({ type: 'object', properties: Object.fromEntries([['first_name', {}]]) }, './s.json', '$schema');
+    assert.ok(md.startsWith('**$schema** `./s.json`'), md);
+    assert.match(md, /`first_name`/);
+    assert.match(md, /\*\*type:\*\* `object`/);
   });
 });
 

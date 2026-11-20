@@ -82,12 +82,33 @@ export function escapeMarkdown(s: string): string {
 }
 
 /**
+ * Wrap `s` in a Markdown code span shown verbatim (F13-FR-13). Backslash
+ * escapes are not processed inside a code span — escaping there would show the
+ * backslashes — so instead the fence is one backtick longer than any backtick
+ * run in `s`, which keeps the content inert. Line breaks become spaces.
+ */
+export function markdownCode(s: string): string {
+  const text = s.replace(/\r?\n/g, ' ');
+  if (text === '') { return '` `'; }
+  const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map(run => run.length));
+  const fence = '`'.repeat(longest + 1);
+  const pad = text.startsWith('`') || text.endsWith('`') ? ' ' : '';
+  return `${fence}${pad}${text}${pad}${fence}`;
+}
+
+/** The heading line of a ref hover: `**$ref** `#/x`` (F13-FR-08/13). */
+export function refHoverHeading(ref: string, label = '$ref'): string {
+  return `**${label}** ${markdownCode(ref)}`;
+}
+
+/**
  * Build a plain-Markdown summary of a referenced subschema: title, effective
  * type (via {@link describeType}), description, and — for objects — up to the
- * first 10 property names (F13-FR-08). Never embeds HTML.
+ * first 10 property names (F13-FR-08). Never embeds HTML. `label` names the
+ * keyword that points here: `$ref`, or `$schema` for an inline binding (F13-FR-13).
  */
-export function describeRefTarget(target: unknown, ref: string): string {
-  const lines: string[] = [`**$ref** \`${escapeMarkdown(ref)}\``];
+export function describeRefTarget(target: unknown, ref: string, label = '$ref'): string {
+  const lines: string[] = [refHoverHeading(ref, label)];
   const o = target && typeof target === 'object' && !Array.isArray(target)
     ? (target as Record<string, unknown>)
     : undefined;
@@ -98,7 +119,7 @@ export function describeRefTarget(target: unknown, ref: string): string {
   if (typeof o.title === 'string' && o.title.trim()) {
     lines.push(`### ${escapeMarkdown(o.title)}`);
   }
-  lines.push(`**type:** \`${escapeMarkdown(describeType(o))}\``);
+  lines.push(`**type:** ${markdownCode(describeType(o))}`);
   if (typeof o.description === 'string' && o.description.trim()) {
     lines.push(escapeMarkdown(o.description));
   }
@@ -106,7 +127,7 @@ export function describeRefTarget(target: unknown, ref: string): string {
     ? Object.keys(o.properties as Record<string, unknown>)
     : [];
   if (props.length) {
-    const shown = props.slice(0, 10).map(n => `\`${escapeMarkdown(n)}\``).join(', ');
+    const shown = props.slice(0, 10).map(markdownCode).join(', ');
     lines.push(`**properties:** ${shown}${props.length > 10 ? ', …' : ''}`);
   }
   return lines.join('\n\n');

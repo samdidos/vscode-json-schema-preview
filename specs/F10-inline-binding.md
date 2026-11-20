@@ -102,6 +102,15 @@ binding via the same command. JSONL is explicitly excluded (see Out of Scope).
   settings-based binding for the purposes of the status bar display. When both
   exist the status bar SHOULD indicate the inline value is active and SHOULD
   warn the user that a settings binding also exists.
+- **F10-FR-17** A local schema reference (inline or settings-based) MUST be
+  resolved the same way everywhere it is read — validation and navigation
+  (F13-FR-12) share one helper: a `file://` URI is used as its file path, an
+  absolute path as-is, and a relative path against the data file's workspace
+  folder (with a leading `./` dropped) or, when the file is in no workspace
+  folder, against the data file's own directory.
+- **F10-FR-18** A YAML top-level `$schema:` value written in quotes
+  (`$schema: "./a.json"`) MUST be read without its quotes, the same way schema
+  detection reads it (F34).
 
 ## Non-Functional Requirements
 

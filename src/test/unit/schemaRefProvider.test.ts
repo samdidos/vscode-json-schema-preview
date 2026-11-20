@@ -22,8 +22,16 @@ function posAt(offset: number) {
   return { __offset: offset, line: 0, character: 0 };
 }
 
+/** Cache double: each cached URL maps to a stable on-disk path. */
 function fakeCache(map: Record<string, string> = {}) {
-  return { readCached: (url: string) => (url in map ? map[url] : undefined) } as any;
+  return {
+    readCached: (url: string) => (url in map ? map[url] : undefined),
+    getCachedPath: (url: string) => (url in map ? cachedPathFor(url) : undefined),
+  } as any;
+}
+
+function cachedPathFor(url: string): string {
+  return `/cache/${Buffer.from(url).toString('hex').slice(0, 16)}.json`;
 }
 
 setup(() => vscode.resetAll());
@@ -34,6 +42,8 @@ suite('[F13-FR-01] SchemaRefProvider.register()', () => {
     assert.strictEqual(disposables.length, 2);
     assert.ok(vscode.languages.registerDefinitionProvider.called);
     assert.ok(vscode.languages.registerHoverProvider.called);
+    const selector = vscode.languages.registerDefinitionProvider.firstCall.args[0];
+    assert.ok(selector.some((s: any) => s.language === 'toml'), 'TOML data files carry inline bindings too');
   });
 });
 
@@ -111,6 +121,8 @@ suite('[F13-FR-06] provideDefinition() — remote ref', () => {
     const doc = makeDoc(text);
     const loc = provider.provideDefinition(doc, posAt(text.indexOf(url) + 5));
     assert.ok(loc);
+    // [F13-FR-12] the actual cached file, not a path built from the URL
+    assert.strictEqual(loc.uri.fsPath, cachedPathFor(url));
   });
 
   test('[F13-FR-06] offers to cache when the remote ref is uncached', () => {
@@ -227,6 +239,249 @@ suite('SchemaRefProvider — parse caching [F13-NFR]', () => {
     doc.version = 2;
     const stale = provider.provideDefinition(doc, posV1);
     assert.strictEqual(stale, undefined, 'a v1-only $ref offset must not resolve once the document has moved to v2');
+  });
+});
+
+// ── Inline bindings in data files (F13-FR-11..13) ─────────────────────────────
+
+suite('[F13-FR-11] inline binding — which positions trigger', () => {
+  let dir: string;
+  setup(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-inline-'));
+    fs.writeFileSync(path.join(dir, 'person.json'),
+      JSON.stringify({ title: 'Person', type: 'object', $defs: { name: { type: 'string' } } }, null, 2), 'utf-8');
+  });
+  teardown(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  const cases: Array<[string, string, string]> = [
+    ['json', 'data.json', '{\n  "$schema": "./person.json",\n  "name": "Ada"\n}'],
+    ['jsonc', 'data.jsonc', '// data\n{ "$schema": "./person.json", "name": "Ada" }'],
+    ['yaml', 'data.yaml', '# yaml-language-server: $schema=./person.json\nname: Ada\n'],
+    ['yaml', 'key.yaml', 'name: Ada\n$schema: "./person.json"\n'],
+    ['toml', 'data.toml', 'name = "Ada"\n"$schema" = "./person.json"\n[extra]\nx = 1\n'],
+  ];
+  for (const [languageId, file, text] of cases) {
+    test(`${languageId} (${file}): Go to Definition on the value opens the bound schema`, () => {
+      const provider = new SchemaRefProvider(fakeCache());
+      const doc = makeDoc(text, languageId, path.join(dir, file));
+      const loc = provider.provideDefinition(doc, posAt(text.indexOf('./person.json') + 3));
+      assert.ok(loc, 'expected a Location');
+      assert.strictEqual(loc.uri.fsPath, path.join(dir, 'person.json'));
+      assert.strictEqual(loc.range.startLine, 0);
+    });
+  }
+
+  test('positions outside the binding value do not trigger', () => {
+    const text = '{\n  "$schema": "./person.json",\n  "name": "Ada"\n}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'data.json'));
+    assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('"name"') + 2)), undefined);
+    assert.strictEqual(provider.provideHover(doc, posAt(text.indexOf('Ada'))), undefined);
+  });
+
+  test('a TOML binding-like line inside a multi-line string does not trigger', () => {
+    const text = 'doc = """\n"$schema" = "./person.json"\n"""\n';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'toml', path.join(dir, 'data.toml'));
+    assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('./person.json') + 3)), undefined);
+  });
+
+  test('JSONL is not handled', () => {
+    const text = '{"$schema": "./person.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'jsonl', path.join(dir, 'data.jsonl'));
+    assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('./person.json') + 3)), undefined);
+  });
+
+  test("a schema's own meta-schema $schema does not trigger", () => {
+    const text = JSON.stringify({ $schema: 'https://json-schema.org/draft/2020-12/schema', type: 'object' }, null, 2);
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text);
+    assert.strictEqual(provider.provideHover(doc, posAt(text.indexOf('json-schema.org') + 3)), undefined);
+  });
+
+  // Regression guard for the design reviewed in PR #274: a directive naming the
+  // meta-schema marks a YAML *schema* file, whose $refs must keep navigating.
+  test('a YAML schema with a meta-schema directive keeps $ref navigation', () => {
+    const text = '# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema\n'
+      + 'type: object\n$defs:\n  name:\n    type: string\nproperties:\n  n:\n    $ref: "#/$defs/name"\n';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'yaml', path.join(dir, 'person.schema.yaml'));
+    const loc = provider.provideDefinition(doc, posAt(text.indexOf('#/$defs/name') + 3));
+    assert.ok(loc, 'expected the $ref to resolve');
+    assert.strictEqual(loc.uri, doc.uri);
+  });
+
+  test('the binding is re-located after the document changes', () => {
+    const provider = new SchemaRefProvider(fakeCache());
+    const v1 = '{"$schema": "./person.json"}';
+    const doc: any = makeDoc(v1, 'json', path.join(dir, 'data.json'), 1);
+    const pos = posAt(v1.indexOf('./person.json') + 3);
+    assert.ok(provider.provideDefinition(doc, pos));
+    doc.getText = () => '{"name": "no binding any more"}';
+    doc.version = 2;
+    assert.strictEqual(provider.provideDefinition(doc, pos), undefined);
+  });
+});
+
+suite('[F13-FR-12] inline binding — Go to Definition targets', () => {
+  let dir: string;
+  setup(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-inline-')); });
+  teardown(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  test('a relative path resolves against the workspace folder, as validation does', () => {
+    fs.mkdirSync(path.join(dir, 'schemas'));
+    fs.writeFileSync(path.join(dir, 'schemas', 's.json'), '{"type":"object"}', 'utf-8');
+    fs.mkdirSync(path.join(dir, 'data'));
+    vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: dir } });
+    const text = '{"$schema": "./schemas/s.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'data', 'a.json'));
+    const loc = provider.provideDefinition(doc, posAt(text.indexOf('./schemas') + 3));
+    assert.ok(loc);
+    assert.strictEqual(loc.uri.fsPath, path.join(dir, 'schemas', 's.json'));
+  });
+
+  test('a fragment places the cursor on the pointer target', () => {
+    fs.writeFileSync(path.join(dir, 's.json'), JSON.stringify({ $defs: { item: { type: 'string' } } }, null, 2), 'utf-8');
+    const text = '{"$schema": "./s.json#/$defs/item"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    const loc = provider.provideDefinition(doc, posAt(text.indexOf('./s.json') + 3));
+    assert.ok(loc);
+    assert.ok(loc.range.startLine > 0, 'expected the item definition, not the top of the file');
+  });
+
+  test('a schema that does not parse still opens at its top', () => {
+    fs.writeFileSync(path.join(dir, 'broken.json'), '{ not json', 'utf-8');
+    const text = '{"$schema": "./broken.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    const loc = provider.provideDefinition(doc, posAt(text.indexOf('./broken') + 3));
+    assert.ok(loc);
+    assert.strictEqual(loc.uri.fsPath, path.join(dir, 'broken.json'));
+  });
+
+  test('a missing local schema yields nothing', () => {
+    const text = '{"$schema": "./nope.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('./nope') + 3)), undefined);
+  });
+
+  test('a fragment-only binding yields nothing', () => {
+    const text = '{"$schema": "#/x"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('#/x') + 1)), undefined);
+  });
+
+  test('a remote binding opens the actual cached file, keyed by the full value', () => {
+    const url = 'https://example.com/s.yaml#/defs/item';
+    const provider = new SchemaRefProvider(fakeCache({ [url]: 'defs:\n  item:\n    type: string\n' }));
+    const text = JSON.stringify({ $schema: url });
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    const loc = provider.provideDefinition(doc, posAt(text.indexOf('example.com')));
+    assert.ok(loc, 'expected the cached YAML schema to be parsed by its original URL');
+    assert.strictEqual(loc.uri.fsPath, cachedPathFor(url));
+  });
+
+  test('a cached copy keyed by the URL without its fragment is also found', () => {
+    const docUrl = 'https://example.com/s.json';
+    const provider = new SchemaRefProvider(fakeCache({ [docUrl]: '{"$defs":{"item":{}}}' }));
+    const text = JSON.stringify({ $schema: `${docUrl}#/$defs/item` });
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    const loc = provider.provideDefinition(doc, posAt(text.indexOf('example.com')));
+    assert.ok(loc);
+    assert.strictEqual(loc.uri.fsPath, cachedPathFor(docUrl));
+  });
+
+  test('an uncached remote binding offers to cache the full value, fetching only when picked', async () => {
+    const url = 'https://example.com/s.json#/x';
+    vscode.window.showInformationMessage.resolves('Cache Schema Locally');
+    const provider = new SchemaRefProvider(fakeCache());
+    const text = JSON.stringify({ $schema: url });
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    assert.strictEqual(provider.provideDefinition(doc, posAt(text.indexOf('example.com'))), undefined);
+    assert.ok(vscode.window.showInformationMessage.calledOnce);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.ok(vscode.commands.executeCommand.calledWith('jsonschema.cacheSchemaLocally', url, doc.uri));
+  });
+
+  test('declining the offer runs nothing', async () => {
+    vscode.window.showInformationMessage.resolves(undefined);
+    const provider = new SchemaRefProvider(fakeCache());
+    const text = JSON.stringify({ $schema: 'https://example.com/s.json' });
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    provider.provideDefinition(doc, posAt(text.indexOf('example.com')));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.ok(!vscode.commands.executeCommand.called);
+  });
+});
+
+suite('[F13-FR-13] inline binding — hover', () => {
+  let dir: string;
+  setup(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jspreview-inline-')); });
+  teardown(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  test('shows the schema summary under a $schema heading, the value shown verbatim', () => {
+    fs.writeFileSync(path.join(dir, 'person.schema.json'),
+      JSON.stringify({ title: 'Person', description: 'A *person*', type: 'object' }), 'utf-8');
+    const text = 'name: Ada\n$schema: ./person.schema.json\n';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'yaml', path.join(dir, 'a.yaml'));
+    const hover = provider.provideHover(doc, posAt(text.indexOf('./person') + 3));
+    assert.ok(hover);
+    const md: string = hover.contents[0].value;
+    assert.ok(md.startsWith('**$schema** `./person.schema.json`'), md);
+    assert.match(md, /Person/);
+    assert.match(md, /A \\\*person\\\*/, 'description is still escaped (F13-FR-09)');
+  });
+
+  test('an uncached remote binding shows guidance without prompting', () => {
+    const url = 'https://example.com/s.json';
+    const provider = new SchemaRefProvider(fakeCache());
+    const text = `"$schema" = "${url}"\n`;
+    const doc = makeDoc(text, 'toml', path.join(dir, 'a.toml'));
+    const hover = provider.provideHover(doc, posAt(text.indexOf('example.com')));
+    assert.ok(hover);
+    assert.match(hover.contents[0].value, /^\*\*\$schema\*\* `https:\/\/example\.com\/s\.json`/);
+    assert.match(hover.contents[0].value, /not cached/);
+    assert.ok(!vscode.window.showInformationMessage.called, 'hover must never prompt');
+  });
+
+  test('a cached remote binding shows the cached summary', () => {
+    const url = 'https://example.com/s.json';
+    const provider = new SchemaRefProvider(fakeCache({ [url]: '{"title":"Remote"}' }));
+    const text = JSON.stringify({ $schema: url });
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    const hover = provider.provideHover(doc, posAt(text.indexOf('example.com')));
+    assert.match(hover.contents[0].value, /Remote/);
+  });
+
+  test('a target that does not parse says so', () => {
+    fs.writeFileSync(path.join(dir, 'broken.yaml'), 'a: [unclosed\n', 'utf-8');
+    const text = '{"$schema": "./broken.yaml"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    const hover = provider.provideHover(doc, posAt(text.indexOf('./broken') + 3));
+    assert.match(hover.contents[0].value, /could not be parsed/);
+  });
+
+  test('an unresolvable fragment names the pointer verbatim', () => {
+    fs.writeFileSync(path.join(dir, 's.json'), '{"type":"object"}', 'utf-8');
+    const text = '{"$schema": "./s.json#/$defs/missing_one"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    const hover = provider.provideHover(doc, posAt(text.indexOf('./s.json') + 3));
+    assert.match(hover.contents[0].value, /Pointer `#\/\$defs\/missing_one` does not resolve/);
+  });
+
+  test('a missing local schema shows no hover', () => {
+    const text = '{"$schema": "./nope.json"}';
+    const provider = new SchemaRefProvider(fakeCache());
+    const doc = makeDoc(text, 'json', path.join(dir, 'a.json'));
+    assert.strictEqual(provider.provideHover(doc, posAt(text.indexOf('./nope') + 3)), undefined);
   });
 });
 

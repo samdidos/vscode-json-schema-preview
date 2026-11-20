@@ -24,11 +24,13 @@ schema *authors*.
 ### Scope of Providers
 
 - **F13-FR-01** A `DefinitionProvider` and a `HoverProvider` MUST be registered
-  for `json`, `jsonc`, `yaml`, and `yml` documents, active only where
-  `jsonschema.isJsonSchema` semantics apply (the document is a schema file per
-  F01-FR-02).
+  for `json`, `jsonc`, `yaml`, `yml`, and `toml` documents. `$ref` navigation is
+  active only where `jsonschema.isJsonSchema` semantics apply (the document is
+  a schema file per F01-FR-02); inline-binding navigation (F13-FR-11) is active
+  in any of these documents that carries an inline binding.
 - **F13-FR-02** Providers MUST trigger only when the cursor is on the string
-  value of a `$ref` key (or the key itself).
+  value of a `$ref` key (or the key itself), or on the value of an inline
+  binding per F13-FR-11.
 
 ### Reference Resolution
 
@@ -63,6 +65,33 @@ schema *authors*.
   content only when the target is already cached; otherwise the hover states
   that the schema is not cached and names the command to cache it.
 
+### Inline Bindings in Data Files
+
+- **F13-FR-11** Providers MUST also trigger on the value of a document's inline
+  schema binding (F10/F11): the root `$schema` property in JSON/JSONC, the
+  `yaml-language-server` directive or top-level `$schema:` key in YAML, and the
+  root-table `"$schema"` key in TOML. The binding MUST be the one
+  `extractInlineSchemaUrl` reports (F10-FR-14), so navigation, validation and
+  the status bar always agree on which value is active; a value whose location
+  cannot be confirmed to hold that binding MUST NOT trigger. A binding that
+  names the JSON Schema meta-schema (the document is itself a schema) MUST NOT
+  trigger, and MUST NOT stop `$ref` navigation in that document.
+- **F13-FR-12** Go to Definition on an inline binding MUST open the schema the
+  binding names: a local path resolved exactly as validation resolves it
+  (F10-FR-17), or for a remote URL the actual cached file on disk (F08). When
+  the binding carries a JSON Pointer fragment, the cursor MUST be placed on the
+  pointer target. A cached copy MUST be found whether F08 keyed it by the full
+  binding value or by the URL without its fragment. An uncached remote binding
+  MUST offer the existing **Cache Schema Locally** action (F13-FR-06) and MUST
+  NOT fetch unless the user picks it.
+- **F13-FR-13** Hover on an inline binding MUST show the bound schema's summary
+  (F13-FR-08, labelled `$schema` rather than `$ref`) under the same rules as a
+  `$ref` hover: escaped content (F13-FR-09), no network I/O and no prompt
+  (F13-FR-10). A target that exists but cannot be parsed MUST say so rather
+  than report an unresolvable pointer. A ref or pointer shown inside a Markdown
+  code span MUST be displayed verbatim (code spans need no escaping, and
+  escaping inside one shows the backslashes).
+
 ## Non-Functional Requirements
 
 - **F13-NFR-01** Definition/hover resolution MUST complete in-process with no
@@ -93,12 +122,22 @@ schema *authors*.
    **Cache Schema Locally**, hover shows the target summary.
 5. A ref to a missing pointer shows a message naming the pointer and does not
    throw.
+6. In a JSON, JSONC, YAML or TOML data file with an inline binding,
+   Go to Definition on the binding's value opens the bound schema; a relative
+   path opens the same file validation uses.
+7. In YAML, a `# yaml-language-server: $schema=` directive navigates the same
+   way. A YAML schema file whose directive names the JSON Schema meta-schema
+   keeps working `$ref` navigation.
+8. A remote binding opens its cached file; an uncached one offers
+   **Cache Schema Locally** on Go to Definition only.
+9. Hover on an inline binding shows the schema's summary, or "not cached"
+   guidance for an uncached remote schema, without network I/O or a prompt.
 
 ## Open Questions
 
 - Q1 — Should the providers also activate on *data* files' `$schema` values
-  (jump to the bound schema)? Cheap to add; leaning yes. Tracked in
-  [#237](https://github.com/samdidos/vscode-json-schema-preview/issues/237).
+  (jump to the bound schema)? **Resolved: yes**, by F13-FR-11..13
+  ([#237](https://github.com/samdidos/vscode-json-schema-preview/issues/237)).
 
 ## Relation to Existing Specs
 
@@ -112,3 +151,8 @@ schema *authors*.
 - **2026-09-02** — Out of Scope narrowed: find-all-references and rename now exist,
   in [F30](F30-schema-refactoring.md), which reuses this spec's pointer parsing,
   `refKind` classification and AST locators rather than reimplementing them.
+- **2026-11-19** — Added F13-FR-11..13 (navigation and hover on a data file's
+  inline binding), resolving Q1 (#237). The requirements follow the design
+  proposed in PR #274, reusing `extractInlineSchemaUrl`, the TOML locator
+  (F11-FR-20) and validation's path resolution instead of adding parallel
+  implementations.

@@ -1233,6 +1233,25 @@
       ],
       "note": "Inline $schema binding write path (scope picker, JSON/JSONC + YAML write/remove, workspace-trust gate)."
     },
+    "F10-FR-17": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts",
+        "src/ValidationManager.ts"
+      ],
+      "note": "resolveLocalSchemaPath: file:// / absolute / workspace folder / data file directory",
+      "specifiedAt": "2026-11-19",
+      "implementedAt": "2026-11-19"
+    },
+    "F10-FR-18": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "quoted YAML $schema: value unquoted by extractInlineSchemaUrl",
+      "specifiedAt": "2026-11-19",
+      "implementedAt": "2026-11-19"
+    },
     "F10-NFR-01": {
       "status": "implemented",
       "impl": [
@@ -1520,7 +1539,7 @@
         "src/SchemaRefProvider.ts",
         "src/extension.ts"
       ],
-      "note": "DefinitionProvider+HoverProvider registered for json/jsonc/yaml/yml"
+      "note": "DefinitionProvider+HoverProvider registered for json/jsonc/yaml/yml/toml"
     },
     "F13-FR-02": {
       "status": "implemented",
@@ -1587,6 +1606,36 @@
         "src/SchemaRefProvider.ts"
       ],
       "note": "hover never fetches; uncached remote states not-cached + command hint"
+    },
+    "F13-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefProvider.ts",
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "locateInlineSchemaBinding/findInlineSchemaBinding: binding range confirmed against extractInlineSchemaUrl; TOML via tomlLocator; meta-schema bindings keep $ref navigation",
+      "specifiedAt": "2026-11-19",
+      "implementedAt": "2026-11-19"
+    },
+    "F13-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefProvider.ts",
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "local via resolveLocalSchemaPath (shared with validation); remote opens the real cached file, keyed by full value or fragment-less URL; uncached offers Cache Schema Locally",
+      "specifiedAt": "2026-11-19",
+      "implementedAt": "2026-11-19"
+    },
+    "F13-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaRefProvider.ts",
+        "src/schemaPointer.ts"
+      ],
+      "note": "$schema-labelled summary; markdownCode keeps code spans verbatim; unparseable target reported; no network, no prompt",
+      "specifiedAt": "2026-11-19",
+      "implementedAt": "2026-11-19"
     },
     "F13-NFR-01": {
       "status": "manual",

@@ -574,3 +574,100 @@ suite('computeYamlSchemaRemoveEdit() [F10-FR-10]', () => {
     assert.strictEqual(computeYamlSchemaRemoveEdit('foo: 1\n'), undefined);
   });
 });
+
+suite('[F10-FR-18] extractInlineSchemaUrl() — quoted YAML key', () => {
+  const doc = (text: string) => ({ languageId: 'yaml', getText: () => text } as any);
+  test('a double-quoted $schema value is read without its quotes', () =>
+    assert.strictEqual(extractInlineSchemaUrl(doc('$schema: "./a.json"\nfoo: 1')), './a.json'));
+  test('a single-quoted $schema value is read without its quotes', () =>
+    assert.strictEqual(extractInlineSchemaUrl(doc("$schema: './a.json'\nfoo: 1")), './a.json'));
+});
+
+suite('[F13-FR-11] locateInlineSchemaBinding()', () => {
+  const { locateInlineSchemaBinding } = require('../../SchemaBindingManager');
+  const sliceOf = (text: string, b: any) => text.slice(b.start, b.end);
+
+  test('JSON: the root $schema string, quotes included in the range', () => {
+    const text = '{\n  "a": {"$schema": "./nested.json"},\n  "$schema": "./s.json"\n}';
+    const b = locateInlineSchemaBinding(text, 'json');
+    assert.strictEqual(b.url, './s.json');
+    assert.strictEqual(sliceOf(text, b), '"./s.json"');
+  });
+  test('JSONC: comments and a trailing comma are tolerated', () => {
+    const text = '// header\n{ "$schema": "./s.json", }';
+    assert.strictEqual(locateInlineSchemaBinding(text, 'jsonc').url, './s.json');
+  });
+  test('JSON: the last of duplicate keys wins, as JSON.parse does', () => {
+    const text = '{"$schema": "./a.json", "$schema": "./b.json"}';
+    assert.strictEqual(locateInlineSchemaBinding(text, 'json').url, './b.json');
+  });
+  test('JSON: a non-string, non-object or missing binding yields nothing', () => {
+    assert.strictEqual(locateInlineSchemaBinding('{"$schema": 1}', 'json'), undefined);
+    assert.strictEqual(locateInlineSchemaBinding('["$schema"]', 'json'), undefined);
+    assert.strictEqual(locateInlineSchemaBinding('{"a": 1}', 'json'), undefined);
+  });
+  test('YAML: the directive takes precedence over a $schema key', () => {
+    const text = '$schema: ./key.json\n# yaml-language-server: $schema=./directive.json\n';
+    const b = locateInlineSchemaBinding(text, 'yaml');
+    assert.strictEqual(b.url, './directive.json');
+    assert.strictEqual(sliceOf(text, b), './directive.json');
+  });
+  test('YAML: a quoted key value is unquoted, the range keeps the quotes', () => {
+    const text = 'name: x\n$schema: "./s.json"\n';
+    const b = locateInlineSchemaBinding(text, 'yml');
+    assert.strictEqual(b.url, './s.json');
+    assert.strictEqual(sliceOf(text, b), '"./s.json"');
+  });
+  test('YAML: no binding yields nothing', () =>
+    assert.strictEqual(locateInlineSchemaBinding('name: x\n', 'yaml'), undefined));
+  test('TOML: a root-table basic or literal string', () => {
+    const text = 'title = "x"\n"$schema" = "./s.json"\n[server]\nport = 1\n';
+    const b = locateInlineSchemaBinding(text, 'toml');
+    assert.strictEqual(b.url, './s.json');
+    assert.strictEqual(sliceOf(text, b), '"./s.json"');
+    assert.strictEqual(locateInlineSchemaBinding("'$schema' = 'C:\\s.json'\n", 'toml').url, 'C:\\s.json');
+  });
+  test('TOML: a key under a [table] or inside a multi-line string is not the binding', () => {
+    assert.strictEqual(locateInlineSchemaBinding('[tool]\n"$schema" = "./s.json"\n', 'toml'), undefined);
+    assert.strictEqual(
+      locateInlineSchemaBinding('doc = """\n"$schema" = "./s.json"\n"""\n', 'toml'), undefined);
+  });
+  test('TOML: a multi-line, non-string or unscannable value yields nothing', () => {
+    assert.strictEqual(locateInlineSchemaBinding('"$schema" = """./s.json"""\n', 'toml'), undefined);
+    assert.strictEqual(locateInlineSchemaBinding('"$schema" = 1\n', 'toml'), undefined);
+    assert.strictEqual(locateInlineSchemaBinding('"$schema" = \n', 'toml'), undefined);
+  });
+  test('other languages yield nothing', () =>
+    assert.strictEqual(locateInlineSchemaBinding('{"$schema":"./s.json"}', 'jsonl'), undefined));
+});
+
+suite('[F13-FR-11] findInlineSchemaBinding()', () => {
+  const { findInlineSchemaBinding } = require('../../SchemaBindingManager');
+  const doc = (languageId: string, text: string) => ({ languageId, getText: () => text } as any);
+  test('returns the located binding when it is the one extraction reports', () =>
+    assert.strictEqual(findInlineSchemaBinding(doc('json', '{"$schema":"./s.json"}')).url, './s.json'));
+  test('returns nothing when there is no binding', () =>
+    assert.strictEqual(findInlineSchemaBinding(doc('json', '{"a":1}')), undefined));
+  test('returns nothing when the located value disagrees with extraction', () =>
+    // Extraction matches the regex inside the multi-line string; the TOML
+    // locator finds the real root, which has no binding — so no navigation.
+    assert.strictEqual(
+      findInlineSchemaBinding(doc('toml', 'doc = """\n"$schema" = "./s.json"\n"""\n')), undefined));
+});
+
+suite('[F10-FR-17] resolveLocalSchemaPath()', () => {
+  const { resolveLocalSchemaPath } = require('../../SchemaBindingManager');
+  const path = require('path');
+  const docUri = { fsPath: path.join('/ws', 'proj', 'data', 'a.json') };
+  setup(() => vscode.resetAll());
+  test('a file:// URI resolves to its path', () =>
+    assert.strictEqual(resolveLocalSchemaPath('file:///abs/s.json', docUri), '/abs/s.json'));
+  test('an absolute path is kept', () =>
+    assert.strictEqual(resolveLocalSchemaPath('/abs/s.json', docUri), '/abs/s.json'));
+  test('a relative path resolves against the workspace folder, dropping ./', () => {
+    vscode.workspace.getWorkspaceFolder.returns({ uri: { fsPath: path.join('/ws', 'proj') } });
+    assert.strictEqual(resolveLocalSchemaPath('./schemas/s.json', docUri), path.join('/ws', 'proj', 'schemas', 's.json'));
+  });
+  test('outside any workspace folder it resolves against the data file directory', () =>
+    assert.strictEqual(resolveLocalSchemaPath('./s.json', docUri), path.resolve('/ws/proj/data', 's.json')));
+});

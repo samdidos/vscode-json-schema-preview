@@ -102,6 +102,8 @@ Inside a schema file, <kbd>Ctrl</kbd>+click (or <kbd>⌘</kbd>+click) a `$ref` v
 
 ![Ctrl+clicking a $ref to jump to its definition in another file](/demo-ref-navigation.gif)
 
+The same works from the other side: in a JSON, JSONC, YAML or TOML **data** file with an inline binding — a `$schema` property or key, or YAML's `# yaml-language-server: $schema=…` comment — <kbd>Ctrl</kbd>+click the binding's value to open the schema it names, at the pointer when the value ends in a `#/…` fragment. A relative path opens exactly the file validation uses: it's resolved against the file's workspace folder, or against the file's own folder when it isn't in a workspace. A remote URL opens its locally cached copy; if there isn't one yet, you're offered **Cache Schema Locally**. Hovering the value shows the schema's title and description, again without any network request.
+
 <!-- spec:S04 -->
 ## Offline & Stale-Cache Behaviour
 

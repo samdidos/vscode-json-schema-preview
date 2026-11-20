@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { modify, parseTree, Edit as JsoncEdit, FormattingOptions } from 'jsonc-parser';
 import { isSupported, isYaml, isToml, stripJsoncComments } from './languages';
 import { schemaLabel } from './statusBarFormat';
+import { scanToml } from './tomlLocator';
 import type { CatalogEntry } from './schemaCatalog';
 import {
   jsonValidationSources, catalogSources, matchNativeSchema, nativeSchemaLabel,
@@ -932,9 +933,9 @@ export function extractInlineSchemaUrl(doc: vscode.TextDocument): string | undef
       // relative/absolute path (F10 inline bindings can embed either).
       const directive = YAML_DIRECTIVE_RE.exec(text);
       if (directive) { return directive[1]; }
-      // top-level $schema key
+      // top-level $schema key — read without quotes, as schema detection does (F10-FR-18)
       const inline = YAML_KEY_RE.exec(text);
-      return inline?.[1];
+      return inline ? unquoteYamlScalar(inline[1]) : undefined;
     }
     if (isToml(doc.languageId)) {
       // Lightweight regex rather than full TOML parsing, matching how YAML
@@ -949,6 +950,80 @@ export function extractInlineSchemaUrl(doc: vscode.TextDocument): string | undef
   } catch {
     return undefined;
   }
+}
+
+/** Strips one matching pair of surrounding quotes from a YAML scalar token. */
+function unquoteYamlScalar(token: string): string {
+  const quoted = /^(["'])(.*)\1$/.exec(token);
+  return quoted ? quoted[2] : token;
+}
+
+/** An inline binding's value and its source range (quotes included). */
+export interface InlineSchemaBinding {
+  url: string;
+  start: number;
+  end: number;
+}
+
+/**
+ * Locates the inline binding's value in `text` (F13-FR-11): the root
+ * `$schema` property in JSON/JSONC, the directive or top-level key in YAML
+ * (the same expressions {@link extractInlineSchemaUrl} reads), and the
+ * root-table `"$schema"` key in TOML via the shared TOML locator (F11-FR-20).
+ * Pure; returns undefined when no binding can be located.
+ */
+export function locateInlineSchemaBinding(text: string, languageId: string): InlineSchemaBinding | undefined {
+  if (isYaml(languageId)) {
+    const match = YAML_DIRECTIVE_RE.exec(text) ?? YAML_KEY_RE.exec(text);
+    if (!match) { return undefined; }
+    const end = match.index + match[0].length;
+    return { url: unquoteYamlScalar(match[1]), start: end - match[1].length, end };
+  }
+  if (isToml(languageId)) {
+    const span = scanToml(text)?.children?.get('$schema')?.value;
+    if (!span) { return undefined; }
+    const raw = text.slice(span.start, span.end);
+    if (raw.startsWith('"""') || raw.startsWith("'''")) { return undefined; }
+    if (raw.startsWith('"')) { return { url: unescapeTomlBasicString(raw.slice(1, -1)), ...span }; }
+    if (raw.startsWith("'")) { return { url: raw.slice(1, -1), ...span }; }
+    return undefined;
+  }
+  if (languageId !== 'json' && languageId !== 'jsonc') { return undefined; }
+  const root = parseTree(text, [], { allowTrailingComma: true });
+  if (root?.type !== 'object') { return undefined; }
+  // JSON.parse keeps the last of duplicate keys; so does this lookup.
+  const prop = root.children?.filter(p => p.children?.[0]?.value === '$schema').pop();
+  const value = prop?.children?.[1];
+  return value?.type === 'string'
+    ? { url: value.value as string, start: value.offset, end: value.offset + value.length }
+    : undefined;
+}
+
+/**
+ * The document's active inline binding with its source range — only when the
+ * located value is the binding {@link extractInlineSchemaUrl} reports, so a
+ * navigation target can never disagree with validation (F13-FR-11).
+ */
+export function findInlineSchemaBinding(doc: vscode.TextDocument): InlineSchemaBinding | undefined {
+  const url = extractInlineSchemaUrl(doc);
+  if (url === undefined) { return undefined; }
+  const located = locateInlineSchemaBinding(doc.getText(), doc.languageId);
+  return located?.url === url ? located : undefined;
+}
+
+/**
+ * Resolves a local schema reference to a file path (F10-FR-17): a `file://`
+ * URI to its path, an absolute path as-is, and a relative path against the
+ * data file's workspace folder — or, outside any folder, the data file's own
+ * directory. Shared by validation and navigation so both open the same file.
+ */
+export function resolveLocalSchemaPath(schemaPath: string, docUri: vscode.Uri): string {
+  if (schemaPath.startsWith('file://')) { return vscode.Uri.parse(schemaPath).fsPath; }
+  if (path.isAbsolute(schemaPath)) { return schemaPath; }
+  const folder = vscode.workspace.getWorkspaceFolder(docUri);
+  return folder
+    ? path.join(folder.uri.fsPath, normalise(schemaPath))
+    : path.resolve(path.dirname(docUri.fsPath), schemaPath);
 }
 
 // ---------------------------------------------------------------------------

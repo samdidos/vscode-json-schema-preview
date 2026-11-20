@@ -36,7 +36,7 @@ export function previewJsonSchema(context: vscode.ExtensionContext) {
 // host like `json-schema.org.evil.com` or `evil.com/?x=json-schema.org`.
 const JSON_SCHEMA_META_HOST = 'json-schema.org';
 
-function isJsonSchemaMetaRef(value: unknown): boolean {
+export function isJsonSchemaMetaRef(value: unknown): boolean {
   if (typeof value !== 'string') {
     return false;
   }
