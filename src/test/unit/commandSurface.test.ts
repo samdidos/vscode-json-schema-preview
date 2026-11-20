@@ -283,6 +283,22 @@ suite('[F34-FR-06][F34-FR-07][F34-FR-08] menus', () => {
     assert.deepStrictEqual([...new Set(groups)], ['1_view', '2_generate', '3_transform', '4_analyse', '5_ai']);
   });
 
+  test('no menu contributes the same submenu more than once', () => {
+    for (const [menu, entries] of Object.entries<Array<{ submenu?: string }>>(contributes.menus)) {
+      const ids = entries.filter((e) => e.submenu).map((e) => e.submenu as string);
+      assert.strictEqual(new Set(ids).size, ids.length, `${menu} contributes a submenu more than once: ${ids.join(', ')}`);
+    }
+  });
+
+  test('the editor/title submenu entry covers both schema and data files', () => {
+    const entries = contributes.menus['editor/title'].filter(
+      (e: { submenu?: string }) => e.submenu === 'jsonschema.schemaMenu',
+    );
+    assert.strictEqual(entries.length, 1);
+    assert.ok(/(^|[^!])jsonschema\.isJsonSchema/.test(entries[0].when), 'covers schema files');
+    assert.ok(/!jsonschema\.isJsonSchema/.test(entries[0].when), 'covers data files');
+  });
+
   test('the submenu is reachable from the editor context menu', () => {
     assert.ok(contributes.menus['editor/context'].some(
       (e: { submenu?: string }) => e.submenu === 'jsonschema.schemaMenu',
