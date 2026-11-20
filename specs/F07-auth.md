@@ -103,7 +103,7 @@ tokens, and Basic auth.
 
 - 2026-07-19 — Added F07-FR-14: warn (once per host per session, non-blocking)
   when credentials are sent over plain `http://`.
-- 2026-09-16 — Added F07-FR-16: give the status bar item an explicit id and
+- 2026-09-16 — Added F07-FR-16 ([#279](https://github.com/samdidos/vscode-json-schema-preview/issues/279), merged 2026-11-19): give the status bar item an explicit id and
   `name` so it is individually identifiable in VS Code's status bar hide menu
   (see F04-FR-16). This item needed it most: its label is icon-only, so before
   the change it was a lock glyph whose menu row read only "JSON Schema

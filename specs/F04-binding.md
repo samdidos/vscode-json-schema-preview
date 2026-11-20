@@ -165,7 +165,7 @@ recognise them.
 
 ## History
 
-- **2026-09-16** — Added F04-FR-16: give the status bar item an explicit id and
+- **2026-09-16** — Added F04-FR-16 ([#279](https://github.com/samdidos/vscode-json-schema-preview/issues/279), merged 2026-11-19): give the status bar item an explicit id and
   `name`. Both of the extension's status bar entries previously fell back to
   the extension's display name, which made VS Code's own "hide this entry"
   context menu list two indistinguishable **JSON Schema Preview** rows. Naming

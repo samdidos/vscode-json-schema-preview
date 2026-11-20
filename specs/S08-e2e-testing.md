@@ -468,6 +468,12 @@ mechanism.
   access), and F32's needs a language model, so neither is a straight copy of
   an existing pattern.
 
+  **Status (2026-11-20):** every feature on that list now has a demo except
+  F11, F19, F27, F32 and F33 — the five the entry above explains cannot be
+  filmed without a product decision (a TOML language id, `jstk` on PATH, a
+  language model). F26 is covered by `schema-diff`, which already shows its
+  verdict. #257 tracks those five.
+
   New demo scripts cannot be run in a container without an X server and a VS
   Code download, so the two added here are unverified until the next
   `refresh-gifs` run. That is deliberately survivable: the smoke job is
@@ -522,7 +528,7 @@ mechanism.
 
 ## History
 
-- **2026-11-19** — `quick-fix` and `draft-migration` had not been recorded
+- **2026-11-19** ([#281](https://github.com/samdidos/vscode-json-schema-preview/issues/281)) — `quick-fix` and `draft-migration` had not been recorded
   since 2026-09-09. Their test files had been named `demo-quickfix*` and
   `demo-migrate*`, but `refresh-gifs.yml` selects recordings with a `--grep`
   built from registry names (`demo-quick-fix-mouse:`), so every refresh

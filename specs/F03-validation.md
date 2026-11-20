@@ -117,7 +117,7 @@ Errors are reported as VS Code diagnostics in the Problems panel.
 
 ## History
 
-- **2026-11-19** — Added F03-FR-18: the inline `$schema` binding key is no
+- **2026-11-19** — Added F03-FR-18 ([#280](https://github.com/samdidos/vscode-json-schema-preview/issues/280)): the inline `$schema` binding key is no
   longer an "unexpected property" under a closed schema. Before, binding a file
   inline to any schema with `additionalProperties: false` produced an error on
   the very line that binds it, and the only workaround was declaring `$schema`
