@@ -1633,6 +1633,13 @@
       ],
       "note": "schemaPointer is a pure module unit-tested incl escapes/missing/arrays/YAML"
     },
+    "F13-NFR-03": {
+      "status": "implemented",
+      "impl": [
+        "src/inlineSchema.ts",
+        "src/SchemaBindingManager.ts"
+      ]
+    },
     "F14-FR-01": {
       "status": "implemented",
       "impl": [

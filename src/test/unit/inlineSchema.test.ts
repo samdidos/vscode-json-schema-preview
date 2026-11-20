@@ -110,3 +110,29 @@ suite('Inline binding source locations [F13-FR-11] [F13-NFR-02]', () => {
     assert.strictEqual(text.slice(result!.statement!.start, result!.statement!.end), '"$schema" = \'./s.json\' # note\n');
   });
 });
+
+suite('Inline binding extraction cost [F13-NFR-03]', () => {
+  test('text without a literal $schema is not a binding in any language', () => {
+    assert.strictEqual(inlineSchemaReference('{"\\u0024schema":"./person.json"}', 'json'), undefined);
+    assert.strictEqual(inlineSchemaReference('"\\u0024schema" = "./person.json"\n', 'toml'), undefined);
+    assert.strictEqual(inlineSchemaReference('"\\x24schema": ./person.json\n', 'yaml'), undefined);
+  });
+
+  // The parse this replaces took seconds on a file this size; the budget is
+  // F13-NFR-01's 50 ms, far above what a substring scan needs, so the
+  // assertion only trips if the full parse comes back.
+  test('a ~900 KB YAML file without $schema is answered without parsing it', () => {
+    const line = 'service_000000:\n  image: "registry.example.com/team/app:1.2.3"\n  replicas: 3\n';
+    const text = Array.from({ length: 12_000 }, (_, i) => line.replace('000000', String(i).padStart(6, '0'))).join('');
+    assert.ok(text.length > 900_000);
+    const samples: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const start = performance.now();
+      assert.strictEqual(inlineSchemaReference(text, 'yaml'), undefined);
+      samples.push(performance.now() - start);
+    }
+    const worst = Math.max(...samples);
+    console.log(`[F13-NFR-03] ${(text.length / 1024).toFixed(0)} KB YAML, no $schema: worst of 5 = ${worst.toFixed(3)} ms`);
+    assert.ok(worst < 50, `expected < 50 ms, measured ${worst.toFixed(1)} ms`);
+  });
+});

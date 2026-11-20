@@ -19,6 +19,9 @@ export interface InlineSchemaReference {
 export function inlineSchemaReference(
   text: string, language: string, includeNonStringValue = false,
 ): InlineSchemaReference | undefined {
+  // F13-NFR-03: every binding form spells `$schema` literally; most files
+  // don't, so skip the parse that dominates the cost on large documents.
+  if (!text.includes('$schema')) { return undefined; }
   try {
     if (language === 'yaml' || language === 'yml') {
       const doc = parseDocument(text);

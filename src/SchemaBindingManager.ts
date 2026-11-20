@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { modify, parseTree, Edit as JsoncEdit, FormattingOptions } from 'jsonc-parser';
 import { isSupported, isYaml, isToml } from './languages';
-import { inlineSchemaReference, yamlHasSyntaxErrors, tryParseToml } from './inlineSchema';
+import { inlineSchemaReference, yamlHasSyntaxErrors, tryParseToml, type InlineSchemaReference } from './inlineSchema';
 import { schemaLabel } from './statusBarFormat';
 import type { CatalogEntry } from './schemaCatalog';
 import {
@@ -927,10 +927,21 @@ export function extractInlineSchemaUrl(doc: vscode.TextDocument): string | undef
   return extractInlineSchemaReference(doc)?.url;
 }
 
+const inlineReferenceCache = new WeakMap<vscode.TextDocument, {
+  version: number; languageId: string; reference: InlineSchemaReference | undefined;
+}>();
+
 /** The active inline binding and its value's source range (F13-FR-11).
- * Shared with extraction so navigation obeys the same precedence and scope. */
-export function extractInlineSchemaReference(doc: vscode.TextDocument) {
-  return inlineSchemaReference(doc.getText(), doc.languageId);
+ * Shared with extraction so navigation obeys the same precedence and scope.
+ * Cached per document version and language (F13-NFR-03); a stand-in document
+ * without a version is always re-read. */
+export function extractInlineSchemaReference(doc: vscode.TextDocument): InlineSchemaReference | undefined {
+  const { version, languageId } = doc;
+  const cached = inlineReferenceCache.get(doc);
+  if (cached && cached.version === version && cached.languageId === languageId) { return cached.reference; }
+  const reference = inlineSchemaReference(doc.getText(), languageId);
+  if (typeof version === 'number') { inlineReferenceCache.set(doc, { version, languageId, reference }); }
+  return reference;
 }
 
 // ---------------------------------------------------------------------------

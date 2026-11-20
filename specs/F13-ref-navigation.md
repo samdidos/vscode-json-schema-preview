@@ -98,6 +98,11 @@ schema *authors*.
 - **F13-NFR-02** Pointer-resolution logic MUST be a pure module with unit
   tests covering escapes, missing paths, arrays, and YAML documents
   (≥ 80 % coverage, Article V).
+- **F13-NFR-03** Inline binding extraction runs on hot paths (status bar on
+  every editor switch, validation on save), so it MUST NOT parse a document
+  whose text does not contain the literal `$schema`, and MUST reuse its result
+  for an unchanged document version and language. A key spelled only through
+  escapes (e.g. `"\u0024schema"`) is therefore not a binding.
 
 ## Out of Scope
 

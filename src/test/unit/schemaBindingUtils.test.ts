@@ -278,6 +278,39 @@ suite('validateSchemaRefInput()', () => {
 suite('extractInlineSchemaUrl()', () => {
   const doc = (languageId: string, text: string) => ({ languageId, getText: () => text } as any);
 
+  test('[F13-NFR-03] reuses the result for an unchanged version and re-reads a new one', () => {
+    let text = '$schema: ./a.json\n';
+    let reads = 0;
+    const d = { languageId: 'yaml', version: 1, getText: () => { reads++; return text; } } as any;
+    assert.strictEqual(extractInlineSchemaUrl(d), './a.json');
+    assert.strictEqual(extractInlineSchemaUrl(d), './a.json');
+    assert.strictEqual(reads, 1);
+    text = '$schema: ./b.json\n'; d.version = 2;
+    assert.strictEqual(extractInlineSchemaUrl(d), './b.json');
+    d.languageId = 'json';
+    assert.strictEqual(extractInlineSchemaUrl(d), undefined);
+    assert.strictEqual(reads, 3);
+  });
+
+  test('[F13-NFR-03] a large YAML file with a binding is parsed once per version', () => {
+    const text = '$schema: ./a.json\n' + Array.from({ length: 1_500 },
+      (_, i) => `service_${i}:\n  image: "registry.example.com/team/app:1.2.3"\n  replicas: 3\n`).join('');
+    const d = { languageId: 'yaml', version: 7, getText: () => text } as any;
+    const time = () => { const s = performance.now(); assert.strictEqual(extractInlineSchemaUrl(d), './a.json'); return performance.now() - s; };
+    const first = time();
+    const repeat = Math.max(time(), time(), time());
+    console.log(`[F13-NFR-03] ${(text.length / 1024).toFixed(0)} KB YAML with $schema: first call ${first.toFixed(1)} ms, repeat ${repeat.toFixed(3)} ms`);
+    assert.ok(repeat < 5, `expected a cached repeat < 5 ms, measured ${repeat.toFixed(1)} ms`);
+  });
+
+  test('[F13-NFR-03] a document without a version is never cached', () => {
+    let text = '$schema: ./a.json\n';
+    const d = { languageId: 'yaml', getText: () => text } as any;
+    assert.strictEqual(extractInlineSchemaUrl(d), './a.json');
+    text = 'foo: 1\n';
+    assert.strictEqual(extractInlineSchemaUrl(d), undefined);
+  });
+
   test('json $schema string', () =>
     assert.strictEqual(
       extractInlineSchemaUrl(doc('json', '{"$schema":"https://x/s.json","a":1}')),
