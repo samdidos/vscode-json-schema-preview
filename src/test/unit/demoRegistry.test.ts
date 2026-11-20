@@ -3,7 +3,7 @@
 // real specs, names are unique, and every non-showcase entry has the `dir`
 // scripts/make-gifs.mjs needs.
 import * as assert from 'assert';
-import { readdirSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 interface DemoEntry {
@@ -52,6 +52,24 @@ suite('S08 — demo registry', () => {
         assert.strictEqual(demo.dir, undefined);
       } else {
         assert.ok(typeof demo.dir === 'string' && demo.dir.length > 0, `${demo.name}: missing dir`);
+      }
+    }
+  });
+
+  // refresh-gifs.yml selects the recordings to run with a Playwright `--grep`
+  // built from registry names (`demo-<name>-mouse:` / `demo-<name>:`, see
+  // detect-changed-features.mjs). A test titled anything else is never run,
+  // its frames are never captured, and make-gifs.mjs skips the GIF with only a
+  // warning — `quick-fix` and `draft-migration` went stale that way for months.
+  test('[S08-SR-13] every demo has e2e tests titled after its registry name', async () => {
+    const { DEMOS } = await loadModule();
+    const e2eDir = resolve(ROOT, 'src/test/e2e');
+    const titles = readdirSync(e2eDir)
+      .filter((n) => n.endsWith('.test.ts'))
+      .flatMap((n) => [...readFileSync(resolve(e2eDir, n), 'utf8').matchAll(/^\s*test\(\s*(['"`])(.+?)\1/gm)].map((m) => m[2]));
+    for (const demo of DEMOS) {
+      for (const prefix of [`demo-${demo.name}-mouse:`, `demo-${demo.name}:`]) {
+        assert.ok(titles.some((t) => t.startsWith(prefix)), `no e2e test titled "${prefix} …" for demo "${demo.name}"`);
       }
     }
   });

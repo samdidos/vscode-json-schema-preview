@@ -75,6 +75,31 @@ export function parseDataText(text: string, languageId: string): unknown[] {
 }
 
 /**
+ * F03-FR-18 — the instance to validate: `data` itself, or, when it is the
+ * document's first (normally only) instance and its root object carries a
+ * string inline `$schema` binding, a shallow copy without that key. Removing
+ * the key before validation (rather than filtering errors afterwards) means it
+ * cannot fail a combinator branch, an `additionalProperties` subschema or a
+ * property count either. The key is kept when the schema's root declares
+ * (`properties`) or requires (`required`) `$schema`, so a schema that speaks
+ * about the binding is still obeyed. JSONL records are data, never bindings.
+ */
+export function bindingFreeInstance(data: unknown, schema: unknown, index = 0, languageId = 'json'): unknown {
+  if (index !== 0 || languageId === 'jsonl') { return data; }
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) { return data; }
+  if (typeof (data as Record<string, unknown>).$schema !== 'string') { return data; }
+  if (schema !== null && typeof schema === 'object') {
+    const root = schema as { properties?: unknown; required?: unknown };
+    const declared = root.properties !== null && typeof root.properties === 'object'
+      && Object.prototype.hasOwnProperty.call(root.properties, '$schema');
+    const required = Array.isArray(root.required) && root.required.includes('$schema');
+    if (declared || required) { return data; }
+  }
+  const { $schema: _binding, ...rest } = data as Record<string, unknown>;
+  return rest;
+}
+
+/**
  * Validate parsed instances against a schema with the F03 Ajv pipeline
  * (draft-aware via `createAjv`, F03-FR-15). Returns one issue per Ajv error,
  * located best-effort in `text`. Throws when the schema does not compile.
@@ -83,7 +108,8 @@ export function validateInstances(items: unknown[], schema: unknown, text: strin
   const ajv = createAjv(schema, { allErrors: true, strict: false });
   const validate = ajv.compile(schema as object);
   const issues: ValidationIssue[] = [];
-  for (const [index, data] of items.entries()) {
+  for (const [index, item] of items.entries()) {
+    const data = bindingFreeInstance(item, schema, index, languageId);
     if (validate(data)) { continue; }
     const record = languageId === 'jsonl' ? index : undefined;
     for (const err of validate.errors ?? []) {

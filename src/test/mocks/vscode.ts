@@ -95,6 +95,7 @@ const _disposable = { dispose: sinon.stub() };
 
 export const statusBarItem = {
   text: '',
+  name: undefined as string | undefined,
   tooltip: undefined as string | undefined,
   command: undefined as string | { command: string; title: string; arguments?: unknown[] } | undefined,
   backgroundColor: undefined as unknown,
@@ -286,6 +287,7 @@ export function resetAll(): void {
   Object.keys(configStore).forEach(k => delete configStore[k]);
   Object.keys(scopedStore).forEach(k => delete scopedStore[k]);
   statusBarItem.text = '';
+  statusBarItem.name = undefined;
   statusBarItem.tooltip = undefined;
   statusBarItem.command = undefined;
   statusBarItem.backgroundColor = undefined;

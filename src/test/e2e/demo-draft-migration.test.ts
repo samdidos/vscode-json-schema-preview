@@ -20,7 +20,7 @@ const LEGACY_SCHEMA = `{
 const SCHEMA_REL_PATH = 'schemas/legacy.schema.json';
 
 /**
- * Command-palette twin of demo-migrate-mouse (no animated cursor). Runs the
+ * Command-palette twin of demo-draft-migration-mouse (no animated cursor). Runs the
  * migrate command and picks the target draft from the follow-up picker. This
  * variant is the CI UI-smoke signal (S08-SR-10); its frames are not used for
  * GIFs.
@@ -33,7 +33,7 @@ const SCHEMA_REL_PATH = 'schemas/legacy.schema.json';
  * file-search for this fixture, not environmental flakiness. Pre-opening via
  * CLI args sidesteps that code path entirely.
  */
-test('demo-migrate: migrate a schema to a newer draft', () => {
+test('demo-draft-migration: migrate a schema to a newer draft', () => {
   seedWorkspaceFile(SCHEMA_REL_PATH, LEGACY_SCHEMA);
 
   return runDemo('draft-migration', async (window, capture) => {

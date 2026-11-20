@@ -103,7 +103,7 @@ Validates the active JSON, YAML, or TOML file against its bound schema (see [Bin
 
 ![Validating a data file and seeing errors in the Problems panel](/demo-validation.gif)
 
-If the file already has an inline `$schema` field the bound schema is inferred from it — no explicit binding needed. If it has no binding at all but VS Code resolves a schema for it natively (the **(auto)** state shown in the status bar — see [Bind Schema…](#json-schema-bind-schema)), validation uses that schema too, rather than reporting "no schema bound".
+If the file already has an inline `$schema` field the bound schema is inferred from it — no explicit binding needed. That field is validated as if it weren't there, so a strict schema (`additionalProperties: false`, `maxProperties`, closed `oneOf` branches) never trips over it — unless the schema itself declares or requires `$schema`, in which case its rules apply. Every other property, `$`-prefixed or not, is validated as data. If it has no binding at all but VS Code resolves a schema for it natively (the **(auto)** state shown in the status bar — see [Bind Schema…](#json-schema-bind-schema)), validation uses that schema too, rather than reporting "no schema bound".
 
 | Toolbar | Command Palette |
 |---------|----------------|
@@ -125,7 +125,7 @@ For an `enum` mismatch the allowed values are **ranked by how close they are to 
 
 The same matching applies to **property names**: an unexpected property that is one slip away from a declared one the object doesn't have yet — `descripton` for `description`, `prot` for `port` — is offered `Rename to "description" (closest match)` ahead of the removal, as the preferred fix. Only the key is rewritten; its value stays put.
 
-![Applying a validation quick fix from the lightbulb](/demo-quick-fix.gif)
+![Fixing a misspelt enum value and a misspelt property name in a YAML file with Fix all, then revalidating](/demo-quick-fix.gif)
 
 
 ---

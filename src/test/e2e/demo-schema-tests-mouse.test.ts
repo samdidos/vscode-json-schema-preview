@@ -42,7 +42,7 @@ const SUITE_REL_PATH = 'schemas/order.schema.test.json';
  * case in the Problems panel to land the editor on the case that broke.
  *
  * The suite opens through VS Code's own launch args rather than Quick Open,
- * the same defensive choice demo-quickfix-mouse documents: the file is
+ * the same defensive choice demo-quick-fix-mouse documents: the file is
  * freshly seeded, so its search-index visibility isn't something to depend on.
  */
 test('demo-schema-tests-mouse: run a suite and click through to the failing case', () => {

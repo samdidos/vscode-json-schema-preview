@@ -3,10 +3,14 @@ import { runDemo } from './helpers/demo';
 import { seedWorkspaceFile } from './helpers/launch';
 import { installCursor, clickEditorAction, clickSelector } from './helpers/mouse';
 
-// A closed schema with an enum + a forbidden extra property, and a data file
-// that violates both — so validation surfaces two mechanically-fixable errors
-// (F21): a bad enum value and an unexpected property. The data file binds to the
-// schema via an inline relative `$schema` (resolved from the workspace root).
+// A closed schema with an enum and a forbidden extra property, and a YAML data
+// file with two typos — a misspelt enum value (`shiped`) and a misspelt
+// property name (`nots`). Both are clear near-misses (F25), so the lightbulb
+// offers "Fix all 2 auto-fixable validation problems" (F21-FR-13), which
+// changes the value and renames the key at once in YAML syntax (F21-FR-10). The data file binds to the schema via an inline
+// relative `$schema` key (resolved from the workspace root). The closed schema
+// deliberately does not declare `$schema`: the binding key is validated as
+// absent (F03-FR-18), so it is not reported as an unexpected property.
 const ORDER_SCHEMA = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Order",
@@ -14,26 +18,26 @@ const ORDER_SCHEMA = `{
   "required": ["status", "total"],
   "properties": {
     "status": { "enum": ["open", "paid", "shipped"] },
-    "total": { "type": "integer" }
+    "total": { "type": "integer" },
+    "notes": { "type": "string" }
   },
   "additionalProperties": false
 }
 `;
 
-const ORDER_DATA = `{
-  "$schema": "./schemas/order.schema.json",
-  "status": "payed",
-  "total": 42,
-  "notes": "rush"
-}
+const ORDER_DATA = `$schema: ./schemas/order.schema.json
+status: shiped
+total: 42
+nots: rush
 `;
 
-const DATA_REL_PATH = 'data/purchase.json';
+const DATA_REL_PATH = 'data/purchase.yaml';
 
 /**
- * Mouse-driven demo of F21 validation quick fixes: validate an invalid data
- * file, then click the lightbulb on the bad enum value and pick the allowed
- * value to repair the document live. Falls back to the Ctrl+. quick-fix
+ * Mouse-driven demo of F21/F25 validation quick fixes in a YAML file: validate
+ * an invalid data file, click the lightbulb on the misspelt enum value, show
+ * the menu (closest value first, then "Fix all"), then apply "Fix all" to
+ * repair both typos live — the value and the misspelt property name. Falls back to the Ctrl+. quick-fix
  * shortcut if the lightbulb icon's DOM shape has shifted across VS Code
  * releases (same defensive pattern as demo-schema-linting-mouse).
  *
@@ -46,7 +50,7 @@ const DATA_REL_PATH = 'data/purchase.json';
  * keyboard-driven (Ctrl+P + typing) in this variant too — the mouse-driven
  * moments are the lightbulb/menu clicks below, which are unaffected.
  */
-test('demo-quickfix-mouse: apply a validation quick fix from the lightbulb', () => {
+test('demo-quick-fix-mouse: apply a validation quick fix from the lightbulb', () => {
   seedWorkspaceFile('schemas/order.schema.json', ORDER_SCHEMA);
   seedWorkspaceFile(DATA_REL_PATH, ORDER_DATA);
 
@@ -61,8 +65,11 @@ test('demo-quickfix-mouse: apply a validation quick fix from the lightbulb', () 
     await window.waitForTimeout(3_000);
     await capture('validation-errors');
 
-    // Put the cursor on the invalid enum value and open the quick-fix menu.
-    await clickSelector(window, capture, '.view-line:has-text("payed")', 'error-line');
+    // Put the cursor on the misspelt enum value and open the quick-fix menu.
+    // (Not the misspelt key: an additionalProperties error is reported at its
+    // parent object, so the `nots` line itself carries no diagnostic. "Fix all"
+    // is offered from any validation diagnostic and repairs both typos.)
+    await clickSelector(window, capture, '.view-line:has-text("shiped")', 'error-line');
     try {
       await clickSelector(
         window,
@@ -77,12 +84,19 @@ test('demo-quickfix-mouse: apply a validation quick fix from the lightbulb', () 
     await window.waitForSelector('.action-widget .monaco-list-row', { state: 'visible', timeout: 10_000 });
     await capture('quick-fix-menu');
 
-    // Pick "Change to \"paid\"" — the only offered value containing "paid".
-    await clickSelector(window, capture, '.action-widget .monaco-list-row:has-text("paid")', 'apply-fix');
+    // The menu leads with the closest enum value; pick "Fix all" to repair the
+    // enum value and rename the property in one edit.
+    await clickSelector(window, capture, '.action-widget .monaco-list-row:has-text("Fix all")', 'apply-fix');
     await window.waitForTimeout(1_500);
     await capture('fixed');
 
+    // Validate again so the demo ends on a clean file, not on the previous
+    // run's now-stale squiggles (S08-SR-19).
+    await clickEditorAction(window, capture, 'JSON Schema: Validate This File', 'revalidate-icon');
+    await window.waitForTimeout(2_000);
+    await capture('valid');
+
     await window.waitForTimeout(800);
-    await capture('fixed-hold');
+    await capture('valid-hold');
   }, true, [DATA_REL_PATH]);
 });

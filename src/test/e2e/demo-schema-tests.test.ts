@@ -49,7 +49,7 @@ test('demo-schema-tests: run a schema test suite and see the failing case', () =
 
     // No Quick Open here: the suite is freshly seeded, so runDemo's `openFiles`
     // opens it through VS Code's own launch args instead of depending on the
-    // workspace search index (the failure demo-quickfix-mouse documents).
+    // workspace search index (the failure demo-quick-fix-mouse documents).
     await capture('suite-open');
 
     await runCommand(window, 'JSON Schema: Run Schema Tests');

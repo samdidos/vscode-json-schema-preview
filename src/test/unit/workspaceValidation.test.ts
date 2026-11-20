@@ -5,6 +5,7 @@ const {
   isMetaSchemaRef,
   parseDataText,
   validateInstances,
+  bindingFreeInstance,
   locateInstancePath,
   lineOfMatch,
   summarize,
@@ -154,5 +155,77 @@ suite('[F20-FR-07] workspaceValidation — Markdown report', () => {
     assert.match(report, /2 file\(s\) over 1 MiB skipped/);
     assert.match(report, /Untrusted workspace/);
     assert.match(report, /### Workspace \(1 file\(s\)\)/);
+  });
+});
+
+suite('[F03-FR-18] the inline $schema binding is validated as absent', () => {
+  const closed = {
+    type: 'object',
+    properties: { name: { type: 'string' } },
+    additionalProperties: false,
+  };
+  const bound = { $schema: './s.json', name: 'x' };
+  const check = (schema: unknown, data: unknown = bound) => validateInstances([data], schema, JSON.stringify(data));
+
+  test('a closed schema accepts the file\'s own root $schema binding', () => {
+    assert.deepStrictEqual(check(closed), []);
+  });
+
+  test('every other unexpected property is still reported, $-prefixed ones included', () => {
+    const messages = check(closed, { ...bound, $typ: 'a', extra: 1 }).map((i: any) => i.message);
+    assert.strictEqual(messages.length, 2);
+    assert.ok(messages.every((m: string) => m.includes('must NOT have additional properties')));
+  });
+
+  test('unevaluatedProperties and propertyNames never see the binding', () => {
+    assert.deepStrictEqual(check({ $schema: 'https://json-schema.org/draft/2020-12/schema', properties: { name: {} }, unevaluatedProperties: false }), []);
+    assert.deepStrictEqual(check({ type: 'object', propertyNames: { pattern: '^[a-z]+$' } }), []);
+    assert.deepStrictEqual(check({ type: 'object', propertyNames: { enum: ['name'] } }), []);
+  });
+
+  test('a closed oneOf/anyOf branch is not failed by the binding', () => {
+    const oneOf = { oneOf: [closed, { type: 'object', required: ['id'] }] };
+    assert.deepStrictEqual(check(oneOf), []);
+    assert.deepStrictEqual(check({ anyOf: [closed, { type: 'string' }] }), []);
+  });
+
+  test('an additionalProperties subschema (a map) does not check the binding', () => {
+    assert.deepStrictEqual(check({ type: 'object', properties: { name: {} }, additionalProperties: { type: 'number' } }), []);
+  });
+
+  test('the binding does not count towards maxProperties or conditional limits', () => {
+    assert.deepStrictEqual(check({ type: 'object', maxProperties: 1 }), []);
+    assert.deepStrictEqual(check({ ...closed, if: { required: ['name'] }, then: { maxProperties: 1 } }), []);
+  });
+
+  test('a schema that declares or requires $schema still has its say', () => {
+    const typed = { type: 'object', properties: { $schema: { const: './other.json' } } };
+    assert.strictEqual(check(typed).length, 1);
+    const required = { type: 'object', required: ['$schema'] };
+    assert.deepStrictEqual(check(required), []);
+    assert.strictEqual(check(required, { name: 'x' }).length, 1);
+  });
+
+  test('only a string root $schema of the first instance is a binding', () => {
+    assert.deepStrictEqual(bindingFreeInstance(bound, closed), { name: 'x' });
+    assert.notStrictEqual(bindingFreeInstance(bound, closed), bound, 'a copy, never the parsed data itself');
+    assert.strictEqual(bound.$schema, './s.json');
+    const numeric = { $schema: 42 };
+    assert.strictEqual(bindingFreeInstance(numeric, closed), numeric);
+    assert.strictEqual(bindingFreeInstance(bound, closed, 1), bound, 'a later document is data');
+    assert.strictEqual(bindingFreeInstance(bound, closed, 0, 'jsonl'), bound, 'a JSONL record is data');
+    const list = ['$schema'];
+    assert.strictEqual(bindingFreeInstance(list, closed), list);
+    assert.strictEqual(bindingFreeInstance(null, closed), null);
+    assert.strictEqual(bindingFreeInstance('text', closed), 'text');
+    assert.deepStrictEqual(bindingFreeInstance(bound, true), { name: 'x' }, 'a boolean schema declares nothing');
+    assert.deepStrictEqual(bindingFreeInstance(bound, { properties: null }), { name: 'x' });
+    const nested = { child: { $schema: './s.json' } };
+    assert.strictEqual(bindingFreeInstance(nested, closed), nested);
+  });
+
+  test('a JSONL record\'s $schema is still an unexpected property', () => {
+    const text = '{"$schema":"./s.json","name":"x"}';
+    assert.strictEqual(validateInstances(parseDataText(text, 'jsonl'), closed, text, 'jsonl').length, 1);
   });
 });

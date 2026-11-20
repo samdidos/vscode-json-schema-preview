@@ -2,7 +2,7 @@
   "$schema": "./traceability.schema.json",
   "$comment": "Requirement traceability matrix. Keys are requirement IDs defined in specs/*.md. status is one of: untracked, planned, implemented, manual, deferred. impl lists source files; test coverage is auto-discovered from [ID] tags in src/test. Run `npm run check:traceability` to validate. Shape is enforced by traceability.schema.json; TS types in docs/.vitepress/traceability.types.ts are generated from it via `npm run codegen:traceability` (S11).",
   "statuses": {
-    "untracked": "predates the traceability system — needs backfill",
+    "untracked": "predates the traceability system \u2014 needs backfill",
     "planned": "specified, not yet implemented",
     "implemented": "code exists; expects unit-test coverage",
     "manual": "VS Code API-bound; verified by manual / E2E testing only",
@@ -21,7 +21,7 @@
       "impl": [
         "src/PreviewWebPanel.ts"
       ],
-      "note": "isJsonSchemaFile() requires the $schema value's URL hostname to be exactly json-schema.org (parsed via the URL constructor, not a substring/includes check — CodeQL js/incomplete-url-substring-sanitization), so an inline-bound data file (F10) isn't misclassified as a schema; unit-tested"
+      "note": "isJsonSchemaFile() requires the $schema value's URL hostname to be exactly json-schema.org (parsed via the URL constructor, not a substring/includes check \u2014 CodeQL js/incomplete-url-substring-sanitization), so an inline-bound data file (F10) isn't misclassified as a schema; unit-tested"
     },
     "F01-FR-03": {
       "status": "implemented",
@@ -435,6 +435,16 @@
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },
+    "F03-FR-18": {
+      "status": "implemented",
+      "impl": [
+        "src/workspaceValidation.ts",
+        "src/ValidationManager.ts"
+      ],
+      "note": "bindingFreeInstance validates a copy without the root string $schema (first instance, non-JSONL) unless the schema root declares/requires it; shared by editor and workspace/CLI validation; unit-tested incl. oneOf, map subschema, maxProperties (workspaceValidation.test.ts, validationManager.test.ts)",
+      "specifiedAt": "2026-11-19",
+      "implementedAt": "2026-11-19"
+    },
     "F04-FR-01": {
       "status": "implemented",
       "impl": [
@@ -476,7 +486,7 @@
         "src/SchemaBindingManager.ts",
         "src/statusBarFormat.ts"
       ],
-      "note": "bound display; long basenames start-truncated (~20 chars, keeping the end/extension) via truncateStart (statusBarFormat.ts), full name kept in the tooltip — unit-tested (pure helper + status-bar label/tooltip)"
+      "note": "bound display; long basenames start-truncated (~20 chars, keeping the end/extension) via truncateStart (statusBarFormat.ts), full name kept in the tooltip \u2014 unit-tested (pure helper + status-bar label/tooltip)"
     },
     "F04-FR-07": {
       "status": "implemented",
@@ -542,6 +552,15 @@
         "src/SchemaCatalogManager.ts"
       ],
       "note": "status bar shows an auto state when VS Code resolves a schema natively (jsonValidation or SchemaStore catalog) instead of unbound"
+    },
+    "F04-FR-16": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaBindingManager.ts"
+      ],
+      "note": "explicit entry id + name so the item is individually identifiable in VS Code's status-bar hide menu (unit-tested via the vscode mock)",
+      "specifiedAt": "2026-09-16",
+      "implementedAt": "2026-11-19"
     },
     "F05-FR-01": {
       "status": "manual",
@@ -828,6 +847,15 @@
         "src/SchemaAuthManager.ts"
       ],
       "note": "isAuthRequiredStatus() treats an unauthenticated GitHub 404 as auth-required"
+    },
+    "F07-FR-16": {
+      "status": "implemented",
+      "impl": [
+        "src/SchemaAuthStatusBar.ts"
+      ],
+      "note": "explicit entry id + name; the icon-only label (F07-FR-10) makes name the only text identifying this entry (unit-tested via the vscode mock)",
+      "specifiedAt": "2026-09-16",
+      "implementedAt": "2026-11-19"
     },
     "F07-NFR-01": {
       "status": "manual",
@@ -1217,14 +1245,14 @@
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "writeInlineBinding/removeInlineBinding do no fs I/O at all (edits computed from doc.getText() and applied via WorkspaceEdit) — verified by code inspection, not a dedicated test."
+      "note": "writeInlineBinding/removeInlineBinding do no fs I/O at all (edits computed from doc.getText() and applied via WorkspaceEdit) \u2014 verified by code inspection, not a dedicated test."
     },
     "F10-NFR-03": {
       "status": "manual",
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "Edits are computed from doc.getText() and applied via WorkspaceEdit against the live document, so unsaved-but-open documents are handled the same as saved ones — verified by code inspection."
+      "note": "Edits are computed from doc.getText() and applied via WorkspaceEdit against the live document, so unsaved-but-open documents are handled the same as saved ones \u2014 verified by code inspection."
     },
     "F11-FR-01": {
       "status": "implemented",
@@ -1388,7 +1416,7 @@
       "impl": [
         "src/SchemaBindingManager.ts"
       ],
-      "note": "Browse catalog… item added to bindToCurrentFile when a catalog manager is wired in"
+      "note": "Browse catalog\u2026 item added to bindToCurrentFile when a catalog manager is wired in"
     },
     "F12-FR-02": {
       "status": "implemented",
@@ -1449,7 +1477,7 @@
         "src/SchemaBindingManager.ts",
         "src/SchemaCatalogManager.ts"
       ],
-      "note": "catalog URL flows through the standard bind/validate path → F07 401/403 handling"
+      "note": "catalog URL flows through the standard bind/validate path \u2192 F07 401/403 handling"
     },
     "F12-FR-10": {
       "status": "implemented",
@@ -1515,7 +1543,7 @@
         "src/schemaPointer.ts",
         "src/SchemaRefProvider.ts"
       ],
-      "note": "same-doc refs → locatePointerTarget returns the key span"
+      "note": "same-doc refs \u2192 locatePointerTarget returns the key span"
     },
     "F13-FR-05": {
       "status": "implemented",
@@ -1537,7 +1565,7 @@
         "src/schemaPointer.ts",
         "src/SchemaRefProvider.ts"
       ],
-      "note": "unresolvable pointer → undefined definition / explanatory hover"
+      "note": "unresolvable pointer \u2192 undefined definition / explanatory hover"
     },
     "F13-FR-08": {
       "status": "implemented",
@@ -1589,7 +1617,7 @@
       "impl": [
         "src/SchemaBundleCommand.ts"
       ],
-      "note": "mode QuickPick: Bundle (refs→$defs) / Dereference (inline)"
+      "note": "mode QuickPick: Bundle (refs\u2192$defs) / Dereference (inline)"
     },
     "F14-FR-03": {
       "status": "implemented",
@@ -1632,7 +1660,7 @@
         "src/schemaBundler.ts",
         "src/SchemaBundleCommand.ts"
       ],
-      "note": "unresolvable ref throws naming it; 401/403 → Configure Auth offer"
+      "note": "unresolvable ref throws naming it; 401/403 \u2192 Configure Auth offer"
     },
     "F14-FR-09": {
       "status": "manual",
@@ -1676,7 +1704,7 @@
       "impl": [
         "src/SchemaDiffCommand.ts"
       ],
-      "note": "baseline picker: Git HEAD / Workspace file… / Remote URL… (auth); order preserved"
+      "note": "baseline picker: Git HEAD / Workspace file\u2026 / Remote URL\u2026 (auth); order preserved"
     },
     "F15-FR-03": {
       "status": "implemented",
@@ -1697,7 +1725,7 @@
       "impl": [
         "src/schemaDiff.ts"
       ],
-      "note": "breaking rules: required+, type-, enum/const narrow, bound tighten, addlProps→false, allOf+"
+      "note": "breaking rules: required+, type-, enum/const narrow, bound tighten, addlProps\u2192false, allOf+"
     },
     "F15-FR-06": {
       "status": "implemented",
@@ -1711,14 +1739,14 @@
       "impl": [
         "src/schemaDiff.ts"
       ],
-      "note": "title/description/examples/default/$comment and unknown keywords → informational"
+      "note": "title/description/examples/default/$comment and unknown keywords \u2192 informational"
     },
     "F15-FR-08": {
       "status": "implemented",
       "impl": [
         "src/schemaDiff.ts"
       ],
-      "note": "unreasoned changes → unclassified, never dropped; comparator never throws"
+      "note": "unreasoned changes \u2192 unclassified, never dropped; comparator never throws"
     },
     "F15-FR-09": {
       "status": "implemented",
@@ -1726,7 +1754,7 @@
         "src/schemaDiff.ts",
         "src/SchemaDiffCommand.ts"
       ],
-      "note": "grouped text-first Markdown report (pointer path, old→new); read-only virtual doc"
+      "note": "grouped text-first Markdown report (pointer path, old\u2192new); read-only virtual doc"
     },
     "F15-FR-10": {
       "status": "implemented",
@@ -1741,7 +1769,7 @@
       "impl": [
         "src/SchemaDiffCommand.ts"
       ],
-      "note": "identical versions → \"No structural changes\" message, no report"
+      "note": "identical versions \u2192 \"No structural changes\" message, no report"
     },
     "F15-NFR-01": {
       "status": "implemented",
@@ -1770,14 +1798,14 @@
       "impl": [
         "src/extension.ts"
       ],
-      "note": "QuickPick JSON/YAML → new untitled editor of that language"
+      "note": "QuickPick JSON/YAML \u2192 new untitled editor of that language"
     },
     "F16-FR-03": {
       "status": "implemented",
       "impl": [
         "src/sampleDataGenerator.ts"
       ],
-      "note": "value priority const → examples[0] → default → enum[0]"
+      "note": "value priority const \u2192 examples[0] \u2192 default \u2192 enum[0]"
     },
     "F16-FR-04": {
       "status": "implemented",
@@ -2259,28 +2287,28 @@
       "impl": [
         "src/validationFix.ts"
       ],
-      "note": "required → add-property with placeholder from property subschema"
+      "note": "required \u2192 add-property with placeholder from property subschema"
     },
     "F21-FR-03": {
       "status": "implemented",
       "impl": [
         "src/validationFix.ts"
       ],
-      "note": "additional/unevaluatedProperties → remove-property"
+      "note": "additional/unevaluatedProperties \u2192 remove-property"
     },
     "F21-FR-04": {
       "status": "implemented",
       "impl": [
         "src/validationFix.ts"
       ],
-      "note": "enum → one fix per allowed value (cap 6); const → set-value"
+      "note": "enum \u2192 one fix per allowed value (cap 6); const \u2192 set-value"
     },
     "F21-FR-05": {
       "status": "implemented",
       "impl": [
         "src/validationFix.ts"
       ],
-      "note": "type → lossless coercion only"
+      "note": "type \u2192 lossless coercion only"
     },
     "F21-FR-06": {
       "status": "implemented",
@@ -2376,14 +2404,14 @@
       "impl": [
         "src/validationFix.ts"
       ],
-      "note": "validationFix.test.ts — applied-text assertions"
+      "note": "validationFix.test.ts \u2014 applied-text assertions"
     },
     "F22-FR-01": {
       "status": "implemented",
       "impl": [
         "src/draftMigration.ts"
       ],
-      "note": "migrateSchema → {schema, changes}; no input mutation"
+      "note": "migrateSchema \u2192 {schema, changes}; no input mutation"
     },
     "F22-FR-02": {
       "status": "implemented",
@@ -2397,35 +2425,35 @@
       "impl": [
         "src/draftMigration.ts"
       ],
-      "note": "id → $id at any depth"
+      "note": "id \u2192 $id at any depth"
     },
     "F22-FR-04": {
       "status": "implemented",
       "impl": [
         "src/draftMigration.ts"
       ],
-      "note": "boolean exclusiveMin/Max → numeric form"
+      "note": "boolean exclusiveMin/Max \u2192 numeric form"
     },
     "F22-FR-05": {
       "status": "implemented",
       "impl": [
         "src/draftMigration.ts"
       ],
-      "note": "definitions ↔ $defs + local $ref rewrite"
+      "note": "definitions \u2194 $defs + local $ref rewrite"
     },
     "F22-FR-06": {
       "status": "implemented",
       "impl": [
         "src/draftMigration.ts"
       ],
-      "note": "tuple items ↔ prefixItems / additionalItems ↔ items"
+      "note": "tuple items \u2194 prefixItems / additionalItems \u2194 items"
     },
     "F22-FR-07": {
       "status": "implemented",
       "impl": [
         "src/draftMigration.ts"
       ],
-      "note": "dependencies ↔ dependentRequired/dependentSchemas"
+      "note": "dependencies \u2194 dependentRequired/dependentSchemas"
     },
     "F22-FR-08": {
       "status": "implemented",
@@ -2476,7 +2504,7 @@
       "impl": [
         "src/draftMigration.ts"
       ],
-      "note": "draftMigration.test.ts — both directions + idempotence"
+      "note": "draftMigration.test.ts \u2014 both directions + idempotence"
     },
     "F23-FR-01": {
       "status": "implemented",
@@ -2868,7 +2896,7 @@
       "impl": [
         "src/cli/cli.ts"
       ],
-      "note": "Unknown subcommand → named error + usage, exit 64."
+      "note": "Unknown subcommand \u2192 named error + usage, exit 64."
     },
     "F27-FR-04": {
       "status": "implemented",
@@ -2938,7 +2966,7 @@
       "impl": [
         "src/cli/cli.ts"
       ],
-      "note": "types: bundleSchema (F14) then generateCode (F18); --lang selects a target, unknown → 64."
+      "note": "types: bundleSchema (F14) then generateCode (F18); --lang selects a target, unknown \u2192 64."
     },
     "F27-FR-14": {
       "status": "implemented",
@@ -3002,7 +3030,7 @@
         "webpack.config.js",
         "cli/package.json"
       ],
-      "note": "Published bundle inlines the core (self-contained); verified by the webpack build — no runtime dependency on out/ or dist/extension.js."
+      "note": "Published bundle inlines the core (self-contained); verified by the webpack build \u2014 no runtime dependency on out/ or dist/extension.js."
     },
     "F28-FR-01": {
       "status": "implemented",
@@ -4047,7 +4075,7 @@
       "impl": [
         "src/notify.ts"
       ],
-      "note": "confirm() → transient status-bar message; a test greps src/ for surviving action-less toasts",
+      "note": "confirm() \u2192 transient status-bar message; a test greps src/ for surviving action-less toasts",
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },
@@ -4486,7 +4514,7 @@
       "impl": [
         "src/fallbackRenderer.ts"
       ],
-      "note": "required column uses textual Yes/—, not colour alone; unit-tested"
+      "note": "required column uses textual Yes/\u2014, not colour alone; unit-tested"
     },
     "S07-NFR-01": {
       "status": "manual",
@@ -4584,7 +4612,7 @@
       "impl": [
         "scripts/doc-coverage-lib.mjs"
       ],
-      "note": "expected = 40 × evaluated complexity (kind-weight FR/SR 1.0, NFR 0.4 × size factor vs corpus-median definition length, clamped 0.5–2), floor 120; constants + per-spec complexity exposed by the lib"
+      "note": "expected = 40 \u00d7 evaluated complexity (kind-weight FR/SR 1.0, NFR 0.4 \u00d7 size factor vs corpus-median definition length, clamped 0.5\u20132), floor 120; constants + per-spec complexity exposed by the lib"
     },
     "S07-SR-12": {
       "status": "implemented",
@@ -4662,7 +4690,7 @@
       "impl": [
         "src/test/integration/suites/singleFolder.commandSmoke.test.ts"
       ],
-      "note": "one smoke test per package.json#contributes.commands entry; commands whose real success path needs the network (cacheSchemaLocally/refreshSchemaCache download) or an unstubbed native dialog (preview's showOpenDialog fallback, diffSchema's workspace-file/remote-URL baseline) exercise their nearest safe branch instead — see the smoke suite's file-level comment"
+      "note": "one smoke test per package.json#contributes.commands entry; commands whose real success path needs the network (cacheSchemaLocally/refreshSchemaCache download) or an unstubbed native dialog (preview's showOpenDialog fallback, diffSchema's workspace-file/remote-URL baseline) exercise their nearest safe branch instead \u2014 see the smoke suite's file-level comment"
     },
     "S08-SR-07": {
       "status": "implemented",
@@ -4691,7 +4719,7 @@
         ".github/workflows/refresh-gifs.yml",
         "src/test/e2e"
       ],
-      "note": "e2e-smoke job (parallel to refresh-gifs, both needs: find-pr) runs non-mouse Playwright demos non-blocking at release time — moved off ci.yml per the 2026-07 History note (PR contention caused spurious timeouts); e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
+      "note": "e2e-smoke job (parallel to refresh-gifs, both needs: find-pr) runs non-mouse Playwright demos non-blocking at release time \u2014 moved off ci.yml per the 2026-07 History note (PR contention caused spurious timeouts); e2e/integration process requirement: verified by npm run test:integration in a real VS Code, not unit-taggable"
     },
     "S08-SR-11": {
       "status": "manual",
@@ -5020,7 +5048,7 @@
         "docs/.vitepress/theme/SpecInsights.vue",
         "docs/.vitepress/specs.data.ts"
       ],
-      "note": "corpus KPIs: spec/requirement totals, status breakdown, test-tag and doc coverage, effort and value aggregates, RICE ranking — all build-time derived"
+      "note": "corpus KPIs: spec/requirement totals, status breakdown, test-tag and doc coverage, effort and value aggregates, RICE ranking \u2014 all build-time derived"
     },
     "S10-SR-13": {
       "status": "implemented",
@@ -5454,7 +5482,7 @@
       "impl": [
         "scripts/dora-metrics.mjs"
       ],
-      "note": "per-release median lead time (author→tag) over previousTag..thisTag; seed release excluded; aggregate median"
+      "note": "per-release median lead time (author\u2192tag) over previousTag..thisTag; seed release excluded; aggregate median"
     },
     "S14-SR-03": {
       "status": "implemented",
@@ -5468,7 +5496,7 @@
       "impl": [
         "scripts/dora-metrics.mjs"
       ],
-      "note": "restore = failing release → fixing patch elapsed; median; n/a when no failures"
+      "note": "restore = failing release \u2192 fixing patch elapsed; median; n/a when no failures"
     },
     "S14-SR-05": {
       "status": "implemented",
@@ -5503,7 +5531,7 @@
         ".github/workflows/ci.yml",
         "dora.json"
       ],
-      "note": "dora.json is refreshed by maturity-refresh.yml, triggered bi-weekly (cron 0 9 1,15 * *) and after Release Please, gated on that run having actually tagged a release (a `v*` tag pointing at its head_sha) — success alone fires on every push to main, where release-please usually only opens/updates its release PR, which turned the periodic job into a near-every-merge one. Post-tag rather than inside the release PR: the metrics stay tag-only (S14-SR-06), since dating a staged release from package.json + CHANGELOG would make interval/lead-time/restore figures estimates rather than measurements. Every artefact has a per-artefact due-check so a still-fresh file is not regenerated for its date stamp alone; dora's is tag-based (`dora:check`) rather than elapsed-time, so a release makes it due immediately. All results collect onto one standing branch (chore/refresh-repo-metrics, force-pushed, reusing the open PR) so runs update a single PR. Scheduled runs stand down when a release landed inside the last fortnight. Freshness test compares against the latest visible git tag rather than package.json's version, since a release-please PR bumps the version ahead of tagging — ci.yml's coverage job fetches full tag history (fetch-depth: 0) so that comparison isn't skipped there",
+      "note": "dora.json is refreshed by maturity-refresh.yml, triggered bi-weekly (cron 0 9 1,15 * *) and after Release Please, gated on that run having actually tagged a release (a `v*` tag pointing at its head_sha) \u2014 success alone fires on every push to main, where release-please usually only opens/updates its release PR, which turned the periodic job into a near-every-merge one. Post-tag rather than inside the release PR: the metrics stay tag-only (S14-SR-06), since dating a staged release from package.json + CHANGELOG would make interval/lead-time/restore figures estimates rather than measurements. Every artefact has a per-artefact due-check so a still-fresh file is not regenerated for its date stamp alone; dora's is tag-based (`dora:check`) rather than elapsed-time, so a release makes it due immediately. All results collect onto one standing branch (chore/refresh-repo-metrics, force-pushed, reusing the open PR) so runs update a single PR. Scheduled runs stand down when a release landed inside the last fortnight. Freshness test compares against the latest visible git tag rather than package.json's version, since a release-please PR bumps the version ahead of tagging \u2014 ci.yml's coverage job fetches full tag history (fetch-depth: 0) so that comparison isn't skipped there",
       "specifiedAt": "2026-07-26",
       "implementedAt": "2026-07-26"
     },
@@ -5684,14 +5712,14 @@
       "impl": [
         "scripts/verify.mjs"
       ],
-      "note": "renderSummary()/run() — unit-tested (verifyGate.test.ts)"
+      "note": "renderSummary()/run() \u2014 unit-tested (verifyGate.test.ts)"
     },
     "S17-SR-03": {
       "status": "implemented",
       "impl": [
         "scripts/verify.mjs"
       ],
-      "note": "renderSummary() dumps captured output for failed (non-cancelled) steps only — unit-tested"
+      "note": "renderSummary() dumps captured output for failed (non-cancelled) steps only \u2014 unit-tested"
     },
     "S17-SR-04": {
       "status": "implemented",

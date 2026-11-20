@@ -66,6 +66,21 @@ Errors are reported as VS Code diagnostics in the Problems panel.
   the schema's `$schema` string. (This applies to on-demand
   `jsonschema.validateFile`; F16's sample-data self-check deliberately strips
   `$schema` and stays on the default dialect — see F16.)
+- **F03-FR-18** A data document's own inline binding — a string-valued
+  `$schema` property on the root object of its first instance (F10) — MUST be
+  validated as if it were absent, so it is never an unexpected property and
+  cannot fail a combinator branch (`oneOf`/`anyOf`/`if`–`then`), an
+  `additionalProperties` subschema or a property count (`maxProperties`). The
+  key MUST be removed from a copy of the instance *before* validation, not
+  filtered from the errors after it, so that no error built from it — and no
+  quick fix built from those errors (F21) — survives. This MUST hold in the
+  editor and in workspace/CLI validation (F20, F27) alike. When the schema's
+  root declares `$schema` in `properties` or lists it in `required`, the key
+  MUST be kept and validated normally, so a schema that constrains the binding
+  is still obeyed. Only that root key is exempt: other `$`-prefixed properties,
+  `$schema` on a nested object, in a JSONL record or in a later document, are
+  ordinary data. The JSON Schema spec reserves `$` keywords inside *schemas*,
+  not instance data, where such keys are often real data (`$type`, `$oid`).
 
 ### Diagnostics
 
@@ -96,8 +111,20 @@ Errors are reported as VS Code diagnostics in the Problems panel.
 2. Opening `person-valid.json` and validating produces zero diagnostics and a
    success notification.
 3. Validation works without an explicit binding when `$schema` is present inline.
+4. A file bound inline by `$schema` to a schema with
+   `additionalProperties: false` that does not declare `$schema` validates
+   cleanly; a misspelt `$typ` beside it is still reported.
 
 ## History
+
+- **2026-11-19** — Added F03-FR-18: the inline `$schema` binding key is no
+  longer an "unexpected property" under a closed schema. Before, binding a file
+  inline to any schema with `additionalProperties: false` produced an error on
+  the very line that binds it, and the only workaround was declaring `$schema`
+  in every such schema. The first version filtered the binding's errors after
+  validation; review showed the key still failed `oneOf` branches,
+  `additionalProperties` subschemas and `maxProperties`, so it is now removed
+  before validation instead.
 
 - **2026-09-02** — Added F03-FR-17: opt-in re-validation on save
   (`jsonschema.validation.onSave`, default `off`). Automatic runs are silent and
