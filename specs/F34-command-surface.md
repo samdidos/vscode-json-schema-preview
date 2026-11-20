@@ -53,6 +53,9 @@ and a grouped menu so the title bar stays legible as the command set grows.
 - **F34-FR-06** The editor title bar MUST show at most three of the extension's
   icons for any file kind; every other command MUST live under a single
   **JSON Schema** submenu in the title-bar overflow.
+  The submenu MUST be contributed at most once per menu, with a single `when`
+  clause covering both schema and data files (VS Code warns about and drops a
+  repeated submenu entry).
 - **F34-FR-07** The submenu MUST group commands by purpose — view, generate,
   transform, analyse — using menu groups, so its order is stable and meaningful
   rather than registration-ordered.

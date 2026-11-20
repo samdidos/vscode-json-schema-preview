@@ -472,12 +472,7 @@
         },
         {
           "submenu": "jsonschema.schemaMenu",
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema",
-          "group": "1_run@1"
-        },
-        {
-          "submenu": "jsonschema.schemaMenu",
-          "when": "(resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema",
+          "when": "((resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == yml) && jsonschema.isJsonSchema) || ((resourceLangId == json || resourceLangId == jsonc || resourceLangId == jsonl || resourceLangId == yaml || resourceLangId == yml || resourceLangId == toml) && !jsonschema.isJsonSchema)",
           "group": "1_run@1"
         }
       ],
