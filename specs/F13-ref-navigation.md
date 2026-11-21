@@ -103,6 +103,12 @@ schema *authors*.
   whose text does not contain the literal `$schema`, and MUST reuse its result
   for an unchanged document version and language. A key spelled only through
   escapes (e.g. `"\u0024schema"`) is therefore not a binding.
+  For YAML, when the first `# yaml-language-server: $schema=` directive is
+  preceded only by ASCII-blank lines, comment lines, `%` directives before the
+  first `---`, and bare `---` document-start markers, extraction MUST return it
+  without parsing the document: no scalar can begin before the first content
+  line. Any other YAML document containing `$schema` MAY be parsed. Either way
+  the result MUST be identical to that of the parsing path.
 
 ## Out of Scope
 
