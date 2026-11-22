@@ -214,6 +214,9 @@ suite('Inline binding extraction cost [F13-NFR-03]', () => {
     assert.deepStrictEqual(inlineSchemaReference(loneCr, 'yaml'), at(loneCr));
     const loneCr2 = `# a\rb\n${directive}`;
     assert.deepStrictEqual(inlineSchemaReference(loneCr2, 'yaml'), at(loneCr2));
+    // A `\r` right before the directive ends that line, so this takes the fast path.
+    const crEndsLine = `# note\r${directive}`;
+    assert.deepStrictEqual(inlineSchemaReference(crEndsLine, 'yaml'), at(crEndsLine));
     // `---#x` is no document marker (plain scalar), so it is not prelude.
     const notMarker = `---#x\n${directive}`;
     assert.deepStrictEqual(inlineSchemaReference(notMarker, 'yaml'), at(notMarker));

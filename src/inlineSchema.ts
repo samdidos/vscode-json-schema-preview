@@ -29,13 +29,18 @@ function yamlDirective(match: RegExpMatchArray): InlineSchemaReference {
 
 /** True when `prefix` holds only lines before which no YAML scalar can begin:
  * blank lines, comments, `%` directives and bare `---` markers (F13-NFR-03).
- * Anything unusual (BOM, lone `\r`, `--- |`, `...`) answers false so the
- * caller parses the document instead. So do U+2028/U+2029: a regex `^` after
- * them sees a new line, but the YAML lexer does not, and `String#trim` would
- * call such a line blank. Blank and comment lines are tested ASCII-only. */
+ * Anything unusual (BOM, a `\r` not ending a line, `--- |`, `...`) answers
+ * false so the caller parses the document instead. So do U+2028/U+2029: a
+ * regex `^` after them sees a new line, but the YAML lexer does not, and
+ * `String#trim` would call such a line blank. Blank and comment lines are tested ASCII-only.
+ * Lines are read one at a time so the walk stops at the first content line. */
 function isYamlPrelude(prefix: string): boolean {
   let started = false;
-  for (const raw of prefix.split('\n')) {
+  for (let from = 0; from <= prefix.length;) {
+    const newline = prefix.indexOf('\n', from);
+    const end = newline === -1 ? prefix.length : newline;
+    const raw = prefix.slice(from, end);
+    from = end + 1;
     const line = raw.endsWith('\r') ? raw.slice(0, -1) : raw;
     if (line.includes('\r') || line.includes('\u2028') || line.includes('\u2029')
       || line.startsWith('\uFEFF')) { return false; }
