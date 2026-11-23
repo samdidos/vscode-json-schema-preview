@@ -111,6 +111,13 @@ missing, Go to Definition offers **Cache Schema Locally**. Hover shows the
 schema's title and description using only local files or cached content and
 never downloads a schema.
 
+While you type a `$ref` value, completion suggests where it can point: every
+`$defs` / `definitions` entry and `$anchor` in the current schema, and the other
+schema files in the workspace as relative paths. After a file path, typing `#`
+lists the definitions inside that file (`./common.schema.json#/$defs/Id`).
+Accepting a suggestion replaces the whole value, and completion never fetches a
+remote schema.
+
 <!-- spec:S04 -->
 ## Offline & Stale-Cache Behaviour
 

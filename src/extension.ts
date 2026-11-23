@@ -26,6 +26,7 @@ import { SchemaCache } from './SchemaCache';
 import { SchemaAuthCodeActionProvider } from './SchemaAuthCodeActionProvider';
 import { SchemaAuthStatusBar } from './SchemaAuthStatusBar';
 import { SchemaRefProvider } from './SchemaRefProvider';
+import { SchemaRefCompletionProvider } from './SchemaRefCompletionProvider';
 import { TomlIntellisenseProvider } from './TomlIntellisenseProvider';
 import { SchemaLintManager } from './SchemaLintManager';
 import { SchemaCatalogManager } from './SchemaCatalogManager';
@@ -194,6 +195,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // ── $ref navigation & hover (F13) ─────────────────────────────────────────
   context.subscriptions.push(...SchemaRefProvider.register(schemaCache));
+  // F13-FR-14..16 — `$ref` completion while typing a reference.
+  context.subscriptions.push(SchemaRefCompletionProvider.register());
 
   // ── TOML schema IntelliSense (F19) ─────────────────────────────────────────
   context.subscriptions.push(...TomlIntellisenseProvider.register(schemaCache));
