@@ -432,13 +432,15 @@ export class CodeAction {
   constructor(public title: string, public kind?: unknown) {}
 }
 
-export const CompletionItemKind = { Field: 4, Value: 11, Property: 9, EnumMember: 19 };
+export const CompletionItemKind = { Field: 4, Value: 11, Property: 9, EnumMember: 19, File: 16, Reference: 17 };
 
 export class CompletionItem {
   detail?: string;
   documentation?: unknown;
   sortText?: string;
   insertText?: string;
+  filterText?: string;
+  range?: unknown;
   constructor(public label: string, public kind?: number) {}
 }
 
