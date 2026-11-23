@@ -5,7 +5,7 @@ import * as vscodeMock from '../mocks/vscode';
 
 const {
   registerMcpServerDefinition, serverDefinitionSpec,
-  MCP_PROVIDER_ID, MCP_PACKAGE, MCP_SERVER_LABEL,
+  MCP_PROVIDER_ID, MCP_PACKAGE, MCP_PACKAGE_VERSION, MCP_SERVER_LABEL,
 } = require('../../McpServerDefinition');
 const { confirm, CONFIRMATION_MS } = require('../../notify');
 const { registerSchemaDiff } = require('../../SchemaDiffCommand');
@@ -51,7 +51,7 @@ suite('[F33-FR-15] MCP server definition provider — the Marketplace route', ()
   test('the definition launches the published CLI, not a bundled copy', () => {
     const spec = serverDefinitionSpec('1.2.3');
     assert.strictEqual(spec.command, 'npx');
-    assert.deepStrictEqual(spec.args, ['-y', MCP_PACKAGE, 'mcp']);
+    assert.deepStrictEqual(spec.args, ['-y', `${MCP_PACKAGE}@${MCP_PACKAGE_VERSION}`, 'mcp']);
     assert.strictEqual(spec.version, '1.2.3');
     assert.ok(!fs.existsSync(path.join(ROOT, 'dist', 'cli.js')), 'the CLI bundle must not ship in the .vsix');
   });
@@ -77,6 +77,18 @@ suite('[F33-FR-15] MCP server definition provider — the Marketplace route', ()
     assert.strictEqual(registerMcpServerDefinition(context as never), false);
     assert.strictEqual(context.subscriptions.length, 0);
     (vscodeMock.lm as { registerMcpServerDefinitionProvider?: unknown }).registerMcpServerDefinitionProvider = original;
+  });
+});
+
+suite('[F33-FR-17] MCP server definition pins the CLI version', () => {
+  test('npx is given an exact version, never a bare package name', () => {
+    const [, pkgArg] = serverDefinitionSpec('1').args;
+    assert.match(pkgArg, /^json-schema-toolkit@\d+\.\d+\.\d+$/);
+  });
+
+  test('the pinned version is the CLI package version', () => {
+    assert.strictEqual(MCP_PACKAGE, cliPkg.name);
+    assert.strictEqual(MCP_PACKAGE_VERSION, cliPkg.version);
   });
 });
 

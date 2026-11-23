@@ -3977,6 +3977,15 @@
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },
+    "F33-FR-17": {
+      "status": "implemented",
+      "impl": [
+        "src/McpServerDefinition.ts"
+      ],
+      "note": "MCP_PACKAGE_VERSION pins npx to an exact CLI version; a unit test fails when it drifts from cli/package.json",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
     "F33-NFR-01": {
       "status": "implemented",
       "impl": [

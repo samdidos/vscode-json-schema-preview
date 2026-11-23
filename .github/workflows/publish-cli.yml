@@ -5,8 +5,16 @@ name: Publish CLI
 # release train: its own version (cli/package.json) and its own `cli-v*` tags.
 #
 # Gated on the `npm` GitHub environment (add a required reviewer for manual
-# approval) and needs `NPM_TOKEN`, an npm automation token with publish
-# rights. Test without publishing via "Run workflow" with dry_run left on.
+# approval). Authenticates with npm trusted publishing (OIDC, via the
+# `id-token: write` permission below) when the package is configured for it on
+# npmjs.com; otherwise set `NPM_TOKEN`, a granular token with publish rights.
+# Test without publishing via "Run workflow" with dry_run left on.
+#
+# Releasing a CLI version: bump `version` in cli/package.json, both versions in
+# cli/server.json and MCP_PACKAGE_VERSION in src/McpServerDefinition.ts
+# (F33-FR-17; unit tests fail if any of them differ), merge, then push the tag
+# `cli-v<version>`. Publish the extension that pins the new version only after
+# this workflow has published it.
 on:
   push:
     tags:

@@ -175,9 +175,18 @@ There are three routes, from least to most setup, and they all launch the same
 In a VS Code that supports MCP server definition providers (1.101 and later), the
 extension **registers the server itself**: agent mode lists "JSON Schema
 Toolkit" under MCP servers the moment the extension is installed, with nothing
-to configure. The definition launches the published CLI
-(`npx -y json-schema-toolkit mcp`), so the first start needs npm access; after
-that it is cached. On an older VS Code the provider is simply not registered and
+to configure. The definition launches the published CLI, pinned to the exact
+version this extension release was tested with
+(`npx -y json-schema-toolkit@<version> mcp`), so the first start needs npm
+access; after that it is cached. The pin means a later release under that name
+is never picked up behind your back.
+
+::: warning Not on npm yet
+The CLI package has not been published yet
+([#286](https://github.com/samdidos/vscode-json-schema-preview/issues/286)), so
+this server fails to start until it is. The language model tools above don't
+depend on it and work today.
+::: On an older VS Code the provider is simply not registered and
 nothing else changes.
 
 This is how "publishing an MCP server to the Marketplace" works today: the
