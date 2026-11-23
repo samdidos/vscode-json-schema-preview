@@ -140,6 +140,12 @@ The same core ships as a standalone CLI, **`json-schema-toolkit`** (command:
 `jstk`) — validate, lint, diff with a compatibility gate, bundle, migrate, infer,
 sample, and run schema tests, with no VS Code involved.
 
+> **Not on npm yet.** The `json-schema-toolkit` package has not been published
+> ([#286](https://github.com/samdidos/vscode-json-schema-preview/issues/286)), so
+> the `npx` commands below don't work yet. Until it is, build the CLI from a
+> checkout: `node scripts/bootstrap.mjs && npm run build:cli`, then run
+> `node cli/dist/cli.js` wherever these pages say `jstk`.
+
 ```sh
 npx json-schema-toolkit diff api.v1.json api.v2.json --check --strict
 npx json-schema-toolkit test contracts/*.schema.test.json

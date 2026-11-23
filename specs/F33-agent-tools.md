@@ -105,6 +105,13 @@ consumes it.
   field linking the npm package to it — so the same server can be published to
   the registry and discovered by clients outside VS Code. Publishing itself is a
   release step, documented on the docs site.
+- **F33-FR-17** The F33-FR-15 definition MUST name an **exact** CLI version
+  (`npx -y json-schema-toolkit@<version> mcp`), equal to `cli/package.json`'s
+  `version`, never a bare package name or a range. `-y` makes npx install and
+  run without a prompt, so an unpinned name runs whatever is published under it
+  next — including a release by someone else if the name is not yet claimed, or
+  a compromised later release. A unit test MUST fail when the pinned version and
+  the CLI package version differ, so a CLI release cannot forget the bump.
 
 ## Non-Functional Requirements
 
@@ -161,3 +168,8 @@ The first three are tracked in [#252](https://github.com/samdidos/vscode-json-sc
   open MCP Registry route (`server.json` + `mcpName`). Bundling the CLI into
   the .vsix was rejected: the CLI bundle is ~1.4 MB against a 1.5 MB .vsix
   budget, and the two artifacts release on different cadences.
+
+- **2026-11-23** — Added F33-FR-17: pin the CLI version the MCP server
+  definition launches. v0.21.0 shipped `npx -y json-schema-toolkit mcp` while
+  that npm name was still unclaimed, so whoever published it first would have
+  had their code run by every user who started the server (#286).

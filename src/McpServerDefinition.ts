@@ -2,7 +2,7 @@
 // MCP server definition providers, installing this extension is enough for the
 // editor's agent mode to discover and launch `jstk mcp` with no configuration.
 //
-// The definition launches the *published* CLI (`npx json-schema-toolkit mcp`)
+// The definition launches the *published* CLI (`npx json-schema-toolkit@<v> mcp`)
 // rather than a bundled copy: the CLI bundle is ~1.4 MB against a 1.5 MB .vsix
 // budget (S03), and the two artifacts release independently.
 //
@@ -16,6 +16,13 @@ import * as vscode from 'vscode';
 export const MCP_PROVIDER_ID = 'jsonschema.mcp';
 export const MCP_SERVER_LABEL = 'JSON Schema Toolkit';
 export const MCP_PACKAGE = 'json-schema-toolkit';
+/**
+ * F33-FR-17 — the exact CLI version the definition launches. `npx -y` installs
+ * and runs without asking, so an unpinned name would run whatever is published
+ * under it next. Must equal `cli/package.json`'s version (a unit test checks),
+ * so bump both together when releasing the CLI.
+ */
+export const MCP_PACKAGE_VERSION = '0.1.0';
 
 /** Minimal local typing of the post-1.101 API surface this file touches. */
 interface McpStdioServerDefinitionCtor {
@@ -34,9 +41,9 @@ interface McpCapableLm {
   ): vscode.Disposable;
 }
 
-/** The stdio definition: `npx json-schema-toolkit mcp`. */
+/** The stdio definition: `npx -y json-schema-toolkit@<pinned> mcp`. */
 export function serverDefinitionSpec(version: string): { label: string; command: string; args: string[]; version: string } {
-  return { label: MCP_SERVER_LABEL, command: 'npx', args: ['-y', MCP_PACKAGE, 'mcp'], version };
+  return { label: MCP_SERVER_LABEL, command: 'npx', args: ['-y', `${MCP_PACKAGE}@${MCP_PACKAGE_VERSION}`, 'mcp'], version };
 }
 
 /**
