@@ -1501,6 +1501,27 @@
       ],
       "note": "stale fallback on fetch failure; QuickPick title marked offline"
     },
+    "F12-FR-12": {
+      "status": "implemented",
+      "impl": [
+        "src/CatalogSuggestionProvider.ts",
+        "src/schemaCatalog.ts",
+        "src/SchemaBindingManager.ts",
+        "src/extension.ts"
+      ],
+      "note": "CatalogSuggestionProvider offers fileMatch-matched cached entries on unbound files; bindToCurrentFile(uri, presetRef) goes straight to the scope picker",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
+    "F12-FR-13": {
+      "status": "implemented",
+      "impl": [
+        "src/CatalogSuggestionProvider.ts"
+      ],
+      "note": "first-line only; reads getCachedEntries, never fetches",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
     "F12-NFR-01": {
       "status": "implemented",
       "impl": [

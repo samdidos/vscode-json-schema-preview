@@ -208,6 +208,8 @@ Additional schema-catalog URLs in the SchemaStore catalog format (`{ "schemas": 
 ```
 
 The **Browse catalog…** picker (opened from [Bind Schema…](/guide/commands#json-schema-bind-schema)) is filterable by schema name and description, and shows the source catalog and URL as each entry's detail. Entries whose `fileMatch` glob matches the file you're binding are ranked first, under a "Suggested for this file" separator. Fetched catalogs are cached for 24 hours in global storage — reopening the picker within that window never hits the network — and if a refetch fails and a cached copy exists, the picker falls back to it and marks the title as offline/stale rather than failing outright.
+
+When an **unbound** data file's name matches a cached catalog entry (say, a fresh `tsconfig.json`), the first line also offers a lightbulb: **Bind suggested schema "tsconfig.json"**. It opens the usual scope picker with that schema already chosen, so nothing is bound until you pick where the binding goes. The suggestion comes from the catalog cache only, so it appears once the catalog has been fetched (for example after the first **Browse catalog…**), and never triggers a request by itself.
 <!-- spec:F12 end -->
 
 ---
