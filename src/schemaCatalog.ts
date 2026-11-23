@@ -92,3 +92,20 @@ export function rankByFileMatch(
   }
   return { suggested, rest };
 }
+
+/**
+ * Catalog entries to offer as one-click binding suggestions for `fileName`
+ * (F12-FR-12): those whose `fileMatch` matches, in catalog order, one per
+ * distinct schema URL, at most `max`.
+ */
+export function suggestedEntries(entries: CatalogEntry[], fileName: string, max = 3): CatalogEntry[] {
+  const out: CatalogEntry[] = [];
+  const seen = new Set<string>();
+  for (const e of entries) {
+    if (out.length >= max) { break; }
+    if (seen.has(e.url) || !fileMatches(e.fileMatch, fileName)) { continue; }
+    seen.add(e.url);
+    out.push(e);
+  }
+  return out;
+}

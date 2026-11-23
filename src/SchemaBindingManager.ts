@@ -197,7 +197,13 @@ export class SchemaBindingManager {
   // Bind command
   // ---------------------------------------------------------------------------
 
-  async bindToCurrentFile(fileUri?: vscode.Uri) {
+  /**
+   * Bind a schema to `fileUri` (or the active editor's document). With
+   * `presetRef` — a catalog suggestion's URL (F12-FR-12) — the source picker is
+   * skipped and the flow goes straight to the scope picker, so the user still
+   * chooses where (and whether) the binding is written.
+   */
+  async bindToCurrentFile(fileUri?: vscode.Uri, presetRef?: string) {
     let doc: vscode.TextDocument | undefined;
     if (fileUri) {
       try { doc = await vscode.workspace.openTextDocument(fileUri); } catch { /* fall through */ }
@@ -217,6 +223,11 @@ export class SchemaBindingManager {
     // JSONL has no standardised $schema mechanism (F10-FR-02) — every other
     // supported format can carry an inline binding.
     const inlineSupported = doc.languageId !== 'jsonl';
+
+    if (typeof presetRef === 'string' && presetRef.trim()) {
+      await this.bindRef(doc, presetRef.trim(), undefined, folder, inlineSupported);
+      return;
+    }
 
     type Item = vscode.QuickPickItem & {
       uri?: vscode.Uri; isUrl?: true; isBrowse?: true; isRemove?: true; isCatalog?: true;
@@ -337,9 +348,20 @@ export class SchemaBindingManager {
       localSchemaUri = pick.uri!;
     }
 
+    await this.bindRef(doc, schemaRef, localSchemaUri, folder, inlineSupported);
+  }
+
+  /** Scope picker + write: the shared tail of every bind path (F04, F12-FR-02). */
+  private async bindRef(
+    doc: vscode.TextDocument,
+    schemaRef: string | undefined,
+    localSchemaUri: vscode.Uri | undefined,
+    folder: vscode.WorkspaceFolder | undefined,
+    inlineSupported: boolean,
+  ): Promise<void> {
     const target = await this.pickScope(folder !== undefined, {
       allowInline: inlineSupported,
-      tomlInlineOnly: docIsToml,
+      tomlInlineOnly: isToml(doc.languageId),
     });
     if (target === undefined) {return;}
 
@@ -359,7 +381,7 @@ export class SchemaBindingManager {
     }
 
     const relFile = relFileForTarget(doc.uri, target);
-    await this.addPermBinding(relFile, schemaRef!, docIsYaml, folder, target);
+    await this.addPermBinding(relFile, schemaRef!, isYaml(doc.languageId), folder, target);
     this.refresh(doc);
   }
 
