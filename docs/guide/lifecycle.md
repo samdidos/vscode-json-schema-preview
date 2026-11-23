@@ -149,8 +149,33 @@ npx json-schema-toolkit diff old.schema.json new.schema.json --check --strict
 # exit 0 = compatible · 1 = breaking · 2 = unprovable (--strict only)
 ```
 
-A typical PR check diffs the proposed schema against its base-branch version and
-fails the job on a non-zero exit.
+**As a pull-request check**, with the bundled GitHub Action. It compares every
+schema file the pull request changed against its version on the base branch,
+fails the check on a breaking change (or, with `strict: true`, on an unprovable
+one), and writes the per-file verdicts to the job summary:
+
+```yaml
+on: pull_request
+jobs:
+  schema-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: samdidos/vscode-json-schema-preview/compat-gate@main # pin a commit SHA
+        with:
+          strict: true
+          # schemas: |            # which files count as schemas (these are the defaults)
+          #   **/*.schema.json
+          #   **/*.schema.yaml
+          #   **/*.schema.yml
+```
+
+A renamed schema is compared with its old path, a new one is listed as new, and a
+deleted one counts as breaking. The action builds the CLI from its own commit,
+so pinning the action pins the classifier and nothing is downloaded from npm. It
+compares each file on its own: a breaking change made inside a file another
+schema `$ref`s is caught only when that file is itself one of the changed
+schemas ([#249](https://github.com/samdidos/vscode-json-schema-preview/issues/249)).
 
 Schema tests and the compatibility verdict answer the same question from
 different directions and neither subsumes the other: the verdict is *structural*
