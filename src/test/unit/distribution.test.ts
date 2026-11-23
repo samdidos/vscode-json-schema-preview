@@ -237,8 +237,11 @@ suite('S21 — Open VSX publishing', () => {
 
   test('[S21-SR-04] the README links the Open VSX listing next to the Marketplace', () => {
     const readme = fs.readFileSync(path.join(CHECKOUT, 'README.md'), 'utf-8');
-    assert.match(readme, /open-vsx\.org\/extension\/samdidos\/json-schema-preview/);
-    assert.match(readme, /marketplace\.visualstudio\.com\/items\?itemName=samdidos\.json-schema-preview/);
+    // Compare whole link targets for equality rather than matching a URL
+    // fragment anywhere in the text, which would also accept a lookalike host.
+    const links = new Set([...readme.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map(([, url]) => url));
+    assert.ok(links.has('https://open-vsx.org/extension/samdidos/json-schema-preview'), 'Open VSX listing');
+    assert.ok(links.has('https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview'), 'Marketplace listing');
   });
 
   test('[S21-NFR-01] the job holds only read permissions and takes the token from a secret', () => {
