@@ -6037,6 +6037,51 @@
       "note": "the model boundary is injected, so correctness is testable without a model",
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
+    },
+    "S21-NFR-01": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/publish.yml"
+      ],
+      "note": "publish-open-vsx job in publish.yml; asserted by distribution.test.ts",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
+    "S21-SR-01": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/publish.yml"
+      ],
+      "note": "publish-open-vsx job in publish.yml; asserted by distribution.test.ts",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
+    "S21-SR-02": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/publish.yml"
+      ],
+      "note": "publish-open-vsx job in publish.yml; asserted by distribution.test.ts",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
+    "S21-SR-03": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/publish.yml"
+      ],
+      "note": "publish-open-vsx job in publish.yml; asserted by distribution.test.ts",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
+    "S21-SR-04": {
+      "status": "implemented",
+      "impl": [
+        "README.md"
+      ],
+      "note": "publish-open-vsx job in publish.yml; asserted by distribution.test.ts",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
     }
   }
 }

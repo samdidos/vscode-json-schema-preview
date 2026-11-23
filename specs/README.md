@@ -62,13 +62,14 @@ system-quality area using RFC-2119 key words (MUST, SHOULD, MAY).
 | [S18-mutation-score.md](S18-mutation-score.md) | Publishing the mutation score as a committed per-file artifact, so test strength can be compared where line coverage (gated at 80%, so flat) cannot |
 | [S19-defect-attribution.md](S19-defect-attribution.md) | Attributing each fix to the requirement it repaired via a `Fixes:` commit trailer, so defect counts are recorded rather than inferred |
 | [S20-ai-assistance.md](S20-ai-assistance.md) | AI assistance safety & verification (opt-in, deterministic verification, model agnosticity) |
+| [S21-distribution.md](S21-distribution.md) | Publishing each release's single attested `.vsix` to the VS Code Marketplace and Open VSX |
 
 ## Scope
 
 The extension targets VS Code **≥ 1.96.0** on desktop (not virtual workspaces;
 web and virtual-workspace support is tracked in
-[#256](https://github.com/samdidos/vscode-json-schema-preview/issues/256), and publishing to Open VSX in
-[#254](https://github.com/samdidos/vscode-json-schema-preview/issues/254)).
+[#256](https://github.com/samdidos/vscode-json-schema-preview/issues/256)); it is
+published to the VS Code Marketplace and Open VSX (S21).
 The richest preview output uses **Python 3** on the user's PATH with
 `json-schema-for-humans` installed, but Python is **optional**: without it (or
 with `jsonschema.preview.renderer: "builtin"`) the dependency-free built-in

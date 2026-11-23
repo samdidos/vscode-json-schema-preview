@@ -105,7 +105,7 @@ that starts *after* that:
 
 ## Getting started
 
-1. **[Install from the Marketplace](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)** — or `ext install samdidos.json-schema-preview`.
+1. **[Install from the Marketplace](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)** — or `ext install samdidos.json-schema-preview`. Using VSCodium, Cursor, Windsurf or another editor that installs from Open VSX? Get it from **[Open VSX](https://open-vsx.org/extension/samdidos/json-schema-preview)**. <!-- spec:S21 -->
 2. Open a JSON Schema and press <kbd>Ctrl</kbd>+<kbd>K</kbd> <kbd>V</kbd> to preview it.
 3. Open a data file, run **JSON Schema: Bind Schema…**, then <kbd>Ctrl</kbd>+<kbd>K</kbd> <kbd>J</kbd> to validate it.
 

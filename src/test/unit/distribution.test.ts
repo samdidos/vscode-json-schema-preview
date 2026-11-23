@@ -197,3 +197,53 @@ suite('[F32-FR-12] the diff result offers migration notes only when AI is on', (
     assert.strictEqual(fileName, 'api.schema.json');
   });
 });
+
+suite('S21 — Open VSX publishing', () => {
+  const YAML = require('yaml');
+  type Step = { name?: string; if?: string; run?: string; uses?: string; env?: Record<string, string> };
+  type Job = { needs?: string[]; permissions?: Record<string, string>; steps: Step[] };
+  const workflow = YAML.parse(fs.readFileSync(path.join(CHECKOUT, '.github', 'workflows', 'publish.yml'), 'utf-8'));
+  const job: Job = workflow.jobs['publish-open-vsx'];
+  const runs = (): string[] => job.steps.map((s) => s.run ?? '');
+
+  test('[S21-SR-01] every release that reaches the Marketplace job is also published to Open VSX', () => {
+    assert.ok(job, 'publish.yml must define a publish-open-vsx job');
+    assert.ok(job.needs?.includes('publish'));
+    assert.ok(runs().some((r) => /\bovsx@[^ ]+ publish json-schema-preview\.vsix/.test(r)));
+  });
+
+  test('[S21-SR-02] publishes the released, attested .vsix at a pinned ovsx version — never a rebuild', () => {
+    const all = runs().join('\n');
+    assert.match(all, /gh release download "\$TAG"[^\n]*json-schema-preview\.vsix/);
+    assert.match(all, /gh attestation verify json-schema-preview\.vsix/);
+    assert.match(all, /ovsx@\d+\.\d+\.\d+ /);
+    assert.doesNotMatch(all, /vsce package|npm ci|npm run/);
+    const verify = runs().findIndex((r) => r.includes('attestation verify'));
+    const publish = runs().findIndex((r) => r.includes('ovsx@'));
+    assert.ok(verify >= 0 && verify < publish, 'the attestation check must come before publishing');
+  });
+
+  test('[S21-SR-03] runs as its own job, skips with a warning without the token, and never hides a failure', () => {
+    assert.ok(!workflow.jobs.publish.steps.some((s: Step) => (s.run ?? '').includes('ovsx')),
+      'Open VSX must not be a step of the Marketplace job');
+    const check = job.steps[0];
+    assert.match(check.run ?? '', /::warning[^\n]*Open VSX/);
+    assert.match(check.run ?? '', /-z "\$OVSX_PAT"/);
+    for (const step of job.steps.slice(1)) {
+      assert.strictEqual(step.if, "steps.token.outputs.present == 'true'", `${step.name ?? step.uses} must be skipped without the token`);
+    }
+    assert.ok(job.steps.every((s) => !('continue-on-error' in s)));
+  });
+
+  test('[S21-SR-04] the README links the Open VSX listing next to the Marketplace', () => {
+    const readme = fs.readFileSync(path.join(CHECKOUT, 'README.md'), 'utf-8');
+    assert.match(readme, /open-vsx\.org\/extension\/samdidos\/json-schema-preview/);
+    assert.match(readme, /marketplace\.visualstudio\.com\/items\?itemName=samdidos\.json-schema-preview/);
+  });
+
+  test('[S21-NFR-01] the job holds only read permissions and takes the token from a secret', () => {
+    assert.deepStrictEqual(job.permissions, { contents: 'read', attestations: 'read' });
+    const publish = job.steps.find((s) => (s.run ?? '').includes('ovsx@'));
+    assert.strictEqual(publish?.env?.OVSX_PAT, '${{ secrets.OVSX_PAT }}');
+  });
+});
