@@ -1,0 +1,64 @@
+# F26-FR-09..11 — JSON Schema backward-compatibility gate for pull requests.
+#
+#   - uses: actions/checkout@<sha>
+#   - uses: samdidos/vscode-json-schema-preview/compat-gate@<sha or tag>
+#     with:
+#       strict: true
+#
+# Builds the jstk CLI from this action's own ref (no registry download) and
+# runs `jstk diff --check` on each changed schema against the base commit.
+name: JSON Schema compatibility gate
+description: Fail a pull request that makes a backward-incompatible change to a JSON Schema.
+author: samdidos
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  schemas:
+    description: Newline-separated glob patterns selecting the schema files to check.
+    required: false
+    default: |
+      **/*.schema.json
+      **/*.schema.yaml
+      **/*.schema.yml
+  base:
+    description: Commit to compare against. Defaults to the pull request's base, or the push's previous commit.
+    required: false
+    default: ${{ github.event.pull_request.base.sha || github.event.before }}
+  strict:
+    description: Also fail when a change cannot be classified as safe ("compatibility unknown").
+    required: false
+    default: 'false'
+
+outputs:
+  verdict:
+    description: compatible, breaking, or unknown.
+    value: ${{ steps.gate.outputs.verdict }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '24'
+
+    # The CLI at this action's ref, so pinning the action pins the classifier
+    # (F26-FR-11). --ignore-scripts: no install script runs, and keytar's native
+    # build (a transitive dev dependency) is skipped.
+    - name: Build the jstk CLI
+      shell: bash
+      working-directory: ${{ github.action_path }}/..
+      run: |
+        npm ci --ignore-scripts --no-audit --no-fund
+        npm run build:cli
+
+    - name: Compare changed schemas
+      id: gate
+      shell: bash
+      env:
+        GATE_BASE: ${{ inputs.base }}
+        GATE_SCHEMAS: ${{ inputs.schemas }}
+        GATE_STRICT: ${{ inputs.strict }}
+        GATE_CLI: ${{ github.action_path }}/../cli/dist/cli.js
+      run: node "${{ github.action_path }}/gate.mjs"
