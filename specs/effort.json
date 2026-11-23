@@ -967,6 +967,25 @@
     "taggedTests": 10,
     "requirements": 10
    }
+  },
+  "S21": {
+   "points": 2,
+   "basePoints": 3,
+   "tshirt": "S",
+   "hoursMin": 2,
+   "hoursMax": 4,
+   "factors": [
+    "PATTERN"
+   ],
+   "justification": "One workflow job mirroring the existing Marketplace publish; the LOC figure counts the whole README, which this spec only adds a link to. Sized a step below its band.",
+   "estimator": "the project's AI coding agent (Claude Code)",
+   "estimatedAt": "2026-11-23",
+   "evidence": {
+    "implFiles": 2,
+    "implLoc": 453,
+    "taggedTests": 5,
+    "requirements": 5
+   }
   }
  }
 }
