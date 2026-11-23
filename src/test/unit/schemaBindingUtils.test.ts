@@ -610,6 +610,22 @@ suite('computeYamlSchemaRemoveEdit() [F10-FR-10]', () => {
   });
 });
 
+suite('Leading YAML directive edits [F10-FR-17] [F13-NFR-03]', () => {
+  test('[F10-FR-17] [F13-NFR-03] a leading directive plus a later syntax error is refused by upsert and remove', () => {
+    const text = '# yaml-language-server: $schema=./old.json\nfoo: [1, 2\nbar: 3\n';
+    assert.ok(computeYamlSchemaUpsertEdit(text, './new.json', true).error);
+    assert.ok(computeYamlSchemaRemoveEdit(text).error);
+  });
+
+  test('[F10-FR-17] [F13-NFR-03] a directive after %YAML and --- is updated and removed at the right offsets', () => {
+    const text = '%YAML 1.2\n---\n# yaml-language-server: $schema=./old.json\nfoo: 1\n';
+    assert.strictEqual(applyYamlEdit(text, computeYamlSchemaUpsertEdit(text, './new.json', true)),
+      '%YAML 1.2\n---\n# yaml-language-server: $schema=./new.json\nfoo: 1\n');
+    assert.strictEqual(applyYamlEdit(text, computeYamlSchemaRemoveEdit(text)),
+      '%YAML 1.2\n---\nfoo: 1\n');
+  });
+});
+
 suite('Newly recognized bindings remain editable [F10-FR-09] [F10-FR-10] [F11-FR-16] [F11-FR-17]', () => {
   const apply = (text: string, edit: { offset: number; length: number; content: string }) =>
     text.slice(0, edit.offset) + edit.content + text.slice(edit.offset + edit.length);

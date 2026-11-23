@@ -16,6 +16,42 @@ export interface InlineSchemaReference {
   statement?: TomlSpan;
 }
 
+/** `# yaml-language-server: $schema=<url>` modeline, anywhere a line starts. */
+const YAML_DIRECTIVE = /^#[ \t]*yaml-language-server[ \t]*:[^\r\n]*?\$schema=(\S+)/gim;
+/** The same pattern without the global flag, for the first match only. */
+const YAML_DIRECTIVE_FIRST = new RegExp(YAML_DIRECTIVE.source, 'im');
+
+function yamlDirective(match: RegExpMatchArray): InlineSchemaReference {
+  const url = match[1];
+  const start = match.index! + match[0].length - url.length;
+  return { url, start, end: start + url.length, directive: true, keyStart: match.index };
+}
+
+/** True when `prefix` holds only lines before which no YAML scalar can begin:
+ * blank lines, comments, `%` directives and bare `---` markers (F13-NFR-03).
+ * Anything unusual (BOM, a `\r` not ending a line, `--- |`, `...`) answers
+ * false so the caller parses the document instead. So do U+2028/U+2029: a
+ * regex `^` after them sees a new line, but the YAML lexer does not, and
+ * `String#trim` would call such a line blank. Blank and comment lines are tested ASCII-only.
+ * Lines are read one at a time so the walk stops at the first content line. */
+function isYamlPrelude(prefix: string): boolean {
+  let started = false;
+  for (let from = 0; from <= prefix.length;) {
+    const newline = prefix.indexOf('\n', from);
+    const end = newline === -1 ? prefix.length : newline;
+    const raw = prefix.slice(from, end);
+    from = end + 1;
+    const line = raw.endsWith('\r') ? raw.slice(0, -1) : raw;
+    if (line.includes('\r') || line.includes('\u2028') || line.includes('\u2029')
+      || line.startsWith('\uFEFF')) { return false; }
+    if (/^[ \t]*(?:#.*)?$/.test(line)) { continue; }
+    if (line.startsWith('%') && !started) { continue; }
+    if (line.startsWith('---') && /^---(?:[ \t]+(?:#.*)?)?$/.test(line)) { started = true; continue; }
+    return false;
+  }
+  return true;
+}
+
 export function inlineSchemaReference(
   text: string, language: string, includeNonStringValue = false,
 ): InlineSchemaReference | undefined {
@@ -24,6 +60,10 @@ export function inlineSchemaReference(
   if (!text.includes('$schema')) { return undefined; }
   try {
     if (language === 'yaml' || language === 'yml') {
+      // F13-NFR-03: no scalar can begin before the first content line, so a
+      // first directive in the leading prelude needs no parse.
+      const first = text.match(YAML_DIRECTIVE_FIRST);
+      if (first && isYamlPrelude(text.slice(0, first.index))) { return yamlDirective(first); }
       const doc = parseDocument(text);
       // A directive-looking line inside a quoted/block scalar is just data.
       const scalars: Array<readonly number[]> = [];
@@ -32,11 +72,9 @@ export function inlineSchemaReference(
       });
       // The value ends at the first whitespace, as in yaml-language-server's
       // modeline parser, so a trailing `# note` is not part of the path.
-      for (const directive of text.matchAll(/^#[ \t]*yaml-language-server[ \t]*:[^\r\n]*?\$schema=(\S+)/gim)) {
+      for (const directive of text.matchAll(YAML_DIRECTIVE)) {
         if (scalars.some(range => directive.index >= range[0] && directive.index < range[1])) { continue; }
-        const url = directive[1];
-        const start = directive.index + directive[0].length - url.length;
-        return { url, start, end: start + url.length, directive: true, keyStart: directive.index };
+        return yamlDirective(directive);
       }
       if (!isMap(doc.contents)) { return undefined; }
       const pair = doc.contents.items.find(item => isScalar(item.key) && item.key.value === '$schema');

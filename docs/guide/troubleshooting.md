@@ -125,6 +125,17 @@ the folder to get them back.
 (default 2000), skips files over 1 MiB, and respects `files.exclude` /
 `search.exclude`. The report says when it truncated.
 
+<!-- spec:F13 start -->
+
+## The status bar or hover is slow on a very large YAML file
+
+To find a YAML file's inline binding, the extension parses the whole document unless the
+`# yaml-language-server: $schema=...` directive comes first, preceded only by
+blank lines, comments, `%` directives or `---` markers. Move the directive to the top of a large file
+to skip that parse. A plain `$schema:` key always needs the parse.
+
+<!-- spec:F13 end -->
+
 ## A remote schema seems out of date
 
 The local cache is not revalidated automatically unless you ask it to be. Either
