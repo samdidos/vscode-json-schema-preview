@@ -2,6 +2,30 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.21.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.20.0...v0.21.0) (2026-11-23)
+
+
+### Features
+
+* navigate inline schema bindings ([#274](https://github.com/samdidos/vscode-json-schema-preview/issues/274)) ([cc0b578](https://github.com/samdidos/vscode-json-schema-preview/commit/cc0b5784ac973520b3dc36036844fbc260a2456c))
+* **quickfix:** fix YAML, TOML and JSONL files, and fix all at once ([fb39493](https://github.com/samdidos/vscode-json-schema-preview/commit/fb39493c12205604b495b1b43fe84ba7c223e7c3))
+* **quickfix:** suggest renaming a near-miss property name ([ce3ebed](https://github.com/samdidos/vscode-json-schema-preview/commit/ce3ebed8f23c7ac79d2b3727e989fbf55c2861d9))
+* **toml:** locate validation errors on the exact TOML key ([ca34fba](https://github.com/samdidos/vscode-json-schema-preview/commit/ca34fba6f8bbe9f9525dd2352aea23ae0fbe370b))
+
+
+### Bug Fixes
+
+* contribute the JSON Schema submenu to editor/title once ([#282](https://github.com/samdidos/vscode-json-schema-preview/issues/282)) ([6661849](https://github.com/samdidos/vscode-json-schema-preview/commit/66618495ae12fb9143af38ec87fe13e25eb259cb))
+* **deps:** override minimatch and glob past their advisories ([cc739b1](https://github.com/samdidos/vscode-json-schema-preview/commit/cc739b19cf3b664c514a581becfeaa33bc3db4e7))
+* **deps:** pin mocha to 11 so Stryker runs, and patch high advisories ([d0a19b1](https://github.com/samdidos/vscode-json-schema-preview/commit/d0a19b193ae09660917daa4ec80115dc7039d442))
+* name the status-bar entries, ignore the inline $schema key in validation, re-record stale demos ([#278](https://github.com/samdidos/vscode-json-schema-preview/issues/278)) ([c9b5f4e](https://github.com/samdidos/vscode-json-schema-preview/commit/c9b5f4ebb25ecb572e88c074f382c1a8ebbd8f17))
+* **schema:** treat YAML with syntax errors as unparseable ([426ac90](https://github.com/samdidos/vscode-json-schema-preview/commit/426ac90574c3d88acb0148e5198c3e0c4654ecc5))
+
+
+### Performance Improvements
+
+* read a leading yaml-language-server directive without parsing ([#283](https://github.com/samdidos/vscode-json-schema-preview/issues/283)) ([1969831](https://github.com/samdidos/vscode-json-schema-preview/commit/19698318eb75ce5cb17e73c6cf1176639770cab5))
+
 ## [0.20.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.19.0...v0.20.0) (2026-09-10)
 
 ### Highlights
