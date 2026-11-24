@@ -45,6 +45,15 @@ the identical, attested file, never a second build.
 - **S21-SR-04** The README's install instructions MUST link the Open VSX
   listing alongside the Marketplace one.
 
+- **S21-SR-05** A manual run of the release workflow MUST be able to publish
+  an **existing** release to Open VSX alone (`open_vsx_only`), skipping the
+  Marketplace job entirely, so a release that is already on the Marketplace —
+  one published before S21, or whose Open VSX job never ran because a later
+  step of the Marketplace job failed — can still reach Open VSX. It MUST use
+  the same job, and so the same release asset and attestation check, as an
+  ordinary release (S21-SR-02). Without that input the Open VSX job MUST still
+  run only after a successful Marketplace publish.
+
 ## Non-Functional Requirements
 
 - **S21-NFR-01** The Open VSX job MUST hold only the permissions it uses
@@ -75,3 +84,8 @@ the identical, attested file, never a second build.
 - **2026-11-23** — Created for #254: publish the same attested `.vsix` to Open
   VSX in a job of its own, skipping with a warning until the namespace token
   exists.
+
+- **2026-11-24** — Added S21-SR-05: an "Open VSX only" manual run, to publish
+  v0.21.0 (released before S21) and any release whose Open VSX job was skipped.
+  A re-run of the whole workflow cannot do it, because the Marketplace step
+  fails on a version that is already published.

@@ -6082,6 +6082,15 @@
       "note": "publish-open-vsx job in publish.yml; asserted by distribution.test.ts",
       "specifiedAt": "2026-11-23",
       "implementedAt": "2026-11-23"
+    },
+    "S21-SR-05": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/publish.yml"
+      ],
+      "note": "workflow_dispatch input open_vsx_only skips the publish job; publish-open-vsx runs on a skipped publish only in that mode",
+      "specifiedAt": "2026-11-24",
+      "implementedAt": "2026-11-24"
     }
   }
 }

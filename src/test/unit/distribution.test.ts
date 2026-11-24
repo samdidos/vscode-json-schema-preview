@@ -244,6 +244,18 @@ suite('S21 — Open VSX publishing', () => {
     assert.ok(links.has('https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview'), 'Marketplace listing');
   });
 
+  test('[S21-SR-05] a manual "Open VSX only" run publishes an existing release without the Marketplace job', () => {
+    const input = workflow.on.workflow_dispatch.inputs.open_vsx_only;
+    assert.strictEqual(input.type, 'boolean');
+    assert.strictEqual(input.default, false);
+    assert.match(workflow.jobs.publish.if, /&& !inputs\.open_vsx_only$/, 'the Marketplace job is skipped');
+    const gate = (job as Job & { if: string }).if.replace(/\s+/g, ' ');
+    assert.match(gate, /^!cancelled\(\) && needs\.resolve-tag\.outputs\.tag != '' && /);
+    assert.match(gate, /needs\.publish\.result == 'success'/, 'an ordinary release still waits for the Marketplace');
+    assert.match(gate, /inputs\.open_vsx_only && needs\.publish\.result == 'skipped'/, 'a skipped Marketplace job only counts in Open VSX-only runs');
+    assert.doesNotMatch(gate, /always\(\)/);
+  });
+
   test('[S21-NFR-01] the job holds only read permissions and takes the token from a secret', () => {
     assert.deepStrictEqual(job.permissions, { contents: 'read', attestations: 'read' });
     const publish = job.steps.find((s) => (s.run ?? '').includes('ovsx@'));

@@ -26,6 +26,10 @@ on:
       tag:
         description: 'Tag to publish (for backfilling a release the push trigger missed)'
         required: true
+      open_vsx_only:
+        description: 'Only publish the existing release .vsix to Open VSX (skip the Marketplace; S21-SR-05)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -76,7 +80,7 @@ jobs:
 
   publish:
     needs: resolve-tag
-    if: needs.resolve-tag.outputs.tag != ''
+    if: needs.resolve-tag.outputs.tag != '' && !inputs.open_vsx_only
     runs-on: ubuntu-latest
     environment: vscode-marketplace
     permissions:
@@ -144,6 +148,12 @@ jobs:
   # `publish` recorded, rather than rebuilding (S21-SR-02).
   publish-open-vsx:
     needs: [resolve-tag, publish]
+    # After a successful Marketplace publish, or on its own for a release that
+    # is already out (manual run with open_vsx_only, S21-SR-05). `!cancelled()`
+    # lets the job be considered when `publish` was skipped.
+    if: >-
+      !cancelled() && needs.resolve-tag.outputs.tag != '' &&
+      (needs.publish.result == 'success' || (inputs.open_vsx_only && needs.publish.result == 'skipped'))
     runs-on: ubuntu-latest
     permissions:
       contents: read # download the release asset
