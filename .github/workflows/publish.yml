@@ -1,7 +1,8 @@
 name: Publish
 
 # Packages the extension, attests SLSA build provenance, publishes to the VS
-# Code Marketplace, attaches the .vsix to the release, then flips it from
+# Code Marketplace (and, in a separate job, the same .vsix to Open VSX — S21),
+# attaches the .vsix to the release, then flips it from
 # draft to published — that order matters, since GitHub's immutable-releases
 # feature forbids adding assets once a release is published.
 #
@@ -134,3 +135,53 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run docs.yml --repo ${{ github.repository }} --ref main
+
+  # S21 — the same .vsix, on Open VSX, for VS Code-based editors that cannot use
+  # the Marketplace (VSCodium, Cursor, Windsurf, Gitpod, Theia). A separate job
+  # so an Open VSX outage or a missing token never holds back the Marketplace
+  # release or the draft -> published flip above (S21-SR-03). It republishes the
+  # exact asset attached to the release, checked against the SLSA provenance
+  # `publish` recorded, rather than rebuilding (S21-SR-02).
+  publish-open-vsx:
+    needs: [resolve-tag, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # download the release asset
+      attestations: read # verify the .vsix against its build provenance
+    env:
+      TAG: ${{ needs.resolve-tag.outputs.tag }}
+    steps:
+      - name: Check for the Open VSX token
+        id: token
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "::warning title=Open VSX skipped::OVSX_PAT is not set, so ${TAG} was not published to Open VSX (S21-SR-03)."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download the released .vsix
+        if: steps.token.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$TAG" --repo "${{ github.repository }}" --pattern json-schema-preview.vsix
+
+      - name: Verify it is the attested build
+        if: steps.token.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh attestation verify json-schema-preview.vsix --repo "${{ github.repository }}"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.token.outputs.present == 'true'
+        with:
+          node-version: '24'
+
+      - name: Publish to Open VSX
+        if: steps.token.outputs.present == 'true'
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx --yes ovsx@1.4.0 publish json-schema-preview.vsix
