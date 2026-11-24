@@ -179,15 +179,8 @@ to configure. The definition launches the published CLI, pinned to the exact
 version this extension release was tested with
 (`npx -y json-schema-toolkit@<version> mcp`), so the first start needs npm
 access; after that it is cached. The pin means a later release under that name
-is never picked up behind your back.
-
-::: warning Not on npm yet
-The CLI package has not been published yet
-([#286](https://github.com/samdidos/vscode-json-schema-preview/issues/286)), so
-this server fails to start until it is. The language model tools above don't
-depend on it and work today.
-::: On an older VS Code the provider is simply not registered and
-nothing else changes.
+is never picked up behind your back. On an older VS Code the provider is
+simply not registered and nothing else changes.
 
 This is how "publishing an MCP server to the Marketplace" works today: the
 Marketplace has no server category of its own — an extension carries the

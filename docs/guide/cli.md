@@ -12,20 +12,6 @@ so a fix in the engine fixes both front ends — the CLI never forks the logic.
 
 ## Install
 
-::: warning Not on npm yet
-The `json-schema-toolkit` package has not been published
-([#286](https://github.com/samdidos/vscode-json-schema-preview/issues/286)), so
-`npm install -g` and `npx` don't work yet. Until it is, build the CLI from a
-checkout of this repository:
-
-```sh
-node scripts/bootstrap.mjs && npm run build:cli
-node cli/dist/cli.js --help
-```
-:::
-
-Once published:
-
 ```sh
 npm install -g json-schema-toolkit
 # or, without installing:
