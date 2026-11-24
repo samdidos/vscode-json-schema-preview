@@ -274,3 +274,44 @@ suite('S21 — Open VSX publishing', () => {
     assert.strictEqual(publish?.env?.OVSX_PAT, '${{ secrets.OVSX_PAT }}');
   });
 });
+
+suite('S21 — CLI staged publishing', () => {
+  const YAML = require('yaml');
+  type Step = { name?: string; if?: string; run?: string; uses?: string; with?: Record<string, unknown>; env?: Record<string, string> };
+  const text = fs.readFileSync(path.join(CHECKOUT, '.github', 'workflows', 'publish-cli.yml'), 'utf-8');
+  const workflow = YAML.parse(text);
+  const job: { environment: string; permissions: Record<string, string>; steps: Step[] } = workflow.jobs['publish-cli'];
+  const runs = job.steps.map((s) => s.run ?? '').join('\n');
+  /** The workflow without its comment lines, which explain `npm publish` rather than run it. */
+  const directives = text.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n');
+
+  test('[S21-SR-06] stages with provenance and never publishes directly', () => {
+    assert.match(runs, /npm stage publish --provenance --access public/);
+    assert.doesNotMatch(runs.replace(/npm stage publish/g, ''), /npm publish/, 'a plain npm publish would go live without approval');
+  });
+
+  test('[S21-SR-06] authenticates through trusted publishing, with no stored token', () => {
+    assert.strictEqual(job.permissions['id-token'], 'write');
+    assert.doesNotMatch(directives, /NODE_AUTH_TOKEN|NPM_TOKEN|secrets\./);
+    const setupNode = job.steps.find((s) => (s.uses ?? '').startsWith('actions/setup-node@'));
+    assert.ok(setupNode && !('registry-url' in (setupNode.with ?? {})), 'registry-url would write a token-based .npmrc');
+  });
+
+  test('[S21-SR-06] installs an exact npm version that has `npm stage`', () => {
+    const m = /npm install -g npm@(\d+)\.(\d+)\.(\d+)\b/.exec(runs);
+    assert.ok(m, 'npm must be pinned to an exact version');
+    const [major, minor] = [Number(m[1]), Number(m[2])];
+    assert.ok(major > 11 || (major === 11 && minor >= 15), `npm ${m[1]}.${m[2]} predates npm stage (11.15.0)`);
+    const install = runs.indexOf('npm install -g npm@');
+    assert.ok(install >= 0 && install < runs.indexOf('npm stage publish'));
+  });
+
+  test('[S21-SR-07] runs in the npm environment, checks the tag, and offers a dry run', () => {
+    assert.strictEqual(job.environment, 'npm');
+    assert.deepStrictEqual(workflow.on.push.tags, ['cli-v*']);
+    assert.match(runs, /tag="\$\{GITHUB_REF_NAME#cli-v\}"/);
+    assert.match(runs, /if \[ "\$pkg" != "\$tag" \]/);
+    assert.strictEqual(workflow.on.workflow_dispatch.inputs.dry_run.default, true);
+    assert.match(runs, /npm stage publish --dry-run/);
+  });
+});

@@ -204,7 +204,7 @@ The CLI package ships a `server.json` and an `mcpName` field
 release step, done once per CLI version:
 
 ```sh
-# from cli/, after `npm publish`
+# from cli/, once the version is live on npm (approved, if staged)
 npx @modelcontextprotocol/publisher login github
 npx @modelcontextprotocol/publisher publish
 ```

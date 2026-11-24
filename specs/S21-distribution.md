@@ -53,6 +53,19 @@ the identical, attested file, never a second build.
   the same job, and so the same release asset and attestation check, as an
   ordinary release (S21-SR-02). Without that input the Open VSX job MUST still
   run only after a successful Marketplace publish.
+- **S21-SR-06** The standalone CLI (F27) MUST be released to npm by
+  `.github/workflows/publish-cli.yml` through **staged publishing** only:
+  the workflow authenticates with npm trusted publishing (OIDC — no stored
+  npm token, no `NODE_AUTH_TOKEN`), runs `npm stage publish --provenance`, and
+  never `npm publish`, so a version goes live only after a maintainer approves
+  it with 2FA. A compromised or mistaken workflow run can therefore at most
+  queue a version, never ship one to `npx` users (including the extension's
+  pinned MCP server, F33-FR-17). The npm CLI that stages it MUST be installed
+  at an exact version (≥ 11.15.0, the first with `npm stage`).
+- **S21-SR-07** The CLI workflow MUST run in the `npm` GitHub environment (the
+  trusted publisher is bound to it), MUST refuse a `cli-v*` tag that differs
+  from `cli/package.json`'s version, and MUST offer a manual dry run that
+  builds and validates the package without staging it.
 
 ## Non-Functional Requirements
 
@@ -63,7 +76,7 @@ the identical, attested file, never a second build.
 
 ## Out of Scope
 
-- Publishing the standalone CLI (F27), which goes to npm (`publish-cli.yml`).
+- Approving a staged CLI version: a maintainer's 2FA step on npm, outside CI.
 - Other registries (e.g. JetBrains Marketplace) — the extension targets the VS
   Code extension API only.
 - Claiming the Open VSX namespace and creating the token: a one-time
@@ -89,3 +102,7 @@ the identical, attested file, never a second build.
   v0.21.0 (released before S21) and any release whose Open VSX job was skipped.
   A re-run of the whole workflow cannot do it, because the Marketplace step
   fails on a version that is already published.
+
+- **2026-11-24** — Added S21-SR-06/07: the CLI moves into this spec's scope
+  and is released through npm staged publishing with trusted publishing, so
+  CI can only queue a version for a maintainer's 2FA approval.
