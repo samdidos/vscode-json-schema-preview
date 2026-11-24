@@ -63,7 +63,7 @@ differentiator: frictionless work with private schemas.
   inline `$schema` (F10) nor a settings binding (F04) — whose
   workspace-relative path matches a cached catalog entry's `fileMatch`
   (F12-FR-08 semantics), the extension MUST offer a code action titled
-  **Bind suggested schema "<name>"** for each matching entry (at most three,
+  **Bind suggested schema "`<name>`"** for each matching entry (at most three,
   in catalog order, one per distinct schema URL). Choosing it MUST continue
   into the existing F04 scope picker with that entry's URL as the schema
   reference (F12-FR-02); it MUST NOT write a binding without that explicit
