@@ -200,14 +200,32 @@ from its own configuration:
 
 The CLI package ships a `server.json` and an `mcpName` field
 (`io.github.samdidos/json-schema-toolkit`), which is what the
-[MCP Registry](https://registry.modelcontextprotocol.io) reads. Publishing is a
-release step, done once per CLI version:
+[MCP Registry](https://registry.modelcontextprotocol.io) reads. Every release is listed there by `publish-cli.yml`: once the CLI is
+staged on npm, its `publish-mcp-registry` job runs the official `mcp-publisher`
+(pinned, signature-verified) and logs in with GitHub OIDC, so no credential is
+stored. The registry only accepts a version that is live on npm, so the job
+first checks that you have approved the staged version and, if not, fails with
+a reminder: approve it on npm, then re-run that job. To have the job wait for
+you instead of failing, add yourself as a required reviewer of the
+`mcp-registry` environment (repository Settings → Environments) and approve it
+after the npm approval.
+
+To list a version by hand (for example, one released before this job existed),
+install `mcp-publisher` from the
+[`modelcontextprotocol/registry` releases](https://github.com/modelcontextprotocol/registry/releases)
+or with `brew install mcp-publisher`, then:
 
 ```sh
 # from cli/, once the version is live on npm (approved, if staged)
-npx @modelcontextprotocol/publisher login github
-npx @modelcontextprotocol/publisher publish
+mcp-publisher login github
+mcp-publisher publish
 ```
+
+::: warning Don't run the publisher through npx
+The official publisher isn't distributed on npm, and the unscoped npm package
+named `mcp-publisher` belongs to an unrelated project. Running it would hand a
+stranger's code your GitHub login.
+:::
 
 The registry verifies namespace ownership through the GitHub login (the
 `io.github.<user>` prefix) and that the npm package's `mcpName` matches

@@ -22,6 +22,14 @@ name: Publish CLI
 # Marketplace job (publish.yml), so the version the extension's MCP server
 # pins (F33-FR-17) is live by the time the extension is.
 #
+# MCP Registry (F33-FR-18): the publish-mcp-registry job then lists the same
+# version as io.github.samdidos/json-schema-toolkit, from cli/server.json. The
+# registry only accepts a version that is live on npm, so the job first checks
+# that the staged version was approved and otherwise fails with a reminder —
+# approve on npm, then "Re-run failed jobs". It runs in the `mcp-registry`
+# environment: add a required reviewer there to have it wait for you instead.
+# It logs in with GitHub OIDC (no stored secret).
+#
 # Triggers:
 # - workflow_run after Release Please — the normal path. release-please pushes
 #   its tag with GITHUB_TOKEN, which never fires `push` (publish.yml relies on
@@ -177,3 +185,60 @@ jobs:
             git tag "$TAG"
             git push origin "refs/tags/$TAG"
           fi
+
+  # F33-FR-18 — list the release in the official MCP Registry, once the staged
+  # version is live on npm (the registry checks the npm package's mcpName).
+  # Never on a dry run. Its own job, so it can be re-run alone after approval.
+  publish-mcp-registry:
+    needs: [resolve, publish-cli]
+    if: needs.resolve.outputs.ref != '' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+    runs-on: ubuntu-latest
+    environment: mcp-registry
+    permissions:
+      contents: read
+      id-token: write # OIDC token mcp-publisher exchanges for io.github.samdidos/*
+    env:
+      # The official publisher from modelcontextprotocol/registry releases. Bump
+      # deliberately; never fetch `latest` or run a publisher via npx — the
+      # unscoped npm name `mcp-publisher` belongs to an unrelated project.
+      MCP_PUBLISHER_VERSION: v1.8.1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+
+      - name: Check the version is live on npm
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+        run: |
+          live="$(npm view "json-schema-toolkit@${VERSION}" mcpName 2>/dev/null || true)"
+          expected="$(node -p "require('./cli/server.json').name")"
+          if [ "$live" != "$expected" ]; then
+            echo "::error::json-schema-toolkit@${VERSION} is not live on npm with mcpName ${expected} (got '${live}'). Approve the staged version on npmjs.com (json-schema-toolkit → Staged) or with \`npm stage approve <stage-id>\`, then re-run this job." >&2
+            exit 1
+          fi
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      - name: Authenticate to the MCP Registry (GitHub OIDC)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish cli/server.json to the MCP Registry
+        working-directory: cli
+        run: ../mcp-publisher publish

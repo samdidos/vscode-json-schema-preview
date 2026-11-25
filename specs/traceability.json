@@ -1602,20 +1602,23 @@
         "src/inlineSchema.ts",
         "src/SchemaBindingManager.ts",
         "src/SchemaRefProvider.ts"
-      ]
+      ],
+      "note": ""
     },
     "F13-FR-12": {
       "status": "implemented",
       "impl": [
         "src/SchemaRefProvider.ts",
         "src/SchemaCache.ts"
-      ]
+      ],
+      "note": ""
     },
     "F13-FR-13": {
       "status": "implemented",
       "impl": [
         "src/SchemaRefProvider.ts"
-      ]
+      ],
+      "note": ""
     },
     "F13-NFR-01": {
       "status": "manual",
@@ -1638,7 +1641,8 @@
       "impl": [
         "src/inlineSchema.ts",
         "src/SchemaBindingManager.ts"
-      ]
+      ],
+      "note": ""
     },
     "F14-FR-01": {
       "status": "implemented",
@@ -3971,9 +3975,10 @@
       "status": "implemented",
       "impl": [
         "cli/server.json",
-        "cli/package.json"
+        "cli/package.json",
+        "cli/schema/server.schema.2025-12-11.json"
       ],
-      "note": "MCP Registry manifest + mcpName; a test asserts they agree with the npm package",
+      "note": "MCP Registry manifest + mcpName; a test validates server.json against the vendored current registry schema and asserts it agrees with the npm package",
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },
@@ -3985,6 +3990,15 @@
       "note": "MCP_PACKAGE_VERSION pins npx to an exact CLI version; a unit test fails when it drifts from cli/package.json",
       "specifiedAt": "2026-11-23",
       "implementedAt": "2026-11-23"
+    },
+    "F33-FR-18": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/publish-cli.yml"
+      ],
+      "note": "publish-mcp-registry job in publish-cli.yml: after staging, checks the version is live on npm, then pinned cosign-verified official mcp-publisher with GitHub OIDC in the mcp-registry environment; asserted by distribution.test.ts",
+      "specifiedAt": "2026-11-25",
+      "implementedAt": "2026-11-25"
     },
     "F33-NFR-01": {
       "status": "implemented",

@@ -93,12 +93,35 @@ suite('[F33-FR-17] MCP server definition pins the CLI version', () => {
 });
 
 suite('[F33-FR-16] MCP Registry metadata', () => {
+  const VENDORED = path.join(ROOT, 'cli', 'schema', 'server.schema.2025-12-11.json');
+  const registrySchema = JSON.parse(fs.readFileSync(VENDORED, 'utf-8'));
+
+  test('server.json declares the vendored registry schema and validates against it', () => {
+    assert.strictEqual(serverJson.$schema, registrySchema.$id);
+    // The registry schema is draft-07; strict off for its `example` annotations
+    // and unregistered formats — the structure and limits are what we check.
+    const Ajv = require('ajv').default;
+    const validate = new Ajv({ allErrors: true, strict: false, logger: false }).compile(registrySchema);
+    assert.ok(validate(serverJson), JSON.stringify(validate.errors, null, 2));
+  });
+
+  test('a stale or over-long manifest fails the schema check', () => {
+    const Ajv = require('ajv').default;
+    const validate = new Ajv({ allErrors: true, strict: false, logger: false }).compile(registrySchema);
+    assert.ok(!validate({ ...serverJson, description: 'x'.repeat(101) }), '100-character description limit');
+    const [npm] = serverJson.packages;
+    // The 2025-07-09 manifest this replaced: registryType spelled registry_type.
+    const stale = JSON.parse(JSON.stringify(npm).replace('"registryType"', '"registry_type"'));
+    assert.ok(!validate({ ...serverJson, packages: [stale] }),
+      'the retired snake_case field names must not pass');
+  });
+
   test('server.json and package.json agree on name, package and version', () => {
     assert.strictEqual(serverJson.name, cliPkg.mcpName);
     assert.match(serverJson.name, /^io\.github\.samdidos\//);
     assert.strictEqual(serverJson.version, cliPkg.version);
     const [npm] = serverJson.packages;
-    assert.strictEqual(npm.registry_type, 'npm');
+    assert.strictEqual(npm.registryType, 'npm');
     assert.strictEqual(npm.identifier, cliPkg.name);
     assert.strictEqual(npm.version, cliPkg.version);
     assert.deepStrictEqual(npm.transport, { type: 'stdio' });
@@ -106,12 +129,72 @@ suite('[F33-FR-16] MCP Registry metadata', () => {
 
   test('the registry entry launches the same subcommand the extension does', () => {
     const [npm] = serverJson.packages;
-    assert.deepStrictEqual(npm.package_arguments.map((a: { value: string }) => a.value), ['mcp']);
+    assert.deepStrictEqual(npm.packageArguments.map((a: { value: string }) => a.value), ['mcp']);
     assert.ok(serverDefinitionSpec('x').args.includes('mcp'));
   });
 
-  test('server.json ships with the npm package', () => {
+  test('server.json ships with the npm package; the vendored schema does not', () => {
     assert.ok(cliPkg.files.includes('server.json'));
+    assert.ok(!cliPkg.files.some((f: string) => f.startsWith('schema')));
+  });
+
+  test('the docs publish with the official mcp-publisher, never an npx package name', () => {
+    const guide = fs.readFileSync(path.join(CHECKOUT, 'docs', 'guide', 'ai.md'), 'utf-8');
+    assert.match(guide, /mcp-publisher login github/);
+    assert.match(guide, /github\.com\/modelcontextprotocol\/registry\/releases/);
+    assert.doesNotMatch(guide, /npx\s+(-y\s+)?(@modelcontextprotocol\/publisher|mcp-publisher)/);
+  });
+});
+
+suite('[F33-FR-18] publish-cli.yml lists each CLI release in the MCP Registry', () => {
+  const YAML = require('yaml');
+  type Step = { name?: string; run?: string; uses?: string; 'working-directory'?: string };
+  type Job = { needs?: string[]; if?: string; environment?: string; permissions?: Record<string, string>; env?: Record<string, string>; steps: Step[] };
+  const workflow = YAML.parse(fs.readFileSync(path.join(CHECKOUT, '.github', 'workflows', 'publish-cli.yml'), 'utf-8'));
+  const job: Job = workflow.jobs['publish-mcp-registry'];
+  const runs = (): string[] => job.steps.map((s) => s.run ?? '');
+
+  test('runs as its own job, after the CLI is staged, never on a dry run', () => {
+    assert.ok(job, 'publish-cli.yml must define a publish-mcp-registry job');
+    assert.deepStrictEqual(job.needs, ['resolve', 'publish-cli']);
+    assert.strictEqual(job.if, "needs.resolve.outputs.ref != '' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)");
+    assert.ok(!workflow.jobs['publish-cli'].steps.some((s: Step) => (s.run ?? '').includes('mcp-publisher')),
+      'the registry publish must not be a step of the npm job');
+  });
+
+  test('refuses to publish until the staged version is approved and live on npm', () => {
+    const check = runs().findIndex((r) => r.includes('npm view "json-schema-toolkit@${VERSION}" mcpName'));
+    const login = runs().findIndex((r) => r.includes('mcp-publisher login'));
+    assert.ok(check >= 0 && check < login, 'the live check must come before anything touches the registry');
+    assert.match(runs()[check], /require\('\.\/cli\/server\.json'\)\.name/);
+    assert.match(runs()[check], /::error::[^\n]*Approve the staged version[^\n]*re-run this job/);
+    assert.match(runs()[check], /exit 1/);
+  });
+
+  test('runs in its own mcp-registry environment, not the npm one', () => {
+    assert.strictEqual(job.environment, 'mcp-registry');
+    assert.notStrictEqual(job.environment, workflow.jobs['publish-cli'].environment);
+  });
+
+  test('uses the official publisher at a pinned release, signature-verified before it runs', () => {
+    assert.match(job.env?.MCP_PUBLISHER_VERSION ?? '', /^v\d+\.\d+\.\d+$/);
+    const all = runs().join('\n');
+    assert.match(all, /https:\/\/github\.com\/modelcontextprotocol\/registry\/releases\/download\/\$\{MCP_PUBLISHER_VERSION\}/);
+    assert.doesNotMatch(all, /releases\/latest|npx|npm (exec|install)/);
+    assert.match(all, /--certificate-identity "https:\/\/github\.com\/modelcontextprotocol\/registry\/\.github\/workflows\/release\.yml@refs\/tags\/\$\{MCP_PUBLISHER_VERSION\}"/);
+    const verify = runs().findIndex((r) => r.includes('cosign verify-blob'));
+    const login = runs().findIndex((r) => r.includes('mcp-publisher login'));
+    const publish = runs().findIndex((r) => /mcp-publisher publish/.test(r));
+    assert.ok(verify >= 0 && verify < login && login < publish, 'verify, then log in, then publish');
+    assert.ok(job.steps.every((s) => !s.uses || /@[0-9a-f]{40}\b/.test(s.uses)), 'actions are SHA-pinned');
+  });
+
+  test('authenticates with GitHub OIDC and holds no other permission', () => {
+    assert.ok(runs().some((r) => /mcp-publisher login github-oidc\b/.test(r)));
+    assert.deepStrictEqual(job.permissions, { contents: 'read', 'id-token': 'write' });
+    assert.ok(!JSON.stringify(job).includes('secrets.'), 'no stored registry credential');
+    const publish = job.steps.find((s) => /mcp-publisher publish/.test(s.run ?? ''));
+    assert.strictEqual(publish?.['working-directory'], 'cli', 'publishes cli/server.json');
   });
 });
 

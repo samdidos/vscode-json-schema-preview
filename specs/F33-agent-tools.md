@@ -103,8 +103,12 @@ consumes it.
 - **F33-FR-16** The CLI package MUST carry the metadata the open MCP Registry
   expects — a `server.json` describing the stdio server and the `mcpName`
   field linking the npm package to it — so the same server can be published to
-  the registry and discovered by clients outside VS Code. Publishing itself is a
-  release step, documented on the docs site.
+  the registry and discovered by clients outside VS Code. `server.json` MUST
+  declare, and validate against, the registry's **current** `server.schema.json`
+  (a copy vendored in the repository, so the check runs offline); a unit test
+  MUST validate it, so a field the registry renames or a limit it imposes (such
+  as the 100-character `description`) fails locally, not at publish time.
+  Publishing itself is a release step (F33-FR-18), documented on the docs site.
 - **F33-FR-17** The F33-FR-15 definition MUST name an **exact** CLI version
   (`npx -y json-schema-toolkit@<version> mcp`), equal to `cli/package.json`'s
   `version`, never a bare package name or a range. `-y` makes npx install and
@@ -112,6 +116,23 @@ consumes it.
   next — including a release by someone else if the name is not yet claimed, or
   a compromised later release. A unit test MUST fail when the pinned version and
   the CLI package version differ, so a CLI release cannot forget the bump.
+- **F33-FR-18** Every CLI release MUST also be published to the MCP Registry
+  by `publish-cli.yml`, in its own job that runs only after the CLI has been
+  staged on npm (S21-SR-06), never on a dry run, and can be re-run alone. The
+  registry only accepts a version that is live on npm, and a staged version is
+  live only once a maintainer approves it, so the job MUST first check that the
+  version is live with the expected `mcpName` and otherwise fail with a message
+  telling the maintainer to approve it and re-run the job. It MUST run in its
+  own `mcp-registry` GitHub environment, where a required reviewer can hold it
+  until after the npm approval, and which keeps its OIDC token from satisfying
+  the npm trusted publisher (bound to the `npm` environment, S21-SR-07). The
+  job MUST use the official `mcp-publisher` from the
+  `modelcontextprotocol/registry` GitHub releases, pinned to an exact release
+  and with its Sigstore signature verified (cosign, against that release's
+  workflow identity) before it runs. It MUST NOT run a publisher through `npx`
+  or any package-registry name, which a third party can own. It MUST
+  authenticate with GitHub OIDC (`login github-oidc`), so no registry
+  credential is stored, and hold only `contents: read` and `id-token: write`.
 
 ## Non-Functional Requirements
 
@@ -173,3 +194,12 @@ The first three are tracked in [#252](https://github.com/samdidos/vscode-json-sc
   definition launches. v0.21.0 shipped `npx -y json-schema-toolkit mcp` while
   that npm name was still unclaimed, so whoever published it first would have
   had their code run by every user who started the server (#286).
+
+- **2026-11-25** — Amended F33-FR-16 (validate `server.json` against the
+  registry's current schema) and added F33-FR-18 (publish to the MCP Registry
+  from `publish-cli.yml`, after the staged CLI version is approved) (#297).
+  The server had never been listed:
+  `server.json` still used the `2025-07-09` snake_case format the registry had
+  replaced, its description was over the 100-character limit, and the docs'
+  publish command named an npm package that does not exist, while the obvious
+  alternative name, `mcp-publisher`, belongs to an unrelated project.

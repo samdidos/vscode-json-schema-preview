@@ -97,5 +97,6 @@ on stdio, for any agent that speaks it:
 { "mcpServers": { "json-schema": { "command": "npx", "args": ["-y", "json-schema-toolkit", "mcp"] } } }
 ```
 
-The package carries a `server.json` for the open MCP Registry under the name
-`io.github.samdidos/json-schema-toolkit`.
+The package carries a `server.json` for the open
+[MCP Registry](https://registry.modelcontextprotocol.io), where each release is
+listed as `io.github.samdidos/json-schema-toolkit`.
