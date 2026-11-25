@@ -1,9 +1,14 @@
 name: Publish CLI
 
 # Stages the standalone CLI (F27) — the `json-schema-toolkit` npm package,
-# command `jstk` — on npm with build provenance (S21-SR-06). Independent of the
-# extension's release train: its own version (cli/package.json) and its own
-# `cli-v*` tags.
+# command `jstk` — on npm with build provenance (S21-SR-06).
+#
+# The CLI shares the extension's version (S21-SR-08). release-please bumps
+# cli/package.json, both versions in cli/server.json and MCP_PACKAGE_VERSION in
+# src/McpServerDefinition.ts with every release (.github/release-please/
+# config.json, `extra-files`), so nothing is bumped by hand. When a release PR
+# merges, this workflow stages the CLI from the release tag `v<version>` and,
+# once staged, tags the same commit `cli-v<version>`.
 #
 # The workflow never makes a version live. It logs in with npm trusted
 # publishing (OIDC, no stored token) and runs `npm stage publish`, which only
@@ -11,15 +16,24 @@ name: Publish CLI
 # (package → Staged) or with `npm stage approve <stage-id>`. Configure the
 # trusted publisher to allow stage publishing only, so a plain `npm publish`
 # from here is refused. Runs in the `npm` GitHub environment, whose name the
-# trusted publisher is bound to. Test via "Run workflow" with dry_run left on
-# (after bumping the version: a dry run of an already published version fails).
+# trusted publisher is bound to.
 #
-# Releasing a CLI version: bump `version` in cli/package.json, both versions in
-# cli/server.json and MCP_PACKAGE_VERSION in src/McpServerDefinition.ts
-# (F33-FR-17; unit tests fail if any of them differ), merge, then push the tag
-# `cli-v<version>` and approve the staged version on npm. Publish the extension
-# that pins the new version only after that version is live.
+# Release order: approve the staged CLI before approving the extension's
+# Marketplace job (publish.yml), so the version the extension's MCP server
+# pins (F33-FR-17) is live by the time the extension is.
+#
+# Triggers:
+# - workflow_run after Release Please — the normal path. release-please pushes
+#   its tag with GITHUB_TOKEN, which never fires `push` (publish.yml relies on
+#   the same mechanism), so the release is detected from the manifest instead.
+# - push of a `cli-v*` tag by a person — out-of-band backfill; the tag must
+#   match cli/package.json.
+# - Run workflow — from any branch; dry_run (default on) builds and validates
+#   without staging. A dry run of a version already on npm fails.
 on:
+  workflow_run:
+    workflows: ["Release Please"]
+    types: [completed]
   push:
     tags:
       - 'cli-v*'
@@ -34,7 +48,66 @@ permissions:
   contents: read
 
 jobs:
+  resolve:
+    # workflow_run only says release-please ran, not that it cut a release:
+    # the release tag pointing at the very commit release-please ran on is the
+    # evidence (release-please tags the merged release PR's commit).
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+      version: ${{ steps.resolve.outputs.version }}
+      tag_cli: ${{ steps.resolve.outputs.tag_cli }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Resolve what to stage
+        id: resolve
+        env:
+          EVENT: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          cli_version="$(node -p "require('./cli/package.json').version")"
+          case "$EVENT" in
+            workflow_run)
+              version="$(node -p "require('./.github/release-please/manifest.json')['.']")"
+              tag="v$version"
+              # The commit the tag names: the peeled entry of an annotated tag,
+              # else the lightweight tag itself.
+              tag_sha="$(git ls-remote origin "refs/tags/$tag^{}" | cut -f1)"
+              [ -n "$tag_sha" ] || tag_sha="$(git ls-remote origin "refs/tags/$tag" | cut -f1)"
+              if [ "$tag_sha" != "$HEAD_SHA" ]; then
+                echo "No release cut on this commit (tag $tag -> ${tag_sha:-none}) — nothing to stage."
+                echo "ref=" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              if [ "$cli_version" != "$version" ]; then
+                echo "::error::cli/package.json is $cli_version but the release is $version; check the extra-files in .github/release-please/config.json (S21-SR-08)." >&2
+                exit 1
+              fi
+              { echo "ref=$tag"; echo "version=$version"; echo "tag_cli=true"; } >> "$GITHUB_OUTPUT"
+              ;;
+            push)
+              version="${GITHUB_REF_NAME#cli-v}"
+              if [ "$cli_version" != "$version" ]; then
+                echo "::error::Tag ${GITHUB_REF_NAME} does not match cli/package.json version ${cli_version}." >&2
+                exit 1
+              fi
+              { echo "ref=$GITHUB_SHA"; echo "version=$version"; echo "tag_cli=false"; } >> "$GITHUB_OUTPUT"
+              ;;
+            workflow_dispatch)
+              tag_cli=false
+              if [ "$DRY_RUN" != "true" ]; then tag_cli=true; fi
+              { echo "ref=$GITHUB_SHA"; echo "version=$cli_version"; echo "tag_cli=$tag_cli"; } >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
   publish-cli:
+    needs: resolve
+    if: needs.resolve.outputs.ref != ''
     runs-on: ubuntu-latest
     environment: npm
     permissions:
@@ -42,6 +115,8 @@ jobs:
       id-token: write # OIDC token npm uses to sign build provenance
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -56,31 +131,49 @@ jobs:
       # Root deps power the webpack build that cli/'s `prepack` runs.
       - run: npm ci
 
-      - name: Verify the tag matches cli/package.json (tag pushes only)
-        if: github.event_name == 'push'
-        run: |
-          pkg="$(node -p "require('./cli/package.json').version")"
-          tag="${GITHUB_REF_NAME#cli-v}"
-          if [ "$pkg" != "$tag" ]; then
-            echo "::error::Tag ${GITHUB_REF_NAME} does not match cli/package.json version ${pkg}." >&2
-            exit 1
-          fi
-
       # `npm stage publish` runs cli/'s `prepack` (npm run build:cli) itself, so
       # the bundle is always built fresh from source here — no committed artifact.
       - name: Stage on npm (or dry-run)
         working-directory: cli
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          VERSION: ${{ needs.resolve.outputs.version }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+          if [ "$DRY_RUN" = "true" ]; then
             echo "Dry run — building and validating the package without staging it."
             npm stage publish --dry-run --access public
           else
             npm stage publish --provenance --access public
-            version="$(node -p "require('./package.json').version")"
             {
-              echo "## json-schema-toolkit@${version} staged"
+              echo "## json-schema-toolkit@${VERSION} staged"
               echo
               echo "Not live yet. Approve it with 2FA on npmjs.com (json-schema-toolkit → Staged),"
               echo "or run \`npm stage list json-schema-toolkit\` and \`npm stage approve <stage-id>\`."
+              echo "Approve it before the extension's Marketplace job, whose MCP server pins this version."
             } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # The CLI's own tag on the commit it was staged from (S21-SR-08). A separate
+  # job so the OIDC-holding job above never gets write access to the repo. A tag
+  # pushed with GITHUB_TOKEN does not trigger the `push` path above again.
+  tag-cli:
+    needs: [resolve, publish-cli]
+    if: needs.resolve.outputs.tag_cli == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the cli-v* tag
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+
+      - name: Tag cli-v${{ needs.resolve.outputs.version }}
+        env:
+          TAG: cli-v${{ needs.resolve.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            echo "$TAG already exists — leaving it as is."
+          else
+            git tag "$TAG"
+            git push origin "refs/tags/$TAG"
           fi

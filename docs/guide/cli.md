@@ -9,6 +9,8 @@ any terminal. No VS Code, no Python.
 
 It is published as its own npm package and reuses the extension's core directly,
 so a fix in the engine fixes both front ends — the CLI never forks the logic.
+It is released together with the extension and carries the same version number,
+so `jstk --version` tells you which extension release its engine matches.
 
 ## Install
 
