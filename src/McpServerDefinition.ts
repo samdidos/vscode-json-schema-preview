@@ -22,7 +22,7 @@ export const MCP_PACKAGE = 'json-schema-toolkit';
  * under it next. Must equal `cli/package.json`'s version (a unit test checks),
  * so bump both together when releasing the CLI.
  */
-export const MCP_PACKAGE_VERSION = '0.1.0';
+export const MCP_PACKAGE_VERSION = '0.1.1';
 
 /** Minimal local typing of the post-1.101 API surface this file touches. */
 interface McpStdioServerDefinitionCtor {

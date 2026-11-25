@@ -7,13 +7,13 @@
     "source": "github",
     "subfolder": "cli"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packages": [
     {
       "registry_type": "npm",
       "registry_base_url": "https://registry.npmjs.org",
       "identifier": "json-schema-toolkit",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "transport": { "type": "stdio" },
       "package_arguments": [
         { "type": "positional", "value": "mcp", "description": "Serve the tool surface over stdio." }
