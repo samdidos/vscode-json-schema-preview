@@ -19,10 +19,11 @@ export const MCP_PACKAGE = 'json-schema-toolkit';
 /**
  * F33-FR-17 — the exact CLI version the definition launches. `npx -y` installs
  * and runs without asking, so an unpinned name would run whatever is published
- * under it next. Must equal `cli/package.json`'s version (a unit test checks),
- * so bump both together when releasing the CLI.
+ * under it next. Must equal `cli/package.json`'s version (a unit test checks);
+ * release-please bumps both with every release (S21-SR-08), through the
+ * release-please version marker at the end of the line below.
  */
-export const MCP_PACKAGE_VERSION = '0.1.1';
+export const MCP_PACKAGE_VERSION = '0.21.0'; // x-release-please-version
 
 /** Minimal local typing of the post-1.101 API surface this file touches. */
 interface McpStdioServerDefinitionCtor {

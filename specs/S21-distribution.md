@@ -63,9 +63,22 @@ the identical, attested file, never a second build.
   pinned MCP server, F33-FR-17). The npm CLI that stages it MUST be installed
   at an exact version (≥ 11.15.0, the first with `npm stage`).
 - **S21-SR-07** The CLI workflow MUST run in the `npm` GitHub environment (the
-  trusted publisher is bound to it), MUST refuse a `cli-v*` tag that differs
-  from `cli/package.json`'s version, and MUST offer a manual dry run that
-  builds and validates the package without staging it.
+  trusted publisher is bound to it), MUST refuse to stage a version that
+  differs from `cli/package.json`'s (a release whose CLI was not bumped, or a
+  hand-pushed `cli-v*` tag that does not match), and MUST offer a manual dry
+  run that builds and validates the package without staging it.
+- **S21-SR-08** The CLI MUST share the extension's version and MUST be
+  released by release-please with it: every release PR MUST set
+  `cli/package.json`'s `version`, both versions in `cli/server.json` and
+  `MCP_PACKAGE_VERSION` (F33-FR-17) to the release version, through
+  `extra-files` in `.github/release-please/config.json`, so no version is
+  bumped by hand and the extension never pins a CLI version that was not
+  released with it. When a release is cut, the CLI workflow MUST stage the CLI
+  from the release tag without manual action, detecting the release from the
+  release tag pointing at the commit release-please ran on (a tag pushed with
+  `GITHUB_TOKEN` fires no `push` workflow), and once staged MUST tag that
+  commit `cli-v<version>` from a job that does not hold the npm OIDC
+  permission.
 
 ## Non-Functional Requirements
 
@@ -106,3 +119,7 @@ the identical, attested file, never a second build.
 - **2026-11-24** — Added S21-SR-06/07: the CLI moves into this spec's scope
   and is released through npm staged publishing with trusted publishing, so
   CI can only queue a version for a maintainer's 2FA approval.
+
+- **2026-11-25** — Added S21-SR-08 and amended S21-SR-07: the CLI follows the
+  extension's version and is released by release-please, instead of a separate
+  hand-bumped version and hand-pushed `cli-v*` tag.

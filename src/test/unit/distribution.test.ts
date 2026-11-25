@@ -306,12 +306,44 @@ suite('S21 — CLI staged publishing', () => {
     assert.ok(install >= 0 && install < runs.indexOf('npm stage publish'));
   });
 
-  test('[S21-SR-07] runs in the npm environment, checks the tag, and offers a dry run', () => {
+  const resolveRun = (workflow.jobs.resolve.steps as Step[]).map((st) => st.run ?? '').join('\n');
+
+  test('[S21-SR-07] runs in the npm environment, refuses a mismatched version, and offers a dry run', () => {
     assert.strictEqual(job.environment, 'npm');
     assert.deepStrictEqual(workflow.on.push.tags, ['cli-v*']);
-    assert.match(runs, /tag="\$\{GITHUB_REF_NAME#cli-v\}"/);
-    assert.match(runs, /if \[ "\$pkg" != "\$tag" \]/);
+    assert.match(resolveRun, /version="\$\{GITHUB_REF_NAME#cli-v\}"/);
+    // Both a release and a hand-pushed tag are checked against cli/package.json.
+    assert.strictEqual((resolveRun.match(/if \[ "\$cli_version" != "\$version" \]/g) ?? []).length, 2);
     assert.strictEqual(workflow.on.workflow_dispatch.inputs.dry_run.default, true);
     assert.match(runs, /npm stage publish --dry-run/);
+  });
+
+  test('[S21-SR-08] a release cut by release-please stages the CLI from its tag, then tags it cli-v', () => {
+    assert.deepStrictEqual(workflow.on.workflow_run, { workflows: ['Release Please'], types: ['completed'] });
+    // The release is detected from the release tag naming the commit release-please ran on.
+    assert.match(resolveRun, /tag="v\$version"/);
+    assert.match(resolveRun, /if \[ "\$tag_sha" != "\$HEAD_SHA" \]/);
+    assert.strictEqual(workflow.jobs['publish-cli'].if, "needs.resolve.outputs.ref != ''");
+    const tagJob = workflow.jobs['tag-cli'];
+    assert.deepStrictEqual(tagJob.needs, ['resolve', 'publish-cli'], 'tag only what was staged');
+    assert.deepStrictEqual(tagJob.permissions, { contents: 'write' }, 'the tagging job never holds the npm OIDC permission');
+    assert.ok(!('id-token' in (workflow.jobs.resolve.permissions ?? {})) && !('environment' in tagJob));
+    assert.match((tagJob.steps as Step[]).map((st) => st.run ?? '').join('\n'), /git push origin "refs\/tags\/\$TAG"/);
+  });
+
+  test('[S21-SR-08] every release PR bumps the CLI, its registry manifest and the MCP pin to the release version', () => {
+    const config = JSON.parse(fs.readFileSync(path.join(CHECKOUT, '.github', 'release-please', 'config.json'), 'utf-8'));
+    const manifest = JSON.parse(fs.readFileSync(path.join(CHECKOUT, '.github', 'release-please', 'manifest.json'), 'utf-8'));
+    assert.deepStrictEqual(Object.keys(config.packages), ['.'], 'one version for the extension and the CLI');
+    assert.deepStrictEqual(config.packages['.']['extra-files'], [
+      { type: 'json', path: 'cli/package.json', jsonpath: '$.version' },
+      { type: 'json', path: 'cli/server.json', jsonpath: '$..version' },
+      { type: 'generic', path: 'src/McpServerDefinition.ts' },
+    ]);
+    const source = fs.readFileSync(path.join(CHECKOUT, 'src', 'McpServerDefinition.ts'), 'utf-8');
+    const marked = source.split('\n').filter((l) => l.includes('x-release-please-version'));
+    assert.deepStrictEqual(marked, [`export const MCP_PACKAGE_VERSION = '${cliPkg.version}'; // x-release-please-version`],
+      'the generic updater rewrites every version on a marked line, so only the pin may carry the marker');
+    assert.strictEqual(cliPkg.version, manifest['.'], 'the CLI shares the extension version');
   });
 });

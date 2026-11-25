@@ -6118,6 +6118,17 @@
       "note": "npm environment, cli-v tag/version check, dry-run input",
       "specifiedAt": "2026-11-24",
       "implementedAt": "2026-11-24"
+    },
+    "S21-SR-08": {
+      "status": "implemented",
+      "impl": [
+        ".github/release-please/config.json",
+        ".github/workflows/publish-cli.yml",
+        "src/McpServerDefinition.ts"
+      ],
+      "note": "release-please extra-files bump cli/package.json, cli/server.json and the MCP pin; publish-cli.yml stages on Release Please workflow_run when the release tag names the run's commit, then tag-cli pushes cli-v<version>",
+      "specifiedAt": "2026-11-25",
+      "implementedAt": "2026-11-25"
     }
   }
 }
