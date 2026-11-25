@@ -141,59 +141,69 @@ suite('[F33-FR-16] MCP Registry metadata', () => {
   test('the docs publish with the official mcp-publisher, never an npx package name', () => {
     const guide = fs.readFileSync(path.join(CHECKOUT, 'docs', 'guide', 'ai.md'), 'utf-8');
     assert.match(guide, /mcp-publisher login github/);
-    assert.match(guide, /github\.com\/modelcontextprotocol\/registry\/releases/);
+    // Compare whole link targets for equality, as S21-SR-04 does, rather than a
+    // URL fragment anywhere in the text, which would also accept a lookalike host.
+    const links = new Set([...guide.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map(([, url]) => url));
+    assert.ok(links.has('https://github.com/modelcontextprotocol/registry/releases'), 'official publisher releases');
     assert.doesNotMatch(guide, /npx\s+(-y\s+)?(@modelcontextprotocol\/publisher|mcp-publisher)/);
   });
 });
 
-suite('[F33-FR-18] publish-cli.yml lists each CLI release in the MCP Registry', () => {
+suite('[F33-FR-18] publish-mcp-registry.yml lists an approved CLI release in the MCP Registry', () => {
   const YAML = require('yaml');
-  type Step = { name?: string; run?: string; uses?: string; 'working-directory'?: string };
-  type Job = { needs?: string[]; if?: string; environment?: string; permissions?: Record<string, string>; env?: Record<string, string>; steps: Step[] };
-  const workflow = YAML.parse(fs.readFileSync(path.join(CHECKOUT, '.github', 'workflows', 'publish-cli.yml'), 'utf-8'));
+  type Step = { name?: string; run?: string; uses?: string; with?: Record<string, string>; 'working-directory'?: string };
+  type Job = { environment?: string; permissions?: Record<string, string>; env?: Record<string, string>; steps: Step[] };
+  const read = (name: string): string => fs.readFileSync(path.join(CHECKOUT, '.github', 'workflows', name), 'utf-8');
+  const workflow = YAML.parse(read('publish-mcp-registry.yml'));
   const job: Job = workflow.jobs['publish-mcp-registry'];
   const runs = (): string[] => job.steps.map((s) => s.run ?? '');
+  const indexOf = (needle: string): number => runs().findIndex((r) => r.includes(needle));
 
-  test('runs as its own job, after the CLI is staged, never on a dry run', () => {
-    assert.ok(job, 'publish-cli.yml must define a publish-mcp-registry job');
-    assert.deepStrictEqual(job.needs, ['resolve', 'publish-cli']);
-    assert.strictEqual(job.if, "needs.resolve.outputs.ref != '' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)");
-    assert.ok(!workflow.jobs['publish-cli'].steps.some((s: Step) => (s.run ?? '').includes('mcp-publisher')),
-      'the registry publish must not be a step of the npm job');
+  test('is its own workflow, run by hand with a validated version, from the cli-v tag', () => {
+    assert.deepStrictEqual(Object.keys(workflow.on), ['workflow_dispatch']);
+    const input = workflow.on.workflow_dispatch.inputs.version;
+    assert.strictEqual(input.required, true);
+    assert.strictEqual(job.env?.VERSION, '${{ inputs.version }}');
+    const validate = indexOf("grep -Eq '^[0-9]+\\.[0-9]+\\.[0-9]+$'");
+    const checkout = job.steps.findIndex((s) => (s.uses ?? '').startsWith('actions/checkout@'));
+    assert.ok(validate >= 0 && validate < checkout, 'the input is validated before anything uses it');
+    assert.strictEqual(job.steps[checkout].with?.ref, 'refs/tags/cli-v${{ inputs.version }}');
+    assert.ok(runs().every((r) => !r.includes('${{')), 'inputs reach shell steps through env, never interpolated');
+    const publishCli = read('publish-cli.yml');
+    assert.ok(!publishCli.includes('mcp-publisher'), 'publish-cli.yml must not publish to the registry itself');
+    assert.ok(publishCli.includes('run the \\"Publish to MCP Registry\\" workflow with version ${VERSION}'),
+      'the staging summary says to run this workflow once the version is live');
   });
 
-  test('refuses to publish until the staged version is approved and live on npm', () => {
-    const check = runs().findIndex((r) => r.includes('npm view "json-schema-toolkit@${VERSION}" mcpName'));
-    const login = runs().findIndex((r) => r.includes('mcp-publisher login'));
-    assert.ok(check >= 0 && check < login, 'the live check must come before anything touches the registry');
-    assert.match(runs()[check], /require\('\.\/cli\/server\.json'\)\.name/);
-    assert.match(runs()[check], /::error::[^\n]*Approve the staged version[^\n]*re-run this job/);
-    assert.match(runs()[check], /exit 1/);
-  });
-
-  test('runs in its own mcp-registry environment, not the npm one', () => {
-    assert.strictEqual(job.environment, 'mcp-registry');
-    assert.notStrictEqual(job.environment, workflow.jobs['publish-cli'].environment);
+  test('refuses to publish until the version is approved and live on npm', () => {
+    const check = indexOf('npm view "json-schema-toolkit@${VERSION}" mcpName');
+    assert.ok(check >= 0 && check < indexOf('mcp-publisher login'), 'the live check comes before the registry');
+    const run = runs()[check];
+    assert.ok(run.includes(`require('./cli/server.json').version`) && run.includes(`require('./cli/server.json').name`));
+    assert.match(run, /::error::[^\n]*Approve the staged version[^\n]*run this workflow again/);
+    assert.match(run, /exit 1/);
   });
 
   test('uses the official publisher at a pinned release, signature-verified before it runs', () => {
     assert.match(job.env?.MCP_PUBLISHER_VERSION ?? '', /^v\d+\.\d+\.\d+$/);
     const all = runs().join('\n');
-    assert.match(all, /https:\/\/github\.com\/modelcontextprotocol\/registry\/releases\/download\/\$\{MCP_PUBLISHER_VERSION\}/);
+    assert.ok(all.includes('base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"'));
+    assert.ok(all.includes('--certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}"'));
     assert.doesNotMatch(all, /releases\/latest|npx|npm (exec|install)/);
-    assert.match(all, /--certificate-identity "https:\/\/github\.com\/modelcontextprotocol\/registry\/\.github\/workflows\/release\.yml@refs\/tags\/\$\{MCP_PUBLISHER_VERSION\}"/);
-    const verify = runs().findIndex((r) => r.includes('cosign verify-blob'));
-    const login = runs().findIndex((r) => r.includes('mcp-publisher login'));
-    const publish = runs().findIndex((r) => /mcp-publisher publish/.test(r));
+    const verify = indexOf('cosign verify-blob');
+    const login = indexOf('mcp-publisher login');
+    const publish = indexOf('mcp-publisher publish');
     assert.ok(verify >= 0 && verify < login && login < publish, 'verify, then log in, then publish');
     assert.ok(job.steps.every((s) => !s.uses || /@[0-9a-f]{40}\b/.test(s.uses)), 'actions are SHA-pinned');
   });
 
-  test('authenticates with GitHub OIDC and holds no other permission', () => {
+  test('authenticates with GitHub OIDC, outside the npm environment, with no other permission', () => {
     assert.ok(runs().some((r) => /mcp-publisher login github-oidc\b/.test(r)));
+    assert.deepStrictEqual(workflow.permissions, { contents: 'read' });
     assert.deepStrictEqual(job.permissions, { contents: 'read', 'id-token': 'write' });
-    assert.ok(!JSON.stringify(job).includes('secrets.'), 'no stored registry credential');
-    const publish = job.steps.find((s) => /mcp-publisher publish/.test(s.run ?? ''));
+    assert.notStrictEqual(job.environment, 'npm', 'an npm-environment token could stage to npm');
+    assert.ok(!JSON.stringify(workflow).includes('secrets.'), 'no stored registry credential');
+    const publish = job.steps.find((s) => (s.run ?? '').includes('mcp-publisher publish'));
     assert.strictEqual(publish?.['working-directory'], 'cli', 'publishes cli/server.json');
   });
 });

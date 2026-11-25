@@ -116,23 +116,26 @@ consumes it.
   next — including a release by someone else if the name is not yet claimed, or
   a compromised later release. A unit test MUST fail when the pinned version and
   the CLI package version differ, so a CLI release cannot forget the bump.
-- **F33-FR-18** Every CLI release MUST also be published to the MCP Registry
-  by `publish-cli.yml`, in its own job that runs only after the CLI has been
-  staged on npm (S21-SR-06), never on a dry run, and can be re-run alone. The
-  registry only accepts a version that is live on npm, and a staged version is
-  live only once a maintainer approves it, so the job MUST first check that the
-  version is live with the expected `mcpName` and otherwise fail with a message
-  telling the maintainer to approve it and re-run the job. It MUST run in its
-  own `mcp-registry` GitHub environment, where a required reviewer can hold it
-  until after the npm approval, and which keeps its OIDC token from satisfying
-  the npm trusted publisher (bound to the `npm` environment, S21-SR-07). The
-  job MUST use the official `mcp-publisher` from the
-  `modelcontextprotocol/registry` GitHub releases, pinned to an exact release
-  and with its Sigstore signature verified (cosign, against that release's
-  workflow identity) before it runs. It MUST NOT run a publisher through `npx`
-  or any package-registry name, which a third party can own. It MUST
-  authenticate with GitHub OIDC (`login github-oidc`), so no registry
-  credential is stored, and hold only `contents: read` and `id-token: write`.
+- **F33-FR-18** A CLI release MUST be publishable to the MCP Registry by its
+  own workflow, `publish-mcp-registry.yml`, run by hand with the version once
+  the maintainer has approved the staged npm version (S21-SR-06): the registry
+  only accepts a version npm serves, and a staged version is not served until
+  approved. The workflow MUST validate the version input and check out the
+  `cli-v<version>` tag `publish-cli.yml` creates when it stages that version
+  (S21-SR-08). Before touching the registry it MUST check that `server.json`
+  there carries that version and that the version is live on npm with the
+  expected `mcpName`, and otherwise fail with a message telling the maintainer
+  to approve the staged version and run it again. `publish-cli.yml` MUST say,
+  in its staging summary, to run it once the version is live. The workflow
+  MUST use the official `mcp-publisher` from the `modelcontextprotocol/registry`
+  GitHub releases, pinned to an exact release and with its Sigstore signature
+  verified (cosign, against that release's workflow identity) before it runs.
+  It MUST NOT run a publisher through `npx` or any package-registry name, which
+  a third party can own. It MUST authenticate with GitHub OIDC
+  (`login github-oidc`), so no registry credential is stored, MUST hold only
+  `contents: read` and `id-token: write`, and MUST NOT run in the `npm`
+  environment, so its OIDC token cannot satisfy the npm trusted publisher
+  (S21-SR-07).
 
 ## Non-Functional Requirements
 
@@ -197,7 +200,8 @@ The first three are tracked in [#252](https://github.com/samdidos/vscode-json-sc
 
 - **2026-11-25** — Amended F33-FR-16 (validate `server.json` against the
   registry's current schema) and added F33-FR-18 (publish to the MCP Registry
-  from `publish-cli.yml`, after the staged CLI version is approved) (#297).
+  by a separate, manually run `publish-mcp-registry.yml`, after the staged
+  CLI version is approved) (#297).
   The server had never been listed:
   `server.json` still used the `2025-07-09` snake_case format the registry had
   replaced, its description was over the 100-character limit, and the docs'

@@ -3994,9 +3994,10 @@
     "F33-FR-18": {
       "status": "implemented",
       "impl": [
+        ".github/workflows/publish-mcp-registry.yml",
         ".github/workflows/publish-cli.yml"
       ],
-      "note": "publish-mcp-registry job in publish-cli.yml: after staging, checks the version is live on npm, then pinned cosign-verified official mcp-publisher with GitHub OIDC in the mcp-registry environment; asserted by distribution.test.ts",
+      "note": "manual publish-mcp-registry.yml: validated version input, cli-v tag checkout, live-on-npm check, pinned cosign-verified official mcp-publisher, GitHub OIDC; publish-cli.yml's staging summary points to it; asserted by distribution.test.ts",
       "specifiedAt": "2026-11-25",
       "implementedAt": "2026-11-25"
     },

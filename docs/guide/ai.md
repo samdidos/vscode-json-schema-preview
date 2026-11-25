@@ -200,18 +200,21 @@ from its own configuration:
 
 The CLI package ships a `server.json` and an `mcpName` field
 (`io.github.samdidos/json-schema-toolkit`), which is what the
-[MCP Registry](https://registry.modelcontextprotocol.io) reads. Every release is listed there by `publish-cli.yml`: once the CLI is
-staged on npm, its `publish-mcp-registry` job runs the official `mcp-publisher`
-(pinned, signature-verified) and logs in with GitHub OIDC, so no credential is
-stored. The registry only accepts a version that is live on npm, so the job
-first checks that you have approved the staged version and, if not, fails with
-a reminder: approve it on npm, then re-run that job. To have the job wait for
-you instead of failing, add yourself as a required reviewer of the
-`mcp-registry` environment (repository Settings → Environments) and approve it
-after the npm approval.
+[MCP Registry](https://registry.modelcontextprotocol.io) reads. The registry only accepts a version that is live on npm, and a CLI
+release is only *staged* there until you approve it, so listing it is a manual
+step after the approval:
 
-To list a version by hand (for example, one released before this job existed),
-install `mcp-publisher` from the
+1. Approve the staged version on npm (json-schema-toolkit → Staged, or
+   `npm stage approve <stage-id>`). The staging run's summary lists both steps.
+2. In GitHub Actions, run the **Publish to MCP Registry** workflow
+   (`publish-mcp-registry.yml`) with that version.
+
+The workflow checks out the `cli-v<version>` tag, refuses to continue if the
+version isn't live on npm yet, and then runs the official `mcp-publisher`
+(pinned, signature-verified), logging in with GitHub OIDC, so no credential is
+stored.
+
+To publish from your own machine instead, install `mcp-publisher` from the
 [`modelcontextprotocol/registry` releases](https://github.com/modelcontextprotocol/registry/releases)
 or with `brew install mcp-publisher`, then:
 
