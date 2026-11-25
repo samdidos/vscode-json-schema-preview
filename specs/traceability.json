@@ -6100,6 +6100,24 @@
       "note": "workflow_dispatch input open_vsx_only skips the publish job; publish-open-vsx runs on a skipped publish only in that mode",
       "specifiedAt": "2026-11-24",
       "implementedAt": "2026-11-24"
+    },
+    "S21-SR-06": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/publish-cli.yml"
+      ],
+      "note": "publish-cli.yml stages with npm stage publish --provenance via trusted publishing (no token), npm pinned to 11.21.2; asserted by distribution.test.ts",
+      "specifiedAt": "2026-11-24",
+      "implementedAt": "2026-11-24"
+    },
+    "S21-SR-07": {
+      "status": "implemented",
+      "impl": [
+        ".github/workflows/publish-cli.yml"
+      ],
+      "note": "npm environment, cli-v tag/version check, dry-run input",
+      "specifiedAt": "2026-11-24",
+      "implementedAt": "2026-11-24"
     }
   }
 }
