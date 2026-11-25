@@ -8,7 +8,9 @@
 // with no fix available are still printed, just not treated as blocking.
 //
 // Plain Node, no shell assumed beyond Node itself (`shell: true` lets Node
-// resolve npm via its platform-native shim) — S15-SR-01/02.
+// resolve npm via its platform-native shim) — S15-SR-01/02. The command is one
+// fixed string: an argument array alongside `shell: true` is deprecated
+// (DEP0190).
 
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
@@ -17,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs');
 const BLOCKING_SEVERITIES = new Set(['high', 'critical']);
 
-const result = spawnSync('npm', ['audit', '--json'], {
+const result = spawnSync('npm audit --json', {
   cwd: DOCS_DIR,
   shell: true,
   encoding: 'utf8',

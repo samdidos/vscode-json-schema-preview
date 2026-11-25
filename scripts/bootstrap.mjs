@@ -19,6 +19,10 @@
 // contributor runs, so it must not assume bash (or any interpreter beyond
 // Node + git) is on the machine. `shell: true` lets Node resolve npm/npx via
 // their platform-native shims (`.cmd` on Windows) without hardcoding that.
+// With `shell: true` the command is passed as one string: handing Node an
+// argument array as well is deprecated (DEP0190, warned on Node 24+), since
+// the shell would see the arguments unescaped. Every command here is a fixed
+// literal, so joining them is exact.
 
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
@@ -26,15 +30,15 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-function run(cmd, args) {
-  const result = spawnSync(cmd, args, { cwd: ROOT, stdio: 'inherit', shell: true });
+function run(command) {
+  const result = spawnSync(command, { cwd: ROOT, stdio: 'inherit', shell: true });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
 console.log('→ Installing dependencies (skipping native builds)…');
-run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund']);
+run('npm install --ignore-scripts --no-audit --no-fund');
 
 console.log('→ Wiring up git hooks (husky)…');
-run('npx', ['husky']);
+run('npx husky');
 
 console.log("✓ Bootstrap complete. Run 'npm run verify' to check the full gate.");
