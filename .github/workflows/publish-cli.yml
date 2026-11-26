@@ -22,6 +22,9 @@ name: Publish CLI
 # Marketplace job (publish.yml), so the version the extension's MCP server
 # pins (F33-FR-17) is live by the time the extension is.
 #
+# Once the staged version is approved and live, list it in the MCP Registry by
+# running publish-mcp-registry.yml by hand with that version (F33-FR-18).
+#
 # Triggers:
 # - workflow_run after Release Please — the normal path. release-please pushes
 #   its tag with GITHUB_TOKEN, which never fires `push` (publish.yml relies on
@@ -150,6 +153,8 @@ jobs:
               echo "Not live yet. Approve it with 2FA on npmjs.com (json-schema-toolkit → Staged),"
               echo "or run \`npm stage list json-schema-toolkit\` and \`npm stage approve <stage-id>\`."
               echo "Approve it before the extension's Marketplace job, whose MCP server pins this version."
+              echo
+              echo "Once it is live, list it in the MCP Registry: run the \"Publish to MCP Registry\" workflow with version ${VERSION}."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 

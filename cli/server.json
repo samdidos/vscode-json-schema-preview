@@ -1,7 +1,8 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.samdidos/json-schema-toolkit",
-  "description": "Deterministic JSON Schema tools for agents: validate, lint, diff with a backward-compatibility verdict, bundle, infer, sample, coverage and schema tests.",
+  "title": "JSON Schema Toolkit",
+  "description": "Deterministic JSON Schema tools: validate, lint, diff with a compatibility verdict, bundle, infer.",
   "repository": {
     "url": "https://github.com/samdidos/vscode-json-schema-preview",
     "source": "github",
@@ -10,12 +11,13 @@
   "version": "0.21.0",
   "packages": [
     {
-      "registry_type": "npm",
-      "registry_base_url": "https://registry.npmjs.org",
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "json-schema-toolkit",
       "version": "0.21.0",
+      "runtimeHint": "npx",
       "transport": { "type": "stdio" },
-      "package_arguments": [
+      "packageArguments": [
         { "type": "positional", "value": "mcp", "description": "Serve the tool surface over stdio." }
       ]
     }
