@@ -23,7 +23,7 @@ export const MCP_PACKAGE = 'json-schema-toolkit';
  * release-please bumps both with every release (S21-SR-08), through the
  * release-please version marker at the end of the line below.
  */
-export const MCP_PACKAGE_VERSION = '0.21.0'; // x-release-please-version
+export const MCP_PACKAGE_VERSION = '0.22.0'; // x-release-please-version
 
 /** Minimal local typing of the post-1.101 API surface this file touches. */
 interface McpStdioServerDefinitionCtor {
