@@ -80,6 +80,14 @@ the identical, attested file, never a second build.
   commit `cli-v<version>` from a job that does not hold the npm OIDC
   permission.
 
+- **S21-SR-09** The README's header and the documentation site's home page
+  MUST each link every place the project is distributed: the VS Code
+  Marketplace and Open VSX listings of the extension, the CLI's npm package
+  (`json-schema-toolkit`), and its MCP Registry listing
+  (`io.github.samdidos/json-schema-toolkit`, F33-FR-18). The MCP Registry link
+  MUST open the registry's own search page filtered to the server
+  (`?q=json-schema-toolkit`), not its JSON API, so it is readable in a browser.
+
 ## Non-Functional Requirements
 
 - **S21-NFR-01** The Open VSX job MUST hold only the permissions it uses
@@ -123,3 +131,7 @@ the identical, attested file, never a second build.
 - **2026-11-25** — Added S21-SR-08 and amended S21-SR-07: the CLI follows the
   extension's version and is released by release-please, instead of a separate
   hand-bumped version and hand-pushed `cli-v*` tag.
+
+- **2026-11-26** — Added S21-SR-09: link all four distribution channels from
+  the README header and the docs home page, now that the CLI is on npm and
+  its MCP server is in the MCP Registry.

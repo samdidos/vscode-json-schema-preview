@@ -6144,6 +6144,16 @@
       "note": "release-please extra-files bump cli/package.json, cli/server.json and the MCP pin; publish-cli.yml stages on Release Please workflow_run when the release tag names the run's commit, then tag-cli pushes cli-v<version>",
       "specifiedAt": "2026-11-25",
       "implementedAt": "2026-11-25"
+    },
+    "S21-SR-09": {
+      "status": "implemented",
+      "impl": [
+        "README.md",
+        "docs/index.md"
+      ],
+      "note": "distribution links (Marketplace, Open VSX, npm, MCP Registry search page) in the README header and docs home; asserted by distribution.test.ts",
+      "specifiedAt": "2026-11-26",
+      "implementedAt": "2026-11-26"
     }
   }
 }

@@ -440,3 +440,34 @@ suite('S21 — CLI staged publishing', () => {
     assert.strictEqual(cliPkg.version, manifest['.'], 'the CLI shares the extension version');
   });
 });
+
+suite('[S21-SR-09] the README header and the docs home link every distribution channel', () => {
+  const CHANNELS = [
+    'https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview',
+    'https://open-vsx.org/extension/samdidos/json-schema-preview',
+    'https://www.npmjs.com/package/json-schema-toolkit',
+    'https://registry.modelcontextprotocol.io/?q=json-schema-toolkit',
+  ];
+  /** Whole link targets, compared for equality so a lookalike host cannot pass. */
+  const linksIn = (text: string): Set<string> =>
+    new Set([...text.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map(([, url]) => url));
+
+  test('the README header (before the first section) links all four', () => {
+    const readme = fs.readFileSync(path.join(CHECKOUT, 'README.md'), 'utf-8');
+    const header = readme.slice(0, readme.indexOf('\n## '));
+    const links = linksIn(header);
+    for (const url of CHANNELS) { assert.ok(links.has(url), url); }
+  });
+
+  test('the docs home page links all four', () => {
+    const home = fs.readFileSync(path.join(CHECKOUT, 'docs', 'index.md'), 'utf-8');
+    const links = linksIn(home);
+    for (const url of CHANNELS) { assert.ok(links.has(url), url); }
+  });
+
+  test('the MCP Registry link opens its search page, not the JSON API', () => {
+    const mcp = new URL(CHANNELS[3]);
+    assert.strictEqual(mcp.pathname, '/');
+    assert.strictEqual(mcp.searchParams.get('q'), 'json-schema-toolkit');
+  });
+});
