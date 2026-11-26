@@ -2,6 +2,20 @@
 
 All notable changes to the "json-schema-preview" extension will be documented in this file.
 
+## [0.22.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.21.0...v0.22.0) (2026-11-26)
+
+
+### Features
+
+* **mcp:** publish the CLI's MCP server to the official MCP Registry ([#298](https://github.com/samdidos/vscode-json-schema-preview/issues/298)) ([409780e](https://github.com/samdidos/vscode-json-schema-preview/commit/409780ee60394357de4fe2448dfa600ae8a4be28))
+* **release:** allow an Open VSX-only run for an existing release ([#293](https://github.com/samdidos/vscode-json-schema-preview/issues/293)) ([c2aca99](https://github.com/samdidos/vscode-json-schema-preview/commit/c2aca9911b7d3874876b5223d72cb8cdf1c7a07a)), closes [#254](https://github.com/samdidos/vscode-json-schema-preview/issues/254)
+* **release:** publish each release to Open VSX ([#288](https://github.com/samdidos/vscode-json-schema-preview/issues/288)) ([bd40974](https://github.com/samdidos/vscode-json-schema-preview/commit/bd409742ba2507c6c4e04a98a2960366ec607e8c))
+
+
+### Bug Fixes
+
+* **mcp:** pin the CLI version the MCP server definition launches ([#287](https://github.com/samdidos/vscode-json-schema-preview/issues/287)) ([8989c8d](https://github.com/samdidos/vscode-json-schema-preview/commit/8989c8de5fca91c96185001f0724b974b1e4cf47))
+
 ## [0.21.0](https://github.com/samdidos/vscode-json-schema-preview/compare/v0.20.0...v0.21.0) (2026-11-23)
 
 

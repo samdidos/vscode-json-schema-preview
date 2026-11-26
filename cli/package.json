@@ -1,6 +1,6 @@
 {
   "name": "json-schema-toolkit",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "Standalone CLI (jstk) and MCP server for JSON Schema: validate, lint, diff (with backward-compat gate), bundle, migrate, infer, sample, coverage and schema tests. The editor-free front end of the json-schema-preview core.",
   "keywords": [
     "json-schema",

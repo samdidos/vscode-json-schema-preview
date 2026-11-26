@@ -8,17 +8,23 @@
     "source": "github",
     "subfolder": "cli"
   },
-  "version": "0.21.0",
+  "version": "0.22.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "json-schema-toolkit",
-      "version": "0.21.0",
+      "version": "0.22.0",
       "runtimeHint": "npx",
-      "transport": { "type": "stdio" },
+      "transport": {
+        "type": "stdio"
+      },
       "packageArguments": [
-        { "type": "positional", "value": "mcp", "description": "Serve the tool surface over stdio." }
+        {
+          "type": "positional",
+          "value": "mcp",
+          "description": "Serve the tool surface over stdio."
+        }
       ]
     }
   ]
