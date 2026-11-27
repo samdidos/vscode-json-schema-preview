@@ -11,6 +11,12 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/samdidos/vscode-json-schema-preview/badge)](https://securityscorecards.dev/viewer/?uri=github.com/samdidos/vscode-json-schema-preview)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/LICENSE.md)
 
+<!-- spec:S21 -->
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/samdidos.json-schema-preview?label=VS%20Code%20Marketplace&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
+[![Open VSX](https://img.shields.io/open-vsx/v/samdidos/json-schema-preview?label=Open%20VSX)](https://open-vsx.org/extension/samdidos/json-schema-preview)
+[![npm: json-schema-toolkit](https://img.shields.io/npm/v/json-schema-toolkit?label=npm%20%C2%B7%20CLI&logo=npm)](https://www.npmjs.com/package/json-schema-toolkit)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-json--schema--toolkit-6E56CF)](https://registry.modelcontextprotocol.io/?q=json-schema-toolkit)
+
 [**Install**](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview) ·
 [**Documentation**](https://samdidos.github.io/vscode-json-schema-preview/) ·
 [**Commands**](https://samdidos.github.io/vscode-json-schema-preview/guide/commands) ·

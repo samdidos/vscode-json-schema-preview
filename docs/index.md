@@ -16,6 +16,9 @@ hero:
       text: Install from Marketplace
       link: https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview
     - theme: alt
+      text: Open VSX
+      link: https://open-vsx.org/extension/samdidos/json-schema-preview
+    - theme: alt
       text: View on GitHub
       link: https://github.com/samdidos/vscode-json-schema-preview
     - theme: alt
@@ -89,3 +92,16 @@ features:
 <!-- spec:F30 --> <!-- Schema Refactorings -->
 <!-- spec:F31 --> <!-- Schema-aware Outline -->
 <!-- spec:F33,F32 --> <!-- Tools for AI Agents -->
+
+<!-- spec:S21 start -->
+
+## Get it
+
+| | Where | For |
+|---|---|---|
+| Extension | [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview) | VS Code |
+| Extension | [Open VSX](https://open-vsx.org/extension/samdidos/json-schema-preview) | VSCodium, Cursor, Windsurf and other editors that install from Open VSX |
+| CLI (`jstk`) | [npm: `json-schema-toolkit`](https://www.npmjs.com/package/json-schema-toolkit) | Terminals and CI — see the [CLI guide](/guide/cli) |
+| MCP server (`jstk mcp`) | [MCP Registry: `io.github.samdidos/json-schema-toolkit`](https://registry.modelcontextprotocol.io/?q=json-schema-toolkit) | Any MCP client — see [Tools for AI agents](/guide/ai) |
+
+<!-- spec:S21 end -->
