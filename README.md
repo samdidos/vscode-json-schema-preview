@@ -12,8 +12,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/samdidos/vscode-json-schema-preview/blob/main/LICENSE.md)
 
 <!-- spec:S21 -->
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/samdidos.json-schema-preview?label=VS%20Code%20Marketplace&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
-[![Open VSX](https://img.shields.io/open-vsx/v/samdidos/json-schema-preview?label=Open%20VSX)](https://open-vsx.org/extension/samdidos/json-schema-preview)
+[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code%20Marketplace-install-007ACC?logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)
+[![Open VSX](https://img.shields.io/open-vsx/v/samdidos/vscode-json-schema-preview?label=Open%20VSX)](https://open-vsx.org/extension/samdidos/vscode-json-schema-preview)
 [![npm: json-schema-toolkit](https://img.shields.io/npm/v/json-schema-toolkit?label=npm%20%C2%B7%20CLI&logo=npm)](https://www.npmjs.com/package/json-schema-toolkit)
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-json--schema--toolkit-6E56CF)](https://registry.modelcontextprotocol.io/?q=json-schema-toolkit)
 
@@ -111,7 +111,7 @@ that starts *after* that:
 
 ## Getting started
 
-1. **[Install from the Marketplace](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)** — or `ext install samdidos.json-schema-preview`. Using VSCodium, Cursor, Windsurf or another editor that installs from Open VSX? Get it from **[Open VSX](https://open-vsx.org/extension/samdidos/json-schema-preview)**. <!-- spec:S21 -->
+1. **[Install from the Marketplace](https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview)** — or `ext install samdidos.json-schema-preview`. Using VSCodium, Cursor, Windsurf or another editor that installs from Open VSX? Get it from **[Open VSX](https://open-vsx.org/extension/samdidos/vscode-json-schema-preview)**. <!-- spec:S21 -->
 2. Open a JSON Schema and press <kbd>Ctrl</kbd>+<kbd>K</kbd> <kbd>V</kbd> to preview it.
 3. Open a data file, run **JSON Schema: Bind Schema…**, then <kbd>Ctrl</kbd>+<kbd>K</kbd> <kbd>J</kbd> to validate it.
 

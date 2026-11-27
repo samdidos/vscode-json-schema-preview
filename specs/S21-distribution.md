@@ -87,6 +87,9 @@ the identical, attested file, never a second build.
   (`io.github.samdidos/json-schema-toolkit`, F33-FR-18). The MCP Registry link
   MUST open the registry's own search page filtered to the server
   (`?q=json-schema-toolkit`), not its JSON API, so it is readable in a browser.
+  A badge MUST NOT use a Shields badge whose service Shields has retired (it
+  renders as "retired"): the Marketplace badge is therefore static, while the
+  Open VSX and npm badges show the live version.
 
 ## Non-Functional Requirements
 
@@ -135,3 +138,7 @@ the identical, attested file, never a second build.
 - **2026-11-26** — Added S21-SR-09: link all four distribution channels from
   the README header and the docs home page, now that the CLI is on npm and
   its MCP server is in the MCP Registry.
+
+- **2026-11-27** — Amended S21-SR-09: the Marketplace badge is static, since
+  Shields retired its Visual Studio Marketplace badges, and the Open VSX links
+  use the listing's ID, `samdidos/vscode-json-schema-preview`.

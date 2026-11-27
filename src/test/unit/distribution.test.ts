@@ -345,7 +345,7 @@ suite('S21 — Open VSX publishing', () => {
     // Compare whole link targets for equality rather than matching a URL
     // fragment anywhere in the text, which would also accept a lookalike host.
     const links = new Set([...readme.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map(([, url]) => url));
-    assert.ok(links.has('https://open-vsx.org/extension/samdidos/json-schema-preview'), 'Open VSX listing');
+    assert.ok(links.has('https://open-vsx.org/extension/samdidos/vscode-json-schema-preview'), 'Open VSX listing');
     assert.ok(links.has('https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview'), 'Marketplace listing');
   });
 
@@ -444,7 +444,7 @@ suite('S21 — CLI staged publishing', () => {
 suite('[S21-SR-09] the README header and the docs home link every distribution channel', () => {
   const CHANNELS = [
     'https://marketplace.visualstudio.com/items?itemName=samdidos.json-schema-preview',
-    'https://open-vsx.org/extension/samdidos/json-schema-preview',
+    'https://open-vsx.org/extension/samdidos/vscode-json-schema-preview',
     'https://www.npmjs.com/package/json-schema-toolkit',
     'https://registry.modelcontextprotocol.io/?q=json-schema-toolkit',
   ];
@@ -463,6 +463,12 @@ suite('[S21-SR-09] the README header and the docs home link every distribution c
     const home = fs.readFileSync(path.join(CHECKOUT, 'docs', 'index.md'), 'utf-8');
     const links = linksIn(home);
     for (const url of CHANNELS) { assert.ok(links.has(url), url); }
+  });
+
+  test('no badge uses a retired Shields service (the Marketplace badge is static)', () => {
+    const readme = fs.readFileSync(path.join(CHECKOUT, 'README.md'), 'utf-8');
+    assert.ok(!readme.includes('img.shields.io/visual-studio-marketplace/'), 'Shields retired its Marketplace badges');
+    assert.ok(readme.includes('(https://img.shields.io/badge/VS%20Code%20Marketplace-'), 'static Marketplace badge');
   });
 
   test('the MCP Registry link opens its search page, not the JSON API', () => {
