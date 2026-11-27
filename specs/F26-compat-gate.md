@@ -62,6 +62,31 @@ existing consumers).
 - **F26-FR-08** Lens computation MUST NOT block typing: it MUST be debounced and
   MUST reuse the previous result while a recomputation is in flight.
 
+### GitHub Action
+
+- **F26-FR-09** The repository MUST ship a composite GitHub Action at
+  `compat-gate/` (`uses: samdidos/vscode-json-schema-preview/compat-gate@<ref>`)
+  that compares every schema file a push or pull request **changed** against
+  its version at a base commit — by default the pull request's base, or the
+  push's previous commit — and gates on the F26-FR-03 verdict. Schema files
+  are selected by glob patterns (input `schemas`, default
+  `**/*.schema.json`, `**/*.schema.yaml`, `**/*.schema.yml`); a renamed file
+  is compared with its old path, and a newly added file is reported as new,
+  not compared. A deleted schema file MUST count as breaking.
+- **F26-FR-10** The action MUST fail the step when any compared file is
+  breaking, and, with input `strict: true`, also when any is unclassified
+  (F26-FR-02/03). It MUST write a job summary leading with the overall verdict,
+  then one row per file, with each file's F26-FR-04 report, and set the output
+  `verdict` to `compatible`, `breaking` or `unknown`.
+- **F26-FR-11** The action MUST wrap the CLI's `diff --check` (F27) rather than
+  reimplement any comparison, and MUST run the CLI built from the action's own
+  ref, so a pinned action ref pins the classifier too and no package is
+  downloaded from a registry at run time. Its glue MUST be a Node script with
+  no dependency beyond Node and git (S15). The Node version it sets up MUST be
+  an input (`node-version`), because that Node stays on `PATH` for the
+  caller's later steps. A schema file of any size MUST be compared: the glue
+  MUST NOT fail on child-process output limits, and a file it cannot compare
+  MUST be reported as that file's error in the summary, not end the run.
 
 ## Non-Functional Requirements
 
@@ -79,9 +104,8 @@ existing consumers).
 - Deep comparison across external `$ref` targets (bundle via F14 first) — the
   same limitation F15 documents, tracked in
   [#249](https://github.com/samdidos/vscode-json-schema-preview/issues/249).
-- A hosted GitHub Action wrapper — the npm script is the CI primitive; wiring it
-  into a specific workflow is the consumer's choice (an example is documented).
-  Tracked in [#250](https://github.com/samdidos/vscode-json-schema-preview/issues/250).
+- Publishing the action to the GitHub Marketplace (a release step), and
+  comparing schemas that changed only through a referenced file (#249).
 - Changing F15's classification rules; F26 only *aggregates* them.
 
 ## Acceptance Criteria
@@ -112,3 +136,13 @@ existing consumers).
   and computed in the background from the same classifier as the command, so
   typing is never blocked; no baseline or no changes means no lens rather than an
   empty one.
+
+- **2026-11-23** — Added F26-FR-09..11: a composite GitHub Action that gates a
+  pull request on the schemas it changed (#250), moving the hosted-action
+  wrapper out of Out of Scope. It builds the CLI from its own ref instead of
+  downloading the npm package, which also keeps it working before the CLI is
+  first published (#286).
+  The same day, after review: `node-version` became an input, since the Node the
+  action sets up stays on the caller's `PATH`; and the glue no longer crashes on a
+  schema over Node's 1 MiB child-output limit, reporting a file it cannot read as
+  that file's error instead.

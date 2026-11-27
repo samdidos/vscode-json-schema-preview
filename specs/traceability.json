@@ -2902,6 +2902,35 @@
       "specifiedAt": "2026-09-02",
       "implementedAt": "2026-09-02"
     },
+    "F26-FR-09": {
+      "status": "implemented",
+      "impl": [
+        "compat-gate/action.yml",
+        "compat-gate/gate.mjs"
+      ],
+      "note": "compat-gate composite action; gate.mjs selects changed schemas by glob, follows renames, lists new files, counts deletions as breaking; tested end to end against a stub CLI",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
+    "F26-FR-10": {
+      "status": "implemented",
+      "impl": [
+        "compat-gate/gate.mjs"
+      ],
+      "note": "gate.mjs exit code / verdict output / job summary per F26-FR-03/04",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
+    "F26-FR-11": {
+      "status": "implemented",
+      "impl": [
+        "compat-gate/action.yml",
+        "compat-gate/gate.mjs"
+      ],
+      "note": "action builds cli/dist/cli.js from its own ref and runs diff --check; glue imports only node: built-ins",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
     "F26-NFR-01": {
       "status": "implemented",
       "impl": [

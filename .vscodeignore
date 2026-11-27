@@ -45,3 +45,4 @@ CODEOWNERS
 .json-schema-tool
 **/*.map
 cli/**
+compat-gate/**
