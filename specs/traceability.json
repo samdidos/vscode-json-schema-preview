@@ -1620,6 +1620,37 @@
       ],
       "note": ""
     },
+    "F13-FR-14": {
+      "status": "implemented",
+      "impl": [
+        "src/refCompletion.ts",
+        "src/SchemaRefCompletionProvider.ts",
+        "src/extension.ts"
+      ],
+      "note": "referenceTargets in refCompletion.ts; SchemaRefCompletionProvider offers them inside $ref values of schema files",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
+    "F13-FR-15": {
+      "status": "implemented",
+      "impl": [
+        "src/refCompletion.ts",
+        "src/SchemaRefCompletionProvider.ts"
+      ],
+      "note": "refCandidates adds workspace schema files (F04 discovery rule) and the targets inside a chosen file; no candidates for remote values",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
+    "F13-FR-16": {
+      "status": "implemented",
+      "impl": [
+        "src/refCompletion.ts",
+        "src/SchemaRefCompletionProvider.ts"
+      ],
+      "note": "items replace the whole string content; #, / and quotes are trigger characters",
+      "specifiedAt": "2026-11-23",
+      "implementedAt": "2026-11-23"
+    },
     "F13-NFR-01": {
       "status": "manual",
       "impl": [

@@ -90,6 +90,32 @@ schema *authors*.
   an unavailable remote schema. It MUST NOT fetch, download, or prompt.
   Cached YAML MUST be parsed using the original URL's format (F13-FR-06).
 
+### `$ref` Completion
+
+- **F13-FR-14** In a schema file (F13-FR-01's schema semantics), when the
+  cursor is inside the string value of a `$ref`, a `CompletionItemProvider`
+  MUST offer the document's own targets: a JSON Pointer
+  (`#/$defs/Address`) for every entry of every `$defs` / `definitions`
+  object at any depth, with tokens escaped per RFC 6901 (`~0`, `~1`), and
+  `#<name>` for every `$anchor`. Values of `enum`, `const`, `default` and
+  `examples` are data, not schemas, and MUST NOT be searched. Keys of a
+  name-to-schema map (`properties`, `patternProperties`, `$defs`,
+  `definitions`, `dependentSchemas`, `dependencies`) are names, not keywords:
+  a property named `enum` or `$defs` MUST still be searched as a schema.
+- **F13-FR-15** Before a `#` is typed, completion MUST also offer the
+  workspace's other schema files (the F04 picker's discovery rule: a
+  `.json`/`.yaml`/`.yml` file outside `node_modules`, `dist` and `.git` that
+  declares `$schema`), as paths relative to the current schema's directory
+  (`./common.schema.json`, `../shared/id.schema.json`); a file with no
+  relative path from it (another Windows drive) MUST NOT be offered. Once the value is a
+  relative path followed by `#`, completion MUST offer that file's targets per
+  F13-FR-14, prefixed with the path. Remote (`http(s)://`) values MUST get no
+  candidates.
+- **F13-FR-16** Accepting a candidate MUST replace the whole string content
+  of the `$ref` value (not only the word before the cursor), so completing a
+  half-typed pointer never leaves a fragment of the old text. Typing `#` or
+  `/` inside the value MUST re-trigger completion.
+
 ## Non-Functional Requirements
 
 - **F13-NFR-01** Definition/hover resolution MUST complete in-process with no
@@ -118,8 +144,8 @@ schema *authors*.
   spec's pointer parsing and AST locators.
 - Resolving `$id`-based / `$anchor` URI bases (bundler-grade resolution lives
   in F14); this spec resolves location-based refs only.
-- `$ref` completion (IntelliSense suggestions while typing a ref) — tracked in
-  [#238](https://github.com/samdidos/vscode-json-schema-preview/issues/238).
+- `$ref` completion of remote URLs or of `$id`-based references; completion
+  covers local targets and workspace files only (F13-FR-14/15).
 
 ## Acceptance Criteria
 
@@ -142,6 +168,9 @@ schema *authors*.
    Go to Definition.
 9. Hover on an inline binding shows escaped title/description or uncached
    guidance without network I/O or a prompt. Other positions do not trigger.
+10. Typing `"$ref": "#/` lists every `$defs` entry; choosing one replaces the
+    whole value. Typing `"$ref": "./` lists sibling schema files, and
+    `"./common.schema.json#/` lists that file's definitions.
 
 ## Open Questions
 
@@ -159,3 +188,10 @@ Q1 is resolved by F13-FR-11 through F13-FR-13 (issue #237).
 - **2026-09-02** — Out of Scope narrowed: find-all-references and rename now exist,
   in [F30](F30-schema-refactoring.md), which reuses this spec's pointer parsing,
   `refKind` classification and AST locators rather than reimplementing them.
+
+- **2026-11-23** — Added F13-FR-14..16: `$ref` completion of local pointers,
+  anchors, workspace schema files and the pointers inside them (#238),
+  moving it out of Out of Scope.
+  The same day, after review: name-map keys are no longer mistaken for keywords
+  (a property called `enum` was skipped), and a file on another Windows drive is
+  no longer offered as a broken `./D:/…` path.
