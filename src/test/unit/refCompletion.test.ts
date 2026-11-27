@@ -56,6 +56,22 @@ suite('[F13-FR-14] referenceTargets — the document\'s own targets', () => {
     assert.deepStrictEqual(referenceTargets(root), ['#/items/0/$defs/InTuple']);
   });
 
+  test('treats keys under properties and other name maps as names, not keywords', () => {
+    const root = {
+      properties: {
+        enum: { $defs: { UnderEnumProperty: {} } },
+        $defs: { $anchor: 'propNamedDefs' },
+      },
+      $defs: { default: { $defs: { UnderDefaultDef: {} } } },
+    };
+    assert.deepStrictEqual(referenceTargets(root), [
+      '#/$defs/default',
+      '#/properties/enum/$defs/UnderEnumProperty',
+      '#/$defs/default/$defs/UnderDefaultDef',
+      '#propNamedDefs',
+    ]);
+  });
+
   test('escapes pointer tokens per RFC 6901', () => {
     assert.strictEqual(escapePointerToken('a~/b'), 'a~0~1b');
   });
@@ -200,5 +216,19 @@ suite('[F13-FR-14][F13-FR-15][F13-FR-16] SchemaRefCompletionProvider', () => {
   test('builds relative references with forward slashes', () => {
     assert.strictEqual(toRelativeRef('/ws/a', '/ws/a/b.json'), './b.json');
     assert.strictEqual(toRelativeRef('/ws/a', '/ws/c/d.json'), '../c/d.json');
+  });
+
+  test('skips a file with no relative path to it (another Windows drive)', () => {
+    assert.strictEqual(toRelativeRef('C:\\ws\\a', 'D:\\x\\b.json', path.win32), undefined);
+    assert.strictEqual(toRelativeRef('C:\\ws\\a', 'C:\\ws\\c\\d.json', path.win32), '../c/d.json');
+  });
+
+  test('skips the schema check and parse when the line has no $ref', async () => {
+    const text = `{ "$schema": "${META}", "title": "x" }`;
+    const doc = makeDoc(text, path.join(tmp, 'main.schema.json'));
+    let reads = 0;
+    const counted = { ...doc, getText: () => { reads++; return text; } };
+    assert.strictEqual(await new SchemaRefCompletionProvider().provideCompletionItems(counted, { __offset: after(text, '"title": "') }), undefined);
+    assert.strictEqual(reads, 1, 'only the guard read the text; no schema detection or parse');
   });
 });

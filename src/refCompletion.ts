@@ -42,6 +42,13 @@ export function escapePointerToken(token: string): string {
 /** Keywords whose values are instance data, never subschemas (F13-FR-14). */
 const DATA_KEYWORDS = new Set(['enum', 'const', 'default', 'examples']);
 const DEF_KEYWORDS = ['$defs', 'definitions'];
+/**
+ * Keywords whose value maps user-chosen names to subschemas. Their keys are
+ * names, not keywords: a property called `enum` or `$defs` is still a schema.
+ */
+const NAME_MAP_KEYWORDS = new Set([
+  '$defs', 'definitions', 'properties', 'patternProperties', 'dependentSchemas', 'dependencies',
+]);
 const MAX_TARGETS = 2000;
 
 /**
@@ -52,13 +59,19 @@ const MAX_TARGETS = 2000;
 export function referenceTargets(root: unknown): string[] {
   const pointers: string[] = [];
   const anchors: string[] = [];
-  const walk = (node: unknown, path: string[]): void => {
-    if (pointers.length + anchors.length >= MAX_TARGETS) { return; }
+  const full = () => pointers.length + anchors.length >= MAX_TARGETS;
+  /** `node` is a schema, or (with `names`) a map from names to schemas. */
+  const walk = (node: unknown, path: string[], names: boolean): void => {
+    if (full()) { return; }
     if (Array.isArray(node)) {
-      node.forEach((item, i) => walk(item, [...path, String(i)]));
+      node.forEach((item, i) => walk(item, [...path, String(i)], false));
       return;
     }
     if (!isObject(node)) { return; }
+    if (names) {
+      for (const [name, value] of Object.entries(node)) { walk(value, [...path, name], false); }
+      return;
+    }
     if (typeof node.$anchor === 'string' && node.$anchor) { anchors.push(`#${node.$anchor}`); }
     for (const keyword of DEF_KEYWORDS) {
       const defs = node[keyword];
@@ -68,10 +81,10 @@ export function referenceTargets(root: unknown): string[] {
       }
     }
     for (const [key, value] of Object.entries(node)) {
-      if (!DATA_KEYWORDS.has(key)) { walk(value, [...path, key]); }
+      if (!DATA_KEYWORDS.has(key)) { walk(value, [...path, key], NAME_MAP_KEYWORDS.has(key)); }
     }
   };
-  walk(root, []);
+  walk(root, [], false);
   return [...pointers, ...anchors].slice(0, MAX_TARGETS);
 }
 

@@ -38,9 +38,16 @@ export class SchemaRefCompletionProvider implements vscode.CompletionItemProvide
     document: vscode.TextDocument,
     position: vscode.Position,
   ): Promise<vscode.CompletionItem[] | undefined> {
-    if (document.uri.scheme !== 'file' || !isJsonSchemaFile(document)) { return undefined; }
+    if (document.uri.scheme !== 'file') { return undefined; }
     const text = document.getText();
-    const ctx = refCompletionContext(text, document.languageId, document.offsetAt(position));
+    const offset = document.offsetAt(position);
+    // Cheap guard first: `"` is a trigger character, so this runs on every
+    // quote typed in any JSON/YAML file. A `$ref` value sits on its key's line;
+    // anywhere else, skip the schema check and the parse altogether.
+    const lineStart = text.lastIndexOf('\n', offset - 1) + 1;
+    if (!text.slice(lineStart, offset).includes('$ref')) { return undefined; }
+    if (!isJsonSchemaFile(document)) { return undefined; }
+    const ctx = refCompletionContext(text, document.languageId, offset);
     if (!ctx) { return undefined; }
 
     const dir = path.dirname(document.uri.fsPath);
@@ -79,13 +86,20 @@ export class SchemaRefCompletionProvider implements vscode.CompletionItemProvide
     return (await this.fileList.files)
       .filter(f => path.resolve(f) !== path.resolve(selfPath))
       .map(f => toRelativeRef(dir, f))
+      .filter((f): f is string => f !== undefined)
       .sort();
   }
 }
 
-/** `./x.json` / `../y/z.json` from `fromDir` to `file`, always with `/`. */
-export function toRelativeRef(fromDir: string, file: string): string {
-  const rel = path.relative(fromDir, file).split(path.sep).join('/');
+/**
+ * `./x.json` / `../y/z.json` from `fromDir` to `file`, always with `/`, or
+ * `undefined` when no relative path exists (another Windows drive), since
+ * `./D:/x.json` would be a broken reference (F13-FR-15).
+ */
+export function toRelativeRef(fromDir: string, file: string, p: Pick<typeof path, 'relative' | 'isAbsolute' | 'sep'> = path): string | undefined {
+  const raw = p.relative(fromDir, file);
+  if (p.isAbsolute(raw)) { return undefined; }
+  const rel = raw.split(p.sep).join('/');
   return rel.startsWith('../') ? rel : `./${rel}`;
 }
 

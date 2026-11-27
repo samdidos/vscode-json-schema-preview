@@ -98,12 +98,16 @@ schema *authors*.
   (`#/$defs/Address`) for every entry of every `$defs` / `definitions`
   object at any depth, with tokens escaped per RFC 6901 (`~0`, `~1`), and
   `#<name>` for every `$anchor`. Values of `enum`, `const`, `default` and
-  `examples` are data, not schemas, and MUST NOT be searched.
+  `examples` are data, not schemas, and MUST NOT be searched. Keys of a
+  name-to-schema map (`properties`, `patternProperties`, `$defs`,
+  `definitions`, `dependentSchemas`, `dependencies`) are names, not keywords:
+  a property named `enum` or `$defs` MUST still be searched as a schema.
 - **F13-FR-15** Before a `#` is typed, completion MUST also offer the
   workspace's other schema files (the F04 picker's discovery rule: a
   `.json`/`.yaml`/`.yml` file outside `node_modules`, `dist` and `.git` that
   declares `$schema`), as paths relative to the current schema's directory
-  (`./common.schema.json`, `../shared/id.schema.json`). Once the value is a
+  (`./common.schema.json`, `../shared/id.schema.json`); a file with no
+  relative path from it (another Windows drive) MUST NOT be offered. Once the value is a
   relative path followed by `#`, completion MUST offer that file's targets per
   F13-FR-14, prefixed with the path. Remote (`http(s)://`) values MUST get no
   candidates.
@@ -188,3 +192,6 @@ Q1 is resolved by F13-FR-11 through F13-FR-13 (issue #237).
 - **2026-11-23** — Added F13-FR-14..16: `$ref` completion of local pointers,
   anchors, workspace schema files and the pointers inside them (#238),
   moving it out of Out of Scope.
+  The same day, after review: name-map keys are no longer mistaken for keywords
+  (a property called `enum` was skipped), and a file on another Windows drive is
+  no longer offered as a broken `./D:/…` path.
