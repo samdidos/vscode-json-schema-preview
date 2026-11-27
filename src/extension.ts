@@ -19,6 +19,7 @@ import {
 } from './SchemaBindingManager';
 import { validateCurrentFile, validationDiagnostics } from './ValidationManager';
 import { ValidationFixProvider } from './ValidationFixProvider';
+import { CatalogSuggestionProvider } from './CatalogSuggestionProvider';
 import { migrateDraftCommand } from './DraftMigrationCommand';
 import { SchemaAuthManager, AuthRequiredError } from './SchemaAuthManager';
 import { SchemaCache } from './SchemaCache';
@@ -176,6 +177,15 @@ export function activate(context: vscode.ExtensionContext) {
       validationFixProvider,
       { providedCodeActionKinds: ValidationFixProvider.providedCodeActionKinds },
     ),
+    // ── Catalog suggestion (F12-FR-12/13): bind a fileMatch-matched schema ─────
+    vscode.languages.registerCodeActionsProvider(
+      [
+        { language: 'json' }, { language: 'jsonc' }, { language: 'jsonl' },
+        { language: 'yaml' }, { language: 'yml' }, { language: 'toml' },
+      ],
+      new CatalogSuggestionProvider(catalogManager),
+      { providedCodeActionKinds: CatalogSuggestionProvider.providedCodeActionKinds },
+    ),
     // Fixes are computed for a specific text version; drop them once the text
     // moves on or the document closes (F21-FR-09).
     vscode.workspace.onDidChangeTextDocument(e => validationFixProvider.clear(e.document.uri)),
@@ -235,7 +245,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('jsonschema.configure',          () => configurePreview()),
     vscode.commands.registerCommand('jsonschema.openConfig',         () => openConfigFile()),
-    vscode.commands.registerCommand('jsonschema.bindToCurrentFile',  (uri?: vscode.Uri) => bindingManager.bindToCurrentFile(uri)),
+    vscode.commands.registerCommand('jsonschema.bindToCurrentFile',  (uri?: vscode.Uri, presetRef?: string) => bindingManager.bindToCurrentFile(uri, presetRef)),
     vscode.commands.registerCommand('jsonschema.validateFile',       validateCurrentFile(authManager, schemaCache, validationFixProvider, doc => bindingManager.detectNativeSchema(doc))),
 
     // ── Migrate a schema between drafts (F22) ─────────────────────────────────

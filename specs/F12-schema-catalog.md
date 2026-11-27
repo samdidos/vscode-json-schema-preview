@@ -57,6 +57,24 @@ differentiator: frictionless work with private schemas.
   reuse the existing F07 discovery paths (401/403 → *Configure Auth* offer)
   unchanged.
 
+### Suggested Binding Code Action
+
+- **F12-FR-12** On a supported data file with **no binding** — neither an
+  inline `$schema` (F10) nor a settings binding (F04) — whose
+  workspace-relative path matches a cached catalog entry's `fileMatch`
+  (F12-FR-08 semantics), the extension MUST offer a code action titled
+  **Bind suggested schema "`<name>`"** for each matching entry (at most three,
+  in catalog order, one per distinct schema URL). Choosing it MUST continue
+  into the existing F04 scope picker with that entry's URL as the schema
+  reference (F12-FR-02); it MUST NOT write a binding without that explicit
+  choice, so prompt-less binding stays out of scope.
+- **F12-FR-13** The suggestion MUST be offered only when the requested range
+  starts on the document's **first line**, where the cursor is when a file is
+  opened, so it is discoverable without a lightbulb on every line. It MUST be
+  computed from the catalog **cache** only (`getCachedEntries`), never a fetch,
+  so a code-action request does no network I/O (F12-NFR-01); a file whose
+  catalog has not been fetched yet simply gets no suggestion.
+
 ### Catalog Caching
 
 - **F12-FR-10** Fetched catalogs MUST be cached in global storage with a
@@ -96,12 +114,15 @@ differentiator: frictionless work with private schemas.
    still opens from cache and the title indicates stale data.
 5. Selecting an entry continues into the normal scope picker and produces the
    same binding as pasting the URL manually.
+6. Opening an unbound `tsconfig.json` whose catalog is cached shows a lightbulb
+   on the first line offering *Bind suggested schema "tsconfig.json"*; choosing
+   it opens the scope picker. A bound file, or a file no entry matches, offers
+   nothing.
 
 ## Open Questions
 
-- Q1 — Should `fileMatch` suggestion also surface as a code action on unbound
-  data files ("Bind suggested schema …")? Leaning yes, as a follow-up FR.
-  Tracked in [#240](https://github.com/samdidos/vscode-json-schema-preview/issues/240).
+- Q1 — resolved by F12-FR-12/13 (#240): a first-line code action on unbound
+  files, continuing into the normal binding flow.
 
 ## Relation to Existing Specs
 
@@ -110,3 +131,10 @@ differentiator: frictionless work with private schemas.
 - Reuses **F08** (cache) storage conventions and **S04** stale-fallback.
 - **S01/S05**: catalog data is rendered only in native QuickPicks (no webview
   HTML); no data leaves the machine beyond the catalog HTTP requests.
+
+## History
+
+- **2026-11-23** — Added F12-FR-12/13: a *Bind suggested schema* code action
+  on unbound data files whose name matches a cached catalog entry (#240,
+  resolving Q1). It stays an explicit choice that opens the usual scope
+  picker; binding without a prompt remains out of scope.
