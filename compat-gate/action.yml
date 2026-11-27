@@ -30,6 +30,12 @@ inputs:
     description: Also fail when a change cannot be classified as safe ("compatibility unknown").
     required: false
     default: 'false'
+  node-version:
+    description: >-
+      Node.js version the action sets up to build and run the CLI. It stays on
+      PATH for the job's later steps, so set it to the version those steps expect.
+    required: false
+    default: '26'
 
 outputs:
   verdict:
@@ -41,7 +47,7 @@ runs:
   steps:
     - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
-        node-version: '26'
+        node-version: ${{ inputs.node-version }}
 
     # The CLI at this action's ref, so pinning the action pins the classifier
     # (F26-FR-11). --ignore-scripts: no install script runs, and keytar's native

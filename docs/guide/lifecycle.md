@@ -160,10 +160,11 @@ jobs:
   schema-compat:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: samdidos/vscode-json-schema-preview/compat-gate@main # pin a commit SHA
         with:
           strict: true
+          # node-version: '22'    # Node the action sets up (default 26); it stays on PATH for later steps
           # schemas: |            # which files count as schemas (these are the defaults)
           #   **/*.schema.json
           #   **/*.schema.yaml

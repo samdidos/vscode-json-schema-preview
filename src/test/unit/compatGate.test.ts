@@ -103,6 +103,14 @@ suite('[F26-FR-09] compat-gate action — changed schemas against the base', () 
     assert.strictEqual(r.code, 1);
   });
 
+  test('escapes a `|` in a file name so the summary table keeps its columns', function () {
+    if (process.platform === 'win32') { this.skip(); } // `|` is not a legal Windows file name character
+    write('we|ird.schema.json', '{}');
+    commit();
+    const r = run();
+    assert.match(r.summary, /\| `we\\\|ird\.schema\.json` \| 🆕 new \|/);
+  });
+
   test('passes when there is no base commit to compare against', () => {
     const r = run({ GATE_BASE: '0000000000000000000000000000000000000000' });
     assert.strictEqual(r.code, 0);
@@ -163,6 +171,17 @@ suite('[F26-FR-10] compat-gate action — verdict, summary, exit code', () => {
     assert.match(r.summary, /could not be compared/);
   });
 
+  test('compares a schema larger than Node\'s 1 MiB child-output default', () => {
+    // A bundled schema easily passes 1 MiB; reading it back through `git show`
+    // must not hit the default maxBuffer (ENOBUFS) and crash the gate.
+    fs.writeFileSync(path.join(repo, 'a.schema.json'), JSON.stringify({ description: 'x'.repeat(3 * 1024 * 1024) }));
+    git('commit', '-qam', 'large');
+    base = git('rev-parse', 'HEAD');
+    const r = change('{"fine":1}');
+    assert.strictEqual(r.code, 0, r.summary);
+    assert.strictEqual(r.output, 'verdict=compatible\n');
+  });
+
   test('escapes each file\'s report into the summary', () => {
     const r = change('{"fine":1}');
     assert.match(r.summary, /<pre>compatible &lt;&amp;&gt;<\/pre>/);
@@ -179,6 +198,11 @@ suite('[F26-FR-11] compat-gate action — wraps the CLI built from its own ref',
     assert.match(action, /npm run build:cli/);
     assert.match(action, /GATE_CLI: \$\{\{ github\.action_path \}\}\/\.\.\/cli\/dist\/cli\.js/);
     assert.doesNotMatch(action, /npx|json-schema-toolkit@/, 'nothing is fetched from a registry at run time');
+  });
+
+  test('takes the Node version as an input, since that Node stays on the job\'s PATH', () => {
+    assert.match(action, /^  node-version:\n/m);
+    assert.match(action, /node-version: \$\{\{ inputs\.node-version \}\}/);
   });
 
   test('every action it uses is pinned to a commit SHA', () => {

@@ -42,7 +42,13 @@ function parseNameStatus(text) {
   });
 }
 
-const git = (...args) => execFileSync('git', args, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
+// Node's default child-output cap is 1 MiB; a bundled schema or a large diff
+// listing easily exceeds it, and the overflow would kill the gate (ENOBUFS).
+const MAX_BUFFER = 512 * 1024 * 1024;
+const GIT_OPTS = { stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: MAX_BUFFER };
+const git = (...args) => execFileSync('git', args, { ...GIT_OPTS, encoding: 'utf-8' });
+/** A file's bytes at `rev`, untouched by any text decoding. */
+const gitShow = (rev, file) => execFileSync('git', ['show', `${rev}:${file}`], GIT_OPTS);
 
 function ensureBase(base) {
   try { git('cat-file', '-e', `${base}^{commit}`); return; } catch { /* not fetched yet */ }
@@ -60,10 +66,11 @@ function compare(cli, base, change, strict, scratch) {
   // picks the parser by its extension; one directory per file avoids clashes.
   const dir = mkdtempSync(join(scratch, 'base-'));
   const oldFile = join(dir, basename(change.oldPath));
-  writeFileSync(oldFile, git('show', `${base}:${change.oldPath}`));
+  writeFileSync(oldFile, gitShow(base, change.oldPath));
   const args = [cli, 'diff', oldFile, change.path, '--check'];
   if (strict) { args.push('--strict'); }
-  const run = spawnSync(process.execPath, args, { encoding: 'utf-8' });
+  const run = spawnSync(process.execPath, args, { encoding: 'utf-8', maxBuffer: MAX_BUFFER });
+  if (run.error) { return { ...change, verdict: 'error', report: `Could not run the CLI: ${run.error.message}` }; }
   const report = (run.stdout || run.stderr || '').trim();
   const verdict = { 0: 'compatible', 1: 'breaking', 2: 'unknown' }[run.status] ?? 'error';
   return { ...change, verdict, report };
@@ -89,7 +96,8 @@ function renderSummary(results, verdict, base) {
   if (!results.length) { return [...lines, 'No changed schema files matched.', ''].join('\n'); }
   lines.push('| File | Verdict |', '| --- | --- |');
   for (const r of results) {
-    const name = r.kind === 'R' ? `${r.oldPath} → ${r.path}` : r.path;
+    // A `|` in a path would end the table cell early, even inside a code span.
+    const name = (r.kind === 'R' ? `${r.oldPath} → ${r.path}` : r.path).replace(/\|/g, '\\|');
     lines.push(`| \`${name}\` | ${ICON[r.verdict]} ${r.verdict} |`);
   }
   lines.push('');
@@ -124,7 +132,13 @@ function main() {
   const scratch = mkdtempSync(join(tmpdir(), 'compat-gate-'));
   let results;
   try {
-    results = changes.map(c => compare(cli, base, c, strict, scratch));
+    // One file that cannot be read is that file's error, not a crash that
+    // loses every other file's verdict and the job summary.
+    results = changes.map(c => {
+      try { return compare(cli, base, c, strict, scratch); } catch (e) {
+        return { ...c, verdict: 'error', report: `Could not compare: ${e instanceof Error ? e.message : String(e)}` };
+      }
+    });
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }

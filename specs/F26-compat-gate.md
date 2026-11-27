@@ -82,7 +82,11 @@ existing consumers).
   reimplement any comparison, and MUST run the CLI built from the action's own
   ref, so a pinned action ref pins the classifier too and no package is
   downloaded from a registry at run time. Its glue MUST be a Node script with
-  no dependency beyond Node and git (S15).
+  no dependency beyond Node and git (S15). The Node version it sets up MUST be
+  an input (`node-version`), because that Node stays on `PATH` for the
+  caller's later steps. A schema file of any size MUST be compared: the glue
+  MUST NOT fail on child-process output limits, and a file it cannot compare
+  MUST be reported as that file's error in the summary, not end the run.
 
 ## Non-Functional Requirements
 
@@ -138,3 +142,7 @@ existing consumers).
   wrapper out of Out of Scope. It builds the CLI from its own ref instead of
   downloading the npm package, which also keeps it working before the CLI is
   first published (#286).
+  The same day, after review: `node-version` became an input, since the Node the
+  action sets up stays on the caller's `PATH`; and the glue no longer crashes on a
+  schema over Node's 1 MiB child-output limit, reporting a file it cannot read as
+  that file's error instead.
